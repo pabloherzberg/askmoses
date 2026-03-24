@@ -1,16 +1,18 @@
-import type React from 'react'
-import { OwnerSidebar } from '@/components/layout/OwnerSidebar'
-import { AppHeader } from '@/components/layout/AppHeader'
+import type React from "react"
+import { DashboardSidebar } from "@/components/dashboard/sidebar"
+import { DashboardHeader } from "@/components/dashboard/header"
 
-export default function OwnerLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
-      <AppHeader />
-      <div className="flex">
-        <OwnerSidebar />
-        <main className="flex-1 lg:pl-56 pt-[61px]">
-          <div className="max-w-[1200px] mx-auto px-8 py-7">{children}</div>
-        </main>
+    <div className="rounded-lg border-2 p-4 dark:border-yellow-800 dark:bg-yellow-950 bg-black border-secondary">
+      <DashboardSidebar />
+      <div className="lg:pl-64">
+        <DashboardHeader />
+        <main className="p-6">{children}</main>
       </div>
     </div>
   )

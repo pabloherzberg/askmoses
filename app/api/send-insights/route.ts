@@ -1,6 +1,11 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy init — avoid crash when RESEND_API_KEY is not set (Fase 1)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 'placeholder')
+  return _resend
+}
 
 interface InsightsEmailData {
   scriptName: string
@@ -175,7 +180,7 @@ export async function POST(req: Request) {
     // In sandbox mode, can only send to registered email
     const targetEmails = body.insights.trainers.map((t) => t.email)
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: "Ask Moses <noreply@askmoses.ai>",
       to: targetEmails,
       subject: `Weekly Sales Bulletin - ${body.scriptName} | ${body.insights.metrics.closeRate}% Close Rate | Do's, Don'ts & Objections`,

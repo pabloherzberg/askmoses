@@ -1,7 +1,12 @@
 import { Resend } from "resend"
 import { createServerClient } from "@supabase/ssr"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy init — avoid crash when RESEND_API_KEY is not set (Fase 1)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 'placeholder')
+  return _resend
+}
 
 interface SectionResult {
   name: string
@@ -154,7 +159,7 @@ export async function POST(req: Request) {
 
     const html = generateEmailHtml(body)
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: "Ask Moses <noreply@askmoses.ai>",
       to: cleanEmail,
       subject: `Your Sales Call Coaching Feedback — Score: ${body.overallScore}/100`,

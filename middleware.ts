@@ -42,8 +42,12 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Rotas públicas — não interceptar ────────────────────────────────────────
-  if (pathname.startsWith('/login')) {
-    if (session) {
+  const publicPaths = ['/login', '/presentation', '/tech', '/demobiz']
+  const isPublic = pathname === '/' || publicPaths.some((p) => pathname.startsWith(p))
+
+  if (isPublic) {
+    // Se está logado e acessa /login, redireciona para rota do role
+    if (session && pathname.startsWith('/login')) {
       const role = session.user.app_metadata?.role as Role
       return NextResponse.redirect(redirectByRole(role, request.url))
     }
@@ -56,11 +60,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const role = session.user.app_metadata?.role as Role
-
-  // ── Raiz → rota principal do role ────────────────────────────────────────────
-  if (pathname === '/') {
-    return NextResponse.redirect(redirectByRole(role, request.url))
-  }
 
   // ── Proteção cruzada de roles ─────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && role !== 'admin') {
