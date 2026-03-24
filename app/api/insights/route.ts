@@ -2,6 +2,8 @@ import { generateText, Output } from "ai"
 import { createServerClient } from "@supabase/ssr"
 import { z } from "zod"
 
+export const maxDuration = 60
+
 const InsightsSchema = z.object({
   successPatterns: z.array(z.string()).describe("5-8 patterns found in closed/successful calls"),
   failurePatterns: z.array(z.string()).describe("5-8 patterns found in unsuccessful calls"),

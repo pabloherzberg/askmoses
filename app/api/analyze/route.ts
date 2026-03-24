@@ -2,6 +2,8 @@ import { generateObject } from "ai"
 import { createServerClient } from "@supabase/ssr"
 import { z } from "zod"
 
+export const maxDuration = 60
+
 const CriterionResultSchema = z.object({
   name: z.string(),
   passed: z.boolean(),

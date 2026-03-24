@@ -1,4 +1,5 @@
-import { Readable } from "stream"
+// Increase function timeout for large audio processing
+export const maxDuration = 60
 
 // OpenAI Whisper API - Accepts Blob URL and transcribes
 export async function POST(req: Request) {
