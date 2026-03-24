@@ -1,7 +1,4 @@
-// GET /api/insights — Phase 1: mock data (used by owner dashboard)
-export { GET } from './_get'
-
-import { generateObject } from "ai"
+import { generateText, Output } from "ai"
 import { createServerClient } from "@supabase/ssr"
 import { z } from "zod"
 
@@ -128,10 +125,17 @@ IMPORTANT: The suggestedScript is an IMPROVED VERSION of the current script abov
 7. Write an improved/evolved version of the current script that keeps the structure but is enhanced with techniques and phrases from CLOSED calls
 8. The improved script should answer: "What if we kept the same structure but added what actually worked in successful calls?"`
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: llmModel,
-      schema: InsightsSchema,
-      prompt,
+      output: Output.object({
+        schema: InsightsSchema,
+      }),
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
     })
 
     // Get unique trainers
@@ -152,15 +156,15 @@ IMPORTANT: The suggestedScript is an IMPROVED VERSION of the current script abov
 
     return Response.json({
       metrics,
-      successPatterns: object.successPatterns,
-      failurePatterns: object.failurePatterns,
-      partialPatterns: object.partialPatterns,
-      keyDifferences: object.keyDifferences,
-      dos: object.dos,
-      donts: object.donts,
-      commonObjections: object.commonObjections,
-      preCallChecklist: object.preCallChecklist,
-      suggestedScript: object.suggestedScript,
+      successPatterns: output?.successPatterns || [],
+      failurePatterns: output?.failurePatterns || [],
+      partialPatterns: output?.partialPatterns || [],
+      keyDifferences: output?.keyDifferences || [],
+      dos: output?.dos || [],
+      donts: output?.donts || [],
+      commonObjections: output?.commonObjections || [],
+      preCallChecklist: output?.preCallChecklist || [],
+      suggestedScript: output?.suggestedScript || "",
       trainers: Array.from(trainersMap.values()),
     })
   } catch (error) {

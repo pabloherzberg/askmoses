@@ -2,9 +2,9 @@
 
 import { createBrowserClient } from "@supabase/ssr"
 
-export const createClient = () => {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+export function createClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+
+  return createBrowserClient(url, key)
 }

@@ -1,19 +1,12 @@
 import { Resend } from "resend"
 import { createServerClient } from "@supabase/ssr"
 
-// Lazy init — avoid crash when RESEND_API_KEY is not set (Fase 1)
-let _resend: Resend | null = null
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 'placeholder')
-  return _resend
-}
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-interface SectionResult {
+interface CriterionResult {
   name: string
-  score: number
+  passed: boolean
   feedback: string
-  // legacy compat
-  passed?: boolean
 }
 
 interface CoachingEmailData {
@@ -21,44 +14,19 @@ interface CoachingEmailData {
   trainerEmail: string
   overallScore: number
   totalCriteria: number
-  criteria: SectionResult[]
-  sections?: SectionResult[]
+  criteria: CriterionResult[]
   summary: string
   strengths: string[]
   improvements: string[]
   transcript: string
-  callOutcome?: string
-}
-
-function scoreColor(score: number): { bg: string; border: string; text: string; bar: string } {
-  if (score >= 5) return { bg: "#f0fdf4", border: "#bbf7d0", text: "#166534", bar: "#10b981" }
-  if (score >= 4) return { bg: "#eff6ff", border: "#bfdbfe", text: "#1e40af", bar: "#3b82f6" }
-  if (score >= 3) return { bg: "#fffbeb", border: "#fde68a", text: "#92400e", bar: "#f59e0b" }
-  return { bg: "#fef2f2", border: "#fecaca", text: "#991b1b", bar: "#ef4444" }
-}
-
-function scoreLabel(score: number): string {
-  if (score >= 5) return "Excellent"
-  if (score >= 4) return "Strong"
-  if (score >= 3) return "Adequate"
-  if (score >= 2) return "Needs Work"
-  return "Not Attempted"
+  analysisMode?: string
 }
 
 function generateEmailHtml(data: CoachingEmailData): string {
-  const sections = data.sections || data.criteria
-  const overallScore = data.overallScore
-  const overallColor = overallScore >= 80 ? "#10b981" : overallScore >= 60 ? "#f59e0b" : "#ef4444"
-
-  const outcomeLabels: Record<string, string> = {
-    closed: "Closed",
-    follow_up: "Follow-up Scheduled",
-    objection_unresolved: "Objection Unresolved",
-    no_decision: "No Decision",
-    not_closed: "Not Closed",
-    partial: "Partial",
-  }
-  const outcomeLabel = data.callOutcome ? (outcomeLabels[data.callOutcome] || data.callOutcome) : null
+  const passedCriteria = data.criteria.filter((c) => c.passed)
+  const failedCriteria = data.criteria.filter((c) => !c.passed)
+  const passRate = Math.round((data.overallScore / data.totalCriteria) * 100)
+  const isScriptMode = data.analysisMode === "script"
 
   return `
 <!DOCTYPE html>
@@ -71,61 +39,68 @@ function generateEmailHtml(data: CoachingEmailData): string {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   
   <div style="text-align: center; margin-bottom: 30px;">
-    <h1 style="color: #1a1a1a; margin-bottom: 6px;">Hey ${data.trainerName},</h1>
-    <p style="color: #666; font-size: 15px; margin: 0;">Here is your personalized coaching feedback from Ask Moses AI.</p>
-    ${outcomeLabel ? `<p style="display: inline-block; margin-top: 10px; background: #f0f9ff; color: #0284c7; font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid #bae6fd;">Call Outcome: ${outcomeLabel}</p>` : ""}
+    <h1 style="color: #1a1a1a; margin-bottom: 10px;">Hey ${data.trainerName}! 📋</h1>
+    <p style="color: #666; font-size: 16px;">Here's your personalized coaching feedback</p>
+    <p style="color: #0284c7; font-size: 14px; background: #f0f9ff; padding: 10px; border-radius: 6px; margin-top: 10px;">Sales Script Analysis</p>
   </div>
 
-  <!-- Overall Score -->
-  <div style="background: ${overallColor}; color: white; padding: 28px 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-    <p style="font-size: 56px; font-weight: 800; margin: 0; line-height: 1;">${overallScore}</p>
-    <p style="font-size: 15px; margin: 8px 0 0 0; opacity: 0.9;">Overall Score (out of 100)</p>
+  <div style="background: linear-gradient(135deg, ${passRate >= 80 ? "#10b981" : passRate >= 60 ? "#f59e0b" : "#ef4444"}, ${passRate >= 80 ? "#059669" : passRate >= 60 ? "#d97706" : "#dc2626"}); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+    <p style="font-size: 48px; font-weight: bold; margin: 0;">${data.overallScore}/${data.totalCriteria}</p>
+    <p style="font-size: 18px; margin: 10px 0 0 0;">Script Sections Covered (${passRate}%)</p>
   </div>
 
-  <!-- Summary -->
-  <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
-    <h2 style="color: #1a1a1a; margin-top: 0; font-size: 16px;">Summary</h2>
-    <p style="color: #444; margin-bottom: 0; font-size: 14px;">${data.summary}</p>
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <h2 style="color: #1a1a1a; margin-top: 0;">Summary</h2>
+    <p style="color: #444; margin-bottom: 0;">${data.summary}</p>
   </div>
 
-  <!-- Section Scores -->
-  <h2 style="color: #1a1a1a; font-size: 16px; margin-bottom: 12px;">Section Breakdown</h2>
-  ${sections.map((s) => {
-    const c = scoreColor(s.score)
-    const pct = ((s.score - 1) / 4) * 100
-    return `
-  <div style="background: ${c.bg}; border: 1px solid ${c.border}; padding: 16px; border-radius: 10px; margin-bottom: 12px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-      <p style="font-weight: 700; color: ${c.text}; margin: 0; font-size: 15px;">${s.name}</p>
-      <span style="font-size: 13px; font-weight: 600; color: ${c.text};">${s.score}/5 — ${scoreLabel(s.score)}</span>
-    </div>
-    <div style="background: #e5e7eb; border-radius: 4px; height: 6px; margin-bottom: 10px;">
-      <div style="background: ${c.bar}; height: 6px; border-radius: 4px; width: ${pct}%;"></div>
-    </div>
-    <p style="color: ${c.text}; margin: 0; font-size: 13px; opacity: 0.9;">${s.feedback}</p>
-  </div>`
-  }).join("")}
-
-  <!-- Strengths -->
   ${data.strengths.length > 0 ? `
-  <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 18px 20px; border-radius: 0 10px 10px 0; margin-bottom: 20px; margin-top: 24px;">
-    <h2 style="color: #059669; margin-top: 0; font-size: 15px;">What You Did Well</h2>
-    <ul style="color: #047857; margin-bottom: 0; padding-left: 18px; font-size: 14px;">
-      ${data.strengths.map((s) => `<li style="margin-bottom: 6px;">${s}</li>`).join("")}
+  <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 30px;">
+    <h2 style="color: #059669; margin-top: 0;">What You Did Great 💪</h2>
+    <ul style="color: #047857; margin-bottom: 0; padding-left: 20px;">
+      ${data.strengths.map((s) => `<li style="margin-bottom: 8px;">${s}</li>`).join("")}
     </ul>
-  </div>` : ""}
+  </div>
+  ` : ""}
 
-  <!-- Improvements -->
   ${data.improvements.length > 0 ? `
-  <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 18px 20px; border-radius: 0 10px 10px 0; margin-bottom: 20px;">
-    <h2 style="color: #d97706; margin-top: 0; font-size: 15px;">Focus Areas</h2>
-    <ul style="color: #92400e; margin-bottom: 0; padding-left: 18px; font-size: 14px;">
-      ${data.improvements.map((i) => `<li style="margin-bottom: 6px;">${i}</li>`).join("")}
+  <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 30px;">
+    <h2 style="color: #d97706; margin-top: 0;">Areas to Level Up 🚀</h2>
+    <ul style="color: #92400e; margin-bottom: 0; padding-left: 20px;">
+      ${data.improvements.map((i) => `<li style="margin-bottom: 8px;">${i}</li>`).join("")}
     </ul>
-  </div>` : ""}
+  </div>
+  ` : ""}
 
-  <div style="text-align: center; padding: 24px 0; border-top: 1px solid #e5e7eb; margin-top: 20px;">
-    <p style="color: #888; font-size: 13px; margin: 0;">Powered by Ask Moses AI Coaching</p>
+  <h2 style="color: #1a1a1a;">Detailed Breakdown</h2>
+
+  ${passedCriteria.length > 0 ? `
+  <div style="margin-bottom: 20px;">
+    <h3 style="color: #10b981; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">${isScriptMode ? "Covered" : "Passed"}</h3>
+    ${passedCriteria.map((c) => `
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+      <p style="font-weight: 600; color: #166534; margin: 0 0 5px 0;">✓ ${c.name}</p>
+      <p style="color: #15803d; margin: 0; font-size: 14px;">${c.feedback}</p>
+    </div>
+    `).join("")}
+  </div>
+  ` : ""}
+
+  ${failedCriteria.length > 0 ? `
+  <div style="margin-bottom: 20px;">
+    <h3 style="color: #ef4444; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">${isScriptMode ? "Missed" : "Needs Improvement"}</h3>
+    ${failedCriteria.map((c) => `
+    <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+      <p style="font-weight: 600; color: #991b1b; margin: 0 0 5px 0;">○ ${c.name}</p>
+      <p style="color: #b91c1c; margin: 0; font-size: 14px;">${c.feedback}</p>
+    </div>
+    `).join("")}
+  </div>
+  ` : ""}
+
+  <div style="text-align: center; padding: 30px 0; border-top: 1px solid #e5e7eb; margin-top: 30px;">
+    <p style="color: #666; font-size: 14px; margin: 0;">Keep pushing forward! Every call is a chance to grow. 🎯</p>
+    <p style="color: #999; font-size: 12px; margin-top: 15px;">Powered by Ask Moses AI Coaching</p>
   </div>
 
 </body>
@@ -135,6 +110,13 @@ function generateEmailHtml(data: CoachingEmailData): string {
 
 export async function POST(req: Request) {
   try {
+    if (!resend) {
+      return Response.json(
+        { error: "Resend API key not configured" },
+        { status: 503 }
+      )
+    }
+
     const body: CoachingEmailData = await req.json()
 
     const { trainerEmail, trainerName } = body
@@ -159,10 +141,10 @@ export async function POST(req: Request) {
 
     const html = generateEmailHtml(body)
 
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await resend.emails.send({
       from: "Ask Moses <noreply@askmoses.ai>",
       to: cleanEmail,
-      subject: `Your Sales Call Coaching Feedback — Score: ${body.overallScore}/100`,
+      subject: `Your Sales Call Coaching Feedback - ${body.overallScore}/${body.totalCriteria} Criteria Passed`,
       html,
     })
 
@@ -200,7 +182,6 @@ export async function POST(req: Request) {
           rubric_id: rubricData.id,
           trainer_name: trainerName,
           trainer_email: cleanEmail,
-          client_name: body.clientName || null,
           transcript: body.transcript,
           overall_score: body.overallScore,
           total_criteria: body.totalCriteria,
@@ -208,8 +189,7 @@ export async function POST(req: Request) {
           summary: body.summary,
           strengths: body.strengths,
           improvements: body.improvements,
-          call_outcome: body.callOutcome || "no_decision",
-          detected_outcome: body.detectedOutcome || null,
+          call_outcome: body.callOutcome || "not_closed",
           email_sent: true,
           email_id: data?.id,
         })

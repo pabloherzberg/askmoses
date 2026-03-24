@@ -2,16 +2,15 @@ import { generateObject } from "ai"
 import { createServerClient } from "@supabase/ssr"
 import { z } from "zod"
 
-const SectionScoreSchema = z.object({
+const CriterionResultSchema = z.object({
   name: z.string(),
-  score: z.number().min(1).max(5),
+  passed: z.boolean(),
   feedback: z.string(),
 })
 
 const AnalysisResultSchema = z.object({
-  sections: z.array(SectionScoreSchema),
+  criteria: z.array(CriterionResultSchema),
   overallScore: z.number(),
-  detectedOutcome: z.enum(["closed", "follow_up", "objection_unresolved", "no_decision"]),
   summary: z.string(),
   strengths: z.array(z.string()),
   improvements: z.array(z.string()),
@@ -70,52 +69,47 @@ export async function POST(req: Request) {
     }
 
     // Use system prompt and LLM model from rubric
-    const systemPrompt = rubricData.system_prompt || `You are an expert sales coach. Your role is to analyze sales call transcripts and provide constructive, motivational feedback based on the script sections. Be encouraging while pointing out areas for improvement. Focus on practical, actionable coaching.`
+    const systemPrompt = rubricData.system_prompt || `You are an expert sales coach specializing in dog training business sales. Your role is to analyze sales call transcripts and provide constructive, motivational feedback based on specific evaluation criteria. Be encouraging while pointing out areas for improvement. Focus on practical, actionable tips.`
     const llmModel = rubricData.llm_model || "openai/gpt-4o-mini"
 
-    // Build script sections with instructions
-    const scriptSections = scriptData.sections
+    // Build script context with criteria
+    const scriptSections = (scriptData.sections || [])
       .map(
         (s: any, i: number) =>
           `${i + 1}. ${s.name}: ${s.instructions}${s.tips ? ` (Tips: ${s.tips})` : ""}`
       )
       .join("\n")
 
-    // Criteria are used as guidelines only, not scored individually
+    // Get auto-generated criteria from script
     const generatedCriteria = scriptData.criteria || []
-    const criteriaGuidelines = generatedCriteria.length > 0
-      ? `\nEVALUATION GUIDELINES (use as context when scoring sections, do not score individually):\n${generatedCriteria.map((c: any) => `- ${c.name}: ${c.description}`).join("\n")}`
-      : ""
+    const criteriaDescription = generatedCriteria
+      .map((c: any) => `- ${c.name}: ${c.description}`)
+      .join("\n")
 
-    const sectionNames = scriptData.sections.map((s: any) => s.name)
+    const prompt = `You are analyzing a sales call transcript. Return your analysis in the EXACT JSON structure below.
 
-    const prompt = `You are analyzing a sales call transcript. Score the sales rep on each section of the sales script using a 1–5 scale.
-
-SCORING SCALE:
-1 = Not attempted — The rep did not attempt this section at all
-2 = Attempted but missed — Tried but failed to execute the key behaviors
-3 = Adequate — Covered the basics but room for improvement
-4 = Strong — Executed well with minor gaps
-5 = Excellent — Exemplary execution, could be used as a model
-
-SALES SCRIPT SECTIONS TO EVALUATE:
+SALES SCRIPT SECTIONS (what should happen):
 ${scriptSections}
-${criteriaGuidelines}
 
-TRANSCRIPT:
+EVALUATION CRITERIA (rate each one as pass/fail):
+${criteriaDescription}
+
+TRANSCRIPT TO ANALYZE:
 ${transcript}
 
-Score "${trainerName}" on EACH of these exact sections: ${sectionNames.join(", ")}
+Analyze if the trainer "${trainerName}" followed the sales script and met each criterion. For EACH criterion in the list above, decide if they PASSED or FAILED based on the transcript.
 
-The overallScore should be the average of all section scores multiplied by 20, rounded to the nearest integer (giving a 0–100 scale).
-
-IMPORTANT: Also determine the OUTCOME of this call based on what actually happened in the transcript:
-- "closed" — Sale was closed, customer committed to purchase/sign up
-- "follow_up" — Customer agreed to a follow-up call/meeting, but no close yet
-- "objection_unresolved" — Customer raised objections that were not fully addressed
-- "no_decision" — Call ended without clear next steps or commitment
-
-Return your analysis with honest, behaviorally specific feedback per section.`
+Return ONLY valid JSON matching this exact structure:
+{
+  "criteria": [
+    {"name": "Criterion Name", "passed": true/false, "feedback": "Specific feedback about this criterion"},
+    ...
+  ],
+  "overallScore": <number of criteria passed, 0-${generatedCriteria.length}>,
+  "summary": "Brief 1-2 sentence summary of the call",
+  "strengths": ["Strength 1", "Strength 2"],
+  "improvements": ["Area to improve 1", "Area to improve 2"]
+}`
 
     console.log("[v0] Starting analysis with model:", llmModel)
     const { object } = await generateObject({
@@ -128,10 +122,6 @@ Return your analysis with honest, behaviorally specific feedback per section.`
     console.log("[v0] Analysis complete")
     return Response.json({
       ...object,
-      // backward compat: map sections as criteria for email/DB
-      criteria: object.sections,
-      totalCriteria: object.sections.length,
-      detectedOutcome: object.detectedOutcome,
       transcript,
       scriptId,
     })

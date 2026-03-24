@@ -1,19 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import {
-  Upload,
-  Phone,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  Clock,
-  Loader2,
-} from "lucide-react"
+import { Upload, Phone, CheckCircle, XCircle, TrendingUp, Clock, Loader2, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface Call {
   id: string
@@ -34,12 +27,16 @@ export default function DashboardPage() {
   })
   const [recentCalls, setRecentCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   useEffect(() => {
     async function fetchStats() {
       setLoading(true)
+      setError(null)
 
       // Fetch all calls
       const { data: callsData, error: callsError } = await supabase
@@ -88,6 +85,22 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Configuration Error:</strong> {error}
+          </AlertDescription>
+        </Alert>
+        <p className="text-sm text-muted-foreground">
+          Please ensure your Supabase environment variables are correctly configured.
+        </p>
       </div>
     )
   }

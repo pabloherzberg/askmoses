@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { useDropzone } from "react-dropzone"
+import { upload } from "@vercel/blob/client"
+
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,13 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -39,29 +34,24 @@ import {
 
 type UploadStep = "input" | "processing" | "results" | "sending" | "complete"
 
-type CallOutcome = "closed" | "follow_up" | "objection_unresolved" | "no_decision"
-
 interface FormData {
   trainerName: string
   trainerEmail: string
-  clientName: string
   audioFile: File | null
   transcript: string
   scriptId?: string
-  callOutcome: CallOutcome
+  callOutcome: "closed" | "not_closed" | "partial"
 }
 
-interface SectionResult {
+interface CriteriaResult {
   name: string
-  score: number
+  passed: boolean
   feedback: string
 }
 
 interface AnalysisResult {
   overallScore: number
-  sections: SectionResult[]
-  criteria: SectionResult[] // backward compat
-  detectedOutcome?: CallOutcome
+  criteria: CriteriaResult[]
   summary: string
   strengths: string[]
   improvements: string[]
@@ -80,25 +70,27 @@ export default function UploadPage() {
   const [step, setStep] = useState<UploadStep>("input")
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
   const [progress, setProgress] = useState(0)
+  const [processingStatus, setProcessingStatus] = useState("")
+  const [scripts, setScripts] = useState<Script[]>([])
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     trainerName: "",
     trainerEmail: "",
-    clientName: "",
     audioFile: null,
     transcript: "",
-    scriptId: "",
-    callOutcome: "no_decision",
+    callOutcome: "closed",
   })
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
-  const [processingStatus, setProcessingStatus] = useState("")
+  const [results, setResults] = useState<CriteriaResult | null>(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sendingEmail, setSendingEmail] = useState(false)
-  const [scripts, setScripts] = useState<Script[]>([])
-  const [loading, setLoading] = useState(true)
+
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   useEffect(() => {
     async function fetchScripts() {
-      const supabase = createClient()
       const { data: rubricData } = await supabase
         .from("rubrics")
         .select("id")
@@ -169,27 +161,24 @@ export default function UploadPage() {
 
       // Step 1: Transcribe audio if needed
       if (uploadType === "audio" && formData.audioFile) {
-        // Step 1a: Upload to Vercel Blob via server
+        // Step 1a: Upload to Vercel Blob (client-side, bypasses 4.5MB limit)
         setProcessingStatus("Uploading audio...")
         setProgress(10)
 
-        // Create FormData to send file to server
-        const uploadFormData = new FormData()
-        uploadFormData.append("file", formData.audioFile)
-        uploadFormData.append("filename", formData.audioFile.name)
+        // Sanitize filename: remove special characters and spaces
+        const sanitizedName = formData.audioFile.name
+          .replace(/[^a-zA-Z0-9.-]/g, "_")
+          .replace(/\.\.+/g, ".")
+        const timestamp = Date.now()
+        const blobName = `${timestamp}_${sanitizedName}`
 
-        const uploadRes = await fetch("/api/blob-token", {
-          method: "POST",
-          body: uploadFormData,
+        // Upload directly from client to Vercel Blob (no 4MB limit)
+        const blob = await upload(blobName, formData.audioFile, {
+          access: "public",
+          handleUploadUrl: "/api/blob-token",
         })
 
-        if (!uploadRes.ok) {
-          const errData = await uploadRes.json().catch(() => ({}))
-          throw new Error(errData.error || "Failed to upload audio")
-        }
-
-        const uploadData = await uploadRes.json()
-        const blobUrl = uploadData.url
+        const blobUrl = blob.url
 
         setProgress(30)
 
@@ -214,6 +203,11 @@ export default function UploadPage() {
             const clonedRes = transcribeRes.clone()
             const errData = await clonedRes.json()
             errorMsg = errData.error || errorMsg
+            
+            // Check for specific error messages
+            if (errorMsg.includes("not configured") || errorMsg.includes("undefined")) {
+              errorMsg = "OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment variables."
+            }
           } catch (e) {
             try {
               const clonedRes = transcribeRes.clone()
@@ -294,17 +288,14 @@ export default function UploadPage() {
         body: JSON.stringify({
           trainerName: formData.trainerName,
           trainerEmail: formData.trainerEmail,
-          clientName: formData.clientName,
           overallScore: analysisResult.overallScore,
-          totalCriteria: analysisResult.sections?.length || analysisResult.criteria.length,
-          sections: analysisResult.sections || analysisResult.criteria,
-          criteria: analysisResult.sections || analysisResult.criteria,
+          totalCriteria: analysisResult.criteria.length,
+          criteria: analysisResult.criteria,
           summary: analysisResult.summary,
           strengths: analysisResult.strengths,
           improvements: analysisResult.improvements,
           transcript: analysisResult.transcript,
           callOutcome: formData.callOutcome,
-          detectedOutcome: analysisResult.detectedOutcome,
         }),
       })
 
@@ -328,11 +319,9 @@ export default function UploadPage() {
     setFormData({
       trainerName: "",
       trainerEmail: "",
-      clientName: "",
       audioFile: null,
       transcript: "",
-      scriptId: "",
-      callOutcome: "no_decision",
+      callOutcome: "not_closed",
     })
   }
 
@@ -392,59 +381,56 @@ export default function UploadPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="text-5xl font-bold tabular-nums">
-                {analysisResult.overallScore}
-                <span className="text-2xl font-normal text-muted-foreground">/100</span>
+              <div className="text-4xl font-bold">
+                {analysisResult.overallScore}/{analysisResult.criteria.length}
               </div>
               <div className="flex-1">
-                <Progress value={analysisResult.overallScore} className="h-3" />
+                <Progress 
+                  value={(analysisResult.overallScore / analysisResult.criteria.length) * 100} 
+                  className="h-3"
+                />
               </div>
-              <Badge
-                variant={analysisResult.overallScore >= 80 ? "default" : analysisResult.overallScore >= 60 ? "secondary" : "destructive"}
+              <Badge 
+                variant={analysisResult.overallScore >= 3 ? "default" : "destructive"}
                 className="text-sm"
               >
-                {analysisResult.overallScore >= 80 ? "Strong" :
-                 analysisResult.overallScore >= 60 ? "Adequate" :
-                 analysisResult.overallScore >= 40 ? "Needs Work" : "Critical"}
+                {analysisResult.overallScore >= 4 ? "Excellent" : 
+                 analysisResult.overallScore >= 3 ? "Good" : 
+                 analysisResult.overallScore >= 2 ? "Needs Work" : "Poor"}
               </Badge>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Average of section scores (1–5 scale) × 20</p>
           </CardContent>
         </Card>
 
-        {/* Section Scores */}
+        {/* Criteria Results */}
         <Card>
           <CardHeader>
-            <CardTitle>Section Breakdown</CardTitle>
-            <CardDescription>Score 1–5 per section: 1 = Not attempted, 3 = Adequate, 5 = Excellent</CardDescription>
+            <CardTitle>Criteria Breakdown</CardTitle>
+            <CardDescription>Pass/Fail results for each evaluation criteria</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(analysisResult.sections || analysisResult.criteria).map((section, index) => {
-              const score = section.score ?? 0
-              const pct = ((score - 1) / 4) * 100
-              const color = score >= 5 ? "text-green-700 bg-green-50 border-green-200" :
-                            score >= 4 ? "text-blue-700 bg-blue-50 border-blue-200" :
-                            score >= 3 ? "text-amber-700 bg-amber-50 border-amber-200" :
-                            "text-red-700 bg-red-50 border-red-200"
-              const barColor = score >= 5 ? "bg-green-500" :
-                               score >= 4 ? "bg-blue-500" :
-                               score >= 3 ? "bg-amber-500" : "bg-red-500"
-              const label = score >= 5 ? "Excellent" : score >= 4 ? "Strong" : score >= 3 ? "Adequate" : score >= 2 ? "Needs Work" : "Not Attempted"
-              return (
-                <div key={index} className={`rounded-lg border p-4 ${color}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold">{section.name}</span>
-                    <Badge variant="outline" className="font-bold text-sm">
-                      {score}/5 — {label}
-                    </Badge>
+            {analysisResult.criteria.map((criterion, index) => (
+              <div key={index} className="rounded-lg border p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      {criterion.passed ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                      <span className="font-medium">{criterion.name}</span>
+                      <Badge variant={criterion.passed ? "default" : "destructive"}>
+                        {criterion.passed ? "Pass" : "Fail"}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {criterion.feedback}
+                    </p>
                   </div>
-                  <div className="h-2 rounded-full bg-black/10 mb-3">
-                    <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <p className="text-sm opacity-80">{section.feedback}</p>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -617,21 +603,6 @@ export default function UploadPage() {
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
-              <Input
-                id="clientName"
-                placeholder="e.g., Jane Doe"
-                value={formData.clientName}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    clientName: e.target.value,
-                  }))
-                }
-              />
-              <p className="text-xs text-muted-foreground">Name of the prospect or customer on the call</p>
-            </div>
             {scripts.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="scriptId">Sales Script *</Label>
@@ -664,18 +635,17 @@ export default function UploadPage() {
 
             <div className="space-y-2">
               <Label>Call Outcome *</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex gap-3">
                 {[
                   { value: "closed", label: "Closed", color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
-                  { value: "follow_up", label: "Follow-up Scheduled", color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
-                  { value: "objection_unresolved", label: "Objection Unresolved", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
-                  { value: "no_decision", label: "No Decision", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                  { value: "not_closed", label: "Not Closed", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                  { value: "partial", label: "Partial", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
                 ].map((option) => (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, callOutcome: option.value as CallOutcome }))}
-                    className={`px-3 py-2.5 rounded-md border-2 text-sm font-medium transition-all text-left ${
+                    onClick={() => setFormData((prev) => ({ ...prev, callOutcome: option.value as FormData["callOutcome"] }))}
+                    className={`flex-1 px-4 py-3 rounded-md border-2 text-sm font-medium transition-all ${
                       formData.callOutcome === option.value
                         ? option.color
                         : "bg-muted/50 border-transparent text-muted-foreground hover:bg-muted"
@@ -685,7 +655,7 @@ export default function UploadPage() {
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">How did this call end?</p>
+              <p className="text-xs text-muted-foreground">Was the sale closed on this call?</p>
             </div>
           </CardContent>
         </Card>

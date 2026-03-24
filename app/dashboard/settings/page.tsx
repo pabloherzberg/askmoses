@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,7 +68,9 @@ export default function SettingsPage() {
     sections: [{ name: "", instructions: "", tips: "" }],
   })
 
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   useEffect(() => {
     fetchData()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -71,7 +71,6 @@ interface InsightsResult {
 }
 
 export default function InsightsPage() {
-  const supabase = createClient()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
   const [loading, setLoading] = useState(true)
@@ -82,6 +81,10 @@ export default function InsightsPage() {
   const [savedScript, setSavedScript] = useState(false)
   const [insights, setInsights] = useState<InsightsResult | null>(null)
   const [error, setError] = useState("")
+
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   useEffect(() => {
     async function loadScripts() {

@@ -6,10 +6,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  serverExternalPackages: [],
+  // Increase body size limit for audio file uploads (up to 50MB)
   experimental: {
-    // Support larger file uploads (up to 50MB)
-    bodyParser: {
-      sizeLimit: '50mb',
+    serverActions: {
+      bodySizeLimit: "50mb",
     },
   },
 }

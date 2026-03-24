@@ -1,11 +1,6 @@
 import { Resend } from "resend"
 
-// Lazy init — avoid crash when RESEND_API_KEY is not set (Fase 1)
-let _resend: Resend | null = null
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 'placeholder')
-  return _resend
-}
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 interface InsightsEmailData {
   scriptName: string
@@ -169,6 +164,13 @@ ${suggestedScript}
 
 export async function POST(req: Request) {
   try {
+    if (!resend) {
+      return Response.json(
+        { error: "Resend API key not configured" },
+        { status: 503 }
+      )
+    }
+
     const body: InsightsEmailData = await req.json()
 
     if (!body.insights || !body.insights.trainers || body.insights.trainers.length === 0) {
@@ -180,7 +182,7 @@ export async function POST(req: Request) {
     // In sandbox mode, can only send to registered email
     const targetEmails = body.insights.trainers.map((t) => t.email)
 
-    const { data, error } = await getResend().emails.send({
+    const { data, error } = await resend.emails.send({
       from: "Ask Moses <noreply@askmoses.ai>",
       to: targetEmails,
       subject: `Weekly Sales Bulletin - ${body.scriptName} | ${body.insights.metrics.closeRate}% Close Rate | Do's, Don'ts & Objections`,

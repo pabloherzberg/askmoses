@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { useDropzone } from "react-dropzone"
-import { upload } from "@vercel/blob/client"
 import { useRouter } from "next/navigation"
+import { upload } from "@vercel/blob/client"
 import { createClient } from "@/lib/supabase/client"
 import {
   Card,
@@ -65,7 +65,9 @@ const LLM_MODELS = [
 
 export default function ScriptBuilderPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   const [step, setStep] = useState<BuilderStep>("input")
   const [inputType, setInputType] = useState<"audio" | "text">("audio")
@@ -153,8 +155,14 @@ export default function ScriptBuilderPage() {
           body: JSON.stringify({ blobUrl, filename: audioFile.file.name }),
         })
 
-        if (!transcribeRes.ok) {
-          throw new Error("Transcription failed")
+        const transcribeContentType = transcribeRes.headers.get("content-type") || ""
+        if (!transcribeRes.ok || !transcribeContentType.includes("application/json")) {
+          const text = await transcribeRes.text()
+          throw new Error(
+            transcribeContentType.includes("application/json")
+              ? text
+              : `Transcription failed (status ${transcribeRes.status}). Check that OPENAI_API_KEY is configured.`
+          )
         }
 
         const { transcript } = await transcribeRes.json()
@@ -206,9 +214,14 @@ export default function ScriptBuilderPage() {
         }),
       })
 
-      if (!generateRes.ok) {
-        const error = await generateRes.json()
-        throw new Error(error.error || "Failed to generate script")
+      const generateContentType = generateRes.headers.get("content-type") || ""
+      if (!generateRes.ok || !generateContentType.includes("application/json")) {
+        const text = await generateRes.text()
+        throw new Error(
+          generateContentType.includes("application/json")
+            ? JSON.parse(text)?.error || "Failed to generate script"
+            : `Generation failed (status ${generateRes.status}). Check that AI Gateway is configured.`
+        )
       }
 
       const script = await generateRes.json()

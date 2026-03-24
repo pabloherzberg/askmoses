@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -43,15 +43,19 @@ interface Achievement {
 
 export default function AnalyticsPage() {
   const [calls, setCalls] = useState<Call[]>([])
-  const [trendData, setTrendData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [criteriaFailures, setCriteriaFailures] = useState<CriteriaFailures[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [loading, setLoading] = useState(true)
+  const [closureData, setClosureData] = useState<any[]>([])
+  const [trendData, setTrendData] = useState<any[]>([])
   const [insights, setInsights] = useState<string[]>([])
   const [outcomeMetrics, setOutcomeMetrics] = useState({ closed: 0, notClosed: 0, partial: 0, closeRate: 0 })
-  const [trainerConversions, setTrainerConversions] = useState<{ name: string; closed: number; total: number; rate: number }[]>([])
+  const [trainerConversions, setTrainerConversions] = useState<any[]>([])
 
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    return createClient()
+  }, [])
 
   useEffect(() => {
     async function fetchAnalytics() {
@@ -135,20 +139,17 @@ export default function AnalyticsPage() {
       const achievementsList: Achievement[] = []
 
       // Best performer
-      const trainerEntries = Array.from(trainerScores.entries())
-      if (trainerEntries.length > 0) {
-        const [topTrainer, topStats] = trainerEntries.reduce((a, b) =>
-          b[1].total / b[1].count > a[1].total / a[1].count ? b : a
-        )
+      const [topTrainer, topStats] = Array.from(trainerScores.entries()).reduce((a, b) =>
+        b[1].total / b[1].count > a[1].total / a[1].count ? b : a
+      ) || ["", { total: 0, count: 0, perfect: 0 }]
 
-        if (topTrainer && topStats.count > 0) {
-          achievementsList.push({
-            trainer: topTrainer,
-            badge: "Master Coach",
-            icon: "👑",
-            reason: `Highest average score: ${(topStats.total / topStats.count).toFixed(1)}/5`,
-          })
-        }
+      if (topTrainer && topStats.count > 0) {
+        achievementsList.push({
+          trainer: topTrainer,
+          badge: "Master Coach",
+          icon: "👑",
+          reason: `Highest average score: ${(topStats.total / topStats.count).toFixed(1)}/5`,
+        })
       }
 
       // Perfect calls
