@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(sort find:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase:*)"
+    ]
+  }
+}

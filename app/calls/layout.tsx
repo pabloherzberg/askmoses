@@ -2,7 +2,7 @@ import type React from 'react'
 import { OwnerSidebar } from '@/components/layout/OwnerSidebar'
 import { AppHeader } from '@/components/layout/AppHeader'
 
-export default function OwnerLayout({ children }: { children: React.ReactNode }) {
+export default function CallsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
       <AppHeader />

@@ -1,3 +1,6 @@
+// GET /api/insights — Phase 1: mock data (used by owner dashboard)
+export { GET } from './_get'
+
 import { generateObject } from "ai"
 import { createServerClient } from "@supabase/ssr"
 import { z } from "zod"

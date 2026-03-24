@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AskMoses.AI — Sales Coaching Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0D0F14;
+    --bg2: #13161D;
+    --bg3: #1A1E28;
+    --bg4: #222736;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #F0F2F8;
+    --muted: #7A849A;
+    --accent: #6E56FF;
+    --accent2: #9B87FF;
+    --green: #22D9A0;
+    --green-bg: rgba(34,217,160,0.1);
+    --red: #FF5E5E;
+    --red-bg: rgba(255,94,94,0.1);
+    --amber: #FFAB2E;
+    --amber-bg: rgba(255,171,46,0.1);
+    --blue: #5EB3FF;
+    --blue-bg: rgba(94,179,255,0.1);
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    font-family: var(--mono);
+  }
+  .logo-text {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .logo-text span { color: var(--accent2); }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .badge-week {
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .dot-live {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 32px;
+  }
+
+  /* SECTION LABEL */
+  .s-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* METRIC CARDS */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .metric {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .metric:hover { border-color: var(--border2); }
+  .metric-lbl { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .metric-val { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; margin-bottom: 6px; }
+  .metric-sub { font-size: 12px; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .neutral { color: var(--muted); }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .side-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+
+  /* TRAINER ROWS */
+  .trainer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .trainer-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    font-family: var(--mono);
+  }
+  .av-blue { background: rgba(94,179,255,0.15); color: var(--blue); }
+  .av-purple { background: rgba(110,86,255,0.2); color: var(--accent2); }
+  .av-green { background: rgba(34,217,160,0.15); color: var(--green); }
+  .av-red { background: rgba(255,94,94,0.15); color: var(--red); }
+  .trainer-info { flex: 1; }
+  .trainer-name { font-size: 13px; font-weight: 500; }
+  .trainer-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .trainer-stats {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .t-stat { text-align: right; }
+  .t-val { font-size: 14px; font-weight: 600; font-family: var(--mono); }
+  .t-lbl { font-size: 10px; color: var(--muted); }
+  .score-pill {
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .sp-green { background: var(--green-bg); color: var(--green); }
+  .sp-amber { background: var(--amber-bg); color: var(--amber); }
+  .sp-red { background: var(--red-bg); color: var(--red); }
+
+  /* RUBRIC BARS */
+  .rubric-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .rubric-row:last-child { margin-bottom: 0; }
+  .rubric-label { font-size: 12px; color: var(--muted); width: 140px; flex-shrink: 0; }
+  .rubric-track {
+    flex: 1;
+    height: 5px;
+    background: var(--bg4);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .rubric-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .rubric-val { font-size: 12px; font-weight: 500; font-family: var(--mono); width: 26px; text-align: right; color: var(--text); }
+
+  /* ALERTS */
+  .alert-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-item:hover { border-color: var(--border2); }
+  .alert-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .alert-text { flex: 1; font-size: 12px; color: var(--text); }
+  .alert-action { font-size: 11px; color: var(--accent2); cursor: pointer; white-space: nowrap; }
+
+  /* CHART SECTION */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* INSIGHTS */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .insight-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .insight-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .insight-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .insight-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+  .insight-meta { flex: 1; }
+  .insight-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .insight-tag {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 5px;
+    display: inline-block;
+    font-family: var(--mono);
+  }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-amber { background: var(--amber-bg); color: var(--amber); }
+  .tag-blue { background: var(--blue-bg); color: var(--blue); }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .insight-summary {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .insight-action {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    padding: 9px 11px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border-left: 2px solid var(--accent);
+  }
+
+  /* TRAINER DETAIL TABLE */
+  .rubric-table { width: 100%; border-collapse: collapse; }
+  .rubric-table th {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    text-align: right;
+    padding: 0 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .rubric-table th:first-child { text-align: left; padding-left: 0; }
+  .rubric-table td {
+    font-size: 12px;
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+  .rubric-table td:first-child { text-align: left; color: var(--muted); font-family: var(--font); font-size: 12px; padding-left: 0; }
+  .rubric-table tr:last-child td { border-bottom: none; }
+  .best { color: var(--green) !important; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 24px 32px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .footer span { color: var(--accent2); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .metric { animation: fadeUp 0.4s ease both; }
+  .metric:nth-child(1) { animation-delay: 0.05s; }
+  .metric:nth-child(2) { animation-delay: 0.1s; }
+  .metric:nth-child(3) { animation-delay: 0.15s; }
+  .metric:nth-child(4) { animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Ask<span>Moses</span>.AI</div>
+  </div>
+  <div class="header-right">
+    <div class="badge-week">Semana 6 / 6</div>
+    <div class="dot-live" title="Ao vivo"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="s-label">Visão geral da equipe</div>
+  <div class="metrics-row">
+    <div class="metric">
+      <div class="metric-lbl">Close rate médio</div>
+      <div class="metric-val" style="color:var(--green)">64%</div>
+      <div class="metric-sub up">↑ +7pts desde semana 1</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">Score médio</div>
+      <div class="metric-val" style="color:var(--accent2)">83</div>
+      <div class="metric-sub up">↑ +11pts desde semana 1</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">Total de calls</div>
+      <div class="metric-val">83</div>
+      <div class="metric-sub neutral">4 trainers ativos</div>
+    </div>
+    <div class="metric">
+      <div class="metric-lbl">Melhor close rate</div>
+      <div class="metric-val">74%</div>
+      <div class="metric-sub up">Marcus R.</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-title">Ranking de trainers</div>
+      <div class="trainer-row">
+        <div class="avatar av-blue">MR</div>
+        <div class="trainer-info">
+          <div class="trainer-name">Marcus R.</div>
+          <div class="trainer-sub">Ativo hoje &middot; 28 calls</div>
+        </div>
+        <div class="trainer-stats">
+          <div class="t-stat"><div class="t-val">74%</div><div class="t-lbl">close</div></div>
+          <div class="t-stat"><div class="t-val up">+9</div><div class="t-lbl">delta</div></div>
+          <span class="score-pill sp-green">91</span>
+        </div>
+      </div>
+      <div class="trainer-row">
+        <div class="avatar av-purple">JL</div>
+        <div class="trainer-info">
+          <div class="trainer-name">Jamie L.</div>
+          <div class="trainer-sub">Ontem &middot; 22 calls</div>
+        </div>
+        <div class="trainer-stats">
+          <div class="t-stat"><div class="t-val">68%</div><div class="t-lbl">close</div></div>
+          <div class="t-stat"><div class="t-val up">+4</div><div class="t-lbl">delta</div></div>
+          <span class="score-pill sp-green">87</span>
+        </div>
+      </div>
+      <div class="trainer-row">
+        <div class="avatar av-green">JK</div>
+        <div class="trainer-info">
+          <div class="trainer-name">Jordan K.</div>
+          <div class="trainer-sub">Ativo hoje &middot; 19 calls</div>
+        </div>
+        <div class="trainer-stats">
+          <div class="t-stat"><div class="t-val">61%</div><div class="t-lbl">close</div></div>
+          <div class="t-stat"><div class="t-val up">+1</div><div class="t-lbl">delta</div></div>
+          <span class="score-pill sp-amber">79</span>
+        </div>
+      </div>
+      <div class="trainer-row">
+        <div class="avatar av-red">TM</div>
+        <div class="trainer-info">
+          <div class="trainer-name">Taylor M.</div>
+          <div class="trainer-sub">3 dias atrás &middot; 14 calls</div>
+        </div>
+        <div class="trainer-stats">
+          <div class="t-stat"><div class="t-val">55%</div><div class="t-lbl">close</div></div>
+          <div class="t-stat"><div class="t-val down">-2</div><div class="t-lbl">delta</div></div>
+          <span class="score-pill sp-red">74</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-grid">
+      <div class="card">
+        <div class="card-title">Alertas ativos</div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--red);box-shadow:0 0 6px var(--red);"></div>
+          <div class="alert-text">Score de Taylor caiu 12pts esta semana</div>
+          <div class="alert-action">Revisar →</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--amber);"></div>
+          <div class="alert-text">Taylor sem calls há 3 dias</div>
+          <div class="alert-action">Contatar →</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></div>
+          <div class="alert-text">Marcus atingiu 74% — melhor da equipe</div>
+          <div class="alert-action">Celebrar →</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--blue);"></div>
+          <div class="alert-text">3 trainers pulam objection handling</div>
+          <div class="alert-action">Treinar →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-title">Rubric por seção — média da equipe</div>
+      <div class="rubric-row">
+        <div class="rubric-label">Discovery</div>
+        <div class="rubric-track"><div class="rubric-fill" style="width:83%;background:var(--blue);"></div></div>
+        <div class="rubric-val">83</div>
+      </div>
+      <div class="rubric-row">
+        <div class="rubric-label">Problem Agitation</div>
+        <div class="rubric-track"><div class="rubric-fill" style="width:72%;background:var(--amber);"></div></div>
+        <div class="rubric-val">72</div>
+      </div>
+      <div class="rubric-row">
+        <div class="rubric-label">Offer Presentation</div>
+        <div class="rubric-track"><div class="rubric-fill" style="width:86%;background:var(--green);"></div></div>
+        <div class="rubric-val">86</div>
+      </div>
+      <div class="rubric-row">
+        <div class="rubric-label">Objection Handling</div>
+        <div class="rubric-track"><div class="rubric-fill" style="width:64%;background:var(--red);"></div></div>
+        <div class="rubric-val">64</div>
+      </div>
+      <div class="rubric-row">
+        <div class="rubric-label">Close & Next Steps</div>
+        <div class="rubric-track"><div class="rubric-fill" style="width:78%;background:var(--accent2);"></div></div>
+        <div class="rubric-val">78</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tendência — 6 semanas</div>
+      <div style="display:flex;gap:16px;margin-bottom:12px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+          <span style="width:20px;height:2px;background:var(--green);display:inline-block;border-radius:2px;"></span>Close rate %
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+          <span style="width:20px;height:2px;background:var(--accent2);display:inline-block;border-radius:2px;"></span>Score
+        </span>
+      </div>
+      <div style="position:relative;width:100%;height:180px;">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="s-label">Score por trainer — rubric detalhado</div>
+  <div class="card" style="margin-bottom:16px;overflow-x:auto;">
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>Seção</th>
+          <th>Equipe</th>
+          <th>Marcus R.</th>
+          <th>Jamie L.</th>
+          <th>Jordan K.</th>
+          <th>Taylor M.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Discovery</td>
+          <td>83</td>
+          <td class="best">94</td>
+          <td>88</td>
+          <td>79</td>
+          <td>67</td>
+        </tr>
+        <tr>
+          <td>Problem Agitation</td>
+          <td>72</td>
+          <td class="best">89</td>
+          <td class="best">88</td>
+          <td>61</td>
+          <td style="color:var(--red)">58</td>
+        </tr>
+        <tr>
+          <td>Offer Presentation</td>
+          <td>86</td>
+          <td class="best">95</td>
+          <td>84</td>
+          <td>80</td>
+          <td>70</td>
+        </tr>
+        <tr>
+          <td>Objection Handling</td>
+          <td style="color:var(--red)">64</td>
+          <td>81</td>
+          <td>81</td>
+          <td>65</td>
+          <td style="color:var(--red)">55</td>
+        </tr>
+        <tr>
+          <td>Close & Next Steps</td>
+          <td>78</td>
+          <td class="best">90</td>
+          <td>82</td>
+          <td>65</td>
+          <td>63</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="s-label">Insights de IA</div>
+  <div class="insights-grid">
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-emoji">🚨</div>
+        <div class="insight-meta">
+          <div class="insight-title">Objection Handling é o maior vazamento de receita</div>
+          <span class="insight-tag tag-red">Padrão de equipe</span>
+        </div>
+      </div>
+      <p class="insight-summary">3 de 4 trainers marcam abaixo de 70 em Objection Handling. Calls que pulam essa etapa fecham a 38% vs. 71% quando é executada corretamente.</p>
+      <div class="insight-action">Role-play de 30min focado em objeções de preço. Usar calls de Marcus como benchmark.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-emoji">⚠️</div>
+        <div class="insight-meta">
+          <div class="insight-title">Taylor está em risco de desengajamento</div>
+          <span class="insight-tag tag-amber">Alerta de trainer</span>
+        </div>
+      </div>
+      <p class="insight-summary">Score caiu 12pts em 2 semanas, volume de calls caiu 40%, e close rate é o mais baixo com 55%. Emergência de coaching, não de performance.</p>
+      <div class="insight-action">Agende um 1:1 com Taylor. Analise as últimas 3 calls e identifique onde a confiança caiu.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-emoji">💡</div>
+        <div class="insight-meta">
+          <div class="insight-title">Discovery de Marcus pode elevar toda a equipe</div>
+          <span class="insight-tag tag-blue">Boas práticas</span>
+        </div>
+      </div>
+      <p class="insight-summary">Marcus marca 94 em Discovery — 11pts acima da média. Ele faz 3 perguntas abertas antes de apresentar a oferta. Nenhum outro trainer replica isso.</p>
+      <div class="insight-action">Extraia 2 clips das calls de Marcus e compartilhe como material de treinamento na próxima reunião.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-header">
+        <div class="insight-emoji">📈</div>
+        <div class="insight-meta">
+          <div class="insight-title">Coaching funcionando — close rate +7pts em 6 semanas</div>
+          <span class="insight-tag tag-green">Sinal de ROI</span>
+        </div>
+      </div>
+      <p class="insight-summary">Desde o início do coaching com IA, o close rate passou de 57% → 64%. Maior ganho em Offer Presentation (+12pts de média na equipe).</p>
+      <div class="insight-action">Mantenha a cadência. Considere uploads diários para loops de feedback mais rápidos.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Gerado por <span>AskMoses.AI</span> &mdash; Sales Coaching Intelligence &middot; Semana 6
+</div>
+
+<script>
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['S1','S2','S3','S4','S5','S6'],
+      datasets: [
+        {
+          label: 'Close rate',
+          data: [57,60,62,65,64,68],
+          borderColor: '#22D9A0',
+          backgroundColor: 'rgba(34,217,160,0.08)',
+          tension: 0.45,
+          pointRadius: 4,
+          pointBackgroundColor: '#22D9A0',
+          fill: true,
+          borderWidth: 2
+        },
+        {
+          label: 'Score',
+          data: [72,75,79,83,82,86],
+          borderColor: '#9B87FF',
+          backgroundColor: 'rgba(155,135,255,0.08)',
+          tension: 0.45,
+          pointRadius: 4,
+          pointBackgroundColor: '#9B87FF',
+          fill: true,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: '#1A1E28',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#7A849A',
+          bodyColor: '#F0F2F8',
+          padding: 10,
+          titleFont: { size: 11 },
+          bodyFont: { size: 13, weight: '600' }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: '#7A849A', font: { size: 11 } }
+        },
+        y: {
+          min: 50, max: 100,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { display: false },
+          ticks: { color: '#7A849A', font: { size: 11 } }
+        }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
