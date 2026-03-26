@@ -245,6 +245,7 @@ export default function UploadPage() {
           transcript,
           trainerName: formData.trainerName,
           scriptId: formData.scriptId,
+          callOutcome: formData.callOutcome,
         }),
       })
 

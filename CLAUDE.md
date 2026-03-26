@@ -23,20 +23,41 @@ O projeto já tem páginas funcionais herdadas do scaffold v0 (upload, history, 
 
 ---
 
-## Regra de ouro — Arquitetura de dados
+## Regra de ouro — Arquitetura de dados (MSW)
 
 ```
-Frontend → /app/api/ → /lib/services/ → /lib/mock-data.ts
+Frontend (fetch/hooks) → MSW intercepta no browser → retorna mock data
 ```
 
-**O frontend NUNCA importa `mock-data.ts` diretamente.** Todo acesso a dados passa pelo service layer. Isso garante que na Fase 2 apenas os services mudam — nada no frontend quebra.
+Usamos **MSW (Mock Service Worker)** para interceptar chamadas HTTP no frontend e retornar dados mockados. O frontend faz `fetch()` para as mesmas rotas que a API real terá na Fase 2 — o MSW intercepta e responde com dados fictícios.
+
+**Vantagem:** quando a API real existir, basta desligar o MSW — o frontend já está chamando as rotas corretas.
 
 ```
-❌ import { calls } from '@/lib/mock-data'   // em um componente React
-✅ const res = await fetch('/api/calls')       // sempre via API Route
+✅ const res = await fetch('/api/calls')       // MSW intercepta e retorna mock
+❌ import { calls } from '@/lib/mock-data'     // NUNCA importar direto no frontend
 ```
 
-Os services são todos `async` mesmo retornando mock. Não remova o `async`.
+### Estrutura do MSW
+
+```
+lib/
+  mock-data.ts             → Fonte ÚNICA de dados mock (trainers, calls, insights, etc.)
+  mocks/
+    handlers.ts            → Todos os request handlers (GET /api/calls, etc.)
+    browser.ts             → setupWorker() — inicializa MSW no browser
+    data/                  → Dados de resposta complexos dos handlers
+      insights-analysis.ts → Resposta mock do POST /api/insights
+      call-analysis.ts     → Resposta mock do POST /api/analyze + generate-script/criteria
+```
+
+### Regras do MSW
+
+1. **Handlers definem as rotas da API futura** — usar os mesmos paths que a API real terá (`/api/calls`, `/api/trainers`, etc.)
+2. **Formato de resposta padrão** — todos os handlers retornam `{ data: T, error: null }` ou `{ data: null, error: { message, code } }`
+3. **MSW só roda em dev** — o worker é inicializado condicionalmente (`if (process.env.NODE_ENV === 'development')`)
+4. **Dados mock de entidades ficam em `lib/mock-data.ts`** — fonte única, tipados com `lib/types.ts`. Dados de resposta complexos dos handlers (análises, scripts gerados) ficam em `lib/mocks/data/`
+5. **O frontend usa `fetch()` normalmente** — não sabe que o MSW existe; quando a API real chegar, nada muda no frontend
 
 ---
 
@@ -50,7 +71,7 @@ Os services são todos `async` mesmo retornando mock. Não remova o `async`.
 | shadcn/ui | Componentes base |
 | Recharts | Gráficos |
 | Supabase Auth | **Apenas auth** — sem banco de dados real nesta fase |
-| `/lib/mock-data.ts` | Fonte única de dados fictícios para as novas views |
+| MSW (Mock Service Worker) | Intercepta fetch no browser e retorna dados mock — simula a API real |
 
 ---
 
@@ -155,20 +176,15 @@ app/
   presentation/              → Demo visual (pública)
   tech/                      → Arquitetura (pública)
   demobiz/                   → Demo negócio (pública)
-  api/calls/                 → GET /api/calls
-  api/calls/[id]/            → GET /api/calls/:id
-  api/trainers/              → GET /api/trainers
-  api/insights/              → GET /api/insights
-  api/clients/               → GET /api/clients (admin only)
-  api/rubric/                → GET /api/rubric
-
 lib/
-  mock-data.ts               → Dados fictícios para as novas views
   types.ts                   → Tipos TypeScript
+  mock-data.ts               → Fonte ÚNICA de dados fictícios (trainers, calls, insights, etc.)
   auth.ts                    → getSession(), getRole(), redirectByRole(), ok(), unauthorized()...
   supabase/server.ts         → Client Supabase server-side
   supabase/client.ts         → Client Supabase browser-side
-  services/                  → Service layer (async, retorna mock na Fase 1)
+  mocks/
+    handlers.ts              → MSW request handlers — importam de mock-data.ts
+    browser.ts               → setupWorker() para inicializar MSW no browser
 
 components/
   dashboard/                 → Sidebar e header do dashboard existente (NÃO mexer)
@@ -203,7 +219,7 @@ Fontes: **DM Sans** (texto) + **DM Mono** (números, badges, código)
 
 ---
 
-## Entidades de dados (mock-data.ts)
+## Entidades de dados (lib/mocks/data/)
 
 | Entidade | Campos principais |
 |---|---|
@@ -219,7 +235,7 @@ Fontes: **DM Sans** (texto) + **DM Mono** (números, badges, código)
 
 ---
 
-## Formato padrão de resposta das API Routes (novas)
+## Formato padrão de resposta (MSW handlers)
 
 ```typescript
 // Sucesso
