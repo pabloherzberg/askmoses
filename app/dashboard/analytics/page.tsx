@@ -267,15 +267,15 @@ export default function AnalyticsPage() {
       {insights.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
           {insights.map((insight, idx) => (
-            <Card key={idx} className="border-slate-700 bg-slate-900 dark:border-slate-600 dark:bg-slate-800">
+            <Card key={idx}>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-sm text-slate-100">Insight</CardTitle>
+                  <Zap className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-sm">Insight</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-200">{insight}</p>
+                <p className="text-sm text-muted-foreground">{insight}</p>
               </CardContent>
             </Card>
           ))}
@@ -434,7 +434,7 @@ export default function AnalyticsPage() {
               {achievements.map((achievement, idx) => (
                 <div
                   key={idx}
-                  className="rounded-lg border-2 border-yellow-300 p-4 dark:border-yellow-800 dark:bg-yellow-950"
+                  className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950"
                 >
                   <div className="flex items-start justify-between">
                     <div>

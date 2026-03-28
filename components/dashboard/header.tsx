@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { Menu } from "lucide-react"
+import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -105,6 +106,7 @@ export function DashboardHeader() {
           <span className="hidden text-sm text-muted-foreground sm:block">
             Unleashed Consulting
           </span>
+          <ThemeToggle />
         </div>
       </div>
     </header>
