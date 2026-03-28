@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
+import { LogoSVG } from "@/components/shared/LogoSVG"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
@@ -35,14 +35,7 @@ export function DashboardSidebar() {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-card px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center justify-center">
-            <Image 
-              src="/images/logo-askmoses.png" 
-              alt="Ask Moses" 
-              width={200} 
-              height={60}
-              priority
-              className="h-14 w-auto"
-            />
+            <LogoSVG width={200} height={60} className="h-14 w-auto" />
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">

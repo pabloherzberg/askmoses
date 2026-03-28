@@ -1,8 +1,8 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import Image from "next/image"
 import { Menu, LogOut } from "lucide-react"
+import { LogoSVG } from "@/components/shared/LogoSVG"
 import { createClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { Button } from "@/components/ui/button"
@@ -70,13 +70,7 @@ export function DashboardHeader() {
         <SheetContent side="left" className="w-64 p-0">
           <div className="flex h-full flex-col">
             <div className="flex h-16 shrink-0 items-center justify-center border-b border-border px-6">
-              <Image 
-                src="/images/logo-askmoses.png" 
-                alt="Ask Moses" 
-                width={180} 
-                height={50}
-                className="h-12 w-auto"
-              />
+              <LogoSVG width={180} height={50} className="h-12 w-auto" />
             </div>
             <nav className="flex-1 px-4 py-4">
               <ul className="space-y-1">
@@ -115,16 +109,28 @@ export function DashboardHeader() {
             Unleashed Consulting
           </span>
           <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={handleLogout}
             title="Sair"
-            className="text-muted-foreground hover:text-foreground"
+            aria-label="Sair"
+            style={{
+              background: 'var(--am-bg3)',
+              border: '1px solid var(--am-border2)',
+              color: 'var(--am-muted)',
+              borderRadius: '8px',
+              width: '34px',
+              height: '34px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'color 0.2s, background 0.2s',
+              flexShrink: 0,
+            }}
+            className="am-theme-toggle"
           >
-            <LogOut className="h-4 w-4" />
-            <span className="sr-only">Sair</span>
-          </Button>
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>

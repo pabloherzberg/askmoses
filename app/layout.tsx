@@ -39,22 +39,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
+          <MSWProvider>
+            {children}
+          </MSWProvider>
           <Analytics />
         </ThemeProvider>
-    <html lang="en">
-      <body className={`font-sans antialiased`} suppressHydrationWarning>
-        <MSWProvider>
-          {children}
-        </MSWProvider>
-        <Analytics />
       </body>
     </html>
   )
