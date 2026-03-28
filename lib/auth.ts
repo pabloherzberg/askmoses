@@ -1,7 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import type { Role } from '@/lib/types'
 
+const VALID_ROLES: Role[] = ['trainer', 'owner', 'admin']
+
+// Sessão demo: retornada quando cookie `demo-role` está presente (Fase 1)
+function makeDemoSession(role: Role) {
+  return {
+    user: {
+      id: `demo-${role}`,
+      email: `${role}@demo.askmoses.ai`,
+      app_metadata: { role },
+    },
+  }
+}
+
 export async function getSession() {
+  // Demo mode — cookie `demo-role` tem prioridade (Fase 1)
+  const cookieStore = await cookies()
+  const demoRole = cookieStore.get('demo-role')?.value as Role | undefined
+  if (demoRole && VALID_ROLES.includes(demoRole)) {
+    return makeDemoSession(demoRole)
+  }
+
+  // Production — Supabase Auth
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   return session

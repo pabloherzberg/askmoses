@@ -1,16 +1,16 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { LogOut } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export function AppHeader() {
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
+    // Remove cookie de sessão demo
+    document.cookie = 'demo-role=; path=/; max-age=0'
     router.push('/login')
   }
 

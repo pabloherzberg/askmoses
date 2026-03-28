@@ -1,263 +1,279 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, TrendingUp, Award, Zap, Target } from "lucide-react"
+// ─── Transition guide ─────────────────────────────────────────────────────────
+// BEFORE (Supabase): const { data } = await supabase.from("calls").select("*")
+// AFTER  (API route): const { data } = await fetch("/api/calls").then(r => r.json())
+//
+// Phase 1 → MSW intercepts /api/calls and returns mock data from lib/mock-data.ts
+// Phase 2 → app/api/calls/route.ts is implemented; zero changes needed here
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { Call } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 import {
-  LineChart,
-  Line,
-  BarChart,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Award, Loader2, Target, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
   Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts"
+} from "recharts";
 
-interface Call {
-  id: string
-  trainer_name: string
-  created_at: string
-  overall_score: number
-  total_criteria: number
-  criteria: any[]
-  call_outcome: string
-}
+// Maps rubricScores keys → display labels
+const RUBRIC_LABELS: Record<string, string> = {
+  discovery: "Discovery",
+  problemAgitation: "Problem Agitation",
+  offerPresentation: "Offer Presentation",
+  objectionHandling: "Objection Handling",
+  closeAndNextSteps: "Close & Next Steps",
+};
 
-interface CriteriaFailures {
-  name: string
-  failures: number
-  percentage: number
+interface SectionAvg {
+  name: string;
+  avgScore: number;
 }
 
 interface Achievement {
-  trainer: string
-  badge: string
-  icon: string
-  reason: string
+  trainer: string;
+  badge: string;
+  icon: string;
+  reason: string;
 }
 
 export default function AnalyticsPage() {
-  const [calls, setCalls] = useState<Call[]>([])
-  const [trendData, setTrendData] = useState<any[]>([])
-  const [criteriaFailures, setCriteriaFailures] = useState<CriteriaFailures[]>([])
-  const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [loading, setLoading] = useState(true)
-  const [insights, setInsights] = useState<string[]>([])
-  const [outcomeMetrics, setOutcomeMetrics] = useState({ closed: 0, notClosed: 0, partial: 0, closeRate: 0 })
-  const [trainerConversions, setTrainerConversions] = useState<{ name: string; closed: number; total: number; rate: number }[]>([])
-
-  const supabase = createClient()
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [trendData, setTrendData] = useState<{ date: string; avgScore: number; calls: number }[]>([]);
+  const [weakSections, setWeakSections] = useState<SectionAvg[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [insights, setInsights] = useState<string[]>([]);
+  const [outcomeMetrics, setOutcomeMetrics] = useState({
+    closed: 0,
+    notClosed: 0,
+    partial: 0,
+    closeRate: 0,
+  });
+  const [trainerConversions, setTrainerConversions] = useState<
+    { name: string; closed: number; total: number; rate: number }[]
+  >([]);
 
   useEffect(() => {
     async function fetchAnalytics() {
-      setLoading(true)
+      setLoading(true);
 
-      // Fetch all calls
-      const { data: callsData } = await supabase
-        .from("calls")
-        .select("*")
-        .order("created_at", { ascending: true })
+      // ─── BEFORE: supabase.from("calls").select("*").order("created_at", ...)
+      // ─── AFTER:  fetch("/api/calls") — intercepted by MSW (Phase 1) or real route (Phase 2)
+      const res = await fetch("/api/calls");
+      const { data: callsData, error } = (await res.json()) as {
+        data: Call[] | null;
+        error: unknown;
+      };
 
-      if (!callsData) {
-        setLoading(false)
-        return
+      if (!callsData || error) {
+        setLoading(false);
+        return;
       }
 
-      setCalls(callsData)
+      // Sort by date ascending for trend calculations
+      // BEFORE: Supabase .order("created_at", { ascending: true })
+      // AFTER:  client-side sort on call.date (YYYY-MM-DD)
+      const sorted = [...callsData].sort((a, b) => a.date.localeCompare(b.date));
+      setCalls(sorted);
 
-      // Build trend data (group by day)
-      const trends = new Map<string, { total: number; count: number }>()
-      callsData.forEach((call) => {
-        const date = new Date(call.created_at).toLocaleDateString("en-US", {
+      // ─── Trend data — group by date, average score per day
+      // BEFORE: group by call.created_at (ISO timestamp), score = overall_score / total_criteria * 100
+      // AFTER:  group by call.date (YYYY-MM-DD), score = call.score (already 0–100)
+      const trends = new Map<string, { total: number; count: number }>();
+      sorted.forEach((call) => {
+        const label = new Date(call.date).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
-        })
-        if (!trends.has(date)) {
-          trends.set(date, { total: 0, count: 0 })
+        });
+        if (!trends.has(label)) trends.set(label, { total: 0, count: 0 });
+        const entry = trends.get(label)!;
+        entry.total += call.score;
+        entry.count += 1;
+      });
+      setTrendData(
+        Array.from(trends.entries()).map(([date, d]) => ({
+          date,
+          avgScore: parseFloat((d.total / d.count).toFixed(1)),
+          calls: d.count,
+        })),
+      );
+
+      // ─── Weak sections — average rubricScores per section, sorted ascending
+      // BEFORE: criteria[] array with { name, passed } — failure = not passed
+      // AFTER:  rubricScores object with numeric values per section — lower = weaker
+      const sectionTotals: Record<string, { total: number; count: number }> = {};
+      sorted.forEach((call) => {
+        for (const [key, value] of Object.entries(call.rubricScores)) {
+          if (!sectionTotals[key]) sectionTotals[key] = { total: 0, count: 0 };
+          sectionTotals[key].total += value;
+          sectionTotals[key].count += 1;
         }
-        const entry = trends.get(date)!
-        entry.total += call.overall_score
-        entry.count += 1
-      })
+      });
+      setWeakSections(
+        Object.entries(sectionTotals)
+          .map(([key, d]) => ({
+            name: RUBRIC_LABELS[key] ?? key,
+            avgScore: Math.round(d.total / d.count),
+          }))
+          .sort((a, b) => a.avgScore - b.avgScore),
+      );
 
-      const trendArray = Array.from(trends.entries()).map(([date, data]) => ({
-        date,
-        avgScore: parseFloat((data.total / data.count / data.count * 100).toFixed(1)),
-        calls: data.count,
-      }))
-      setTrendData(trendArray)
+      // ─── Achievements
+      // BEFORE: call.trainer_name, call.overall_score === call.total_criteria (perfect)
+      // AFTER:  call.trainerName, call.score >= 95 (perfect)
+      const trainerStats = new Map<
+        string,
+        { total: number; count: number; perfect: number }
+      >();
+      sorted.forEach((call) => {
+        if (!trainerStats.has(call.trainerName))
+          trainerStats.set(call.trainerName, { total: 0, count: 0, perfect: 0 });
+        const s = trainerStats.get(call.trainerName)!;
+        s.total += call.score;
+        s.count += 1;
+        if (call.score >= 95) s.perfect += 1;
+      });
 
-      // Calculate criteria failures
-      const failureMap = new Map<string, number>()
-      const totalCriteria = new Map<string, number>()
+      const achievementsList: Achievement[] = [];
+      const trainerEntries = Array.from(trainerStats.entries());
 
-      callsData.forEach((call) => {
-        call.criteria.forEach((c: any) => {
-          const key = c.name
-          totalCriteria.set(key, (totalCriteria.get(key) || 0) + 1)
-          if (!c.passed) {
-            failureMap.set(key, (failureMap.get(key) || 0) + 1)
-          }
-        })
-      })
-
-      const failures = Array.from(failureMap.entries())
-        .map(([name, failures]) => ({
-          name,
-          failures,
-          percentage: Math.round((failures / (totalCriteria.get(name) || 1)) * 100),
-        }))
-        .sort((a, b) => b.failures - a.failures)
-        .slice(0, 5)
-
-      setCriteriaFailures(failures)
-
-      // Calculate achievements
-      const trainerScores = new Map<string, { total: number; count: number; perfect: number }>()
-      callsData.forEach((call) => {
-        const key = call.trainer_name
-        if (!trainerScores.has(key)) {
-          trainerScores.set(key, { total: 0, count: 0, perfect: 0 })
-        }
-        const entry = trainerScores.get(key)!
-        entry.total += call.overall_score
-        entry.count += 1
-        if (call.overall_score === call.total_criteria) {
-          entry.perfect += 1
-        }
-      })
-
-      const achievementsList: Achievement[] = []
-
-      // Best performer
-      const trainerEntries = Array.from(trainerScores.entries())
       if (trainerEntries.length > 0) {
-        const [topTrainer, topStats] = trainerEntries.reduce((a, b) =>
-          b[1].total / b[1].count > a[1].total / a[1].count ? b : a
-        )
-
-        if (topTrainer && topStats.count > 0) {
+        const [topName, topStats] = trainerEntries.reduce((a, b) =>
+          b[1].total / b[1].count > a[1].total / a[1].count ? b : a,
+        );
+        if (topStats.count > 0) {
           achievementsList.push({
-            trainer: topTrainer,
+            trainer: topName,
             badge: "Master Coach",
             icon: "👑",
-            reason: `Highest average score: ${(topStats.total / topStats.count).toFixed(1)}/5`,
-          })
+            reason: `Highest average score: ${(topStats.total / topStats.count).toFixed(1)}`,
+          });
         }
       }
 
-      // Perfect calls
-      const perfectTrainer = Array.from(trainerScores.entries()).find(
-        ([_, stats]) => stats.perfect > 0
-      )
-      if (perfectTrainer) {
+      const perfectEntry = trainerEntries.find(([, s]) => s.perfect > 0);
+      if (perfectEntry) {
         achievementsList.push({
-          trainer: perfectTrainer[0],
+          trainer: perfectEntry[0],
           badge: "Perfect Calls",
           icon: "⭐",
-          reason: `${perfectTrainer[1].perfect} perfect call(s)`,
-        })
+          reason: `${perfectEntry[1].perfect} call(s) with score ≥ 95`,
+        });
       }
 
-      // Rising star (recent improvement)
-      if (callsData.length >= 4) {
-        const recent = callsData.slice(-3)
-        const older = callsData.slice(0, 3)
-        const recentAvg = recent.reduce((sum, c) => sum + c.overall_score, 0) / recent.length
-        const olderAvg = older.reduce((sum, c) => sum + c.overall_score, 0) / older.length
-        const risingStar = recent.reduce((prev, call) =>
-          (recentAvg > olderAvg) ? call.trainer_name : prev
-        , "")
-        if (risingStar && recentAvg > olderAvg) {
+      if (sorted.length >= 4) {
+        const recent = sorted.slice(-3);
+        const older = sorted.slice(0, 3);
+        const recentAvg =
+          recent.reduce((sum, c) => sum + c.score, 0) / recent.length;
+        const olderAvg =
+          older.reduce((sum, c) => sum + c.score, 0) / older.length;
+        if (recentAvg > olderAvg) {
           achievementsList.push({
-            trainer: risingStar,
+            trainer: recent[recent.length - 1].trainerName,
             badge: "Rising Star",
             icon: "🚀",
             reason: "Recent improvement trend",
-          })
+          });
         }
       }
 
-      setAchievements(achievementsList)
+      setAchievements(achievementsList);
 
-      // Build insights
-      const insightsList: string[] = []
-      if (callsData.length > 0) {
-        const avgScore = callsData.reduce((sum, c) => sum + c.overall_score, 0) / callsData.length
+      // ─── Insights
+      const insightsList: string[] = [];
+      if (sorted.length > 0) {
+        const avg = sorted.reduce((sum, c) => sum + c.score, 0) / sorted.length;
         insightsList.push(
-          `Overall performance: ${(avgScore / callsData[0].total_criteria * 100).toFixed(0)}% pass rate across ${callsData.length} calls`
-        )
+          `Overall performance: ${avg.toFixed(0)} avg score across ${sorted.length} calls`,
+        );
       }
-
-      if (failures.length > 0) {
+      const sections = Object.entries(sectionTotals)
+        .map(([key, d]) => ({ name: RUBRIC_LABELS[key] ?? key, avgScore: Math.round(d.total / d.count) }))
+        .sort((a, b) => a.avgScore - b.avgScore);
+      if (sections.length > 0) {
         insightsList.push(
-          `Top improvement area: "${failures[0].name}" with ${failures[0].percentage}% failure rate`
-        )
+          `Top improvement area: "${sections[0].name}" with avg score ${sections[0].avgScore}`,
+        );
       }
-
-      if (trainerScores.size > 0) {
-        const avgTrainers = Array.from(trainerScores.values()).reduce(
-          (sum, s) => sum + s.total / s.count,
-          0
-        ) / trainerScores.size
-        insightsList.push(
-          `Team average: ${(avgTrainers / callsData[0]?.total_criteria * 100).toFixed(0)}% - Focus on consistency`
-        )
+      if (trainerEntries.length > 0) {
+        const teamAvg =
+          trainerEntries.reduce((sum, [, s]) => sum + s.total / s.count, 0) /
+          trainerEntries.length;
+        insightsList.push(`Team average: ${teamAvg.toFixed(0)} — Focus on consistency`);
       }
+      setInsights(insightsList);
 
-      setInsights(insightsList)
+      // ─── Outcome metrics
+      // BEFORE: call.call_outcome === "closed" | "not_closed" | "partial"
+      // AFTER:  call.result === "closed" | "no-close" | "follow-up"  (CallResult type)
+      const closed = sorted.filter((c) => c.result === "closed").length;
+      const notClosed = sorted.filter((c) => c.result === "no-close").length;
+      const partial = sorted.filter((c) => c.result === "follow-up").length;
+      const closeRate =
+        sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
+      setOutcomeMetrics({ closed, notClosed, partial, closeRate });
 
-      // Calculate outcome metrics
-      const closed = callsData.filter((c) => c.call_outcome === "closed").length
-      const notClosed = callsData.filter((c) => c.call_outcome === "not_closed").length
-      const partial = callsData.filter((c) => c.call_outcome === "partial").length
-      const closeRate = callsData.length > 0 ? Math.round((closed / callsData.length) * 100) : 0
-      setOutcomeMetrics({ closed, notClosed, partial, closeRate })
+      // ─── Per-trainer conversion rates
+      // BEFORE: call.trainer_name, call.call_outcome === "closed"
+      // AFTER:  call.trainerName, call.result === "closed"
+      const trainerMap = new Map<string, { closed: number; total: number }>();
+      sorted.forEach((call) => {
+        if (!trainerMap.has(call.trainerName))
+          trainerMap.set(call.trainerName, { closed: 0, total: 0 });
+        const t = trainerMap.get(call.trainerName)!;
+        t.total += 1;
+        if (call.result === "closed") t.closed += 1;
+      });
+      setTrainerConversions(
+        Array.from(trainerMap.entries())
+          .map(([name, d]) => ({
+            name,
+            closed: d.closed,
+            total: d.total,
+            rate: d.total > 0 ? Math.round((d.closed / d.total) * 100) : 0,
+          }))
+          .sort((a, b) => b.rate - a.rate),
+      );
 
-      // Calculate per-trainer conversion rates
-      const trainerMap = new Map<string, { closed: number; total: number }>()
-      callsData.forEach((call) => {
-        if (!trainerMap.has(call.trainer_name)) {
-          trainerMap.set(call.trainer_name, { closed: 0, total: 0 })
-        }
-        const entry = trainerMap.get(call.trainer_name)!
-        entry.total += 1
-        if (call.call_outcome === "closed") entry.closed += 1
-      })
-      const conversions = Array.from(trainerMap.entries())
-        .map(([name, data]) => ({
-          name,
-          closed: data.closed,
-          total: data.total,
-          rate: data.total > 0 ? Math.round((data.closed / data.total) * 100) : 0,
-        }))
-        .sort((a, b) => b.rate - a.rate)
-      setTrainerConversions(conversions)
-
-      setLoading(false)
+      setLoading(false);
     }
 
-    fetchAnalytics()
-  }, [])
+    fetchAnalytics();
+  }, []);
 
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6 pb-16 lg:pb-0">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Analytics & Insights</h2>
+        <h2 className="text-2xl font-bold tracking-tight">
+          Analytics & Insights
+        </h2>
         <p className="text-muted-foreground">
           Aggregate performance trends and improvement recommendations
         </p>
@@ -267,11 +283,16 @@ export default function AnalyticsPage() {
       {insights.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
           {insights.map((insight, idx) => (
-            <Card key={idx}>
+            <Card
+              key={idx}
+              className="border-slate-700 bg-slate-900 dark:border-slate-600 dark:bg-slate-800"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-sm">Insight</CardTitle>
+                  <Zap className="h-4 w-4 text-blue-400" />
+                  <CardTitle className="text-sm text-slate-100">
+                    Insight
+                  </CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -286,25 +307,39 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-green-600 dark:text-green-400">{outcomeMetrics.closed}</p>
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+              {outcomeMetrics.closed}
+            </p>
             <p className="text-sm text-muted-foreground">Closed Deals</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-red-600 dark:text-red-400">{outcomeMetrics.notClosed}</p>
+            <p className="text-3xl font-bold text-red-600 dark:text-red-400">
+              {outcomeMetrics.notClosed}
+            </p>
             <p className="text-sm text-muted-foreground">Not Closed</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{outcomeMetrics.partial}</p>
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              {outcomeMetrics.partial}
+            </p>
             <p className="text-sm text-muted-foreground">Partial</p>
           </CardContent>
         </Card>
-        <Card className={outcomeMetrics.closeRate >= 50 ? "border-green-200 dark:border-green-800" : "border-red-200 dark:border-red-800"}>
+        <Card
+          className={
+            outcomeMetrics.closeRate >= 50
+              ? "border-green-200 dark:border-green-800"
+              : "border-red-200 dark:border-red-800"
+          }
+        >
           <CardContent className="pt-6">
-            <p className={`text-3xl font-bold ${outcomeMetrics.closeRate >= 50 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <p
+              className={`text-3xl font-bold ${outcomeMetrics.closeRate >= 50 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+            >
               {outcomeMetrics.closeRate}%
             </p>
             <p className="text-sm text-muted-foreground">Close Rate</p>
@@ -330,7 +365,9 @@ export default function AnalyticsPage() {
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{trainer.name}</p>
+                    <p className="text-sm font-medium truncate">
+                      {trainer.name}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                         <div
@@ -387,28 +424,30 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Criteria Failures Chart */}
+        {/* Weak Sections Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4" />
               Top Improvement Areas
             </CardTitle>
-            <CardDescription>Criteria with highest failure rates</CardDescription>
+            <CardDescription>
+              Rubric sections with lowest average score
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {criteriaFailures.length > 0 ? (
+            {weakSections.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
-                  data={criteriaFailures}
+                  data={weakSections}
                   layout="vertical"
                   margin={{ left: 120 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
+                  <XAxis type="number" domain={[0, 100]} />
                   <YAxis dataKey="name" type="category" width={110} />
                   <Tooltip />
-                  <Bar dataKey="percentage" fill="#ef4444" name="Failure %" />
+                  <Bar dataKey="avgScore" fill="#ef4444" name="Avg Score" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -443,7 +482,9 @@ export default function AnalyticsPage() {
                         <Badge variant="secondary">{achievement.badge}</Badge>
                       </div>
                       <p className="mt-2 font-medium">{achievement.trainer}</p>
-                      <p className="text-sm text-muted-foreground">{achievement.reason}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {achievement.reason}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -466,5 +507,5 @@ export default function AnalyticsPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }
