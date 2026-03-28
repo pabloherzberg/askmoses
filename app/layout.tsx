@@ -4,6 +4,7 @@ import { DM_Sans, DM_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MSWProvider } from "@/components/msw-provider";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -58,6 +59,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <MSWProvider>{children}</MSWProvider>
+          <Toaster />
           <Analytics />
         </ThemeProvider>
       </body>

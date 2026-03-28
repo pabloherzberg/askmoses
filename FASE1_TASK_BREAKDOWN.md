@@ -437,10 +437,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 3. **Health badge**: healthy=verde "Saudável", at-risk=âmbar "Em Risco", churning=vermelho "Crítico"
 
 ### Critérios de aceite
-- [ ] 4 metric cards com dados globais
-- [ ] Tabela com 3 clientes
-- [ ] Health badge com cores corretas
-- [ ] Acessível apenas para role `admin`
+- [x] 4 metric cards com dados globais
+- [x] Tabela com 3 clientes
+- [x] Health badge com cores corretas
+- [x] Acessível apenas para role `admin`
+
+> **STATUS: ✅ CONCLUÍDA** — 4 ScoreCards globais, tabela de clientes com plan badge, avg score colorido, MRR e health badge (Healthy/At Risk/Critical).
 
 ---
 
@@ -454,10 +456,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 3. **Botão "Salvar"** → toast "Funcionalidade disponível em breve"
 
 ### Critérios de aceite
-- [ ] 5 seções listadas
-- [ ] Toggle visual (não persiste)
-- [ ] Botão salvar exibe toast
-- [ ] Acessível apenas para `admin`
+- [x] 5 seções listadas
+- [x] Toggle visual (não persiste)
+- [x] Botão salvar exibe toast
+- [x] Acessível apenas para `admin`
+
+> **STATUS: ✅ CONCLUÍDA** — 5 seções em cards com nome, peso, descrição e toggle Critical/Optional (visual only com state local). Preview do system prompt em textarea readonly. Botão Save dispara toast "Feature coming soon".
 
 ---
 
@@ -570,8 +574,8 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-015 | `CallDetail` + rotas | ✅ |
 | TASK-016 | `/me` | ✅ |
 | TASK-017 | `/me/calls/[id]` | ✅ |
-| TASK-018 | `/admin` | ⬜ Não iniciada |
-| TASK-019 | `/admin/rubric` | ⬜ Não iniciada |
+| TASK-018 | `/admin` | ✅ |
+| TASK-019 | `/admin/rubric` | ✅ |
 | TASK-020 | Loading states | ⬜ Não iniciada |
 | TASK-021 | Responsividade | 🟡 Parcial — falta /me e /admin |
 | TASK-022 | Deploy Vercel | ⬜ Não iniciada |
