@@ -162,11 +162,11 @@ Middleware intercepta requisições, lê JWT, redireciona por role. Rotas públi
 - [x] Sem sessão em rota protegida → `/login`
 - [x] Rotas públicas acessíveis sem login
 - [x] Trainer acessando `/overview`, `/dashboard`, `/calls`, `/admin` → `/me`
-- [ ] Owner acessando `/admin` → `/overview`
-- [ ] Owner login → `/overview` (em vez de `/dashboard`)
+- [x] Owner acessando `/admin` → `/overview`
+- [x] Owner login → `/overview` (em vez de `/dashboard`)
 - [x] Assets estáticos e `/api/` não interceptados
 
-> **STATUS: 🟡 PARCIAL** — Middleware funciona mas redireciona owner para `/dashboard` em vez de `/overview`. Atualizar quando `/overview` existir.
+> **STATUS: ✅ CONCLUÍDA** — Middleware refatorado para usar cookie `demo-role` (MSW). Todos os redirects por role corretos.
 
 ---
 
@@ -179,7 +179,7 @@ Middleware intercepta requisições, lê JWT, redireciona por role. Rotas públi
 - [x] `redirectByRole()` retorna rota correta por role
 - [x] Helpers `unauthorized()`, `forbidden()`, `notFound()`, `ok()`
 
-> **STATUS: ✅ CONCLUÍDA** — Atualizar `redirectByRole` quando `/overview` existir (owner → `/overview`)
+> **STATUS: ✅ CONCLUÍDA** — `redirectByRole` atualizado: owner → `/overview`, admin → `/admin`, trainer → `/me`. Também inclui sessão demo via cookie.
 
 ---
 
@@ -188,13 +188,13 @@ Middleware intercepta requisições, lê JWT, redireciona por role. Rotas públi
 **Tipo**: Frontend / Auth · **Depende de**: TASK-003, TASK-004
 
 ### Critérios de aceite
-- [ ] Login funciona com os 3 emails de demo
-- [ ] Erro exibido para credenciais inválidas
+- [x] Login funciona com os 3 emails de demo
+- [x] Erro exibido para credenciais inválidas
 - [x] 3 demo shortcuts preenchem o form automaticamente
-- [ ] Após login, redireciona para rota correta do role
+- [x] Após login, redireciona para rota correta do role
 - [x] Visual dark com identidade AskMoses
 
-> **STATUS: 🟡 PARCIAL** — Tela criada com shortcuts. Falta testar login funcional no browser.
+> **STATUS: ✅ CONCLUÍDA** — Login refatorado para usar `fetch('/api/auth/login')` via MSW. Cookie `demo-role` persiste sessão. Owner redireciona para `/overview`.
 
 ---
 
@@ -548,9 +548,9 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-005 | Mock data + types | ✅ |
 | TASK-006 | Service layer | ✅ |
 | TASK-007 | API Routes | ✅ |
-| TASK-008 | Middleware | 🟡 Atualizar redirects para /overview |
+| TASK-008 | Middleware | ✅ |
 | TASK-009 | Auth helpers | ✅ |
-| TASK-010 | Login page | 🟡 Falta testar no browser |
+| TASK-010 | Login page | ✅ |
 | TASK-011 | Componentes shared | ✅ |
 | TASK-012 | Layouts/sidebars | 🟡 Falta mobile + layout overview |
 | TASK-013 | `/overview` | ⬜ Não iniciada |

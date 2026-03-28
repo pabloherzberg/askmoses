@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { usePathname } from "next/navigation"
 import Image from "next/image"
@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/sheet";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Upload,
@@ -21,7 +22,7 @@ import {
   HelpCircle,
   Brain,
   Wand2,
-} from "lucide-react"
+} from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -32,7 +33,7 @@ const navigation = [
   { name: "Script Builder", href: "/dashboard/script-builder", icon: Wand2 },
   { name: "Rubric", href: "/dashboard/settings", icon: Settings },
   { name: "How to Use", href: "/dashboard/guide", icon: HelpCircle },
-]
+];
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -43,16 +44,17 @@ const pageTitles: Record<string, string> = {
   "/dashboard/script-builder": "Script Builder",
   "/dashboard/settings": "Rubric Settings",
   "/dashboard/guide": "How to Use",
-}
+};
 
 export function DashboardHeader() {
-  const pathname = usePathname()
-  const title = pageTitles[pathname] || "Dashboard"
+  const pathname = usePathname();
+  const title = pageTitles[pathname] || "Dashboard";
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-card px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       {/* Mobile menu */}
       <Sheet>
+        <SheetTitle className="sr-only">Menu</SheetTitle>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="lg:hidden">
             <Menu className="h-5 w-5" />
@@ -62,10 +64,10 @@ export function DashboardHeader() {
         <SheetContent side="left" className="w-64 p-0">
           <div className="flex h-full flex-col">
             <div className="flex h-16 shrink-0 items-center justify-center border-b border-border px-6">
-              <Image 
-                src="/images/logo-askmoses.png" 
-                alt="Ask Moses" 
-                width={180} 
+              <Image
+                src="/images/logo-askmoses.png"
+                alt="Ask Moses"
+                width={180}
                 height={50}
                 className="h-12 w-auto"
               />
@@ -76,7 +78,7 @@ export function DashboardHeader() {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== "/dashboard" &&
-                      pathname.startsWith(item.href))
+                      pathname.startsWith(item.href));
                   return (
                     <li key={item.name}>
                       <Link
@@ -85,14 +87,14 @@ export function DashboardHeader() {
                           "flex gap-x-3 rounded-md p-2 text-sm font-medium transition-colors",
                           isActive
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                         )}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
                         {item.name}
                       </Link>
                     </li>
-                  )
+                  );
                 })}
               </ul>
             </nav>
@@ -110,5 +112,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }

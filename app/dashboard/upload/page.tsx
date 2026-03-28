@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -98,21 +97,9 @@ export default function UploadPage() {
 
   useEffect(() => {
     async function fetchScripts() {
-      const supabase = createClient()
-      const { data: rubricData } = await supabase
-        .from("rubrics")
-        .select("id")
-        .eq("is_active", true)
-        .single()
-
-      if (rubricData) {
-        const { data: scriptsData } = await supabase
-          .from("scripts")
-          .select("id, name, description")
-          .eq("rubric_id", rubricData.id)
-
-        setScripts(scriptsData || [])
-      }
+      const res = await fetch("/api/scripts?active=true")
+      const { data } = (await res.json()) as { data: { id: string; name: string; description: string }[] | null; error: unknown }
+      if (data) setScripts(data)
       setLoading(false)
     }
 

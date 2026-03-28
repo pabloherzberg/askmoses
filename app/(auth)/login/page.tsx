@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/types'
 
 const DEMO_USERS = [
@@ -12,12 +11,11 @@ const DEMO_USERS = [
 ]
 
 function redirectByRole(role: Role): string {
-  return role === 'trainer' ? '/me' : role === 'owner' ? '/dashboard' : '/admin'
+  return role === 'trainer' ? '/me' : role === 'owner' ? '/overview' : '/admin'
 }
 
 export default function LoginPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,18 +27,26 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     })
 
-    if (authError || !data.session) {
-      setError('Email ou senha incorretos')
+    const { data, error: authError } = await res.json() as {
+      data: { user: { role: Role } } | null
+      error: { message: string } | null
+    }
+
+    if (authError || !data) {
+      setError(authError?.message ?? 'Email ou senha incorretos')
       setLoading(false)
       return
     }
 
-    const role = data.session.user.app_metadata?.role as Role
+    const role = data.user.role
+    // Persiste sessão demo via cookie para o middleware ler
+    document.cookie = `demo-role=${role}; path=/; max-age=86400; SameSite=Lax`
     router.push(redirectByRole(role))
   }
 

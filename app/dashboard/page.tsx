@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import type { Call } from "@/lib/types"
 import {
   Upload,
   Phone,
@@ -14,16 +14,6 @@ import {
   Clock,
   Loader2,
 } from "lucide-react"
-
-interface Call {
-  id: string
-  trainer_name: string
-  trainer_email: string
-  created_at: string
-  overall_score: number
-  total_criteria: number
-  criteria: any[]
-}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -35,49 +25,40 @@ export default function DashboardPage() {
   const [recentCalls, setRecentCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
-
   useEffect(() => {
     async function fetchStats() {
       setLoading(true)
 
-      // Fetch all calls
-      const { data: callsData, error: callsError } = await supabase
-        .from("calls")
-        .select("*")
-        .order("created_at", { ascending: false })
+      const res = await fetch("/api/calls")
+      const { data: callsData, error } = (await res.json()) as {
+        data: Call[] | null
+        error: unknown
+      }
 
-      if (callsError) {
-        console.error("[v0] Error fetching calls:", callsError)
+      if (error || !callsData) {
         setLoading(false)
         return
       }
 
-      const calls = callsData || []
+      const sorted = [...callsData].sort((a, b) => b.date.localeCompare(a.date))
 
-      // Calculate stats
-      const totalCalls = calls.length
-      const passedCriteria = calls.reduce((sum, call) => sum + call.overall_score, 0)
-      const totalCriteria = calls.reduce((sum, call) => sum + call.total_criteria, 0)
-      const passRate = totalCriteria > 0 ? Math.round((passedCriteria / totalCriteria) * 100) : 0
-      const avgScore = totalCalls > 0 ? (passedCriteria / totalCalls).toFixed(1) : "-"
+      const totalCalls = sorted.length
+      const avgScore = totalCalls > 0
+        ? (sorted.reduce((sum, c) => sum + c.score, 0) / totalCalls).toFixed(1)
+        : "-"
+      const passed = sorted.filter((c) => c.score >= 75).length
+      const passRate = totalCalls > 0 ? `${Math.round((passed / totalCalls) * 100)}%` : "-"
 
-      // Count this week
-      const now = new Date()
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      const thisWeekCalls = calls.filter(
-        (call) => new Date(call.created_at) > weekAgo
-      ).length
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const thisWeekCalls = sorted.filter((c) => c.date >= weekAgo).length
 
       setStats({
         totalCalls,
-        passRate: `${passRate}%`,
-        avgScore: avgScore === "-" ? "-/5" : `${avgScore}/5`,
+        passRate,
+        avgScore: avgScore === "-" ? "-" : `${avgScore}/100`,
         thisWeekCalls,
       })
-
-      // Recent calls (first 5)
-      setRecentCalls(calls.slice(0, 5))
+      setRecentCalls(sorted.slice(0, 5))
       setLoading(false)
     }
 
@@ -134,7 +115,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.passRate}</div>
-            <p className="text-xs text-muted-foreground">Criteria passed</p>
+            <p className="text-xs text-muted-foreground">Score ≥ 75</p>
           </CardContent>
         </Card>
 
@@ -188,11 +169,7 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-4">
               {recentCalls.map((call) => {
-                const passRate = call.total_criteria > 0 
-                  ? Math.round((call.overall_score / call.total_criteria) * 100)
-                  : 0
-                const isPassed = passRate >= 60
-
+                const isPassed = call.score >= 75
                 return (
                   <div
                     key={call.id}
@@ -205,15 +182,16 @@ export default function DashboardPage() {
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
                       <div>
-                        <p className="font-medium">{call.trainer_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(call.created_at).toLocaleDateString()}
+                        <p className="font-medium">{call.trainerName}</p>
+                        <p className="text-sm text-muted-foreground">{call.prospect}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(call.date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{call.overall_score}/{call.total_criteria}</p>
-                      <p className="text-sm text-muted-foreground">{passRate}%</p>
+                      <p className="font-medium">{call.score}/100</p>
+                      <p className="text-sm text-muted-foreground capitalize">{call.result}</p>
                     </div>
                   </div>
                 )
