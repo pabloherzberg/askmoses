@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -71,7 +70,6 @@ interface InsightsResult {
 }
 
 export default function InsightsPage() {
-  const supabase = createClient()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
   const [loading, setLoading] = useState(true)
@@ -85,12 +83,8 @@ export default function InsightsPage() {
 
   useEffect(() => {
     async function loadScripts() {
-      const { data } = await supabase
-        .from("scripts")
-        .select("id, name, description, rubric_id")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-
+      const res = await fetch("/api/scripts?active=true")
+      const { data } = (await res.json()) as { data: Script[] | null; error: unknown }
       if (data) setScripts(data)
       setLoading(false)
     }

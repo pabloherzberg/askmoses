@@ -4,7 +4,6 @@ import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
 import { upload } from "@vercel/blob/client"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import {
   Card,
   CardContent,
@@ -65,7 +64,6 @@ const LLM_MODELS = [
 
 export default function ScriptBuilderPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [step, setStep] = useState<BuilderStep>("input")
   const [inputType, setInputType] = useState<"audio" | "text">("audio")
@@ -230,44 +228,27 @@ export default function ScriptBuilderPage() {
 
     setSaving(true)
     try {
-      // First, get or create the rubric
-      const { data: existingRubric } = await supabase
-        .from("rubrics")
-        .select("id")
-        .limit(1)
-        .single()
+      // Busca rubric ativa via MSW
+      const rubricRes = await fetch("/api/rubric-config")
+      const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
+      const rubricId = rubricData?.id ?? 'rubric-001'
 
-      let rubricId = existingRubric?.id
-
-      if (!rubricId) {
-        const { data: newRubric, error: rubricError } = await supabase
-          .from("rubrics")
-          .insert({
-            name: "Sales Coaching Rubric",
-            description: "Auto-generated rubric",
-            is_active: true,
-          })
-          .select()
-          .single()
-
-        if (rubricError) throw rubricError
-        rubricId = newRubric.id
-      }
-
-      // Create the script
-      const { error: scriptError } = await supabase.from("scripts").insert({
-        rubric_id: rubricId,
-        name: editedName,
-        description: editedDescription,
-        sections: generatedScript.sections,
-        full_script: generatedScript.full_script,
-        criteria: generatedScript.criteria,
-        is_active: true,
+      // Cria o script via MSW
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rubric_id: rubricId,
+          name: editedName,
+          description: editedDescription,
+          sections: generatedScript.sections,
+          full_script: generatedScript.full_script,
+          criteria: generatedScript.criteria,
+          is_active: true,
+        }),
       })
+      if (!res.ok) throw new Error("Failed to save script")
 
-      if (scriptError) throw scriptError
-
-      // Redirect to settings page
       router.push("/dashboard/settings")
     } catch (error) {
       console.error("[v0] Save error:", error)
@@ -551,11 +532,8 @@ export default function ScriptBuilderPage() {
                 <Button
                   onClick={async () => {
                     // Load rubric system prompt and llm model
-                    const { data: rubricData } = await supabase
-                      .from("rubrics")
-                      .select("system_prompt, llm_model")
-                      .eq("is_active", true)
-                      .single()
+                    const rubricRes = await fetch("/api/rubric-config")
+                    const { data: rubricData } = (await rubricRes.json()) as { data: { system_prompt?: string; llm_model?: string } | null; error: unknown }
                     setConfirmSystemPrompt(rubricData?.system_prompt || "")
                     setConfirmLlmModel(rubricData?.llm_model || "openai/gpt-4o-mini")
                     setConfirmSections(generatedScript.sections)
@@ -768,34 +746,26 @@ export default function ScriptBuilderPage() {
                 if (!editedName) return
                 setSaving(true)
                 try {
-                  const { data: rubricData } = await supabase
-                    .from("rubrics")
-                    .select("id")
-                    .eq("is_active", true)
-                    .single()
-
-                  let rubricId = rubricData?.id
-                  if (!rubricId) {
-                    const { data: newRubric } = await supabase
-                      .from("rubrics")
-                      .insert({ name: "Sales Coaching Rubric", description: "Auto-generated", is_active: true })
-                      .select()
-                      .single()
-                    rubricId = newRubric?.id
-                  }
+                  const rubricRes = await fetch("/api/rubric-config")
+                  const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
+                  const rubricId = rubricData?.id ?? 'rubric-001'
 
                   const fullScriptText = confirmSections
                     .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\nTip: " + s.tips : ""}`)
                     .join("\n\n")
 
-                  await supabase.from("scripts").insert({
-                    rubric_id: rubricId,
-                    name: editedName,
-                    description: editedDescription,
-                    sections: confirmSections,
-                    full_script: fullScriptText,
-                    criteria: confirmCriteria,
-                    is_active: true,
+                  await fetch("/api/scripts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      rubric_id: rubricId,
+                      name: editedName,
+                      description: editedDescription,
+                      sections: confirmSections,
+                      full_script: fullScriptText,
+                      criteria: confirmCriteria,
+                      is_active: true,
+                    }),
                   })
 
                   router.push("/dashboard/settings")
