@@ -2,7 +2,7 @@ import type React from 'react'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { OwnerSidebar, OwnerNavItems } from '@/components/layout/OwnerSidebar'
 
-export default function CallsLayout({ children }: { children: React.ReactNode }) {
+export default function OverviewLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
       <AppHeader mobileSidebar={<OwnerNavItems />} />

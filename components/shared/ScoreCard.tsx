@@ -36,20 +36,28 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
       >
         {value}
       </div>
-      {delta !== undefined && (
+      {(delta !== undefined || deltaLabel) && (
         <div
           className="text-xs"
           style={{
-            color: isPositive
-              ? 'var(--am-green)'
-              : isNegative
-              ? 'var(--am-red)'
-              : 'var(--am-muted)',
+            color:
+              delta === undefined
+                ? 'var(--am-muted)'
+                : isPositive
+                ? 'var(--am-green)'
+                : isNegative
+                ? 'var(--am-red)'
+                : 'var(--am-muted)',
           }}
         >
-          {isPositive ? '↑' : isNegative ? '↓' : ''}{' '}
-          {isPositive ? `+${delta}` : delta}
-          {deltaLabel ? ` ${deltaLabel}` : ''}
+          {delta !== undefined && (
+            <>
+              {isPositive ? '↑' : isNegative ? '↓' : ''}{' '}
+              {isPositive ? `+${delta}` : delta}
+              {deltaLabel ? ' ' : ''}
+            </>
+          )}
+          {deltaLabel}
         </div>
       )}
     </div>
