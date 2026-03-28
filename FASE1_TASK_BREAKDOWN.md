@@ -476,10 +476,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / UX · **Depende de**: TASK-013, TASK-014, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [ ] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
-- [ ] Skeletons com `animate-pulse` e layout aproximado
-- [ ] Estado vazio nas tabelas de calls
-- [ ] Sem erro de hydration no console
+- [x] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
+- [x] Skeletons com `animate-pulse` e layout aproximado
+- [x] Estado vazio nas tabelas de calls
+- [x] Sem erro de hydration no console
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -488,12 +490,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / CSS · **Depende de**: TASK-013, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [ ] Viewport 375px: sem scroll horizontal indesejado
+- [x] Viewport 375px: sem scroll horizontal indesejado
 - [x] Grids colapsam corretamente
 - [x] Sidebar como Sheet/Drawer em mobile
 - [x] Tabelas com scroll horizontal quando necessário
 
-> **STATUS: 🟡 PARCIAL** — Sidebar Sheet ativo, grids responsivos (`grid-cols-1 → md:grid-cols-2 → lg:grid-cols-4`), tabelas com `overflow-x-auto`. Falta validar `/me` e `/admin` quando construídas (TASK-016, TASK-018).
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -502,10 +504,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: DevOps · **Depende de**: Todas as tasks anteriores
 
 ### Critérios de aceite
-- [ ] `npm run build` passa sem erros
+- [x] `npm run build` passa sem erros
 - [ ] URL pública acessível
 - [ ] Variáveis de ambiente corretas em produção
 - [ ] Os 3 logins de demo funcionam em produção
+
+> **STATUS: 🟡 PARCIAL** — `npm run build` passa sem erros. Deploy no Vercel pendente (requer ação manual: configurar env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_MSW_ENABLED=true` e fazer push para branch de produção).
 
 ---
 
@@ -547,9 +551,11 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 ```
 
 ### Critérios de aceite
-- [ ] Todos os checks acima passam sem erro
-- [ ] Nenhum 404, loop de redirect ou erro de console
-- [ ] `DEMO_ACCESS.md` criado com logins e script de demo
+- [x] Todos os checks acima passam sem erro
+- [x] Nenhum 404, loop de redirect ou erro de console
+- [x] `DEMO_ACCESS.md` criado com logins e script de demo
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -576,10 +582,10 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-017 | `/me/calls/[id]` | ✅ |
 | TASK-018 | `/admin` | ✅ |
 | TASK-019 | `/admin/rubric` | ✅ |
-| TASK-020 | Loading states | ⬜ Não iniciada |
-| TASK-021 | Responsividade | 🟡 Parcial — falta /me e /admin |
-| TASK-022 | Deploy Vercel | ⬜ Não iniciada |
-| TASK-023 | QA + DEMO_ACCESS | ⬜ Não iniciada |
+| TASK-020 | Loading states | ✅ |
+| TASK-021 | Responsividade | ✅ |
+| TASK-022 | Deploy Vercel | 🟡 Parcial — build OK, deploy pendente |
+| TASK-023 | QA + DEMO_ACCESS | ✅ |
 
 ---
 
