@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut } from 'lucide-react'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export function AppHeader() {
   const router = useRouter()
@@ -53,6 +54,7 @@ export function AppHeader() {
             animation: 'am-pulse 2s infinite',
           }}
         />
+        <ThemeToggle />
         <button
           onClick={handleLogout}
           className="p-1.5 rounded-md transition-colors hover:opacity-70"
