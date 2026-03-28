@@ -398,11 +398,13 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 5. **Histórico**: Últimas 5-6 calls, clicável → `/me/calls/[id]`
 
 ### Critérios de aceite
-- [ ] Trainer vê APENAS suas próprias calls
-- [ ] Score e close rate com delta colorido
-- [ ] Barras de rubrica com delta vs. média do time
-- [ ] Dica de coaching com visual accent-border
-- [ ] Lista de calls com link para detalhe
+- [x] Trainer vê APENAS suas próprias calls
+- [x] Score e close rate com delta colorido
+- [x] Barras de rubrica com delta vs. média do time
+- [x] Dica de coaching com visual accent-border
+- [x] Lista de calls com link para detalhe
+
+> **STATUS: ✅ CONCLUÍDA** — Dashboard pessoal com saudação, 2 metric cards, rubric pessoal com delta vs. team avg colorido, coaching tip (borda accent esquerda), quick stats (closed/follow-up/no-close) e lista das 6 calls mais recentes clicáveis.
 
 ---
 
@@ -566,7 +568,7 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-013 | `/overview` | ✅ |
 | TASK-014 | `/calls` | ✅ |
 | TASK-015 | `CallDetail` + rotas | ✅ |
-| TASK-016 | `/me` | ⬜ Não iniciada |
+| TASK-016 | `/me` | ✅ |
 | TASK-017 | `/me/calls/[id]` | ✅ |
 | TASK-018 | `/admin` | ⬜ Não iniciada |
 | TASK-019 | `/admin/rubric` | ⬜ Não iniciada |
