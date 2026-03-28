@@ -500,7 +500,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="p-3 bg-slate-900 dark:bg-slate-800 rounded border border-slate-700 text-slate-100">
+                          <div className="p-3 bg-muted rounded border border-border text-foreground">
                             <p className="font-mono text-xs whitespace-pre-wrap max-h-64 overflow-y-auto">
                               {getScriptDisplayText(script)}
                             </p>

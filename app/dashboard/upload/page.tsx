@@ -197,18 +197,16 @@ export default function UploadPage() {
 
         if (!transcribeRes.ok) {
           let errorMsg = "Failed to transcribe audio"
-          try {
-            const clonedRes = transcribeRes.clone()
-            const errData = await clonedRes.json()
-            errorMsg = errData.error || errorMsg
-          } catch (e) {
+          const contentType = transcribeRes.headers.get("content-type") || ""
+          if (contentType.includes("application/json")) {
             try {
-              const clonedRes = transcribeRes.clone()
-              const text = await clonedRes.text()
-              errorMsg = text || `HTTP ${transcribeRes.status}`
-            } catch {
-              errorMsg = `HTTP ${transcribeRes.status}`
-            }
+              const errData = await transcribeRes.clone().json()
+              errorMsg = errData.error || errorMsg
+            } catch { /* ignore parse error */ }
+          } else {
+            errorMsg = transcribeRes.status === 404
+              ? "API not available — ensure the mock service worker is running (MSW)"
+              : `HTTP ${transcribeRes.status}`
           }
           console.error("[v0] Transcribe error:", errorMsg)
           throw new Error(errorMsg)
@@ -240,18 +238,16 @@ export default function UploadPage() {
 
       if (!analyzeRes.ok) {
         let errorMsg = "Failed to analyze call"
-        try {
-          const clonedRes = analyzeRes.clone()
-          const errData = await clonedRes.json()
-          errorMsg = errData.error || errorMsg
-        } catch (e) {
+        const contentType = analyzeRes.headers.get("content-type") || ""
+        if (contentType.includes("application/json")) {
           try {
-            const clonedRes = analyzeRes.clone()
-            const text = await clonedRes.text()
-            errorMsg = text || `HTTP ${analyzeRes.status}`
-          } catch {
-            errorMsg = `HTTP ${analyzeRes.status}`
-          }
+            const errData = await analyzeRes.clone().json()
+            errorMsg = errData.error || errorMsg
+          } catch { /* ignore parse error */ }
+        } else {
+          errorMsg = analyzeRes.status === 404
+            ? "API not available — ensure the mock service worker is running (MSW)"
+            : `HTTP ${analyzeRes.status}`
         }
         console.error("[v0] Analyze error:", errorMsg)
         throw new Error(errorMsg)

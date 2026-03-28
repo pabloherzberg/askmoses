@@ -296,7 +296,7 @@ export default function AnalyticsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-200">{insight}</p>
+                <p className="text-sm text-muted-foreground">{insight}</p>
               </CardContent>
             </Card>
           ))}
@@ -473,7 +473,7 @@ export default function AnalyticsPage() {
               {achievements.map((achievement, idx) => (
                 <div
                   key={idx}
-                  className="rounded-lg border-2 border-yellow-300 p-4 dark:border-yellow-800 dark:bg-yellow-950"
+                  className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950"
                 >
                   <div className="flex items-start justify-between">
                     <div>

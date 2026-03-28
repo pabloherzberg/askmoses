@@ -502,7 +502,7 @@ export default function ScriptBuilderPage() {
               {/* Full Script */}
               <div className="space-y-2">
                 <Label>Full Script</Label>
-                <div className="p-4 rounded-lg border bg-slate-900 text-slate-100 max-h-64 overflow-y-auto">
+                <div className="p-4 rounded-lg border bg-muted text-foreground max-h-64 overflow-y-auto">
                   <pre className="text-xs font-mono whitespace-pre-wrap">
                     {generatedScript.full_script}
                   </pre>
