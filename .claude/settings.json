@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:/Users/pablo/Documents/v0-coach-mvp -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Read(//c/Users/pablo/.claude/**)",
+      "Read(//c/Users/pablo/.claude/projects/**)",
+      "Bash(SB_URL=\"https://azphsweveznidfttykbq.supabase.co\" SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6cGhzd2V2ZXpuaWRmdHR5a2JxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMDgzNiwiZXhwIjoyMDg0NzA2ODM2fQ.BcU2cZ6m9GJM0JTOiSLgcL9b9YLUmrAnNGvZSl8NWXY\" __NEW_LINE_dcf5f5b37145edc4__ curl -s \"$SB_URL/auth/v1/admin/users\" -H \"apikey: $SB_KEY\" -H \"Authorization: Bearer $SB_KEY\")",
+      "Bash(find c:/Users/pablo/Documents/v0-coach-mvp -maxdepth 3 -type f \\\\\\(-name *.test.ts* -o -name *.spec.ts* -o -name *msw* -o -name jest.config.* -o -name vitest.config.* \\\\\\))",
+      "Bash(npx msw:*)"
+    ]
+  }
+}

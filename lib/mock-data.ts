@@ -662,3 +662,91 @@ export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerSc
   'trainer-jordan': 'jordan',
   'trainer-taylor': 'taylor',
 }
+
+// ─── Rubric (Supabase format) ────────────────────────────────────────────────
+
+export const rubric = {
+  id: 'rubric-001',
+  name: 'Dog Training Sales Rubric',
+  description: 'Rubrica padrão para avaliação de calls de vendas de adestramento',
+  is_active: true,
+  system_prompt: 'You are an expert sales coach for dog training businesses. Evaluate the call based on the rubric criteria.',
+  llm_model: 'openai/gpt-4o-mini',
+  created_at: '2026-03-01T10:00:00Z',
+}
+
+// ─── Scripts (Supabase format) ───────────────────────────────────────────────
+
+export const scripts = [
+  {
+    id: 'script-001',
+    name: 'Discovery-First Sales Script',
+    description: 'Script focado em discovery profundo antes de apresentar a oferta. Baseado nas melhores práticas de Marcus R.',
+    rubric_id: 'rubric-001',
+    is_active: true,
+    created_at: '2026-03-01T12:00:00Z',
+    sections: [
+      { name: 'Abertura', instructions: 'Cumprimente e estabeleça rapport. Pergunte o motivo do contato.', tips: 'Seja genuíno, não use scripts decorados.' },
+      { name: 'Discovery', instructions: 'Faça pelo menos 3 perguntas abertas antes de qualquer apresentação.', tips: 'Identifique a dor real, não o sintoma.' },
+      { name: 'Problem Agitation', instructions: 'Aprofunde a dor conectando o problema a impactos emocionais e financeiros.', tips: 'Use perguntas como "e como isso afeta..."' },
+      { name: 'Apresentação da Oferta', instructions: 'Conecte a oferta diretamente à dor identificada.', tips: 'Nunca apresente preço antes de estabelecer valor.' },
+      { name: 'Fechamento', instructions: 'Proponha o próximo passo com clareza e segurança.', tips: 'Silêncio estratégico após apresentar o preço.' },
+    ],
+    full_script: 'Script completo de vendas para adestramento de cães...',
+    criteria: [
+      { name: 'Rapport Building', description: 'Trainer establishes connection in first 2 minutes' },
+      { name: 'Open Questions', description: 'At least 3 open questions before presenting offer' },
+      { name: 'Pain Identification', description: 'Identifies the real pain, not just the symptom' },
+      { name: 'Emotional Connection', description: 'Connects the problem to emotional/financial impact' },
+      { name: 'Value Before Price', description: 'Establishes value before revealing pricing' },
+      { name: 'Clear Next Steps', description: 'Call ends with a clear commitment or next step' },
+    ],
+  },
+  {
+    id: 'script-002',
+    name: 'Objection Handling Script',
+    description: 'Script focado em técnicas de manejo de objeções de preço e tempo.',
+    rubric_id: 'rubric-001',
+    is_active: true,
+    created_at: '2026-03-05T14:00:00Z',
+    sections: [
+      { name: 'Identificação da Objeção', instructions: 'Classifique: preço, tempo, autoridade ou necessidade.', tips: 'Nunca responda imediatamente — pause.' },
+      { name: 'Reframing', instructions: 'Recontextualize o investimento em termos de custo de inação.', tips: '"Quanto custa NÃO resolver isso?"' },
+      { name: 'Prova Social', instructions: 'Use cases específicos de clientes com situação similar.', tips: 'Raça e problema similares funcionam melhor.' },
+    ],
+    full_script: 'Script de manejo de objeções...',
+    criteria: [
+      { name: 'Objection Classification', description: 'Correctly identifies type of objection' },
+      { name: 'Reframing Technique', description: 'Reframes objection in terms of cost of inaction' },
+      { name: 'Social Proof', description: 'Uses relevant case study or testimonial' },
+    ],
+  },
+]
+
+// ─── Calls em formato Supabase (para handlers PostgREST) ────────────────────
+
+export const supabaseCalls = calls.map((call) => ({
+  id: call.id,
+  rubric_id: 'rubric-001',
+  trainer_name: call.trainerName,
+  trainer_email: `${call.trainerName.toLowerCase().replace(/\s+/g, '').replace('.', '')}@demo.askmoses.ai`,
+  client_name: call.prospect,
+  transcript: call.transcript,
+  overall_score: call.score,
+  total_criteria: 6,
+  criteria: [
+    { name: 'Discovery', score: call.rubricScores.discovery, feedback: 'Evaluated' },
+    { name: 'Problem Agitation', score: call.rubricScores.problemAgitation, feedback: 'Evaluated' },
+    { name: 'Offer Presentation', score: call.rubricScores.offerPresentation, feedback: 'Evaluated' },
+    { name: 'Objection Handling', score: call.rubricScores.objectionHandling, feedback: 'Evaluated' },
+    { name: 'Close & Next Steps', score: call.rubricScores.closeAndNextSteps, feedback: 'Evaluated' },
+  ],
+  summary: call.feedback,
+  strengths: call.strengths,
+  improvements: call.improvements,
+  call_outcome: call.result === 'closed' ? 'closed' : call.result === 'no-close' ? 'not_closed' : 'partial',
+  detected_outcome: call.result,
+  email_sent: true,
+  email_id: `email-${call.id}`,
+  created_at: `${call.date}T10:00:00Z`,
+}))

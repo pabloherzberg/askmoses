@@ -5,7 +5,7 @@ import type { Role } from '@/lib/types'
 function redirectByRole(role: Role, baseUrl: string) {
   const routes: Record<Role, string> = {
     trainer: '/me',
-    owner: '/dashboard',
+    owner: '/overview',
     admin: '/admin',
   }
   return new URL(routes[role] ?? '/login', baseUrl)
@@ -63,10 +63,12 @@ export async function middleware(request: NextRequest) {
 
   // ── Proteção cruzada de roles ─────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(redirectByRole(role, request.url))
   }
 
-  if (pathname.startsWith('/dashboard') && role === 'trainer') {
+  // Trainer só acessa /me e /me/calls/[id]
+  const trainerBlocked = ['/overview', '/dashboard', '/calls']
+  if (role === 'trainer' && trainerBlocked.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/me', request.url))
   }
 
@@ -75,6 +77,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|images|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|images|api|mockServiceWorker.js).*)',
   ],
 }
