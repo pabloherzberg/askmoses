@@ -1,8 +1,9 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Image from "next/image"
-import { Menu } from "lucide-react"
+import { Menu, LogOut } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,7 +48,14 @@ const pageTitles: Record<string, string> = {
 
 export function DashboardHeader() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
   const title = pageTitles[pathname] || "Dashboard"
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-card px-4 sm:gap-x-6 sm:px-6 lg:px-8">
@@ -107,6 +115,16 @@ export function DashboardHeader() {
             Unleashed Consulting
           </span>
           <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            title="Sair"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="sr-only">Sair</span>
+          </Button>
         </div>
       </div>
     </header>
