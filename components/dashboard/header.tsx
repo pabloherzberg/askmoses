@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from "next/navigation"
 import { Menu, LogOut } from "lucide-react"
 import { LogoSVG } from "@/components/shared/LogoSVG"
-import { createClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,11 +49,11 @@ const pageTitles: Record<string, string> = {
 export function DashboardHeader() {
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
   const title = pageTitles[pathname] || "Dashboard"
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
+    document.cookie = 'demo-role=; path=/; max-age=0'
     router.push('/login')
   }
 
