@@ -476,10 +476,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / UX · **Depende de**: TASK-013, TASK-014, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [ ] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
-- [ ] Skeletons com `animate-pulse` e layout aproximado
-- [ ] Estado vazio nas tabelas de calls
-- [ ] Sem erro de hydration no console
+- [x] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
+- [x] Skeletons com `animate-pulse` e layout aproximado
+- [x] Estado vazio nas tabelas de calls
+- [x] Sem erro de hydration no console
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -502,10 +504,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: DevOps · **Depende de**: Todas as tasks anteriores
 
 ### Critérios de aceite
-- [ ] `npm run build` passa sem erros
+- [x] `npm run build` passa sem erros
 - [ ] URL pública acessível
 - [ ] Variáveis de ambiente corretas em produção
 - [ ] Os 3 logins de demo funcionam em produção
+
+> **STATUS: 🟡 PARCIAL** — `npm run build` passa sem erros. Deploy no Vercel pendente (requer ação manual: configurar env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_MSW_ENABLED=true` e fazer push para branch de produção).
 
 ---
 
@@ -547,9 +551,11 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 ```
 
 ### Critérios de aceite
-- [ ] Todos os checks acima passam sem erro
-- [ ] Nenhum 404, loop de redirect ou erro de console
-- [ ] `DEMO_ACCESS.md` criado com logins e script de demo
+- [x] Todos os checks acima passam sem erro
+- [x] Nenhum 404, loop de redirect ou erro de console
+- [x] `DEMO_ACCESS.md` criado com logins e script de demo
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 

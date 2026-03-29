@@ -43,7 +43,7 @@ export async function getUserId(): Promise<string | null> {
 export function redirectByRole(role: Role): string {
   const routes: Record<Role, string> = {
     trainer: '/me',
-    owner: '/dashboard',
+    owner: '/overview',
     admin: '/admin',
   }
   return routes[role] ?? '/login'
