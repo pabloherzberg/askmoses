@@ -75,10 +75,10 @@ Após login — por role:
 
 ### Critérios de aceite
 - [x] Variáveis CSS `--am-*` definidas em `globals.css`
-- [ ] Fontes DM Sans e DM Mono carregando via next/font
+- [x] Fontes DM Sans e DM Mono carregando via next/font
 - [x] Background padrão das novas views usa `--am-bg`
 
-> **STATUS: 🟡 PARCIAL** — Tokens CSS adicionados. Falta: carregar fontes DM Sans/DM Mono via next/font.
+> **STATUS: ✅ CONCLUÍDA** — `DM_Sans` e `DM_Mono` carregados via `next/font/google` em `app/layout.tsx`. Variáveis `--font-dm-sans` e `--font-dm-mono` injetadas no `<body>` e referenciadas no `@theme inline` do Tailwind.
 
 ---
 
@@ -243,11 +243,11 @@ Layouts independentes para cada grupo de rotas. **NÃO alterar** o layout e side
 ### Critérios de aceite
 - [x] AppHeader com logout funcional
 - [x] 3 sidebars criadas
-- [ ] Mobile: sidebar como Sheet/Drawer
+- [x] Mobile: sidebar como Sheet/Drawer
 - [x] Layouts `(auth)`, `(trainer)`, `(admin)` criados
-- [ ] Layout para `/overview` e `/calls` criado (usa OwnerSidebar + AppHeader)
+- [x] Layout para `/overview` e `/calls` criado (usa OwnerSidebar + AppHeader)
 
-> **STATUS: 🟡 PARCIAL** — Componentes criados. Falta: mobile Sheet/Drawer, layout do overview/calls.
+> **STATUS: ✅ CONCLUÍDA** — AppHeader recebe prop `mobileSidebar` e renderiza Sheet com hamburguer em mobile. `OwnerNavItems` exportado separadamente para reuso no Sheet. Layouts `/overview` e `/calls` criados.
 
 ---
 
@@ -295,17 +295,19 @@ const [trainers, stats, insights, rubric, trend] = await Promise.all([
 ```
 
 ### Critérios de aceite
-- [ ] Rota `/overview` existe e renderiza
-- [ ] Layout usa OwnerSidebar + AppHeader
-- [ ] Visual próximo ao HTML de referência
-- [ ] 4 metric cards com animação fadeUp
-- [ ] Ranking ordenado por score decrescente
-- [ ] 4 alertas com cores corretas
-- [ ] Barras de rubrica com animação CSS transition 1s
-- [ ] Gráfico renderizando com tooltip funcional
-- [ ] Tabela com highlight verde/vermelho
-- [ ] 4 cards de insight com hover effect
-- [ ] Responsivo: colapsa em tablet/mobile
+- [x] Rota `/overview` existe e renderiza
+- [x] Layout usa OwnerSidebar + AppHeader
+- [x] Visual próximo ao HTML de referência
+- [x] 4 metric cards com animação fadeUp
+- [x] Ranking ordenado por score decrescente
+- [x] 4 alertas com cores corretas
+- [x] Barras de rubrica com animação CSS transition 1s
+- [x] Gráfico renderizando com tooltip funcional
+- [x] Tabela com highlight verde/vermelho
+- [x] 4 cards de insight com hover effect
+- [x] Responsivo: colapsa em tablet/mobile
+
+> **STATUS: ✅ CONCLUÍDA** — Todos os critérios atingidos. Sidebar mobile via Sheet (hamburguer no AppHeader). Grids colapsam em mobile. Tema light via `defaultTheme="light"` no root layout — toggle funcional.
 
 ---
 
@@ -324,12 +326,14 @@ Listagem de TODAS as calls do time com filtros client-side.
 - **Estado vazio**: ícone + "Nenhuma call encontrada"
 
 ### Critérios de aceite
-- [ ] Tabela lista todas as calls (21+)
-- [ ] Filtro por trainer funciona
-- [ ] Filtro por resultado funciona
-- [ ] Badge de resultado com cor correta
-- [ ] Clicar na linha navega para `/calls/[id]`
-- [ ] Estado vazio quando filtros não retornam resultado
+- [x] Tabela lista todas as calls (21+)
+- [x] Filtro por trainer funciona
+- [x] Filtro por resultado funciona
+- [x] Badge de resultado com cor correta
+- [x] Clicar na linha navega para `/calls/[id]`
+- [x] Estado vazio quando filtros não retornam resultado
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -362,12 +366,14 @@ interface CallDetailProps {
 - `/me/calls/[id]` — `viewerRole="trainer"` (trainer não vê notas)
 
 ### Critérios de aceite
-- [ ] Score colorido conforme valor
-- [ ] RubricBars com valores individuais (não da equipe)
-- [ ] Strengths com check verde, improvements com arrow âmbar
-- [ ] Transcrição em fonte mono
-- [ ] Notas de coaching visível apenas para owner/admin
-- [ ] 403 se trainer tenta acessar call de outro trainer
+- [x] Score colorido conforme valor
+- [x] RubricBars com valores individuais (não da equipe)
+- [x] Strengths com check verde, improvements com arrow âmbar
+- [x] Transcrição em fonte mono
+- [x] Notas de coaching visível apenas para owner/admin
+- [x] 403 se trainer tenta acessar call de outro trainer
+
+> **STATUS: ✅ CONCLUÍDA** — Guard implementado em `/me/calls/[id]/page.tsx`: compara `call.trainerId` com o ID do usuário autenticado (mapeando `demo-trainer` → `trainer-marcus`). Retorna página 403 se não pertence ao trainer.
 
 ---
 
@@ -392,11 +398,13 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 5. **Histórico**: Últimas 5-6 calls, clicável → `/me/calls/[id]`
 
 ### Critérios de aceite
-- [ ] Trainer vê APENAS suas próprias calls
-- [ ] Score e close rate com delta colorido
-- [ ] Barras de rubrica com delta vs. média do time
-- [ ] Dica de coaching com visual accent-border
-- [ ] Lista de calls com link para detalhe
+- [x] Trainer vê APENAS suas próprias calls
+- [x] Score e close rate com delta colorido
+- [x] Barras de rubrica com delta vs. média do time
+- [x] Dica de coaching com visual accent-border
+- [x] Lista de calls com link para detalhe
+
+> **STATUS: ✅ CONCLUÍDA** — Dashboard pessoal com saudação, 2 metric cards, rubric pessoal com delta vs. team avg colorido, coaching tip (borda accent esquerda), quick stats (closed/follow-up/no-close) e lista das 6 calls mais recentes clicáveis.
 
 ---
 
@@ -405,9 +413,11 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend · **Depende de**: TASK-015
 
 ### Critérios de aceite
-- [ ] Rota `/me/calls/[id]` funcional
-- [ ] Renderiza `CallDetail` com `viewerRole="trainer"` (sem notas)
-- [ ] 403 se call não pertence ao trainer
+- [x] Rota `/me/calls/[id]` funcional
+- [x] Renderiza `CallDetail` com `viewerRole="trainer"` (sem notas)
+- [x] 403 se call não pertence ao trainer
+
+> **STATUS: ✅ CONCLUÍDA** — Implementada junto com TASK-015. Guard de ownership ativo.
 
 ---
 
@@ -427,10 +437,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 3. **Health badge**: healthy=verde "Saudável", at-risk=âmbar "Em Risco", churning=vermelho "Crítico"
 
 ### Critérios de aceite
-- [ ] 4 metric cards com dados globais
-- [ ] Tabela com 3 clientes
-- [ ] Health badge com cores corretas
-- [ ] Acessível apenas para role `admin`
+- [x] 4 metric cards com dados globais
+- [x] Tabela com 3 clientes
+- [x] Health badge com cores corretas
+- [x] Acessível apenas para role `admin`
+
+> **STATUS: ✅ CONCLUÍDA** — 4 ScoreCards globais, tabela de clientes com plan badge, avg score colorido, MRR e health badge (Healthy/At Risk/Critical).
 
 ---
 
@@ -444,10 +456,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 3. **Botão "Salvar"** → toast "Funcionalidade disponível em breve"
 
 ### Critérios de aceite
-- [ ] 5 seções listadas
-- [ ] Toggle visual (não persiste)
-- [ ] Botão salvar exibe toast
-- [ ] Acessível apenas para `admin`
+- [x] 5 seções listadas
+- [x] Toggle visual (não persiste)
+- [x] Botão salvar exibe toast
+- [x] Acessível apenas para `admin`
+
+> **STATUS: ✅ CONCLUÍDA** — 5 seções em cards com nome, peso, descrição e toggle Critical/Optional (visual only com state local). Preview do system prompt em textarea readonly. Botão Save dispara toast "Feature coming soon".
 
 ---
 
@@ -462,10 +476,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / UX · **Depende de**: TASK-013, TASK-014, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [ ] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
-- [ ] Skeletons com `animate-pulse` e layout aproximado
-- [ ] Estado vazio nas tabelas de calls
-- [ ] Sem erro de hydration no console
+- [x] `loading.tsx` para: `/overview`, `/calls`, `/me`, `/admin`
+- [x] Skeletons com `animate-pulse` e layout aproximado
+- [x] Estado vazio nas tabelas de calls
+- [x] Sem erro de hydration no console
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -474,10 +490,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / CSS · **Depende de**: TASK-013, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [ ] Viewport 375px: sem scroll horizontal indesejado
-- [ ] Grids colapsam corretamente
-- [ ] Sidebar como Sheet/Drawer em mobile
-- [ ] Tabelas com scroll horizontal quando necessário
+- [x] Viewport 375px: sem scroll horizontal indesejado
+- [x] Grids colapsam corretamente
+- [x] Sidebar como Sheet/Drawer em mobile
+- [x] Tabelas com scroll horizontal quando necessário
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -486,10 +504,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: DevOps · **Depende de**: Todas as tasks anteriores
 
 ### Critérios de aceite
-- [ ] `npm run build` passa sem erros
+- [x] `npm run build` passa sem erros
 - [ ] URL pública acessível
 - [ ] Variáveis de ambiente corretas em produção
 - [ ] Os 3 logins de demo funcionam em produção
+
+> **STATUS: 🟡 PARCIAL** — `npm run build` passa sem erros. Deploy no Vercel pendente (requer ação manual: configurar env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_MSW_ENABLED=true` e fazer push para branch de produção).
 
 ---
 
@@ -531,9 +551,11 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 ```
 
 ### Critérios de aceite
-- [ ] Todos os checks acima passam sem erro
-- [ ] Nenhum 404, loop de redirect ou erro de console
-- [ ] `DEMO_ACCESS.md` criado com logins e script de demo
+- [x] Todos os checks acima passam sem erro
+- [x] Nenhum 404, loop de redirect ou erro de console
+- [x] `DEMO_ACCESS.md` criado com logins e script de demo
+
+> **STATUS: ✅ CONCLUÍDA**
 
 ---
 
@@ -542,7 +564,7 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | Task | Descrição | Status |
 |---|---|---|
 | TASK-001 | Setup Next.js | ✅ |
-| TASK-002 | Design Tokens | 🟡 Falta fontes DM Sans/Mono |
+| TASK-002 | Design Tokens + Fontes | ✅ |
 | TASK-003 | Supabase Auth | ✅ |
 | TASK-004 | Usuários demo | ✅ |
 | TASK-005 | Mock data + types | ✅ |
@@ -552,19 +574,19 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-009 | Auth helpers | ✅ |
 | TASK-010 | Login page | ✅ |
 | TASK-011 | Componentes shared | ✅ |
-| TASK-012 | Layouts/sidebars | 🟡 Falta mobile + layout overview |
-| TASK-013 | `/overview` | ⬜ Não iniciada |
-| TASK-014 | `/calls` | ⬜ Não iniciada |
-| TASK-015 | `CallDetail` + rotas | ⬜ Não iniciada |
-| TASK-016 | `/me` | ⬜ Não iniciada |
-| TASK-017 | `/me/calls/[id]` | ⬜ Não iniciada |
-| TASK-018 | `/admin` | ⬜ Não iniciada |
-| TASK-019 | `/admin/rubric` | ⬜ Não iniciada |
-| TASK-020 | Loading states | ⬜ Não iniciada |
-| TASK-021 | Responsividade | ⬜ Não iniciada |
-| TASK-022 | Deploy Vercel | ⬜ Não iniciada |
-| TASK-023 | QA + DEMO_ACCESS | ⬜ Não iniciada |
+| TASK-012 | Layouts/sidebars | ✅ |
+| TASK-013 | `/overview` | ✅ |
+| TASK-014 | `/calls` | ✅ |
+| TASK-015 | `CallDetail` + rotas | ✅ |
+| TASK-016 | `/me` | ✅ |
+| TASK-017 | `/me/calls/[id]` | ✅ |
+| TASK-018 | `/admin` | ✅ |
+| TASK-019 | `/admin/rubric` | ✅ |
+| TASK-020 | Loading states | ✅ |
+| TASK-021 | Responsividade | ✅ |
+| TASK-022 | Deploy Vercel | 🟡 Parcial — build OK, deploy pendente |
+| TASK-023 | QA + DEMO_ACCESS | ✅ |
 
 ---
 
-*Documento atualizado em 24/03/2026 · Net Midas para AskMoses.AI · Fase 1 v2.0*
+*Documento atualizado em 28/03/2026 · Net Midas para AskMoses.AI · Fase 1 v2.1*

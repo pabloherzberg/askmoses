@@ -1,15 +1,24 @@
-// TODO: TASK-014 — Tabela de calls do gestor
-// Dados: GET /api/calls (sem filtro de userId pois é owner)
-// Suporta filtros client-side: trainerId, result
-// Clicar na linha navega para /calls/[id]
-// Ver FASE1_TASK_BREAKDOWN.md para especificação completa
+import { getCalls } from '@/lib/services/calls'
+import { getTrainers } from '@/lib/services/trainers'
+import { SectionLabel } from '@/components/shared/SectionLabel'
+import { CallsTable } from './CallsTable'
 
-export default function CallsPage() {
+export default async function CallsPage() {
+  const [calls, trainers] = await Promise.all([getCalls(), getTrainers()])
+
   return (
     <div>
-      <p className="text-sm" style={{ color: 'var(--am-muted)' }}>
-        Em desenvolvimento — TASK-014
-      </p>
+      <div className="mb-6">
+        <SectionLabel>Team Calls</SectionLabel>
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
+          All Calls
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--am-muted)' }}>
+          {calls.length} calls across {trainers.length} trainers
+        </p>
+      </div>
+
+      <CallsTable calls={calls} trainers={trainers} />
     </div>
   )
 }
