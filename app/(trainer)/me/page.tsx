@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import { getTrainerById } from '@/lib/services/trainers'
 import { getCalls } from '@/lib/services/calls'
 import { getRubric } from '@/lib/services/rubric'
@@ -69,14 +69,24 @@ export default async function TrainerDashboardPage() {
   return (
     <div>
       {/* ── Greeting ──────────────────────────────────────────── */}
-      <div className="mb-6">
-        <SectionLabel>My Dashboard</SectionLabel>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-          Hello, {trainer.name}
-        </h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
-          Week 6 of 6 · {trainer.totalCalls} calls this cycle
-        </p>
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div>
+          <SectionLabel>My Dashboard</SectionLabel>
+          <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
+            Hello, {trainer.name}
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
+            Week 6 of 6 · {trainer.totalCalls} calls this cycle
+          </p>
+        </div>
+        <Link
+          href="/me/calls/new"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 transition-opacity hover:opacity-80"
+          style={{ background: 'var(--am-accent)', color: '#fff' }}
+        >
+          <Plus size={14} />
+          Log Call
+        </Link>
       </div>
 
       {/* ── Personal metrics ──────────────────────────────────── */}
@@ -119,7 +129,7 @@ export default async function TrainerDashboardPage() {
                   value={row.value}
                   color={row.color}
                 />
-                <div className="flex justify-between mt-1 pl-[148px]">
+                <div className="flex justify-end mt-1">
                   <span
                     className="text-[10px] font-mono"
                     style={{

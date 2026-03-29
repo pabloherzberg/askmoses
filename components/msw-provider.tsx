@@ -3,13 +3,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 export function MSWProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(
-    process.env.NEXT_PUBLIC_MSW_ENABLED !== 'true'
-  )
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_MSW_ENABLED !== 'true') return
-
     async function init() {
       try {
         const { worker } = await import('@/lib/mocks/browser')

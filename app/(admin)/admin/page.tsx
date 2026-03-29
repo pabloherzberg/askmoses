@@ -32,7 +32,7 @@ export default async function AdminPage() {
       </div>
 
       {/* ── Global metrics ────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <ScoreCard
           label="Total Clients"
           value={metrics.totalClients}
@@ -66,17 +66,24 @@ export default async function AdminPage() {
         className="rounded-2xl border overflow-hidden"
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
       >
-        <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--am-border)' }}>
-                {['Client', 'Plan', 'Trainers', 'Calls / mo', 'Avg Score', 'MRR', 'Health'].map((h) => (
+                {[
+                  { label: 'Client',     mobile: true  },
+                  { label: 'Plan',       mobile: false },
+                  { label: 'Trainers',   mobile: false },
+                  { label: 'Calls / mo', mobile: false },
+                  { label: 'Avg Score',  mobile: true  },
+                  { label: 'MRR',        mobile: false },
+                  { label: 'Health',     mobile: true  },
+                ].map(({ label, mobile }) => (
                   <th
-                    key={h}
-                    className="text-[11px] font-medium text-left px-5 py-3"
+                    key={label}
+                    className={`text-[11px] font-medium text-left px-4 sm:px-5 py-3${mobile ? '' : ' hidden sm:table-cell'}`}
                     style={{ color: 'var(--am-muted)' }}
                   >
-                    {h}
+                    {label}
                   </th>
                 ))}
               </tr>
@@ -93,14 +100,14 @@ export default async function AdminPage() {
                     }}
                   >
                     {/* Client name */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5">
                       <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
                         {client.name}
                       </p>
                     </td>
 
                     {/* Plan */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5 hidden sm:table-cell">
                       <span
                         className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono"
                         style={{ background: plan.bg, color: plan.color }}
@@ -110,21 +117,21 @@ export default async function AdminPage() {
                     </td>
 
                     {/* Trainers count */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5 hidden sm:table-cell">
                       <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
                         {client.trainersCount}
                       </span>
                     </td>
 
                     {/* Calls */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5 hidden sm:table-cell">
                       <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
                         {client.callsThisMonth}
                       </span>
                     </td>
 
                     {/* Avg score */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5">
                       <span
                         className="text-sm font-semibold font-mono"
                         style={{
@@ -141,14 +148,14 @@ export default async function AdminPage() {
                     </td>
 
                     {/* MRR */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5 hidden sm:table-cell">
                       <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
                         ${client.mrr.toLocaleString()}
                       </span>
                     </td>
 
                     {/* Health */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 sm:px-5 py-3.5">
                       <span
                         className="text-[11px] font-medium px-2.5 py-1 rounded-full font-mono"
                         style={{ background: health.bg, color: health.color }}
@@ -161,7 +168,6 @@ export default async function AdminPage() {
               })}
             </tbody>
           </table>
-        </div>
       </div>
     </div>
   )
