@@ -17,7 +17,8 @@
       "Bash(taskkill //F //PID 7284)",
       "Bash(npx next:*)",
       "Bash(tasklist //FI 'IMAGENAME eq node.exe')",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

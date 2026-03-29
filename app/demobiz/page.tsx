@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
+import { LogoSVG } from "@/components/shared/LogoSVG"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -123,19 +123,13 @@ export default function DemoBizPage() {
   const [showNotification, setShowNotification] = useState(true)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <Image
-                src="/images/logo-askmoses.png"
-                alt="Ask Moses"
-                width={160}
-                height={45}
-                className="h-10 w-auto"
-              />
+              <LogoSVG width={160} height={45} className="h-10 w-auto" />
             </div>
             
             <div className="flex items-center gap-4">
@@ -150,8 +144,8 @@ export default function DemoBizPage() {
               <Button variant="ghost" size="sm">
                 <Settings className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+              <div className="flex items-center gap-2 pl-4 border-l border-border">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
                   DW
                 </div>
                 <div className="hidden sm:block">
@@ -174,7 +168,7 @@ export default function DemoBizPage() {
               <p className="text-blue-100">Your team made 47 calls this week. Here's what needs your attention.</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="secondary" className="bg-white text-blue-600 hover:bg-blue-50">
+              <Button variant="secondary" className="bg-white/90 text-primary hover:bg-white">
                 <Calendar className="mr-2 h-4 w-4" />
                 Schedule Team Review
               </Button>
@@ -418,9 +412,9 @@ export default function DemoBizPage() {
           
           <Card>
             <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border">
                 {recentCalls.map((call) => (
-                  <div key={call.id} className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer">
+                  <div key={call.id} className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer">
                     <div className="flex items-center gap-4">
                       <div className={`h-3 w-3 rounded-full ${
                         call.outcome === "closed" ? "bg-green-500" :
@@ -462,7 +456,7 @@ export default function DemoBizPage() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-12 pt-8 border-t border-gray-200 text-center">
+        <footer className="mt-12 pt-8 border-t border-border text-center">
           <p className="text-sm text-muted-foreground mb-2">
             <span className="font-medium text-foreground">Ask Moses</span> — Turn conversations into profit
           </p>

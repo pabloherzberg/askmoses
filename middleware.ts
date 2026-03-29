@@ -1,6 +1,7 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Role } from '@/lib/types'
+
+const VALID_ROLES: Role[] = ['trainer', 'owner', 'admin']
 
 function redirectByRole(role: Role, baseUrl: string) {
   const routes: Record<Role, string> = {
@@ -12,54 +13,28 @@ function redirectByRole(role: Role, baseUrl: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
   const { pathname } = request.nextUrl
 
   // ── Rotas públicas — não interceptar ────────────────────────────────────────
   const publicPaths = ['/login', '/presentation', '/tech', '/demobiz']
   const isPublic = pathname === '/' || publicPaths.some((p) => pathname.startsWith(p))
 
+  // Lê a sessão demo do cookie (setado pelo login page via MSW)
+  const demoRole = request.cookies.get('demo-role')?.value as Role | undefined
+  const role = demoRole && VALID_ROLES.includes(demoRole) ? demoRole : undefined
+
   if (isPublic) {
     // Se está logado e acessa /login, redireciona para rota do role
-    if (session && pathname.startsWith('/login')) {
-      const role = session.user.app_metadata?.role as Role
+    if (role && pathname.startsWith('/login')) {
       return NextResponse.redirect(redirectByRole(role, request.url))
     }
-    return response
+    return NextResponse.next({ request })
   }
 
   // ── Sem sessão → login ───────────────────────────────────────────────────────
-  if (!session) {
+  if (!role) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  const role = session.user.app_metadata?.role as Role
 
   // ── Proteção cruzada de roles ─────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && role !== 'admin') {
@@ -72,7 +47,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/me', request.url))
   }
 
-  return response
+  return NextResponse.next({ request })
 }
 
 export const config = {

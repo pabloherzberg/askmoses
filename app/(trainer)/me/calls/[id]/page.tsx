@@ -1,13 +1,28 @@
-// TODO: TASK-017 — Detalhe de call do trainer
-// Reutilizar componente CallDetail com viewerRole="trainer"
-// Ver FASE1_TASK_BREAKDOWN.md para especificação completa
+import { notFound } from 'next/navigation'
+import { getCallById } from '@/lib/services/calls'
+import { getTrainerId } from '@/lib/auth'
+import { CallDetail } from '@/components/shared/CallDetail'
 
-export default function TrainerCallDetail() {
-  return (
-    <div>
-      <p className="text-sm" style={{ color: 'var(--am-muted)' }}>
-        Em desenvolvimento — TASK-017
-      </p>
-    </div>
-  )
+interface Props {
+  params: Promise<{ id: string }>
+}
+
+export default async function TrainerCallDetailPage({ params }: Props) {
+  const { id } = await params
+  const [call, trainerId] = await Promise.all([getCallById(id), getTrainerId()])
+
+  if (!call) notFound()
+
+  if (!trainerId || call.trainerId !== trainerId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <p className="text-2xl font-semibold" style={{ color: 'var(--am-red)' }}>403</p>
+        <p className="text-sm" style={{ color: 'var(--am-muted)' }}>
+          You don&apos;t have access to this call.
+        </p>
+      </div>
+    )
+  }
+
+  return <CallDetail call={call} viewerRole="trainer" backHref="/me" />
 }

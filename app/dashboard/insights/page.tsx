@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -71,7 +70,6 @@ interface InsightsResult {
 }
 
 export default function InsightsPage() {
-  const supabase = createClient()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
   const [loading, setLoading] = useState(true)
@@ -85,12 +83,8 @@ export default function InsightsPage() {
 
   useEffect(() => {
     async function loadScripts() {
-      const { data } = await supabase
-        .from("scripts")
-        .select("id, name, description, rubric_id")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-
+      const res = await fetch("/api/scripts?active=true")
+      const { data } = (await res.json()) as { data: Script[] | null; error: unknown }
       if (data) setScripts(data)
       setLoading(false)
     }
@@ -157,17 +151,19 @@ export default function InsightsPage() {
         sections.push({ name: "AI Optimized Script", instructions: insights.suggestedScript, tips: "" })
       }
 
-      const { error: insertError } = await supabase
-        .from("scripts")
-        .insert({
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: newName,
           description: `AI-generated optimized script based on analysis of ${insights.metrics.total} calls (${insights.metrics.closeRate}% close rate)`,
           rubric_id: originalScript?.rubric_id,
           sections,
           full_script: insights.suggestedScript,
           is_active: true,
-        })
-
+        }),
+      })
+      const { error: insertError } = await res.json()
       if (insertError) throw new Error(insertError.message)
 
       setSavedScript(true)
@@ -461,23 +457,23 @@ export default function InsightsPage() {
           </div>
 
           {/* Common Objections */}
-          <Card className="bg-slate-900 border-slate-700">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-100">
+              <CardTitle className="flex items-center gap-2">
                 <MessageSquareWarning className="h-5 w-5" />
                 Common Objections & How to Handle Them
               </CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardDescription>
                 Objections found across all calls with best vs worst responses
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {insights.commonObjections?.map((obj, i) => (
-                <div key={i} className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-3">
+                <div key={i} className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm text-slate-100">"{obj.objection}"</span>
+                        <span className="font-semibold text-sm text-foreground">"{obj.objection}"</span>
                         <Badge variant={
                           obj.frequency === "Very Common" ? "destructive" :
                           obj.frequency === "Common" ? "default" : "secondary"
@@ -488,17 +484,17 @@ export default function InsightsPage() {
                     </div>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
-                    <div className="p-3 rounded-md bg-green-900/30 border border-green-700 hover:border-green-600 transition-colors">
-                      <p className="text-xs font-semibold text-green-300 mb-1 flex items-center gap-1">
+                    <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-600 transition-colors">
+                      <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" /> Best Response (Closers)
                       </p>
-                      <p className="text-sm text-green-100">{obj.bestResponse}</p>
+                      <p className="text-sm text-green-900 dark:text-green-100">{obj.bestResponse}</p>
                     </div>
-                    <div className="p-3 rounded-md bg-red-900/30 border border-red-700 hover:border-red-600 transition-colors">
-                      <p className="text-xs font-semibold text-red-300 mb-1 flex items-center gap-1">
+                    <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 hover:border-red-400 dark:hover:border-red-600 transition-colors">
+                      <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 flex items-center gap-1">
                         <XCircle className="h-3 w-3" /> Worst Response (Non-Closers)
                       </p>
-                      <p className="text-sm text-red-100">{obj.worstResponse}</p>
+                      <p className="text-sm text-red-900 dark:text-red-100">{obj.worstResponse}</p>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 /**
- * Dados mock para POST /api/analyze (análise de uma call individual).
- * Na Fase 2 será substituído por chamada real ao GPT-4o.
+ * Mock data for POST /api/analyze (individual call analysis).
+ * In Phase 2 this will be replaced by a real GPT-4o call.
  */
 
 interface AnalysisProfile {
@@ -15,7 +15,7 @@ interface AnalysisSummary {
   improvements: string[]
 }
 
-// Scores base variam por outcome
+// Base scores vary by outcome
 export const outcomeProfiles: Record<string, AnalysisProfile> = {
   closed: {
     scores: [5, 4, 5, 4, 5],
@@ -42,48 +42,48 @@ export const outcomeProfiles: Record<string, AnalysisProfile> = {
 function buildSectionFeedback(name: string, score: number): string {
   const feedbacks: Record<string, [string, string, string]> = {
     'Discovery': [
-      'Excelente exploração com perguntas abertas. Identificou a dor real rapidamente.',
-      'Discovery razoável, mas com poucas perguntas abertas antes de apresentar a oferta.',
-      'Discovery insuficiente — pulou direto para a apresentação sem explorar a dor.',
+      'Excellent exploration with open-ended questions. Identified the real pain quickly.',
+      'Reasonable discovery, but too few open questions before presenting the offer.',
+      'Insufficient discovery — jumped straight to the presentation without exploring the pain.',
     ],
     'Problem Agitation': [
-      'Conectou o problema a impactos emocionais e financeiros com maestria.',
-      'Agitação parcial — mencionou impactos mas sem aprofundar.',
-      'Praticamente não houve agitação do problema. O prospecto não sentiu urgência.',
+      'Connected the problem to emotional and financial impacts masterfully.',
+      'Partial agitation — mentioned impacts but didn\'t go deep.',
+      'Virtually no problem agitation. The prospect didn\'t feel urgency.',
     ],
     'Offer Presentation': [
-      'Oferta apresentada como solução exata para a dor identificada.',
-      'Apresentação funcional mas desconectada da dor do prospecto.',
-      'Oferta genérica, sem conexão com o que foi discutido no discovery.',
+      'Offer presented as the exact solution for the identified pain.',
+      'Functional presentation but disconnected from the prospect\'s pain.',
+      'Generic offer, with no connection to what was discussed in discovery.',
     ],
     'Objection Handling': [
-      'Objeções manejadas com reframing eficaz, sem entrar na defensiva.',
-      'Tentou contornar objeções mas cedeu rápido demais.',
-      'Entrou em modo defensivo na primeira objeção. Ofereceu desconto prematuramente.',
+      'Objections handled with effective reframing, without going defensive.',
+      'Tried to get around objections but caved too quickly.',
+      'Went defensive on the first objection. Offered a discount prematurely.',
     ],
     'Close & Next Steps': [
-      'Fechamento seguro com próximos passos claros e data definida.',
-      'Próximos passos definidos mas vagos, sem data/hora.',
-      'Call encerrada sem compromisso claro. Prospecto saiu sem próximo passo.',
+      'Confident close with clear next steps and a set date.',
+      'Next steps defined but vague, no date/time.',
+      'Call ended without a clear commitment. Prospect left with no next step.',
     ],
     'Objection Classification': [
-      'Identificou corretamente o tipo de objeção (preço) e ajustou a abordagem.',
-      'Classificou a objeção mas demorou a reagir.',
-      'Não identificou a objeção real — tratou como resistência genérica.',
+      'Correctly identified the type of objection (price) and adjusted the approach.',
+      'Classified the objection but was slow to react.',
+      'Didn\'t identify the real objection — treated it as generic resistance.',
     ],
     'Reframing Technique': [
-      'Recontextualizou o investimento em termos de custo de inação com sucesso.',
-      'Tentou reframing mas voltou a justificar o preço.',
-      'Sem reframing. Entrou direto em modo de justificativa de preço.',
+      'Successfully recontextualized the investment in terms of cost of inaction.',
+      'Attempted reframing but went back to justifying the price.',
+      'No reframing. Went straight into price justification mode.',
     ],
     'Social Proof': [
-      'Usou case específico com raça e problema similar ao do prospecto.',
-      'Mencionou casos de sucesso mas sem especificidade.',
-      'Não usou prova social em nenhum momento da call.',
+      'Used a specific case with a breed and problem similar to the prospect\'s.',
+      'Mentioned success cases but without specificity.',
+      'Used no social proof at any point in the call.',
     ],
   }
 
-  const fb = feedbacks[name] || ['Bom.', 'Razoável.', 'Precisa melhorar.']
+  const fb = feedbacks[name] || ['Good.', 'Reasonable.', 'Needs improvement.']
   if (score >= 4) return fb[0]
   if (score >= 3) return fb[1]
   return fb[2]
@@ -113,66 +113,66 @@ export function buildObjectionSections(scores: number[]) {
 
 export const summaryByOutcome: Record<string, AnalysisSummary> = {
   closed: {
-    summary: 'Call excelente com execução sólida em todas as etapas. O trainer conduziu o prospecto do discovery ao fechamento de forma natural e sem pressão.',
+    summary: 'Excellent call with solid execution at every stage. The trainer guided the prospect from discovery to close naturally and without pressure.',
     strengths: [
-      'Discovery profundo com 4+ perguntas abertas antes da oferta',
-      'Criou urgência real conectando o problema a custos emocionais',
-      'Fechamento natural com próximos passos claros e data definida',
+      'Deep discovery with 4+ open-ended questions before the offer',
+      'Created real urgency by connecting the problem to emotional costs',
+      'Natural close with clear next steps and a set date',
     ],
     improvements: [
-      'Poderia ter incluído mais prova social durante a apresentação',
+      'Could have included more social proof during the presentation',
     ],
   },
   follow_up: {
-    summary: 'Call bem conduzida com bom rapport, mas não fechou. O follow-up foi agendado corretamente. Provavelmente há um co-decisor envolvido.',
+    summary: 'Well-conducted call with good rapport, but didn\'t close. Follow-up was correctly scheduled. There\'s likely a co-decision maker involved.',
     strengths: [
-      'Discovery identificou a dor real corretamente',
-      'Manteve o engajamento do prospecto durante toda a call',
-      'Follow-up marcado com data e hora específicas',
+      'Discovery correctly identified the real pain',
+      'Maintained prospect engagement throughout the call',
+      'Follow-up scheduled with a specific date and time',
     ],
     improvements: [
-      'Identificar co-decisores mais cedo no discovery',
-      'Aprofundar o problem agitation para criar mais urgência',
+      'Identify co-decision makers earlier in discovery',
+      'Deepen problem agitation to create more urgency',
     ],
   },
   objection_unresolved: {
-    summary: 'Call com início promissor mas que travou na fase de objeção. O trainer não conseguiu recontextualizar o investimento e entrou em modo defensivo.',
+    summary: 'Call with a promising start that stalled in the objection phase. The trainer couldn\'t reframe the investment and went into defensive mode.',
     strengths: [
-      'Abertura de call bem feita com bom rapport inicial',
-      'Conhece bem o produto e apresentou com clareza',
+      'Good call opening with strong initial rapport',
+      'Knows the product well and presented it clearly',
     ],
     improvements: [
-      'Nunca justificar o preço — reframing com custo de inação',
-      'Parar de oferecer desconto como primeira resposta',
-      'Praticar role-play de objeção de preço com foco em valor',
+      'Never justify the price — reframe with cost of inaction',
+      'Stop offering discounts as a first response',
+      'Practice price objection role-play with a focus on value',
     ],
   },
   no_decision: {
-    summary: 'Call fraca sem direção clara. O prospecto conduziu a conversa e o trainer não conseguiu criar valor suficiente para avançar. Necessidade urgente de coaching.',
+    summary: 'Weak call with no clear direction. The prospect led the conversation and the trainer couldn\'t create enough value to move forward. Urgent coaching needed.',
     strengths: [
-      'Conseguiu manter o prospecto na call',
+      'Managed to keep the prospect on the call',
     ],
     improvements: [
-      'Discovery muito superficial — precisava de mais perguntas abertas',
-      'Não houve agitação do problema — o prospecto não sentiu urgência',
-      'Call encerrada sem nenhum próximo passo ou compromisso',
-      'Treinar controle de conversa e técnicas de fechamento',
+      'Very shallow discovery — needed more open-ended questions',
+      'No problem agitation — the prospect didn\'t feel urgency',
+      'Call ended with no next step or commitment',
+      'Train conversation control and closing techniques',
     ],
   },
 }
 
 export const mockGeneratedScript = {
-  name: 'Script Gerado - Dog Training Sales',
-  description: 'Script otimizado baseado nas transcrições fornecidas.',
+  name: 'Generated Script - Dog Training Sales',
+  description: 'Optimized script based on the provided transcripts.',
   sections: [
-    { name: 'Abertura & Rapport', instructions: 'Cumprimente e pergunte o motivo do contato.', tips: 'Seja genuíno.' },
-    { name: 'Discovery Profundo', instructions: 'Faça 3+ perguntas abertas antes de qualquer apresentação.', tips: 'Identifique a dor real.' },
-    { name: 'Agitação do Problema', instructions: 'Conecte o problema a custos emocionais e financeiros.', tips: '"E como isso afeta..."' },
-    { name: 'Apresentação da Oferta', instructions: 'Apresente como solução exata para a dor.', tips: 'Valor antes do preço.' },
-    { name: 'Manejo de Objeções', instructions: 'Recontextualize o investimento em termos de custo de inação.', tips: '"Quanto custa NÃO resolver?"' },
-    { name: 'Fechamento', instructions: 'Proponha próximo passo claro.', tips: 'Silêncio estratégico após o preço.' },
+    { name: 'Opening & Rapport', instructions: 'Greet and ask what prompted the contact.', tips: 'Be genuine.' },
+    { name: 'Deep Discovery', instructions: 'Ask 3+ open-ended questions before any presentation.', tips: 'Identify the real pain.' },
+    { name: 'Problem Agitation', instructions: 'Connect the problem to emotional and financial costs.', tips: '"And how does that affect..."' },
+    { name: 'Offer Presentation', instructions: 'Present as the exact solution for the pain.', tips: 'Value before price.' },
+    { name: 'Objection Handling', instructions: 'Reframe the investment in terms of cost of inaction.', tips: '"How much does it cost NOT to solve this?"' },
+    { name: 'Close', instructions: 'Propose a clear next step.', tips: 'Strategic silence after the price.' },
   ],
-  full_script: 'Script completo gerado pela IA...',
+  full_script: 'Complete script generated by AI...',
   criteria: [
     { name: 'Rapport Building', description: 'Establishes connection in first 2 minutes' },
     { name: 'Open Questions', description: 'At least 3 open questions before presenting' },
@@ -180,7 +180,7 @@ export const mockGeneratedScript = {
     { name: 'Value Before Price', description: 'Establishes value before pricing' },
     { name: 'Clear Next Steps', description: 'Call ends with clear commitment' },
   ],
-  explanation: 'Script gerado com base nas melhores práticas identificadas nas transcrições fornecidas.',
+  explanation: 'Script generated based on the best practices identified in the provided transcripts.',
 }
 
 export const mockGeneratedCriteria = {

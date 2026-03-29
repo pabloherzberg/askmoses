@@ -14,7 +14,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Pencil, Save, X, Plus, Loader2, Zap, Trash2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 interface GeneratedCriteria {
   name: string
@@ -68,33 +67,25 @@ export default function SettingsPage() {
     sections: [{ name: "", instructions: "", tips: "" }],
   })
 
-  const supabase = createClient()
-
   useEffect(() => {
     fetchData()
   }, [])
 
   async function fetchData() {
     setLoading(true)
-    const { data: rubricData } = await supabase
-      .from("rubrics")
-      .select("*")
-      .eq("is_active", true)
-      .single()
+    const [rubricRes, scriptsRes] = await Promise.all([
+      fetch("/api/rubric-config"),
+      fetch("/api/scripts"),
+    ])
+    const { data: rubricData } = (await rubricRes.json()) as { data: Rubric | null; error: unknown }
+    const { data: scriptsData } = (await scriptsRes.json()) as { data: Script[] | null; error: unknown }
 
     if (rubricData) {
       setRubric(rubricData)
       setSystemPrompt(rubricData.system_prompt || "")
       setLlmModel(rubricData.llm_model || "openai/gpt-4o-mini")
-
-      const { data: scriptsData } = await supabase
-        .from("scripts")
-        .select("*")
-        .eq("rubric_id", rubricData.id)
-
-      setScripts(scriptsData || [])
     }
-
+    if (scriptsData) setScripts(scriptsData)
     setLoading(false)
   }
 
@@ -123,7 +114,6 @@ export default function SettingsPage() {
 
     setCreatingScript(true)
     try {
-      // Generate criteria based on script
       const generatedCriteria = await generateCriteriaForScript(
         newScriptForm.description,
         newScriptForm.sections.filter((s) => s.name)
@@ -134,9 +124,10 @@ export default function SettingsPage() {
         .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\nTip: " + s.tips : ""}`)
         .join("\n\n")
 
-      const { data: scriptData } = await supabase
-        .from("scripts")
-        .insert({
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           rubric_id: rubric.id,
           name: newScriptForm.name,
           description: newScriptForm.description,
@@ -144,11 +135,12 @@ export default function SettingsPage() {
           full_script: fullScriptText,
           criteria: generatedCriteria,
           is_active: false,
-        })
-        .select()
+        }),
+      })
+      const { data: scriptData } = (await res.json()) as { data: Script | null; error: unknown }
 
       if (scriptData) {
-        setScripts([...scripts, { ...scriptData[0], criteria: generatedCriteria }])
+        setScripts([...scripts, { ...scriptData, criteria: generatedCriteria }])
         setNewScriptForm({ name: "", description: "", sections: [{ name: "", instructions: "", tips: "" }] })
       }
     } catch (error) {
@@ -161,28 +153,23 @@ export default function SettingsPage() {
     if (!rubric) return
 
     setSaving(true)
-    const { error } = await supabase
-      .from("rubrics")
-      .update({ 
-        system_prompt: systemPrompt,
-        llm_model: llmModel
-      })
-      .eq("id", rubric.id)
-
-    if (!error) {
-      setSystemPromptEdited(false)
-      setLlmModelEdited(false)
-    }
+    await fetch("/api/rubric-config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system_prompt: systemPrompt, llm_model: llmModel }),
+    })
+    setSystemPromptEdited(false)
+    setLlmModelEdited(false)
     setSaving(false)
   }
 
   async function handleUpdateScriptName(scriptId: string, newName: string) {
-    const { error } = await supabase
-      .from("scripts")
-      .update({ name: newName })
-      .eq("id", scriptId)
-
-    if (!error) {
+    const res = await fetch(`/api/scripts/${scriptId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    })
+    if (res.ok) {
       setScripts(scripts.map((s) => (s.id === scriptId ? { ...s, name: newName } : s)))
       setEditingScriptId(null)
       setEditingScriptName("")
@@ -190,12 +177,12 @@ export default function SettingsPage() {
   }
 
   async function handleUpdateScriptContent(scriptId: string, content: string) {
-    const { error } = await supabase
-      .from("scripts")
-      .update({ full_script: content })
-      .eq("id", scriptId)
-
-    if (!error) {
+    const res = await fetch(`/api/scripts/${scriptId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ full_script: content }),
+    })
+    if (res.ok) {
       setScripts(
         scripts.map((s) =>
           s.id === scriptId ? { ...s, full_script: content } : s
@@ -214,9 +201,8 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteScript(scriptId: string) {
-    const { error } = await supabase.from("scripts").delete().eq("id", scriptId)
-
-    if (!error) {
+    const res = await fetch(`/api/scripts/${scriptId}`, { method: "DELETE" })
+    if (res.ok) {
       setScripts(scripts.filter((s) => s.id !== scriptId))
     }
   }
@@ -514,7 +500,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="p-3 bg-slate-900 dark:bg-slate-800 rounded border border-slate-700 text-slate-100">
+                          <div className="p-3 bg-muted rounded border border-border text-foreground">
                             <p className="font-mono text-xs whitespace-pre-wrap max-h-64 overflow-y-auto">
                               {getScriptDisplayText(script)}
                             </p>

@@ -1,13 +1,16 @@
-// TODO: TASK-015 — Detalhe de call (owner)
-// Reutilizar componente CallDetail com viewerRole="owner"
-// Ver FASE1_TASK_BREAKDOWN.md para especificação completa
+import { notFound } from 'next/navigation'
+import { getCallById } from '@/lib/services/calls'
+import { CallDetail } from '@/components/shared/CallDetail'
 
-export default function OwnerCallDetail() {
-  return (
-    <div>
-      <p className="text-sm" style={{ color: 'var(--am-muted)' }}>
-        Em desenvolvimento — TASK-015
-      </p>
-    </div>
-  )
+interface Props {
+  params: Promise<{ id: string }>
+}
+
+export default async function OwnerCallDetailPage({ params }: Props) {
+  const { id } = await params
+  const call = await getCallById(id)
+
+  if (!call) notFound()
+
+  return <CallDetail call={call} viewerRole="owner" backHref="/calls" />
 }

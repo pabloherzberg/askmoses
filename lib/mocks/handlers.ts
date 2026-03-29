@@ -106,6 +106,22 @@ const supabaseHandlers = [
     return HttpResponse.json(data)
   }),
 
+  // POST rubrics (insert — script-builder creates one when none exists)
+  http.post(`${SUPABASE_URL}/rest/v1/rubrics`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    const newRubric = {
+      ...rubric,
+      id: `rubric-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      ...body,
+    }
+    const accept = request.headers.get('accept') || ''
+    if (accept.includes('vnd.pgrst.object')) {
+      return HttpResponse.json(newRubric, { status: 201 })
+    }
+    return HttpResponse.json([newRubric], { status: 201 })
+  }),
+
   // PATCH rubrics (settings update)
   http.patch(`${SUPABASE_URL}/rest/v1/rubrics`, () => {
     return HttpResponse.json(rubric)
@@ -192,6 +208,83 @@ const apiHandlers = [
   http.get('/api/rubric', () => {
     return ok({ sections: rubricSections, trend: trendData })
   }),
+
+  // GET /api/rubric-config — rubric completa com system_prompt e llm_model
+  http.get('/api/rubric-config', () => {
+    return ok(rubric)
+  }),
+
+  // PATCH /api/rubric-config — atualização mock (visual only na Fase 1)
+  http.patch('/api/rubric-config', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return ok({ ...rubric, ...body })
+  }),
+
+  // GET /api/scripts
+  http.get('/api/scripts', ({ request }) => {
+    const url = new URL(request.url)
+    const rubricId = url.searchParams.get('rubricId')
+    const activeOnly = url.searchParams.get('active')
+    let data = [...scripts]
+    if (rubricId) data = data.filter((s) => s.rubric_id === rubricId)
+    if (activeOnly === 'true') data = data.filter((s) => s.is_active)
+    return ok(data)
+  }),
+
+  // POST /api/scripts — create mock (visual only na Fase 1)
+  http.post('/api/scripts', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    const newScript = {
+      id: `script-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      is_active: true,
+      rubric_id: 'rubric-001',
+      ...body,
+    }
+    return ok(newScript)
+  }),
+
+  // PATCH /api/scripts/:id — update mock
+  http.patch('/api/scripts/:id', async ({ request, params }) => {
+    const body = await request.json() as Record<string, unknown>
+    return ok({ id: params.id, ...body })
+  }),
+
+  // DELETE /api/scripts/:id — delete mock
+  http.delete('/api/scripts/:id', ({ params }) => {
+    return ok({ id: params.id, deleted: true })
+  }),
+]
+
+// ─── Auth handlers (mock para demo — substitui Supabase Auth) ────────────────
+
+const DEMO_CREDENTIALS = [
+  { email: 'trainer@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Marcus R.', trainerId: 'trainer-marcus' },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jamie L.', trainerId: 'trainer-jamie' },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jordan K.', trainerId: 'trainer-jordan' },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Taylor M.', trainerId: 'trainer-taylor' },
+  { email: 'owner@demo.askmoses.ai', password: 'demo123', role: 'owner', name: 'Dog Wizard HQ', trainerId: null },
+  { email: 'admin@askmoses.ai', password: 'demo123', role: 'admin', name: 'AskMoses Admin', trainerId: null },
+] as const
+
+const authHandlers = [
+  // POST /api/auth/login
+  http.post('/api/auth/login', async ({ request }) => {
+    const { email, password } = await request.json() as { email: string; password: string }
+    const user = DEMO_CREDENTIALS.find((u) => u.email === email && u.password === password)
+    if (!user) {
+      return HttpResponse.json(
+        { data: null, error: { message: 'Email ou senha incorretos', code: 401 } },
+        { status: 401 }
+      )
+    }
+    return ok({ user: { id: `demo-${user.role}`, email: user.email, role: user.role, name: user.name, trainerId: user.trainerId } })
+  }),
+
+  // POST /api/auth/logout
+  http.post('/api/auth/logout', () => {
+    return ok({ message: 'Logged out' })
+  }),
 ]
 
 // ─── Dashboard API handlers (substituem as API routes deletadas) ─────────────
@@ -268,4 +361,4 @@ const dashboardApiHandlers = [
 
 // ─── Export all handlers ──────────────────────────────────────────────────────
 
-export const handlers = [...supabaseHandlers, ...apiHandlers, ...dashboardApiHandlers]
+export const handlers = [...supabaseHandlers, ...apiHandlers, ...dashboardApiHandlers, ...authHandlers]
