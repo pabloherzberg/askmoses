@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Upload,
   FileAudio,
+  FileVideo,
   FileText,
   X,
   Loader2,
@@ -127,6 +128,10 @@ export default function UploadPage() {
       "audio/m4a": [".m4a"],
       "audio/ogg": [".ogg"],
       "audio/webm": [".webm"],
+      "video/mp4": [".mp4"],
+      "video/quicktime": [".mov"],
+      "video/x-msvideo": [".avi"],
+      "video/webm": [".webm"],
     },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024, // 50MB limit via Blob
@@ -558,7 +563,7 @@ export default function UploadPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Upload Call</h2>
         <p className="text-muted-foreground">
-          Upload an audio file or paste a transcript for AI coaching analysis
+          Upload an audio or video file, or paste a transcript for AI coaching analysis
         </p>
       </div>
 
@@ -679,7 +684,7 @@ export default function UploadPage() {
           <CardHeader>
             <CardTitle>Call Content</CardTitle>
             <CardDescription>
-              Upload audio or paste the transcript directly
+              Upload audio or video, or paste the transcript directly
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -690,7 +695,7 @@ export default function UploadPage() {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="audio">
                   <FileAudio className="mr-2 h-4 w-4" />
-                  Audio File
+                  Audio / Video
                 </TabsTrigger>
                 <TabsTrigger value="transcript">
                   <FileText className="mr-2 h-4 w-4" />
@@ -702,7 +707,10 @@ export default function UploadPage() {
                 {formData.audioFile ? (
                   <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-4">
                     <div className="flex items-center gap-3">
-                      <FileAudio className="h-8 w-8 text-primary" />
+                      {formData.audioFile.type.startsWith("video/")
+                        ? <FileVideo className="h-8 w-8 text-primary" />
+                        : <FileAudio className="h-8 w-8 text-primary" />
+                      }
                       <div>
                         <p className="font-medium">{formData.audioFile.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -731,7 +739,7 @@ export default function UploadPage() {
                         : "Drag & drop audio file"}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      MP3, WAV, M4A, OGG, WEBM
+                      Audio: MP3, WAV, M4A, OGG, WEBM · Video: MP4, MOV, AVI
                     </p>
                     <Button variant="outline" size="sm" className="mt-4 bg-transparent">
                       Browse Files
