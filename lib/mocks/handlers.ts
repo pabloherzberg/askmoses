@@ -259,9 +259,12 @@ const apiHandlers = [
 // ─── Auth handlers (mock para demo — substitui Supabase Auth) ────────────────
 
 const DEMO_CREDENTIALS = [
-  { email: 'trainer@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Marcus R.' },
-  { email: 'owner@demo.askmoses.ai', password: 'demo123', role: 'owner', name: 'Dog Wizard HQ' },
-  { email: 'admin@askmoses.ai', password: 'demo123', role: 'admin', name: 'AskMoses Admin' },
+  { email: 'trainer@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Marcus R.', trainerId: 'trainer-marcus' },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jamie L.', trainerId: 'trainer-jamie' },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jordan K.', trainerId: 'trainer-jordan' },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Taylor M.', trainerId: 'trainer-taylor' },
+  { email: 'owner@demo.askmoses.ai', password: 'demo123', role: 'owner', name: 'Dog Wizard HQ', trainerId: null },
+  { email: 'admin@askmoses.ai', password: 'demo123', role: 'admin', name: 'AskMoses Admin', trainerId: null },
 ] as const
 
 const authHandlers = [
@@ -275,7 +278,7 @@ const authHandlers = [
         { status: 401 }
       )
     }
-    return ok({ user: { id: `demo-${user.role}`, email: user.email, role: user.role, name: user.name } })
+    return ok({ user: { id: `demo-${user.role}`, email: user.email, role: user.role, name: user.name, trainerId: user.trainerId } })
   }),
 
   // POST /api/auth/logout

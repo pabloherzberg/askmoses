@@ -6,6 +6,9 @@ import type { Role } from '@/lib/types'
 
 const DEMO_USERS = [
   { label: 'Trainer', email: 'trainer@demo.askmoses.ai', password: 'demo123', hint: 'Marcus R.' },
+  { label: 'Trainer 2', email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
+  { label: 'Trainer 3', email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
+  { label: 'Trainer 4', email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
   { label: 'Gestor', email: 'owner@demo.askmoses.ai', password: 'demo123', hint: 'Owner' },
   { label: 'Admin', email: 'admin@askmoses.ai', password: 'demo123', hint: 'AskMoses Team' },
 ]
@@ -34,7 +37,7 @@ export default function LoginPage() {
     })
 
     const { data, error: authError } = await res.json() as {
-      data: { user: { role: Role } } | null
+      data: { user: { role: Role; trainerId: string | null } } | null
       error: { message: string } | null
     }
 
@@ -44,9 +47,14 @@ export default function LoginPage() {
       return
     }
 
-    const role = data.user.role
+    const { role, trainerId } = data.user
     // Persiste sessão demo via cookie para o middleware ler
     document.cookie = `demo-role=${role}; path=/; max-age=86400; SameSite=Lax`
+    if (trainerId) {
+      document.cookie = `demo-trainer-id=${trainerId}; path=/; max-age=86400; SameSite=Lax`
+    } else {
+      document.cookie = `demo-trainer-id=; path=/; max-age=0; SameSite=Lax`
+    }
     router.push(redirectByRole(role))
   }
 

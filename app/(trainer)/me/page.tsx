@@ -7,10 +7,8 @@ import { ScoreCard } from '@/components/shared/ScoreCard'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
+import { getTrainerId } from '@/lib/auth'
 import type { RubricColor } from '@/lib/types'
-
-// Demo: trainer@demo.askmoses.ai is Marcus R.
-const DEMO_TRAINER_ID = 'trainer-marcus'
 
 const resultStyles: Record<string, { bg: string; color: string; label: string }> = {
   closed:      { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
@@ -36,18 +34,36 @@ function buildRubricDelta(
   })
 }
 
-const coachingTip = {
-  title: 'This week\'s focus: Problem Agitation',
-  body:
-    'Your Discovery is the best on the team (94). Now sharpen the next step: after identifying the pain, pause and ask "How long has this been going on?" — let the prospect feel the cost of the problem before you present the offer.',
+const coachingTips: Record<string, { title: string; body: string }> = {
+  'trainer-marcus': {
+    title: 'This week\'s focus: Problem Agitation',
+    body: 'Your Discovery is the best on the team (94). Now sharpen the next step: after identifying the pain, pause and ask "How long has this been going on?" — let the prospect feel the cost of the problem before you present the offer.',
+  },
+  'trainer-jamie': {
+    title: 'This week\'s focus: Offer Presentation',
+    body: 'Your Discovery and Problem Agitation are solid (88). The gap is in translating that emotional momentum into a compelling offer. After the prospect acknowledges the problem, anchor the investment to the cost of inaction — not the features of the program.',
+  },
+  'trainer-jordan': {
+    title: 'This week\'s focus: Problem Agitation',
+    body: 'You\'re jumping to the offer too fast. Spend more time letting the prospect feel the weight of the problem — ask "How is this affecting your day-to-day?" before presenting the solution. Agitation builds the urgency that closes deals.',
+  },
+  'trainer-taylor': {
+    title: 'Priority: rebuild confidence in objection handling',
+    body: 'Your score dropped 12pts in 2 weeks — the pattern is clear: when a prospect pushes back on price, you go defensive instead of redirecting to value. Try this: "What would it cost you to leave this unsolved for another 3 months?" Let the prospect answer before you say anything.',
+  },
 }
 
 export default async function TrainerDashboardPage() {
+  const trainerId = await getTrainerId()
+  if (!trainerId) return null
+
   const [trainer, allCalls, { sections: rubric }] = await Promise.all([
-    getTrainerById(DEMO_TRAINER_ID),
-    getCalls({ trainerId: DEMO_TRAINER_ID }),
+    getTrainerById(trainerId),
+    getCalls({ trainerId }),
     getRubric(),
   ])
+
+  const coachingTip = coachingTips[trainerId] ?? coachingTips['trainer-marcus']
 
   if (!trainer) return null
 
@@ -85,7 +101,7 @@ export default async function TrainerDashboardPage() {
           label="My Score"
           value={trainer.score}
           valueColor="var(--am-accent2)"
-          delta={11}
+          delta={trainer.scoreDelta}
           deltaLabel="pts since week 1"
         />
         <ScoreCard
