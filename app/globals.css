@@ -219,4 +219,4 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .am-fade-up { animation: am-fade-up 0.4s ease both; }
-.am-theme-toggle:hover { color: var(--am-text) !important; background: var(--am-bg4) !important; border-color: var(--am-border) !important; }
+.am-theme-toggle:hover { color: var(--am-text) !important; }
