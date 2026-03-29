@@ -8,7 +8,7 @@ export default function TrainerLayout({ children }: { children: React.ReactNode 
       <AppHeader mobileSidebar={<TrainerNavItems />} />
       <div className="flex">
         <TrainerSidebar />
-        <main className="flex-1 min-w-0 lg:pl-56 pt-[61px] overflow-x-hidden">
+        <main className="flex-1 lg:pl-56 pt-[61px]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
             {children}
           </div>

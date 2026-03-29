@@ -47,7 +47,7 @@ export default async function OverviewPage() {
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>Team Overview</SectionLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <ScoreCard
           label="Avg Close Rate"
           value={`${avgClose}%`}
@@ -187,10 +187,9 @@ export default async function OverviewPage() {
       {/* ── Detailed rubric table ──────────────────────────────── */}
       <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>
       <div
-        className="rounded-2xl border mb-4"
+        className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
       >
-        <div className="p-5 overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -200,19 +199,13 @@ export default async function OverviewPage() {
               >
                 Section
               </th>
-              {[
-                { label: 'Team', mobile: true },
-                { label: 'Marcus R.', mobile: false },
-                { label: 'Jamie L.', mobile: false },
-                { label: 'Jordan K.', mobile: false },
-                { label: 'Taylor M.', mobile: false },
-              ].map(({ label, mobile }) => (
+              {['Team', 'Marcus R.', 'Jamie L.', 'Jordan K.', 'Taylor M.'].map((h) => (
                 <th
-                  key={label}
-                  className={`text-[11px] font-medium text-right pb-2.5 px-2${mobile ? '' : ' hidden sm:table-cell'}`}
+                  key={h}
+                  className="text-[11px] font-medium text-right pb-2.5 px-2"
                   style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
                 >
-                  {label}
+                  {h}
                 </th>
               ))}
             </tr>
@@ -247,7 +240,7 @@ export default async function OverviewPage() {
                   {scores.map((s, idx) => (
                     <td
                       key={idx}
-                      className="text-xs text-right font-mono px-2 py-2.5 hidden sm:table-cell"
+                      className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
                         color:
                           s === maxScore
@@ -267,10 +260,9 @@ export default async function OverviewPage() {
             })}
           </tbody>
         </table>
-        </div>
       </div>
 
-      {/* ── AI Insights ──────────────────────────────────────── */}
+      {/* ── AI Insights ───────────────────────────────────────── */}
       <SectionLabel>AI Insights</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {insights.map((insight) => (
