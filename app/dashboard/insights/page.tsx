@@ -151,17 +151,19 @@ export default function InsightsPage() {
         sections.push({ name: "AI Optimized Script", instructions: insights.suggestedScript, tips: "" })
       }
 
-      const { error: insertError } = await supabase
-        .from("scripts")
-        .insert({
+      const res = await fetch("/api/scripts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: newName,
           description: `AI-generated optimized script based on analysis of ${insights.metrics.total} calls (${insights.metrics.closeRate}% close rate)`,
           rubric_id: originalScript?.rubric_id,
           sections,
           full_script: insights.suggestedScript,
           is_active: true,
-        })
-
+        }),
+      })
+      const { error: insertError } = await res.json()
       if (insertError) throw new Error(insertError.message)
 
       setSavedScript(true)
