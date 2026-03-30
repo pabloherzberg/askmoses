@@ -290,13 +290,13 @@ export default function AnalyticsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-sm text-slate-100">
+                  <CardTitle className="text-sm text-foreground">
                     Insight
                   </CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{insight}</p>
+                <p className="text-sm text-foreground">{insight}</p>
               </CardContent>
             </Card>
           ))}

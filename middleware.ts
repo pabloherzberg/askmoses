@@ -41,9 +41,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, request.url))
   }
 
-  // Trainer só acessa /me e /me/calls/[id]
-  const trainerBlocked = ['/overview', '/dashboard', '/calls']
-  if (role === 'trainer' && trainerBlocked.some((p) => pathname.startsWith(p))) {
+  // Trainer só acessa /me, /me/calls/[id] e /dashboard/upload
+  const trainerBlocked = ['/overview', '/calls']
+  const trainerDashboardBlocked = pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/upload')
+  if (role === 'trainer' && (trainerBlocked.some((p) => pathname.startsWith(p)) || trainerDashboardBlocked)) {
     return NextResponse.redirect(new URL('/me', request.url))
   }
 

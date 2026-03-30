@@ -1,57 +1,26 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { LayoutDashboard, Upload } from 'lucide-react'
+import { NavItem, AppSidebar } from '@/components/layout/AppSidebar'
+import type React from 'react'
 
 const nav = [
   { label: 'My Dashboard', href: '/me', icon: LayoutDashboard },
+  { label: 'Upload Call',  href: '/dashboard/upload', icon: Upload },
 ]
 
 export function TrainerNavItems() {
-  const pathname = usePathname()
-
   return (
     <nav className="flex flex-col gap-1">
-      {nav.map(({ label, href, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + '/')
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-              active ? 'text-white' : 'hover:opacity-80'
-            )}
-            style={
-              active
-                ? { background: 'var(--am-accent)', color: 'white' }
-                : { color: 'var(--am-muted)' }
-            }
-          >
-            <Icon size={16} />
-            {label}
-          </Link>
-        )
-      })}
+      {nav.map((item) => <NavItem key={item.href} {...item} />)}
     </nav>
   )
 }
 
 export function TrainerSidebar() {
   return (
-    <aside
-      className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
-      style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
-    >
+    <AppSidebar>
       <TrainerNavItems />
-      <div className="mt-auto pb-4 px-3">
-        <div className="rounded-md border border-border bg-secondary/50 p-3">
-          <p className="text-xs text-muted-foreground">Starter Tier</p>
-          <p className="text-sm font-medium">Manual Upload</p>
-        </div>
-      </div>
-    </aside>
+    </AppSidebar>
   )
 }
