@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/types'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { LogoSVG } from '@/components/shared/LogoSVG'
 
 const DEMO_USERS = [
   { label: 'Trainer', email: 'trainer@demo.askmoses.ai', password: 'demo123', hint: 'Marcus R.' },
@@ -42,7 +44,7 @@ export default function LoginPage() {
     }
 
     if (authError || !data) {
-      setError(authError?.message ?? 'Email ou senha incorretos')
+      setError(authError?.message ?? 'Invalid email or password')
       setLoading(false)
       return
     }
@@ -66,17 +68,10 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm px-6">
-      {/* Logo */}
-      <div className="flex items-center justify-center gap-2.5 mb-10">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-semibold text-white font-mono"
-          style={{ background: 'var(--am-accent)' }}
-        >
-          M
-        </div>
-        <span className="text-base font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-          Ask<span style={{ color: 'var(--am-accent2)' }}>Moses</span>.AI
-        </span>
+      {/* Logo + ThemeToggle */}
+      <div className="flex items-center justify-between mb-10">
+        <LogoSVG className="h-14 w-auto" />
+        <ThemeToggle />
       </div>
 
       {/* Form */}
@@ -96,13 +91,13 @@ export default function LoginPage() {
               border: '1px solid var(--am-border2)',
               color: 'var(--am-text)',
             }}
-            placeholder="seu@email.com"
+            placeholder="your@email.com"
           />
         </div>
 
         <div>
           <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
-            Senha
+            Password
           </label>
           <input
             type="password"
@@ -129,19 +124,19 @@ export default function LoginPage() {
           type="submit"
           disabled={loading}
           className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-60"
-          style={{ background: 'var(--am-accent)' }}
+          style={{ background: 'var(--accent)' }}
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {loading ? 'Signing in...' : 'Login'}
         </button>
       </form>
 
       {/* Demo shortcuts */}
       <div
-        className="mt-8 p-4 rounded-xl border"
+        className="mt-8 mb-8 p-4 rounded-xl border"
         style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[11px] font-medium tracking-widest uppercase mb-3" style={{ color: 'var(--am-muted)' }}>
-          Acesso demo
+          Demo access
         </p>
         <div className="flex flex-col gap-2">
           {DEMO_USERS.map((u) => (

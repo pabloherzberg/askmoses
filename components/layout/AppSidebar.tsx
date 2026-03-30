@@ -7,6 +7,7 @@ import {
   BarChart3, Brain, Wand2, Settings, HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type React from 'react'
 
 const mainNav = [
   { label: 'Team Overview', href: '/overview', icon: LayoutDashboard },
@@ -48,8 +49,6 @@ export function NavItem({ label, href, icon: Icon }: { label: string; href: stri
   )
 }
 
-import type React from 'react'
-
 export function OwnerNavItems() {
   return (
     <nav className="flex flex-col gap-1">
@@ -66,7 +65,7 @@ export function OwnerNavItems() {
   )
 }
 
-export function OwnerSidebar({ children }: { children?: React.ReactNode }) {
+export function AppSidebar({ children }: { children?: React.ReactNode }) {
   return (
     <aside
       className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
