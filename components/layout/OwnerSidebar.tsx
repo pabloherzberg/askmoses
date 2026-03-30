@@ -38,7 +38,7 @@ function NavItem({ label, href, icon: Icon }: { label: string; href: string; ico
       )}
       style={
         active
-          ? { background: 'var(--am-accent)', color: 'white' }
+          ? { background: 'var(--sidebar-primary)', color: 'white' }
           : { color: 'var(--am-muted)' }
       }
     >
@@ -70,9 +70,15 @@ export function OwnerSidebar() {
   return (
     <aside
       className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
-      style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+      style={{ background: 'var(--sidebar)', borderColor: 'var(--am-border)' }}
     >
       <OwnerNavItems />
+      <div className="mt-auto pb-4 px-3">
+        <div className="rounded-md border border-border bg-secondary/50 p-3">
+          <p className="text-xs text-muted-foreground">Starter Tier</p>
+          <p className="text-sm font-medium">Manual Upload</p>
+        </div>
+      </div>
     </aside>
   )
 }

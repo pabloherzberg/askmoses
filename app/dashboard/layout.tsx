@@ -4,7 +4,7 @@ import { OwnerSidebar, OwnerNavItems } from "@/components/layout/OwnerSidebar"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
       <AppHeader mobileSidebar={<OwnerNavItems />} />
       <div className="flex">
         <OwnerSidebar />

@@ -46,6 +46,12 @@ export function TrainerSidebar() {
       style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
     >
       <TrainerNavItems />
+      <div className="mt-auto pb-4 px-3">
+        <div className="rounded-md border border-border bg-secondary/50 p-3">
+          <p className="text-xs text-muted-foreground">Starter Tier</p>
+          <p className="text-sm font-medium">Manual Upload</p>
+        </div>
+      </div>
     </aside>
   )
 }

@@ -285,7 +285,7 @@ export default function AnalyticsPage() {
           {insights.map((insight, idx) => (
             <Card
               key={idx}
-              className="border-slate-700 bg-slate-900 dark:border-slate-600 dark:bg-slate-800"
+              className="border-border bg-card"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
