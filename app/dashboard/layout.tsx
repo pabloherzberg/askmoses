@@ -1,13 +1,16 @@
 import type React from "react"
 import { AppHeader } from "@/components/layout/AppHeader"
-import { AppSidebar, OwnerNavItems } from "@/components/layout/AppSidebar"
+import { AppSidebar, TrainerNavItems, OwnerNavItems } from "@/components/layout/AppSidebar"
+import { getRole } from "@/lib/auth"
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const role = await getRole()
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      <AppHeader mobileSidebar={<OwnerNavItems />} />
+      <AppHeader mobileSidebar={role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />} />
       <div className="flex">
-        <AppSidebar />
+        <AppSidebar role={role} />
         <main className="flex-1 lg:pl-56 pt-[61px]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
             {children}

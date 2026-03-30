@@ -8,20 +8,26 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
+import type { Role } from '@/lib/types'
+
+const trainerNav = [
+  { label: 'My Dashboard', href: '/me',               icon: LayoutDashboard },
+  { label: 'Upload Call',  href: '/dashboard/upload',  icon: Upload },
+]
 
 const mainNav = [
   { label: 'Team Overview', href: '/overview', icon: LayoutDashboard },
-  { label: 'Calls', href: '/calls', icon: Phone },
+  { label: 'Calls',         href: '/calls',    icon: Phone },
 ]
 
 const toolsNav = [
-  { label: 'Upload Call', href: '/dashboard/upload', icon: Upload },
-  { label: 'History', href: '/dashboard/history', icon: History },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { label: 'Insights', href: '/dashboard/insights', icon: Brain },
-  { label: 'Script Builder', href: '/dashboard/script-builder', icon: Wand2 },
-  { label: 'Rubric', href: '/dashboard/settings', icon: Settings },
-  { label: 'How to Use', href: '/dashboard/guide', icon: HelpCircle },
+  { label: 'Upload Call',   href: '/dashboard/upload',        icon: Upload },
+  { label: 'History',       href: '/dashboard/history',       icon: History },
+  { label: 'Analytics',     href: '/dashboard/analytics',     icon: BarChart3 },
+  { label: 'Insights',      href: '/dashboard/insights',      icon: Brain },
+  { label: 'Script Builder',href: '/dashboard/script-builder',icon: Wand2 },
+  { label: 'Rubric',        href: '/dashboard/settings',      icon: Settings },
+  { label: 'How to Use',    href: '/dashboard/guide',         icon: HelpCircle },
 ]
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
@@ -49,6 +55,14 @@ export function NavItem({ label, href, icon: Icon }: { label: string; href: stri
   )
 }
 
+export function TrainerNavItems() {
+  return (
+    <nav className="flex flex-col gap-1">
+      {trainerNav.map((item) => <NavItem key={item.href} {...item} />)}
+    </nav>
+  )
+}
+
 export function OwnerNavItems() {
   return (
     <nav className="flex flex-col gap-1">
@@ -65,13 +79,15 @@ export function OwnerNavItems() {
   )
 }
 
-export function AppSidebar({ children }: { children?: React.ReactNode }) {
+export function AppSidebar({ role, children }: { role?: Role | null; children?: React.ReactNode }) {
+  const nav = children ?? (role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />)
+
   return (
     <aside
       className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
       style={{ background: 'var(--sidebar)', borderColor: 'var(--am-border)' }}
     >
-      {children ?? <OwnerNavItems />}
+      {nav}
       <div className="mt-auto pb-4 px-3">
         <div className="rounded-md border border-border bg-secondary/50 p-3">
           <p className="text-xs text-muted-foreground">Starter Tier</p>
