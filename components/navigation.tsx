@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/shared/ThemeToggle"
+import { LogoSVG } from "@/components/shared/LogoSVG"
 
 const navItems = [
   { label: "Overview", href: "#overview" },
@@ -33,8 +35,7 @@ export function Navigation() {
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold text-foreground">Ask Moses</span>
-          <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">MVP</span>
+          <LogoSVG className="h-14 w-auto" />
         </div>
         <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
@@ -48,6 +49,7 @@ export function Navigation() {
           ))}
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/tech">Tech</Link>
           </Button>
