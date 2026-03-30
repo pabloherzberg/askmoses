@@ -10,6 +10,7 @@ import {
   rubric,
   scripts,
   supabaseCalls,
+  demoCredentials,
 } from '@/lib/mock-data'
 import type { CallResult } from '@/lib/types'
 import { buildInsightsAnalysis } from './data/insights-analysis'
@@ -258,20 +259,11 @@ const apiHandlers = [
 
 // ─── Auth handlers (mock para demo — substitui Supabase Auth) ────────────────
 
-const DEMO_CREDENTIALS = [
-  { email: 'trainer@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Marcus R.', trainerId: 'trainer-marcus' },
-  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jamie L.', trainerId: 'trainer-jamie' },
-  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Jordan K.', trainerId: 'trainer-jordan' },
-  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer', name: 'Taylor M.', trainerId: 'trainer-taylor' },
-  { email: 'owner@demo.askmoses.ai', password: 'demo123', role: 'owner', name: 'Dog Wizard HQ', trainerId: null },
-  { email: 'admin@askmoses.ai', password: 'demo123', role: 'admin', name: 'AskMoses Admin', trainerId: null },
-] as const
-
 const authHandlers = [
   // POST /api/auth/login
   http.post('/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json() as { email: string; password: string }
-    const user = DEMO_CREDENTIALS.find((u) => u.email === email && u.password === password)
+    const user = demoCredentials.find((u) => u.email === email && u.password === password)
     if (!user) {
       return HttpResponse.json(
         { data: null, error: { message: 'Email ou senha incorretos', code: 401 } },
