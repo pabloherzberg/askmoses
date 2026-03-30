@@ -7,21 +7,21 @@ import { ScorePill } from '@/components/shared/ScorePill'
 import type { Call, Trainer, CallResult } from '@/lib/types'
 
 const avatarBgMap: Record<string, string> = {
-  blue:   'var(--am-blue-bg)',
+  blue: 'var(--am-blue-bg)',
   purple: 'rgba(110,86,255,0.15)',
-  green:  'var(--am-green-bg)',
-  red:    'var(--am-red-bg)',
+  green: 'var(--am-green-bg)',
+  red: 'var(--am-red-bg)',
 }
 const avatarTextMap: Record<string, string> = {
-  blue:   'var(--am-blue)',
+  blue: 'var(--am-blue)',
   purple: 'var(--am-accent2)',
-  green:  'var(--am-green)',
-  red:    'var(--am-red)',
+  green: 'var(--am-green)',
+  red: 'var(--am-red)',
 }
 const resultStyles: Record<CallResult, { bg: string; color: string; label: string }> = {
-  closed:    { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
-  'no-close': { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   label: 'No Close' },
-  'follow-up':{ bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
+  closed: { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
+  'no-close': { bg: 'var(--am-red-bg)', color: 'var(--am-red)', label: 'No Close' },
+  'follow-up': { bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
 }
 
 interface CallsTableProps {
@@ -32,7 +32,7 @@ interface CallsTableProps {
 export function CallsTable({ calls, trainers }: CallsTableProps) {
   const router = useRouter()
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
-  const [resultFilter, setResultFilter]   = useState<string>('all')
+  const [resultFilter, setResultFilter] = useState<string>('all')
 
   const trainerMap = useMemo(
     () => Object.fromEntries(trainers.map((t) => [t.id, t])),
@@ -42,7 +42,7 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
   const filtered = useMemo(() => {
     return calls.filter((c) => {
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
-      if (resultFilter  !== 'all' && c.result    !== resultFilter)  return false
+      if (resultFilter !== 'all' && c.result !== resultFilter) return false
       return true
     })
   }, [calls, trainerFilter, resultFilter])
@@ -50,9 +50,9 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
   const selectClass =
     'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
   const selectStyle = {
-    background:   'var(--am-bg2)',
-    borderColor:  'var(--am-border2)',
-    color:        'var(--am-text)',
+    background: 'var(--card)',
+    borderColor: 'var(--am-border2)',
+    color: 'var(--am-text)',
   }
 
   return (
@@ -91,7 +91,7 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
       {/* Table */}
       <div
         className="rounded-2xl border overflow-hidden"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -119,7 +119,7 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
               <tbody>
                 {filtered.map((call) => {
                   const trainer = trainerMap[call.trainerId]
-                  const result  = resultStyles[call.result]
+                  const result = resultStyles[call.result]
                   return (
                     <tr
                       key={call.id}
@@ -141,7 +141,7 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
                               className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold font-mono flex-shrink-0"
                               style={{
                                 background: avatarBgMap[trainer.avatarColor],
-                                color:      avatarTextMap[trainer.avatarColor],
+                                color: avatarTextMap[trainer.avatarColor],
                               }}
                             >
                               {trainer.avatar}
@@ -165,8 +165,8 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
                         <span className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
                           {new Date(call.date).toLocaleDateString('en-US', {
                             month: 'short',
-                            day:   'numeric',
-                            year:  'numeric',
+                            day: 'numeric',
+                            year: 'numeric',
                           })}
                         </span>
                       </td>

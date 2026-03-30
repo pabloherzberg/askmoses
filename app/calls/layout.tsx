@@ -4,7 +4,7 @@ import { AppSidebar, OwnerNavItems } from '@/components/layout/AppSidebar'
 
 export default function CallsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
       <AppHeader mobileSidebar={<OwnerNavItems />} />
       <div className="flex">
         <AppSidebar role="owner" />

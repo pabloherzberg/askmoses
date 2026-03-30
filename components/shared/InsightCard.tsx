@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 import type { Insight } from '@/lib/types'
 
 const tagStyles = {
-  red:   { background: 'var(--am-red-bg)',   color: 'var(--am-red)' },
+  red: { background: 'var(--am-red-bg)', color: 'var(--am-red)' },
   amber: { background: 'var(--am-amber-bg)', color: 'var(--am-amber)' },
-  blue:  { background: 'var(--am-blue-bg)',  color: 'var(--am-blue)' },
+  blue: { background: 'var(--am-blue-bg)', color: 'var(--am-blue)' },
   green: { background: 'var(--am-green-bg)', color: 'var(--am-green)' },
 }
 
@@ -23,7 +23,7 @@ export function InsightCard({ insight, className }: InsightCardProps) {
         className
       )}
       style={{
-        background: 'var(--am-bg2)',
+        background: 'var(--card)',
         borderColor: 'var(--am-border)',
       }}
       onMouseEnter={(e) =>
