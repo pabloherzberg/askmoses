@@ -54,13 +54,15 @@ const coachingTips: Record<string, { title: string; body: string }> = {
 }
 
 export default async function TrainerDashboardPage() {
-  const trainerId = await getTrainerId()
+  const [trainerId, { sections: rubric }] = await Promise.all([
+    getTrainerId(),
+    getRubric(),
+  ])
   if (!trainerId) return null
 
-  const [trainer, allCalls, { sections: rubric }] = await Promise.all([
+  const [trainer, allCalls] = await Promise.all([
     getTrainerById(trainerId),
     getCalls({ trainerId }),
-    getRubric(),
   ])
 
   const coachingTip = coachingTips[trainerId] ?? coachingTips['trainer-marcus']
