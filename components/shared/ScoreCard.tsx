@@ -22,7 +22,7 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
         className
       )}
       style={{
-        background: 'var(--am-bg2)',
+        background: 'var(--card)',
         borderColor: 'var(--am-border)',
         ...style,
       }}
@@ -44,10 +44,10 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
               delta === undefined
                 ? 'var(--am-muted)'
                 : isPositive
-                ? 'var(--am-green)'
-                : isNegative
-                ? 'var(--am-red)'
-                : 'var(--am-muted)',
+                  ? 'var(--am-green)'
+                  : isNegative
+                    ? 'var(--am-red)'
+                    : 'var(--am-muted)',
           }}
         >
           {delta !== undefined && (

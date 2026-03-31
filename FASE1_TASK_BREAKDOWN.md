@@ -490,12 +490,12 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 **Tipo**: Frontend / CSS · **Depende de**: TASK-013, TASK-016, TASK-018
 
 ### Critérios de aceite
-- [x] Viewport 375px: sem scroll horizontal indesejado
+- [ ] Viewport 375px: sem scroll horizontal indesejado
 - [x] Grids colapsam corretamente
 - [x] Sidebar como Sheet/Drawer em mobile
 - [x] Tabelas com scroll horizontal quando necessário
 
-> **STATUS: ✅ CONCLUÍDA**
+> **STATUS: 🟡 PARCIAL** — Sidebar Sheet ativo, grids responsivos (`grid-cols-1 → md:grid-cols-2 → lg:grid-cols-4`), tabelas com `overflow-x-auto`. Falta validar `/me` e `/admin` quando construídas (TASK-016, TASK-018).
 
 ---
 
@@ -582,10 +582,10 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-017 | `/me/calls/[id]` | ✅ |
 | TASK-018 | `/admin` | ✅ |
 | TASK-019 | `/admin/rubric` | ✅ |
-| TASK-020 | Loading states | ✅ |
-| TASK-021 | Responsividade | ✅ |
-| TASK-022 | Deploy Vercel | 🟡 Parcial — build OK, deploy pendente |
-| TASK-023 | QA + DEMO_ACCESS | ✅ |
+| TASK-020 | Loading states | ⬜ Não iniciada |
+| TASK-021 | Responsividade | 🟡 Parcial — falta /me e /admin |
+| TASK-022 | Deploy Vercel | ⬜ Não iniciada |
+| TASK-023 | QA + DEMO_ACCESS | ⬜ Não iniciada |
 
 ---
 

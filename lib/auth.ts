@@ -40,6 +40,11 @@ export async function getUserId(): Promise<string | null> {
   return session?.user?.id ?? null
 }
 
+export async function getTrainerId(): Promise<string | null> {
+  const cookieStore = await cookies()
+  return cookieStore.get('demo-trainer-id')?.value ?? null
+}
+
 export function redirectByRole(role: Role): string {
   const routes: Record<Role, string> = {
     trainer: '/me',

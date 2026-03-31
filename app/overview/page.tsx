@@ -10,24 +10,24 @@ import { SectionLabel } from '@/components/shared/SectionLabel'
 import { TrendChart } from './TrendChart'
 
 const avatarBgMap: Record<string, string> = {
-  blue:   'var(--am-blue-bg)',
+  blue: 'var(--am-blue-bg)',
   purple: 'rgba(110,86,255,0.15)',
-  green:  'var(--am-green-bg)',
-  red:    'var(--am-red-bg)',
+  green: 'var(--am-green-bg)',
+  red: 'var(--am-red-bg)',
 }
 
 const avatarTextMap: Record<string, string> = {
-  blue:   'var(--am-blue)',
+  blue: 'var(--am-blue)',
   purple: 'var(--am-accent2)',
-  green:  'var(--am-green)',
-  red:    'var(--am-red)',
+  green: 'var(--am-green)',
+  red: 'var(--am-red)',
 }
 
 const alerts = [
-  { dotColor: 'red'   as const, text: "Taylor's score dropped 12pts this week",             actionLabel: 'Review' },
-  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days',                  actionLabel: 'Contact' },
-  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team',       actionLabel: 'Celebrate' },
-  { dotColor: 'blue'  as const, text: '3 trainers are skipping objection handling',         actionLabel: 'Train' },
+  { dotColor: 'red' as const, text: "Taylor's score dropped 12pts this week", actionLabel: 'Review' },
+  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days', actionLabel: 'Contact' },
+  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team', actionLabel: 'Celebrate' },
+  { dotColor: 'blue' as const, text: '3 trainers are skipping objection handling', actionLabel: 'Train' },
 ]
 
 export default async function OverviewPage() {
@@ -37,17 +37,17 @@ export default async function OverviewPage() {
     getRubric(),
   ])
 
-  const sorted      = [...trainers].sort((a, b) => b.score - a.score)
-  const totalCalls  = trainers.reduce((s, t) => s + t.totalCalls, 0)
-  const avgClose    = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
-  const avgScore    = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
-  const topTrainer  = sorted[0]
+  const sorted = [...trainers].sort((a, b) => b.score - a.score)
+  const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0)
+  const avgClose = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
+  const avgScore = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+  const topTrainer = sorted[0]
 
   return (
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>Team Overview</SectionLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <ScoreCard
           label="Avg Close Rate"
           value={`${avgClose}%`}
@@ -81,7 +81,7 @@ export default async function OverviewPage() {
         {/* Trainer ranking */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Trainer Ranking
@@ -98,7 +98,7 @@ export default async function OverviewPage() {
                 className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono flex-shrink-0"
                 style={{
                   background: avatarBgMap[trainer.avatarColor],
-                  color:      avatarTextMap[trainer.avatarColor],
+                  color: avatarTextMap[trainer.avatarColor],
                 }}
               >
                 {trainer.avatar}
@@ -138,7 +138,7 @@ export default async function OverviewPage() {
         {/* Active alerts */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Active Alerts
@@ -155,7 +155,7 @@ export default async function OverviewPage() {
         {/* Rubric bars */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Rubric by Section — Team Average
@@ -175,7 +175,7 @@ export default async function OverviewPage() {
         {/* Trend chart */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
             6-Week Trend
@@ -187,10 +187,9 @@ export default async function OverviewPage() {
       {/* ── Detailed rubric table ──────────────────────────────── */}
       <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>
       <div
-        className="rounded-2xl border mb-4"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        className="rounded-2xl p-5 border mb-4 overflow-x-auto"
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
-        <div className="p-5 overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -200,19 +199,13 @@ export default async function OverviewPage() {
               >
                 Section
               </th>
-              {[
-                { label: 'Team', mobile: true },
-                { label: 'Marcus R.', mobile: false },
-                { label: 'Jamie L.', mobile: false },
-                { label: 'Jordan K.', mobile: false },
-                { label: 'Taylor M.', mobile: false },
-              ].map(({ label, mobile }) => (
+              {['Team', 'Marcus R.', 'Jamie L.', 'Jordan K.', 'Taylor M.'].map((h) => (
                 <th
-                  key={label}
-                  className={`text-[11px] font-medium text-right pb-2.5 px-2${mobile ? '' : ' hidden sm:table-cell'}`}
+                  key={h}
+                  className="text-[11px] font-medium text-right pb-2.5 px-2"
                   style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
                 >
-                  {label}
+                  {h}
                 </th>
               ))}
             </tr>
@@ -247,14 +240,14 @@ export default async function OverviewPage() {
                   {scores.map((s, idx) => (
                     <td
                       key={idx}
-                      className="text-xs text-right font-mono px-2 py-2.5 hidden sm:table-cell"
+                      className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
                         color:
                           s === maxScore
                             ? 'var(--am-green)'
                             : s < 65
-                            ? 'var(--am-red)'
-                            : 'var(--am-text)',
+                              ? 'var(--am-red)'
+                              : 'var(--am-text)',
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: '1px solid var(--am-border)',
                       }}
@@ -267,10 +260,9 @@ export default async function OverviewPage() {
             })}
           </tbody>
         </table>
-        </div>
       </div>
 
-      {/* ── AI Insights ──────────────────────────────────────── */}
+      {/* ── AI Insights ───────────────────────────────────────── */}
       <SectionLabel>AI Insights</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {insights.map((insight) => (

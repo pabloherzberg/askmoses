@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MSWProvider } from "@/components/msw-provider";
 import { Toaster } from "@/components/ui/toaster";
-import "./globals.css";
+import "../styles/globals.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],

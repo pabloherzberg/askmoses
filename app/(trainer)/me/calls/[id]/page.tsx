@@ -1,10 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCallById } from '@/lib/services/calls'
-import { getUserId } from '@/lib/auth'
+import { getTrainerId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
-
-// Demo: trainer@demo.askmoses.ai is Marcus R.
-const DEMO_TRAINER_ID = 'trainer-marcus'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -12,14 +9,11 @@ interface Props {
 
 export default async function TrainerCallDetailPage({ params }: Props) {
   const { id } = await params
-  const [call, userId] = await Promise.all([getCallById(id), getUserId()])
+  const [call, trainerId] = await Promise.all([getCallById(id), getTrainerId()])
 
   if (!call) notFound()
 
-  // Map demo user ID to actual trainer record ID
-  const effectiveTrainerId = userId === 'demo-trainer' ? DEMO_TRAINER_ID : (userId ?? '')
-
-  if (call.trainerId !== effectiveTrainerId) {
+  if (!trainerId || call.trainerId !== trainerId) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
         <p className="text-2xl font-semibold" style={{ color: 'var(--am-red)' }}>403</p>

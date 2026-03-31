@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { LogoSVG } from "@/components/shared/LogoSVG";
 
 const navItems = [
   { label: "Overview", href: "#overview" },
@@ -38,13 +39,9 @@ export function Navigation() {
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Image
-            src="/images/logo-askmoses.png"
-            alt="Ask Moses"
-            width={180}
-            height={50}
-            className="h-12 w-auto"
-          />
+          <span className="text-xl font-semibold text-foreground">
+            Ask Moses
+          </span>
           <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">
             MVP
           </span>
@@ -60,7 +57,8 @@ export function Navigation() {
             </a>
           ))}
         </div>
-        <div className="hidden md:flex items-center gap-4">
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/tech">Tech</Link>
           </Button>
@@ -93,13 +91,19 @@ export function Navigation() {
           ))}
           <div className="flex flex-col gap-2 pt-2 border-t border-border">
             <Button asChild variant="ghost" size="sm" className="justify-start">
-              <Link href="/tech" onClick={() => setMenuOpen(false)}>Tech</Link>
+              <Link href="/tech" onClick={() => setMenuOpen(false)}>
+                Tech
+              </Link>
             </Button>
             <Button asChild variant="ghost" size="sm" className="justify-start">
-              <Link href="/presentation" onClick={() => setMenuOpen(false)}>Presentation</Link>
+              <Link href="/presentation" onClick={() => setMenuOpen(false)}>
+                Presentation
+              </Link>
             </Button>
             <Button asChild size="sm" className="justify-start">
-              <Link href="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                Dashboard
+              </Link>
             </Button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { getTrainerById } from '@/lib/services/trainers'
 import { getCalls } from '@/lib/services/calls'
 import { getRubric } from '@/lib/services/rubric'
@@ -7,14 +7,12 @@ import { ScoreCard } from '@/components/shared/ScoreCard'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
+import { getTrainerId } from '@/lib/auth'
 import type { RubricColor } from '@/lib/types'
 
-// Demo: trainer@demo.askmoses.ai is Marcus R.
-const DEMO_TRAINER_ID = 'trainer-marcus'
-
 const resultStyles: Record<string, { bg: string; color: string; label: string }> = {
-  closed:      { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
-  'no-close':  { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   label: 'No Close' },
+  closed: { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
+  'no-close': { bg: 'var(--am-red-bg)', color: 'var(--am-red)', label: 'No Close' },
   'follow-up': { bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
 }
 
@@ -26,28 +24,48 @@ function buildRubricDelta(
     const trainerVal = trainerScores[section.id] ?? 0
     const delta = trainerVal - section.teamAvg
     return {
-      id:       section.id,
-      name:     section.name,
-      color:    section.color,
-      value:    trainerVal,
-      teamAvg:  section.teamAvg,
+      id: section.id,
+      name: section.name,
+      color: section.color,
+      value: trainerVal,
+      teamAvg: section.teamAvg,
       delta,
     }
   })
 }
 
-const coachingTip = {
-  title: 'This week\'s focus: Problem Agitation',
-  body:
-    'Your Discovery is the best on the team (94). Now sharpen the next step: after identifying the pain, pause and ask "How long has this been going on?" — let the prospect feel the cost of the problem before you present the offer.',
+const coachingTips: Record<string, { title: string; body: string }> = {
+  'trainer-marcus': {
+    title: 'This week\'s focus: Problem Agitation',
+    body: 'Your Discovery is the best on the team (94). Now sharpen the next step: after identifying the pain, pause and ask "How long has this been going on?" — let the prospect feel the cost of the problem before you present the offer.',
+  },
+  'trainer-jamie': {
+    title: 'This week\'s focus: Offer Presentation',
+    body: 'Your Discovery and Problem Agitation are solid (88). The gap is in translating that emotional momentum into a compelling offer. After the prospect acknowledges the problem, anchor the investment to the cost of inaction — not the features of the program.',
+  },
+  'trainer-jordan': {
+    title: 'This week\'s focus: Problem Agitation',
+    body: 'You\'re jumping to the offer too fast. Spend more time letting the prospect feel the weight of the problem — ask "How is this affecting your day-to-day?" before presenting the solution. Agitation builds the urgency that closes deals.',
+  },
+  'trainer-taylor': {
+    title: 'Priority: rebuild confidence in objection handling',
+    body: 'Your score dropped 12pts in 2 weeks — the pattern is clear: when a prospect pushes back on price, you go defensive instead of redirecting to value. Try this: "What would it cost you to leave this unsolved for another 3 months?" Let the prospect answer before you say anything.',
+  },
 }
 
 export default async function TrainerDashboardPage() {
-  const [trainer, allCalls, { sections: rubric }] = await Promise.all([
-    getTrainerById(DEMO_TRAINER_ID),
-    getCalls({ trainerId: DEMO_TRAINER_ID }),
+  const [trainerId, { sections: rubric }] = await Promise.all([
+    getTrainerId(),
     getRubric(),
   ])
+  if (!trainerId) return null
+
+  const [trainer, allCalls] = await Promise.all([
+    getTrainerById(trainerId),
+    getCalls({ trainerId }),
+  ])
+
+  const coachingTip = coachingTips[trainerId] ?? coachingTips['trainer-marcus']
 
   if (!trainer) return null
 
@@ -57,8 +75,8 @@ export default async function TrainerDashboardPage() {
 
   const rubricWithDelta = buildRubricDelta(
     {
-      discovery:         trainer.rubricScores.discovery,
-      problemAgitation:  trainer.rubricScores.problemAgitation,
+      discovery: trainer.rubricScores.discovery,
+      problemAgitation: trainer.rubricScores.problemAgitation,
       offerPresentation: trainer.rubricScores.offerPresentation,
       objectionHandling: trainer.rubricScores.objectionHandling,
       closeAndNextSteps: trainer.rubricScores.closeAndNextSteps,
@@ -69,24 +87,14 @@ export default async function TrainerDashboardPage() {
   return (
     <div>
       {/* ── Greeting ──────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <div>
-          <SectionLabel>My Dashboard</SectionLabel>
-          <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-            Hello, {trainer.name}
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
-            Week 6 of 6 · {trainer.totalCalls} calls this cycle
-          </p>
-        </div>
-        <Link
-          href="/me/calls/new"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium flex-shrink-0 transition-opacity hover:opacity-80"
-          style={{ background: 'var(--am-accent)', color: '#fff' }}
-        >
-          <Plus size={14} />
-          Log Call
-        </Link>
+      <div className="mb-6">
+        <SectionLabel>My Dashboard</SectionLabel>
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
+          Hello, {trainer.name}
+        </h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
+          Week 6 of 6 · {trainer.totalCalls} calls this cycle
+        </p>
       </div>
 
       {/* ── Personal metrics ──────────────────────────────────── */}
@@ -95,7 +103,7 @@ export default async function TrainerDashboardPage() {
           label="My Score"
           value={trainer.score}
           valueColor="var(--am-accent2)"
-          delta={11}
+          delta={trainer.scoreDelta}
           deltaLabel="pts since week 1"
         />
         <ScoreCard
@@ -113,7 +121,7 @@ export default async function TrainerDashboardPage() {
         {/* Personal rubric vs team avg */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--am-text)' }}>
             My Rubric vs Team Average
@@ -129,7 +137,7 @@ export default async function TrainerDashboardPage() {
                   value={row.value}
                   color={row.color}
                 />
-                <div className="flex justify-end mt-1">
+                <div className="flex justify-between mt-1 pl-[148px]">
                   <span
                     className="text-[10px] font-mono"
                     style={{
@@ -149,8 +157,8 @@ export default async function TrainerDashboardPage() {
           <div
             className="rounded-2xl p-5 border border-l-4"
             style={{
-              background:   'var(--am-bg2)',
-              borderColor:  'var(--am-border)',
+              background: 'var(--card)',
+              borderColor: 'var(--am-border)',
               borderLeftColor: 'var(--am-accent)',
             }}
           >
@@ -168,7 +176,7 @@ export default async function TrainerDashboardPage() {
           {/* Quick stats */}
           <div
             className="rounded-2xl p-5 border"
-            style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
               Quick Stats
@@ -197,7 +205,7 @@ export default async function TrainerDashboardPage() {
       <SectionLabel>Recent Calls</SectionLabel>
       <div
         className="rounded-2xl border overflow-hidden"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         {recentCalls.map((call, i) => {
           const result = resultStyles[call.result]

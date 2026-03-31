@@ -7,17 +7,17 @@ import { RubricBar } from '@/components/shared/RubricBar'
 import type { Call, Role, RubricColor } from '@/lib/types'
 
 const resultStyles: Record<string, { bg: string; color: string; label: string }> = {
-  closed:      { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
-  'no-close':  { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   label: 'No Close' },
+  closed: { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
+  'no-close': { bg: 'var(--am-red-bg)', color: 'var(--am-red)', label: 'No Close' },
   'follow-up': { bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
 }
 
 const rubricFields: { key: keyof Call['rubricScores']; label: string; color: RubricColor }[] = [
-  { key: 'discovery',          label: 'Discovery',            color: 'blue' },
-  { key: 'problemAgitation',   label: 'Problem Agitation',    color: 'amber' },
-  { key: 'offerPresentation',  label: 'Offer Presentation',   color: 'green' },
-  { key: 'objectionHandling',  label: 'Objection Handling',   color: 'red' },
-  { key: 'closeAndNextSteps',  label: 'Close & Next Steps',   color: 'accent2' },
+  { key: 'discovery', label: 'Discovery', color: 'blue' },
+  { key: 'problemAgitation', label: 'Problem Agitation', color: 'amber' },
+  { key: 'offerPresentation', label: 'Offer Presentation', color: 'green' },
+  { key: 'objectionHandling', label: 'Objection Handling', color: 'red' },
+  { key: 'closeAndNextSteps', label: 'Close & Next Steps', color: 'accent2' },
 ]
 
 function scoreColor(score: number) {
@@ -89,7 +89,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
         {/* Rubric scores */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Rubric Scores
@@ -110,7 +110,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
         <div className="flex flex-col gap-4">
           <div
             className="rounded-2xl p-5 border"
-            style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
               Strengths
@@ -131,7 +131,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
 
           <div
             className="rounded-2xl p-5 border"
-            style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
               Areas to Improve
@@ -155,7 +155,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
       {/* Transcript */}
       <div
         className="rounded-2xl p-5 border mb-4"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
           Transcript
@@ -183,7 +183,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
       {(viewerRole === 'owner' || viewerRole === 'admin') && (
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--am-text)' }}>
             Coaching Notes
@@ -196,12 +196,12 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             placeholder="Add your coaching notes here..."
             className="w-full text-sm rounded-lg px-3 py-2.5 resize-none outline-none border transition-colors"
             style={{
-              background:   'var(--am-bg3)',
-              borderColor:  'var(--am-border2)',
-              color:        'var(--am-text)',
+              background: 'var(--am-bg3)',
+              borderColor: 'var(--am-border2)',
+              color: 'var(--am-text)',
             }}
             onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--am-accent)')}
-            onBlur={(e)  => (e.currentTarget.style.borderColor = 'var(--am-border2)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--am-border2)')}
           />
           <p className="text-[11px] mt-1.5" style={{ color: 'var(--am-muted)' }}>
             Notes are not persisted in this demo.

@@ -6,6 +6,7 @@ import type {
   Client,
   TrendPoint,
   GlobalMetrics,
+  Role,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ export const trainers: Trainer[] = [
     closeRate: 74,
     closeDelta: 9,
     score: 91,
+    scoreDelta: 11,
     lastActive: 'Active today',
     ownerId: 'owner-1',
     rubricScores: {
@@ -41,6 +43,7 @@ export const trainers: Trainer[] = [
     closeRate: 68,
     closeDelta: 4,
     score: 87,
+    scoreDelta: 7,
     lastActive: 'Yesterday',
     ownerId: 'owner-1',
     rubricScores: {
@@ -61,6 +64,7 @@ export const trainers: Trainer[] = [
     closeRate: 61,
     closeDelta: 1,
     score: 79,
+    scoreDelta: 3,
     lastActive: 'Active today',
     ownerId: 'owner-1',
     rubricScores: {
@@ -81,6 +85,7 @@ export const trainers: Trainer[] = [
     closeRate: 55,
     closeDelta: -2,
     score: 74,
+    scoreDelta: -12,
     lastActive: '3 days ago',
     ownerId: 'owner-1',
     rubricScores: {
@@ -502,7 +507,7 @@ export const rubricSections: RubricSection[] = [
     weight: 20,
     isCritical: true,
     description: 'Quality of open-ended questions and active listening. The trainer must identify the real pain before any presentation.',
-    teamAvg: 83,
+    teamAvg: 82,
     color: 'blue',
     trainerScores: { marcus: 94, jamie: 88, jordan: 79, taylor: 67 },
   },
@@ -512,7 +517,7 @@ export const rubricSections: RubricSection[] = [
     weight: 25,
     isCritical: true,
     description: 'Ability to deepen and expand the prospect\'s pain, connecting the problem to real emotional and financial consequences.',
-    teamAvg: 72,
+    teamAvg: 74,
     color: 'amber',
     trainerScores: { marcus: 89, jamie: 88, jordan: 61, taylor: 58 },
   },
@@ -522,7 +527,7 @@ export const rubricSections: RubricSection[] = [
     weight: 20,
     isCritical: false,
     description: 'Clarity and impact in presenting the offer. The product must be presented as the exact solution for the identified pain.',
-    teamAvg: 86,
+    teamAvg: 82,
     color: 'green',
     trainerScores: { marcus: 95, jamie: 84, jordan: 80, taylor: 70 },
   },
@@ -532,7 +537,7 @@ export const rubricSections: RubricSection[] = [
     weight: 25,
     isCritical: true,
     description: 'Handling price, time, and need objections without going defensive or offering a premature discount.',
-    teamAvg: 64,
+    teamAvg: 71,
     color: 'red',
     trainerScores: { marcus: 81, jamie: 81, jordan: 65, taylor: 55 },
   },
@@ -542,7 +547,7 @@ export const rubricSections: RubricSection[] = [
     weight: 10,
     isCritical: true,
     description: 'Quality of the close and clarity of next steps. Every call must end with a clear commitment.',
-    teamAvg: 78,
+    teamAvg: 75,
     color: 'accent2',
     trainerScores: { marcus: 90, jamie: 82, jordan: 65, taylor: 63 },
   },
@@ -750,3 +755,15 @@ export const supabaseCalls = calls.map((call) => ({
   email_id: `email-${call.id}`,
   created_at: `${call.date}T10:00:00Z`,
 }))
+
+// ─── Demo credentials ─────────────────────────────────────────────────────────
+
+export const demoCredentials = [
+  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: 'trainer-marcus' as string | null },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: 'trainer-jamie'  as string | null },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: 'trainer-jordan' as string | null },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: 'trainer-taylor' as string | null },
+  { email: 'owner@demo.askmoses.ai',    password: 'demo123', role: 'owner'   as Role, name: 'Dog Wizard HQ',  trainerId: null },
+  { email: 'admin@askmoses.ai',         password: 'demo123', role: 'admin'   as Role, name: 'AskMoses Admin', trainerId: null },
+]
+

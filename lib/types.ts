@@ -23,6 +23,7 @@ export interface Trainer {
   closeRate: number
   closeDelta: number
   score: number
+  scoreDelta: number
   lastActive: string
   ownerId: string
   rubricScores: RubricScores
