@@ -90,7 +90,7 @@ export function CallsTable({ calls, trainers }: CallsTableProps) {
 
       {/* Table */}
       <div
-        className="rounded-2xl border overflow-hidden"
+        className="rounded-2xl border overflow-hidden shadow-md"
         style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         {filtered.length === 0 ? (

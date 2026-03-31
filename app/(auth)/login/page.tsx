@@ -16,7 +16,7 @@ const DEMO_USERS = [
 ]
 
 function redirectByRole(role: Role): string {
-  return role === 'trainer' ? '/me' : role === 'owner' ? '/overview' : '/admin'
+  return role === 'trainer' ? '/me' : role === 'owner' ? '/dashboard' : '/admin'
 }
 
 export default function LoginPage() {
@@ -57,7 +57,7 @@ export default function LoginPage() {
     } else {
       document.cookie = `demo-trainer-id=; path=/; max-age=0; SameSite=Lax`
     }
-    router.push(redirectByRole(role))
+    window.location.href = redirectByRole(role)
   }
 
   const fillDemo = (demoEmail: string, demoPassword: string) => {

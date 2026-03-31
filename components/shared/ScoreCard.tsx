@@ -18,7 +18,7 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
   return (
     <div
       className={cn(
-        'rounded-xl p-[18px_20px] border transition-colors am-fade-up',
+        'rounded-xl p-[18px_20px] border shadow-md transition-colors am-fade-up',
         className
       )}
       style={{

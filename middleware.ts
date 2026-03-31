@@ -6,7 +6,7 @@ const VALID_ROLES: Role[] = ['trainer', 'owner', 'admin']
 function redirectByRole(role: Role, baseUrl: string) {
   const routes: Record<Role, string> = {
     trainer: '/me',
-    owner: '/overview',
+    owner: '/dashboard',
     admin: '/admin',
   }
   return new URL(routes[role] ?? '/login', baseUrl)

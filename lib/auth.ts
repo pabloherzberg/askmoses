@@ -48,7 +48,7 @@ export async function getTrainerId(): Promise<string | null> {
 export function redirectByRole(role: Role): string {
   const routes: Record<Role, string> = {
     trainer: '/me',
-    owner: '/overview',
+    owner: '/dashboard',
     admin: '/admin',
   }
   return routes[role] ?? '/login'
