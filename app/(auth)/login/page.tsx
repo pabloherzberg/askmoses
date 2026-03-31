@@ -57,7 +57,7 @@ export default function LoginPage() {
     } else {
       document.cookie = `demo-trainer-id=; path=/; max-age=0; SameSite=Lax`
     }
-    router.push(redirectByRole(role))
+    window.location.href = redirectByRole(role)
   }
 
   const fillDemo = (demoEmail: string, demoPassword: string) => {

@@ -3,7 +3,7 @@
 // Unified header — used across all authenticated routes
 import type React from 'react'
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
 import {
   Sheet,
@@ -26,7 +26,6 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -34,7 +33,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
     await fetch('/api/auth/logout', { method: 'POST' })
     document.cookie = 'demo-role=; path=/; max-age=0'
     document.cookie = 'demo-trainer-id=; path=/; max-age=0'
-    router.push('/login')
+    window.location.href = '/login'
   }
 
   // Resolve title — string literal or pathname map
