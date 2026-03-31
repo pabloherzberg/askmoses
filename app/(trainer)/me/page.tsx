@@ -11,8 +11,8 @@ import { getTrainerId } from '@/lib/auth'
 import type { RubricColor } from '@/lib/types'
 
 const resultStyles: Record<string, { bg: string; color: string; label: string }> = {
-  closed:      { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
-  'no-close':  { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   label: 'No Close' },
+  closed: { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
+  'no-close': { bg: 'var(--am-red-bg)', color: 'var(--am-red)', label: 'No Close' },
   'follow-up': { bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
 }
 
@@ -24,11 +24,11 @@ function buildRubricDelta(
     const trainerVal = trainerScores[section.id] ?? 0
     const delta = trainerVal - section.teamAvg
     return {
-      id:       section.id,
-      name:     section.name,
-      color:    section.color,
-      value:    trainerVal,
-      teamAvg:  section.teamAvg,
+      id: section.id,
+      name: section.name,
+      color: section.color,
+      value: trainerVal,
+      teamAvg: section.teamAvg,
       delta,
     }
   })
@@ -75,8 +75,8 @@ export default async function TrainerDashboardPage() {
 
   const rubricWithDelta = buildRubricDelta(
     {
-      discovery:         trainer.rubricScores.discovery,
-      problemAgitation:  trainer.rubricScores.problemAgitation,
+      discovery: trainer.rubricScores.discovery,
+      problemAgitation: trainer.rubricScores.problemAgitation,
       offerPresentation: trainer.rubricScores.offerPresentation,
       objectionHandling: trainer.rubricScores.objectionHandling,
       closeAndNextSteps: trainer.rubricScores.closeAndNextSteps,
@@ -121,7 +121,7 @@ export default async function TrainerDashboardPage() {
         {/* Personal rubric vs team avg */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--am-text)' }}>
             My Rubric vs Team Average
@@ -157,8 +157,8 @@ export default async function TrainerDashboardPage() {
           <div
             className="rounded-2xl p-5 border border-l-4"
             style={{
-              background:   'var(--am-bg2)',
-              borderColor:  'var(--am-border)',
+              background: 'var(--card)',
+              borderColor: 'var(--am-border)',
               borderLeftColor: 'var(--am-accent)',
             }}
           >
@@ -176,7 +176,7 @@ export default async function TrainerDashboardPage() {
           {/* Quick stats */}
           <div
             className="rounded-2xl p-5 border"
-            style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
               Quick Stats
@@ -205,7 +205,7 @@ export default async function TrainerDashboardPage() {
       <SectionLabel>Recent Calls</SectionLabel>
       <div
         className="rounded-2xl border overflow-hidden"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         {recentCalls.map((call, i) => {
           const result = resultStyles[call.result]

@@ -306,15 +306,15 @@ export default function HistoryPage() {
                         score >= 85
                           ? "bg-green-100 border-green-200 text-green-700"
                           : score >= 75
-                          ? "bg-amber-100 border-amber-200 text-amber-700"
-                          : "bg-red-100 border-red-200 text-red-700"
+                            ? "bg-amber-100 border-amber-200 text-amber-700"
+                            : "bg-red-100 border-red-200 text-red-700"
                       return (
                         <div key={key} className={`rounded-lg border p-3 ${textColor}`}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium text-sm">
                               {RUBRIC_LABELS[key] ?? key}
                             </span>
-                            <Badge variant="outline" className="font-semibold">
+                            <Badge variant="outline" className={`font-semibold ${textColor}`}>
                               {score}/100
                             </Badge>
                           </div>

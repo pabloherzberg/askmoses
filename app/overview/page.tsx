@@ -10,24 +10,24 @@ import { SectionLabel } from '@/components/shared/SectionLabel'
 import { TrendChart } from './TrendChart'
 
 const avatarBgMap: Record<string, string> = {
-  blue:   'var(--am-blue-bg)',
+  blue: 'var(--am-blue-bg)',
   purple: 'rgba(110,86,255,0.15)',
-  green:  'var(--am-green-bg)',
-  red:    'var(--am-red-bg)',
+  green: 'var(--am-green-bg)',
+  red: 'var(--am-red-bg)',
 }
 
 const avatarTextMap: Record<string, string> = {
-  blue:   'var(--am-blue)',
+  blue: 'var(--am-blue)',
   purple: 'var(--am-accent2)',
-  green:  'var(--am-green)',
-  red:    'var(--am-red)',
+  green: 'var(--am-green)',
+  red: 'var(--am-red)',
 }
 
 const alerts = [
-  { dotColor: 'red'   as const, text: "Taylor's score dropped 12pts this week",             actionLabel: 'Review' },
-  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days',                  actionLabel: 'Contact' },
-  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team',       actionLabel: 'Celebrate' },
-  { dotColor: 'blue'  as const, text: '3 trainers are skipping objection handling',         actionLabel: 'Train' },
+  { dotColor: 'red' as const, text: "Taylor's score dropped 12pts this week", actionLabel: 'Review' },
+  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days', actionLabel: 'Contact' },
+  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team', actionLabel: 'Celebrate' },
+  { dotColor: 'blue' as const, text: '3 trainers are skipping objection handling', actionLabel: 'Train' },
 ]
 
 export default async function OverviewPage() {
@@ -37,11 +37,11 @@ export default async function OverviewPage() {
     getRubric(),
   ])
 
-  const sorted      = [...trainers].sort((a, b) => b.score - a.score)
-  const totalCalls  = trainers.reduce((s, t) => s + t.totalCalls, 0)
-  const avgClose    = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
-  const avgScore    = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
-  const topTrainer  = sorted[0]
+  const sorted = [...trainers].sort((a, b) => b.score - a.score)
+  const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0)
+  const avgClose = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
+  const avgScore = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+  const topTrainer = sorted[0]
 
   return (
     <div>
@@ -81,7 +81,7 @@ export default async function OverviewPage() {
         {/* Trainer ranking */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Trainer Ranking
@@ -98,7 +98,7 @@ export default async function OverviewPage() {
                 className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono flex-shrink-0"
                 style={{
                   background: avatarBgMap[trainer.avatarColor],
-                  color:      avatarTextMap[trainer.avatarColor],
+                  color: avatarTextMap[trainer.avatarColor],
                 }}
               >
                 {trainer.avatar}
@@ -138,7 +138,7 @@ export default async function OverviewPage() {
         {/* Active alerts */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Active Alerts
@@ -155,7 +155,7 @@ export default async function OverviewPage() {
         {/* Rubric bars */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             Rubric by Section — Team Average
@@ -175,7 +175,7 @@ export default async function OverviewPage() {
         {/* Trend chart */}
         <div
           className="rounded-2xl p-5 border"
-          style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
             6-Week Trend
@@ -188,7 +188,7 @@ export default async function OverviewPage() {
       <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
-        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         <table className="w-full border-collapse">
           <thead>
@@ -246,8 +246,8 @@ export default async function OverviewPage() {
                           s === maxScore
                             ? 'var(--am-green)'
                             : s < 65
-                            ? 'var(--am-red)'
-                            : 'var(--am-text)',
+                              ? 'var(--am-red)'
+                              : 'var(--am-text)',
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: '1px solid var(--am-border)',
                       }}
