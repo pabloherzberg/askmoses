@@ -57,7 +57,7 @@ export function Navigation() {
             </a>
           ))}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/tech">Tech</Link>
