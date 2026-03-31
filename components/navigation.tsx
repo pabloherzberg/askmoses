@@ -31,11 +31,10 @@ export function Navigation() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled || menuOpen
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled || menuOpen
           ? "bg-background/80 backdrop-blur-md border-b border-border"
           : ""
-      }`}
+        }`}
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -54,9 +53,9 @@ export function Navigation() {
         </div>
         <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
-          <Button asChild variant="ghost" size="sm">
+          {/* <Button asChild variant="ghost" size="sm">
             <Link href="/tech">Tech</Link>
-          </Button>
+          </Button> */}
           <Button asChild variant="ghost" size="sm">
             <Link href="/presentation">Presentation</Link>
           </Button>
