@@ -39,12 +39,7 @@ export function Navigation() {
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold text-foreground">
-            Ask Moses
-          </span>
-          <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">
-            MVP
-          </span>
+          <LogoSVG className="h-14" />
         </div>
         <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
