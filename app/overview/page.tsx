@@ -80,7 +80,7 @@ export default async function OverviewPage() {
 
         {/* Trainer ranking */}
         <div
-          className="rounded-2xl p-5 border"
+          className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
@@ -137,7 +137,7 @@ export default async function OverviewPage() {
 
         {/* Active alerts */}
         <div
-          className="rounded-2xl p-5 border"
+          className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
@@ -154,7 +154,7 @@ export default async function OverviewPage() {
 
         {/* Rubric bars */}
         <div
-          className="rounded-2xl p-5 border"
+          className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
@@ -174,7 +174,7 @@ export default async function OverviewPage() {
 
         {/* Trend chart */}
         <div
-          className="rounded-2xl p-5 border"
+          className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>

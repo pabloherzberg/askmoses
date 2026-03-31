@@ -16,7 +16,7 @@ const DEMO_USERS = [
 ]
 
 function redirectByRole(role: Role): string {
-  return role === 'trainer' ? '/me' : role === 'owner' ? '/overview' : '/admin'
+  return role === 'trainer' ? '/me' : role === 'owner' ? '/dashboard' : '/admin'
 }
 
 export default function LoginPage() {
