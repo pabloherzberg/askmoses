@@ -2,7 +2,6 @@
 
 import { Building2, Settings } from 'lucide-react'
 import { NavItem, AppSidebar } from '@/components/layout/AppSidebar'
-import type React from 'react'
 
 const nav = [
   { label: 'SaaS Panel',    href: '/admin',        icon: Building2 },
