@@ -1,7 +1,9 @@
 
-# CODEOWNERS
+# CODEOWNERS — Documentação (Informativo)
 
-Este arquivo define as regras de code ownership e proteção da branch `main`.
+> **Nota:** Este arquivo é apenas documentação. As regras de ownership efetivamente aplicadas pelo GitHub estão em [`.github/CODEOWNERS`](.github/CODEOWNERS).
+
+Este arquivo documenta as regras de code ownership e proteção da branch `main`.
 
 ## Proteção de Branch
 
