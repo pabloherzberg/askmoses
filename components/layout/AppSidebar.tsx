@@ -4,11 +4,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload, History,
-  BarChart3, Brain, Wand2, Settings, HelpCircle,
+  BarChart3, Brain, Wand2, Settings, HelpCircle, Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type React from 'react'
+import type { Role } from '@/lib/types'
+
+const trainerNav = [
+  { label: 'My Dashboard', href: '/me', icon: LayoutDashboard },
+  { label: 'Upload Call', href: '/dashboard/upload', icon: Upload },
+]
 
 const mainNav = [
+  { label: 'Dashboard', href: '/dashboard', icon: Home },
   { label: 'Team Overview', href: '/overview', icon: LayoutDashboard },
   { label: 'Calls', href: '/calls', icon: Phone },
 ]
@@ -23,7 +31,7 @@ const toolsNav = [
   { label: 'How to Use', href: '/dashboard/guide', icon: HelpCircle },
 ]
 
-function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
+export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
   const pathname = usePathname()
   const active =
     pathname === href ||
@@ -38,7 +46,7 @@ function NavItem({ label, href, icon: Icon }: { label: string; href: string; ico
       )}
       style={
         active
-          ? { background: 'var(--am-accent)', color: 'white' }
+          ? { background: 'var(--sidebar-primary)', color: 'white' }
           : { color: 'var(--am-muted)' }
       }
     >
@@ -48,7 +56,13 @@ function NavItem({ label, href, icon: Icon }: { label: string; href: string; ico
   )
 }
 
-import type React from 'react'
+export function TrainerNavItems() {
+  return (
+    <nav className="flex flex-col gap-1">
+      {trainerNav.map((item) => <NavItem key={item.href} {...item} />)}
+    </nav>
+  )
+}
 
 export function OwnerNavItems() {
   return (
@@ -66,13 +80,21 @@ export function OwnerNavItems() {
   )
 }
 
-export function OwnerSidebar() {
+export function AppSidebar({ role, children }: { role?: Role | null; children?: React.ReactNode }) {
+  const nav = children ?? (role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />)
+
   return (
     <aside
       className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
-      style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+      style={{ background: 'var(--sidebar)', borderColor: 'var(--am-border)' }}
     >
-      <OwnerNavItems />
+      {nav}
+      <div className="mt-auto pb-4 px-3">
+        <div className="rounded-md border border-border bg-secondary/50 p-3">
+          <p className="text-xs text-muted-foreground">Starter Tier</p>
+          <p className="text-sm font-medium">Manual Upload</p>
+        </div>
+      </div>
     </aside>
   )
 }

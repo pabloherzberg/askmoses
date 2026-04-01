@@ -6,7 +6,7 @@ const VALID_ROLES: Role[] = ['trainer', 'owner', 'admin']
 function redirectByRole(role: Role, baseUrl: string) {
   const routes: Record<Role, string> = {
     trainer: '/me',
-    owner: '/overview',
+    owner: '/dashboard',
     admin: '/admin',
   }
   return new URL(routes[role] ?? '/login', baseUrl)
@@ -15,8 +15,14 @@ function redirectByRole(role: Role, baseUrl: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // ── Rotas bloqueadas — sempre 404 ───────────────────────────────────────────
+  const blockedPaths = ['/tech', '/me/calls/new']
+  if (blockedPaths.some((p) => pathname.startsWith(p))) {
+    return new NextResponse(null, { status: 404 })
+  }
+
   // ── Rotas públicas — não interceptar ────────────────────────────────────────
-  const publicPaths = ['/login', '/presentation', '/tech', '/demobiz']
+  const publicPaths = ['/login', '/presentation', '/demobiz']
   const isPublic = pathname === '/' || publicPaths.some((p) => pathname.startsWith(p))
 
   // Lê a sessão demo do cookie (setado pelo login page via MSW)
@@ -41,9 +47,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, request.url))
   }
 
-  // Trainer só acessa /me e /me/calls/[id]
-  const trainerBlocked = ['/overview', '/dashboard', '/calls']
-  if (role === 'trainer' && trainerBlocked.some((p) => pathname.startsWith(p))) {
+  // Trainer só acessa /me, /me/calls/[id] e /dashboard/upload
+  const trainerBlocked = ['/overview', '/calls']
+  const trainerDashboardBlocked = pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/upload')
+  if (role === 'trainer' && (trainerBlocked.some((p) => pathname.startsWith(p)) || trainerDashboardBlocked)) {
     return NextResponse.redirect(new URL('/me', request.url))
   }
 

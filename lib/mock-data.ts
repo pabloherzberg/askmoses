@@ -6,6 +6,7 @@ import type {
   Client,
   TrendPoint,
   GlobalMetrics,
+  Role,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -754,3 +755,15 @@ export const supabaseCalls = calls.map((call) => ({
   email_id: `email-${call.id}`,
   created_at: `${call.date}T10:00:00Z`,
 }))
+
+// ─── Demo credentials ─────────────────────────────────────────────────────────
+
+export const demoCredentials = [
+  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: 'trainer-marcus' as string | null },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: 'trainer-jamie'  as string | null },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: 'trainer-jordan' as string | null },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: 'trainer-taylor' as string | null },
+  { email: 'owner@demo.askmoses.ai',    password: 'demo123', role: 'owner'   as Role, name: 'Dog Wizard HQ',  trainerId: null },
+  { email: 'admin@askmoses.ai',         password: 'demo123', role: 'admin'   as Role, name: 'AskMoses Admin', trainerId: null },
+]
+
