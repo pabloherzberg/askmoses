@@ -18,11 +18,11 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
   return (
     <div
       className={cn(
-        'rounded-xl p-[18px_20px] border transition-colors am-fade-up',
+        'rounded-xl p-[18px_20px] border shadow-md transition-colors am-fade-up',
         className
       )}
       style={{
-        background: 'var(--am-bg2)',
+        background: 'var(--card)',
         borderColor: 'var(--am-border)',
         ...style,
       }}
@@ -44,10 +44,10 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
               delta === undefined
                 ? 'var(--am-muted)'
                 : isPositive
-                ? 'var(--am-green)'
-                : isNegative
-                ? 'var(--am-red)'
-                : 'var(--am-muted)',
+                  ? 'var(--am-green)'
+                  : isNegative
+                    ? 'var(--am-red)'
+                    : 'var(--am-muted)',
           }}
         >
           {delta !== undefined && (

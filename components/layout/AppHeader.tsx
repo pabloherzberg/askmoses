@@ -3,7 +3,7 @@
 // Unified header — used across all authenticated routes
 import type React from 'react'
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
 import {
   Sheet,
@@ -26,14 +26,14 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     document.cookie = 'demo-role=; path=/; max-age=0'
-    router.push('/login')
+    document.cookie = 'demo-trainer-id=; path=/; max-age=0'
+    window.location.href = '/login'
   }
 
   // Resolve title — string literal or pathname map
@@ -47,7 +47,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-8 h-[61px] border-b"
-      style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+      style={{ background: 'var(--sidebar)', borderColor: 'var(--am-border)' }}
     >
       {/* ── Left ─────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2.5">

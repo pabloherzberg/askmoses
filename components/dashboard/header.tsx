@@ -54,6 +54,7 @@ export function DashboardHeader() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     document.cookie = 'demo-role=; path=/; max-age=0'
+    document.cookie = 'demo-trainer-id=; path=/; max-age=0'
     router.push('/login')
   }
 

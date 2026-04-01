@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MSWProvider } from "@/components/msw-provider";
 import { Toaster } from "@/components/ui/toaster";
-import "./globals.css";
+import "../styles/globals.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -23,7 +23,7 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "Ask Moses - AI Sales Coaching",
   description:
-    "AI-powered post-call sales coaching and team insights for Freedom Marine",
+    "AI-powered post-call sales coaching and team performance intelligence platform. Analyze sales calls, identify improvement areas, and boost team performance with actionable insights.",
   generator: "v0.app",
   icons: {
     icon: [
@@ -51,7 +51,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}>
+      <body
+        className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
