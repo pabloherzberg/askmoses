@@ -85,11 +85,6 @@ export function Navigation() {
           ))}
           <div className="flex flex-col gap-2 pt-2 border-t border-border">
             <Button asChild variant="ghost" size="sm" className="justify-start">
-              <Link href="/tech" onClick={() => setMenuOpen(false)}>
-                Tech
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" className="justify-start">
               <Link href="/presentation" onClick={() => setMenuOpen(false)}>
                 Presentation
               </Link>
