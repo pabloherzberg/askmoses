@@ -7,7 +7,7 @@ Este arquivo documenta as regras de code ownership e proteção da branch `main`
 
 ## Proteção de Branch
 
-A branch `main` está protegida. Apenas `@pabloherzberg` e `@lucaasramon` pode realizar merge direto.
+A branch `main` está protegida. Apenas `@pabloherzberg` e `@lucaasramon` podem realizar merge direto.
 
 ### Regra
 
@@ -16,7 +16,7 @@ A branch `main` está protegida. Apenas `@pabloherzberg` e `@lucaasramon` pode r
 ```
 
 **O que isso significa:**
-- ✅ Apenas `@pabloherzberg` e `@lucaasramon` pode aprovar PRs para `main`
+- ✅ Apenas `@pabloherzberg` e `@lucaasramon` podem aprovar PRs para `main`
 - ❌ Nenhum outro usuário pode fazer push direto para `main`
 - ❌ Nenhum outro usuário pode fazer merge sem aprovação explícita do owner
 
