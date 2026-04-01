@@ -1,7 +1,7 @@
 
 # CODEOWNERS — Documentação (Informativo)
 
-> **Nota:** Este arquivo é apenas documentação. As regras de ownership efetivamente aplicadas pelo GitHub estão em [`.github/CODEOWNERS`](.github/CODEOWNERS).
+> **Nota:** Este arquivo é apenas documentação. As regras de ownership efetivamente aplicadas pelo GitHub estão em [`.github/CODEOWNERS`](./CODEOWNERS).
 
 Este arquivo documenta as regras de code ownership e proteção da branch `main`.
 
