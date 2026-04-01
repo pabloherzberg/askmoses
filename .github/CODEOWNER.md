@@ -12,8 +12,7 @@ A branch `main` está protegida. Apenas `@pabloherzberg` e `@lucaasramon` pode r
 ### Regra
 
 ```
-* @pabloherzberg
-* @lucaasramon
+* @pabloherzberg @lucaasramon
 ```
 
 **O que isso significa:**
