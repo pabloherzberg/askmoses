@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Rotas bloqueadas — sempre 404 ───────────────────────────────────────────
-  const blockedPaths = ['/tech', '/me/calls/new']
+  const blockedPaths = ['/me/calls/new']
   if (blockedPaths.some((p) => pathname.startsWith(p))) {
     return new NextResponse(null, { status: 404 })
   }
