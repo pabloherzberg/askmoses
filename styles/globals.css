@@ -150,8 +150,7 @@
   --am-red: #FF5E5E;
   --am-red-bg: rgba(255, 94, 94, 0.1);
   --am-amber: #C97A00;
-  ;
-  --am-amber-bg: rgba(255, 171, 46, 0.1);
+  --am-amber-bg: rgba(201, 122, 0, 0.1);
   --am-blue: #5EB3FF;
   --am-blue-bg: rgba(94, 179, 255, 0.1);
 }
