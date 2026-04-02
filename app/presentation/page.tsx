@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { Navigation } from "@/components/navigation"
 import {
   CheckCircle,
   TrendingUp,
@@ -21,22 +22,11 @@ import {
 
 export default function PresentationPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            <span className="font-bold text-foreground">AI Coaching</span>
-          </div>
-          <Button asChild variant="outline">
-            <Link href="/dashboard">Enter Dashboard</Link>
-          </Button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Navigation />
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+      <section className="container mx-auto max-w-4xl px-6 py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
@@ -78,15 +68,15 @@ export default function PresentationPage() {
 
           <div className="hidden lg:block">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary to-cyan-500 rounded-lg blur-2xl opacity-20" />
-              <div className="relative bg-card border border-border rounded-lg p-8 backdrop-blur-sm">
+              <div className="absolute inset-0 rounded-lg blur-2xl opacity-20" style={{ background: 'linear-gradient(to right, var(--am-accent), var(--am-accent2))' }} />
+              <div className="relative rounded-lg p-8 border" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
                 <div className="space-y-4">
-                  <div className="h-32 bg-muted/50 rounded-lg flex items-center justify-center">
-                    <Phone className="h-16 w-16 text-muted-foreground/40" />
+                  <div className="h-32 rounded-lg flex items-center justify-center" style={{ background: 'var(--am-bg3)' }}>
+                    <Phone className="h-16 w-16" style={{ color: 'var(--am-muted)', opacity: 0.4 }} />
                   </div>
                   <div className="space-y-2">
-                    <div className="h-3 bg-muted rounded w-2/3" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="h-3 rounded w-2/3" style={{ background: 'var(--am-bg4)' }} />
+                    <div className="h-3 rounded w-1/2" style={{ background: 'var(--am-bg4)' }} />
                   </div>
                 </div>
               </div>
@@ -96,15 +86,15 @@ export default function PresentationPage() {
       </section>
 
       {/* Business Goals Section */}
-      <section className="bg-muted/30 border-y border-border py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="border-y border-border py-16 lg:py-24" style={{ background: 'var(--am-bg2)' }}>
+        <div className="container mx-auto max-w-4xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Business Goals</h2>
             <p className="text-lg text-muted-foreground">How we achieve training excellence at scale</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="hover:border-primary/50 transition-colors">
+            <Card className="border shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Target className="h-5 w-5 text-primary" />
@@ -116,7 +106,7 @@ export default function PresentationPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-colors">
+            <Card className="border shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
@@ -128,7 +118,7 @@ export default function PresentationPage() {
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-colors">
+            <Card className="border shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Zap className="h-5 w-5 text-primary" />
@@ -144,7 +134,7 @@ export default function PresentationPage() {
       </section>
 
       {/* How MVP Delivers Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+      <section className="container mx-auto max-w-4xl px-6 py-16 lg:py-24">
         <div className="text-center mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">How We Deliver Value</h2>
           <p className="text-lg text-muted-foreground">Tier 1 MVP Implementation</p>
@@ -253,8 +243,8 @@ export default function PresentationPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="bg-muted/30 border-y border-border py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="features" className="border-y border-border py-16 lg:py-24" style={{ background: 'var(--am-bg2)' }}>
+        <div className="container mx-auto max-w-4xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">Complete Feature Set</h2>
             <p className="text-lg text-muted-foreground">30 features across 6 core areas</p>
@@ -271,7 +261,7 @@ export default function PresentationPage() {
             ].map((feature, idx) => {
               const Icon = feature.icon
               return (
-                <Card key={idx}>
+                <Card key={idx} className="border shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <Icon className="h-5 w-5 text-primary" />
@@ -292,8 +282,11 @@ export default function PresentationPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div className="bg-gradient-to-r from-primary to-cyan-500 rounded-lg p-12 lg:p-20 text-center space-y-8">
+      <section className="container mx-auto max-w-4xl px-6 py-20 lg:py-32">
+        <div
+          className="rounded-lg p-12 lg:p-20 text-center space-y-8"
+          style={{ background: 'linear-gradient(to right, var(--am-accent), var(--am-accent2))' }}
+        >
           <div>
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Ready to Transform Coaching?</h2>
             <p className="text-lg text-white/80 max-w-2xl mx-auto">
@@ -316,9 +309,9 @@ export default function PresentationPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-background py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-muted-foreground">
-          <p>Tier 1 MVP - Complete and delivered</p>
+      <footer className="border-t border-border py-8">
+        <div className="container mx-auto max-w-4xl px-6 text-center text-muted-foreground text-sm">
+          Tier 1 MVP - Complete and delivered
         </div>
       </footer>
     </div>
