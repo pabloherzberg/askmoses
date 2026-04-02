@@ -60,7 +60,7 @@ export function Navigation() {
             <Link href="/presentation">Presentation</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/login">Dashboard</Link>
           </Button>
         </div>
         <button
