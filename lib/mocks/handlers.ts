@@ -7,8 +7,6 @@ import {
   globalMetrics,
   rubricSections,
   trendData,
-  rubric,
-  scripts,
   supabaseCalls,
   demoCredentials,
 } from '@/lib/mock-data'
@@ -19,8 +17,6 @@ import {
   buildDiscoverySections,
   buildObjectionSections,
   summaryByOutcome,
-  mockGeneratedScript,
-  mockGeneratedCriteria,
 } from './data/call-analysis'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -68,88 +64,7 @@ const supabaseHandlers = [
     return HttpResponse.json(sorted)
   }),
 
-  // GET rubrics
-  http.get(`${SUPABASE_URL}/rest/v1/rubrics`, ({ request }) => {
-    const url = new URL(request.url)
-    const isActive = url.searchParams.get('is_active')
-    const limit = url.searchParams.get('limit')
-
-    let data = [rubric]
-    if (isActive) {
-      data = data.filter((r) => String(r.is_active) === isActive.replace('eq.', ''))
-    }
-
-    const accept = request.headers.get('accept') || ''
-    if (accept.includes('vnd.pgrst.object') || limit === '1') {
-      return HttpResponse.json(data[0] || null)
-    }
-    return HttpResponse.json(data)
-  }),
-
-  // GET scripts
-  http.get(`${SUPABASE_URL}/rest/v1/scripts`, ({ request }) => {
-    const url = new URL(request.url)
-    const rubricId = url.searchParams.get('rubric_id')
-    const isActive = url.searchParams.get('is_active')
-    const order = url.searchParams.get('order')
-
-    let data = [...scripts]
-    if (rubricId) {
-      data = data.filter((s) => s.rubric_id === rubricId.replace('eq.', ''))
-    }
-    if (isActive) {
-      data = data.filter((s) => String(s.is_active) === isActive.replace('eq.', ''))
-    }
-    if (order) {
-      const { column, ascending } = parseOrderParam(order)
-      data = sortByColumn(data, column, ascending) as typeof data
-    }
-    return HttpResponse.json(data)
-  }),
-
-  // POST rubrics (insert — script-builder creates one when none exists)
-  http.post(`${SUPABASE_URL}/rest/v1/rubrics`, async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>
-    const newRubric = {
-      ...rubric,
-      id: `rubric-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      ...body,
-    }
-    const accept = request.headers.get('accept') || ''
-    if (accept.includes('vnd.pgrst.object')) {
-      return HttpResponse.json(newRubric, { status: 201 })
-    }
-    return HttpResponse.json([newRubric], { status: 201 })
-  }),
-
-  // PATCH rubrics (settings update)
-  http.patch(`${SUPABASE_URL}/rest/v1/rubrics`, () => {
-    return HttpResponse.json(rubric)
-  }),
-
-  // POST scripts (create)
-  http.post(`${SUPABASE_URL}/rest/v1/scripts`, async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>
-    const newScript = {
-      id: `script-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      is_active: true,
-      ...body,
-    }
-    return HttpResponse.json([newScript], { status: 201 })
-  }),
-
-  // PATCH scripts (update)
-  http.patch(`${SUPABASE_URL}/rest/v1/scripts`, () => {
-    return HttpResponse.json({})
-  }),
-
-  // DELETE scripts
-  http.delete(`${SUPABASE_URL}/rest/v1/scripts`, () => {
-    return HttpResponse.json({})
-  }),
-
+  // rubrics + scripts — delegado para Supabase real (sem mock)
   // Supabase Auth — bypass (handled by real Supabase)
 ]
 
@@ -210,51 +125,9 @@ const apiHandlers = [
     return ok({ sections: rubricSections, trend: trendData })
   }),
 
-  // GET /api/rubric-config — rubric completa com system_prompt e llm_model
-  http.get('/api/rubric-config', () => {
-    return ok(rubric)
-  }),
-
-  // PATCH /api/rubric-config — atualização mock (visual only na Fase 1)
-  http.patch('/api/rubric-config', async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>
-    return ok({ ...rubric, ...body })
-  }),
-
-  // GET /api/scripts
-  http.get('/api/scripts', ({ request }) => {
-    const url = new URL(request.url)
-    const rubricId = url.searchParams.get('rubricId')
-    const activeOnly = url.searchParams.get('active')
-    let data = [...scripts]
-    if (rubricId) data = data.filter((s) => s.rubric_id === rubricId)
-    if (activeOnly === 'true') data = data.filter((s) => s.is_active)
-    return ok(data)
-  }),
-
-  // POST /api/scripts — create mock (visual only na Fase 1)
-  http.post('/api/scripts', async ({ request }) => {
-    const body = await request.json() as Record<string, unknown>
-    const newScript = {
-      id: `script-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      is_active: true,
-      rubric_id: 'rubric-001',
-      ...body,
-    }
-    return ok(newScript)
-  }),
-
-  // PATCH /api/scripts/:id — update mock
-  http.patch('/api/scripts/:id', async ({ request, params }) => {
-    const body = await request.json() as Record<string, unknown>
-    return ok({ id: params.id, ...body })
-  }),
-
-  // DELETE /api/scripts/:id — delete mock
-  http.delete('/api/scripts/:id', ({ params }) => {
-    return ok({ id: params.id, deleted: true })
-  }),
+  // GET /api/rubric-config — delegado para API route real (Supabase)
+  // POST /api/scripts — delegado para API route real (Supabase)
+  // PATCH/DELETE /api/scripts/:id — delegado para API route real (Supabase)
 ]
 
 // ─── Auth handlers (mock para demo — substitui Supabase Auth) ────────────────
@@ -340,15 +213,8 @@ const dashboardApiHandlers = [
     })
   }),
 
-  // POST /api/generate-script — mock geração de script
-  http.post('/api/generate-script', async () => {
-    return HttpResponse.json(mockGeneratedScript)
-  }),
-
-  // POST /api/generate-criteria — mock geração de critérios
-  http.post('/api/generate-criteria', async () => {
-    return HttpResponse.json(mockGeneratedCriteria)
-  }),
+  // POST /api/generate-script — delegado para API route real (Gemini)
+  // POST /api/generate-criteria — delegado para API route real
 ]
 
 // ─── Export all handlers ──────────────────────────────────────────────────────
