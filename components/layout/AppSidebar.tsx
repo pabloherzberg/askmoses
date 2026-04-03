@@ -12,7 +12,8 @@ import type { Role } from '@/lib/types'
 
 const trainerNav = [
   { label: 'My Dashboard', href: '/me', icon: LayoutDashboard },
-  { label: 'Upload Call', href: '/dashboard/upload', icon: Upload },
+  { label: 'My Calls',     href: '/calls', icon: Phone },
+  { label: 'Upload Call',  href: '/dashboard/upload', icon: Upload },
 ]
 
 const mainNav = [

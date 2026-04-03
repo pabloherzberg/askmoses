@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/types'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
@@ -20,8 +20,6 @@ function redirectByRole(role: Role): string {
 }
 
 export default function LoginPage() {
-  const router = useRouter()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,32 +30,31 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      const supabase = createClient()
 
-    const { data, error: authError } = await res.json() as {
-      data: { user: { role: Role; trainerId: string | null } } | null
-      error: { message: string } | null
-    }
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      if (authError || !data.session) {
+        setError('Email or password incorrect')
+        return
+      }
 
-    if (authError || !data) {
-      setError('Invalid email or password')
+      // Fetch profile via API (admin client bypasses RLS)
+      // Pass access token in header so the server can read the session even before the cookie propagates
+      const meRes = await fetch('/api/me', {
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      })
+      const { data: meData } = await meRes.json() as { data: { role: string; name: string; trainerId: string | null } | null; error: unknown }
+
+      if (!meData) {
+        setError('User profile not found. Run the seed script in Supabase.')
+        return
+      }
+
+      window.location.href = redirectByRole(meData.role as Role)
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { role, trainerId } = data.user
-    // Persiste sessão demo via cookie para o middleware ler
-    document.cookie = `demo-role=${role}; path=/; max-age=86400; SameSite=Lax`
-    if (trainerId) {
-      document.cookie = `demo-trainer-id=${trainerId}; path=/; max-age=86400; SameSite=Lax`
-    } else {
-      document.cookie = `demo-trainer-id=; path=/; max-age=0; SameSite=Lax`
-    }
-    window.location.href = redirectByRole(role)
   }
 
   const fillDemo = (demoEmail: string, demoPassword: string) => {
@@ -86,11 +83,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-            style={{
-              background: 'var(--am-bg3)',
-              border: '1px solid var(--am-border2)',
-              color: 'var(--am-text)',
-            }}
+            style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
             placeholder="your@email.com"
           />
         </div>
@@ -105,19 +98,13 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-            style={{
-              background: 'var(--am-bg3)',
-              border: '1px solid var(--am-border2)',
-              color: 'var(--am-text)',
-            }}
+            style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
             placeholder="••••••••"
           />
         </div>
 
         {error && (
-          <p className="text-xs" style={{ color: 'var(--am-red)' }}>
-            {error}
-          </p>
+          <p className="text-xs" style={{ color: 'var(--am-red)' }}>{error}</p>
         )}
 
         <button
@@ -145,16 +132,10 @@ export default function LoginPage() {
               type="button"
               onClick={() => fillDemo(u.email, u.password)}
               className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-left transition-colors"
-              style={{
-                background: 'var(--am-bg4)',
-                border: '1px solid var(--am-border)',
-                color: 'var(--am-text)',
-              }}
+              style={{ background: 'var(--am-bg4)', border: '1px solid var(--am-border)', color: 'var(--am-text)' }}
             >
               <span className="text-xs font-medium">{u.label}</span>
-              <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-                {u.hint}
-              </span>
+              <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{u.hint}</span>
             </button>
           ))}
         </div>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
+import { createClient } from '@/lib/supabase/client'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -30,9 +31,8 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
   const [open, setOpen] = useState(false)
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    document.cookie = 'demo-role=; path=/; max-age=0'
-    document.cookie = 'demo-trainer-id=; path=/; max-age=0'
+    const supabase = createClient()
+    await supabase.auth.signOut()
     window.location.href = '/login'
   }
 
