@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";

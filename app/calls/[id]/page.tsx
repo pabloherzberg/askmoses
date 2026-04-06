@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import { getCallById } from '@/lib/services/calls'
 import { getRole, getTrainerDbId } from '@/lib/auth'
