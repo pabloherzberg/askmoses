@@ -36,11 +36,12 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react"
-import type { CallResult as CallOutcome } from "@/lib/types"
+import type { CallResult as CallOutcome, Trainer } from "@/lib/types"
 
 type UploadStep = "input" | "processing" | "results" | "sending" | "complete"
 
 interface FormData {
+  trainerId: string
   trainerName: string
   trainerEmail: string
   clientName: string
@@ -80,6 +81,7 @@ export default function UploadPage() {
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState<FormData>({
+    trainerId: "",
     trainerName: "",
     trainerEmail: "",
     clientName: "",
@@ -93,6 +95,7 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [scripts, setScripts] = useState<Script[]>([])
+  const [trainers, setTrainers] = useState<Trainer[]>([])
   const [loading, setLoading] = useState(true)
   const [isTrainer, setIsTrainer] = useState(false)
 
@@ -114,6 +117,11 @@ export default function UploadPage() {
           trainerEmail: meData.email ?? '',
           trainerName: meData.name ?? '',
         }))
+      } else {
+        // Owner/admin: fetch trainers list for the select
+        const trainersRes = await fetch("/api/trainers")
+        const { data: trainersData } = (await trainersRes.json()) as { data: { trainers: Trainer[] } | null; error: unknown }
+        if (trainersData?.trainers) setTrainers(trainersData.trainers)
       }
 
       setLoading(false)
@@ -157,7 +165,9 @@ export default function UploadPage() {
   }
 
   const isFormValid = () => {
-    const hasTrainerInfo = formData.trainerName && formData.trainerEmail
+    const hasTrainerInfo = isTrainer
+      ? !!formData.trainerName
+      : !!formData.trainerId
     const hasContent =
       uploadType === "audio" ? formData.audioFile : formData.transcript.trim()
     return hasTrainerInfo && hasContent
@@ -248,6 +258,7 @@ export default function UploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transcript,
+          trainerId: formData.trainerId || undefined,
           trainerName: formData.trainerName,
           trainerEmail: formData.trainerEmail,
           clientName: formData.clientName,
@@ -332,6 +343,7 @@ export default function UploadPage() {
     setAnalysisResult(null)
     setError(null)
     setFormData({
+      trainerId: "",
       trainerName: "",
       trainerEmail: "",
       clientName: "",
@@ -611,37 +623,40 @@ export default function UploadPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="trainerName">Trainer Name</Label>
-              <Input
-                id="trainerName"
-                placeholder="e.g., John Smith"
-                value={formData.trainerName}
-                disabled={isTrainer}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    trainerName: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="trainerEmail">Trainer Email</Label>
-              <Input
-                id="trainerEmail"
-                type="email"
-                placeholder="e.g., john@example.com"
-                value={formData.trainerEmail}
-                disabled={isTrainer}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    trainerEmail: e.target.value,
-                  }))
-                }
-              />
-            </div>
+            {isTrainer ? (
+              <div className="space-y-2">
+                <Label>Trainer</Label>
+                <Input value={formData.trainerName} disabled />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="trainerId">Trainer</Label>
+                <Select
+                  value={formData.trainerId}
+                  onValueChange={(value) => {
+                    const trainer = trainers.find((t) => t.id === value)
+                    if (!trainer) return
+                    setFormData((prev) => ({
+                      ...prev,
+                      trainerId: trainer.id,
+                      trainerName: trainer.name,
+                      trainerEmail: trainer.email ?? '',
+                    }))
+                  }}
+                >
+                  <SelectTrigger id="trainerId">
+                    <SelectValue placeholder="Select a trainer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainers.map((trainer) => (
+                      <SelectItem key={trainer.id} value={trainer.id}>
+                        {trainer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="clientName">Client Name</Label>
               <Input

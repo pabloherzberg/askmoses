@@ -11,6 +11,7 @@ interface AnalyzeRequestBody {
   clientName?: string
   trainerName?: string
   trainerEmail?: string
+  trainerId?: string
   scriptId?: string
   callOutcome?: string
 }
@@ -40,9 +41,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as AnalyzeRequestBody
     const { transcript, clientName, trainerName, trainerEmail } = body
 
-    // Resolve trainer_id from session (set when logged-in trainer uploads)
+    // Resolve trainer_id: body.trainerId (owner uploading for a trainer) OR session trainer
     const session = await getSession()
-    const sessionTrainerId = session ? await getTrainerDbId() : null
+    const sessionTrainerId = body.trainerId ?? (session ? await getTrainerDbId() : null)
 
     if (!transcript) {
       return Response.json(
