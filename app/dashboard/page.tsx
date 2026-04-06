@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import type { Call } from "@/lib/types"
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
 import {
   Upload,
   Phone,
@@ -170,6 +171,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {recentCalls.map((call) => {
                 const isPassed = call.score >= 75
+                const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
                 return (
                   <div
                     key={call.id}
@@ -189,9 +191,14 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex flex-col items-end gap-1.5">
                       <p className="font-medium">{call.score}/100</p>
-                      <p className="text-sm text-muted-foreground capitalize">{call.result}</p>
+                      <span
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono"
+                        style={{ background: result.bg, color: result.color }}
+                      >
+                        {result.label}
+                      </span>
                     </div>
                   </div>
                 )

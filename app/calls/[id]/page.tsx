@@ -1,16 +1,30 @@
 import { notFound } from 'next/navigation'
 import { getCallById } from '@/lib/services/calls'
+import { getRole, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
-export default async function OwnerCallDetailPage({ params }: Props) {
+export default async function CallDetailPage({ params }: Props) {
   const { id } = await params
-  const call = await getCallById(id)
+  const [call, role] = await Promise.all([getCallById(id), getRole()])
 
   if (!call) notFound()
 
-  return <CallDetail call={call} viewerRole="owner" backHref="/calls" />
+  // Trainer can only view their own calls
+  if (role === 'trainer') {
+    const trainerId = await getTrainerDbId()
+    if (!trainerId || call.trainerId !== trainerId) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <p className="text-2xl font-semibold" style={{ color: 'var(--am-red)' }}>403</p>
+          <p className="text-sm" style={{ color: 'var(--am-muted)' }}>You don&apos;t have access to this call.</p>
+        </div>
+      )
+    }
+  }
+
+  return <CallDetail call={call} viewerRole={role ?? 'owner'} backHref="/calls" />
 }

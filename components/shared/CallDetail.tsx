@@ -4,13 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle, ArrowUpRight } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from '@/lib/constants'
 import type { Call, Role, RubricColor } from '@/lib/types'
-
-const resultStyles: Record<string, { bg: string; color: string; label: string }> = {
-  closed: { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Closed' },
-  'no-close': { bg: 'var(--am-red-bg)', color: 'var(--am-red)', label: 'No Close' },
-  'follow-up': { bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'Follow-up' },
-}
 
 const rubricFields: { key: keyof Call['rubricScores']; label: string; color: RubricColor }[] = [
   { key: 'discovery', label: 'Discovery', color: 'blue' },
@@ -34,7 +29,7 @@ interface CallDetailProps {
 
 export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
   const [expanded, setExpanded] = useState(false)
-  const result = resultStyles[call.result]
+  const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
 
   const transcriptLines = call.transcript.split('\n')
   const showAll = expanded || transcriptLines.length <= 4

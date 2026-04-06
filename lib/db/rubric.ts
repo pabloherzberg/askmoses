@@ -1,63 +1,93 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { RubricSection, TrendPoint } from '@/lib/types'
 
-/**
- * Busca as seções da rubrica ativa.
- * TODO: implementar query real quando tabela `rubric_sections` existir.
- */
-export async function dbGetRubricSections(): Promise<RubricSection[]> {
-  const supabase = createAdminClient()
-
-  const { data, error } = await supabase
-    .from('rubric_sections')
-    .select('*')
-    .eq('is_active', true)
-    .order('weight', { ascending: false })
-
-  if (error) throw new Error(`dbGetRubricSections: ${error.message}`)
-
-  // TODO: mapear colunas do banco para interface RubricSection
-  return (data ?? []) as unknown as RubricSection[]
+export interface DbRubric {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  system_prompt: string | null
+  llm_model: string | null
 }
 
-/**
- * Busca dados de tendência (close rate + score por semana).
- * TODO: implementar com query de agregação temporal no Supabase.
- */
-export async function dbGetTrendData(weeks = 6): Promise<TrendPoint[]> {
-  const supabase = createAdminClient()
-
-  // TODO: substituir por supabase.rpc('get_trend_data', { weeks })
-  // ou query com date_trunc sobre tabela de calls
-  const { data, error } = await supabase
-    .from('trend_data')
-    .select('week, close_rate, score')
-    .order('week', { ascending: true })
-    .limit(weeks)
-
-  if (error) throw new Error(`dbGetTrendData: ${error.message}`)
-
-  // TODO: mapear snake_case → camelCase
-  return (data ?? []) as unknown as TrendPoint[]
+export interface DbCriterion {
+  id: string
+  rubric_id: string
+  name: string
+  description: string | null
+  sort_order: number
+  created_at: string
 }
 
-/**
- * Busca configuração completa da rubrica (para settings).
- * TODO: implementar quando tabela `rubrics` existir.
- */
-export async function dbGetRubricConfig() {
+export async function dbGetActiveRubric(): Promise<DbRubric | null> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('rubrics')
-    .select('*, scripts(*)')
+    .select('*')
     .eq('is_active', true)
     .single()
 
   if (error) {
     if (error.code === 'PGRST116') return null
-    throw new Error(`dbGetRubricConfig: ${error.message}`)
+    throw new Error(`dbGetActiveRubric: ${error.message}`)
   }
 
-  return data
+  return data as DbRubric
+}
+
+export async function dbGetRubrics(): Promise<DbRubric[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('rubrics')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`dbGetRubrics: ${error.message}`)
+
+  return (data ?? []) as DbRubric[]
+}
+
+export async function dbGetCriteriaByRubric(rubricId: string): Promise<DbCriterion[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('criteria')
+    .select('*')
+    .eq('rubric_id', rubricId)
+    .order('sort_order', { ascending: true })
+
+  if (error) throw new Error(`dbGetCriteriaByRubric: ${error.message}`)
+
+  return (data ?? []) as DbCriterion[]
+}
+
+export async function dbGetActiveRubricWithCriteria(): Promise<{
+  rubric: DbRubric
+  criteria: DbCriterion[]
+} | null> {
+  const rubric = await dbGetActiveRubric()
+  if (!rubric) return null
+
+  const criteria = await dbGetCriteriaByRubric(rubric.id)
+  return { rubric, criteria }
+}
+
+/** @deprecated use dbGetActiveRubricWithCriteria */
+export async function dbGetRubricConfig() {
+  return dbGetActiveRubricWithCriteria()
+}
+
+/** @deprecated use dbGetActiveRubric */
+export async function dbGetRubricSections(): Promise<DbCriterion[]> {
+  const rubric = await dbGetActiveRubric()
+  if (!rubric) return []
+  return dbGetCriteriaByRubric(rubric.id)
+}
+
+/** @deprecated not applicable to current schema */
+export async function dbGetTrendData(_weeks = 6) {
+  return []
 }

@@ -1,19 +1,5 @@
-import { type NextRequest } from 'next/server'
-import { demoCredentials } from '@/lib/mock-data'
-
-export async function POST(request: NextRequest) {
-  const { email, password } = await request.json() as { email: string; password: string }
-
-  const user = demoCredentials.find((u) => u.email === email && u.password === password)
-  if (!user) {
-    return Response.json(
-      { data: null, error: { message: 'Email ou senha incorretos', code: 401 } },
-      { status: 401 }
-    )
-  }
-
-  return Response.json({
-    data: { user: { id: `demo-${user.role}`, email: user.email, role: user.role, name: user.name, trainerId: user.trainerId } },
-    error: null,
-  })
+// Login is handled client-side via supabase.auth.signInWithPassword()
+// This route is no longer used.
+export async function POST() {
+  return Response.json({ data: null, error: { message: 'Use Supabase Auth directly', code: 410 } }, { status: 410 })
 }

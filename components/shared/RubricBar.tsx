@@ -29,12 +29,12 @@ export function RubricBar({ label, value, color, showValue = true, className }: 
       >
         <div
           className="h-full rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${value}%`, background: colorMap[color] }}
+          style={{ width: `${(value / 5) * 100}%`, background: colorMap[color] }}
         />
       </div>
       {showValue && (
-        <span className="text-xs font-medium font-mono w-6 text-right" style={{ color: 'var(--am-text)' }}>
-          {value}
+        <span className="text-xs font-medium font-mono w-8 text-right" style={{ color: 'var(--am-text)' }}>
+          {value.toFixed(1)}
         </span>
       )}
     </div>

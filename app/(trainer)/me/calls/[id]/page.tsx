@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCallById } from '@/lib/services/calls'
-import { getTrainerId } from '@/lib/auth'
+import { getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 
 export default async function TrainerCallDetailPage({ params }: Props) {
   const { id } = await params
-  const [call, trainerId] = await Promise.all([getCallById(id), getTrainerId()])
+  const [call, trainerId] = await Promise.all([getCallById(id), getTrainerDbId()])
 
   if (!call) notFound()
 

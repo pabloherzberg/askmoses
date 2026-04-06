@@ -7,40 +7,17 @@ import { ScorePill } from '@/components/shared/ScorePill'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
-interface CallsTableProps {
-  calls: Call[]
-  showTrainerColumn?: boolean
-}
-
-export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps) {
+export function TrainerCallsTable({ calls }: { calls: Call[] }) {
   const router = useRouter()
   const [resultFilter, setResultFilter] = useState<string>('all')
-  const [trainerFilter, setTrainerFilter] = useState<string>('all')
-
-  const trainers = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const c of calls) {
-      if (c.trainerId) map.set(c.trainerId, c.trainerName)
-    }
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
-  }, [calls])
 
   const filtered = useMemo(
-    () => calls.filter((c) => {
-      if (resultFilter !== 'all' && c.result !== resultFilter) return false
-      if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
-      return true
-    }),
-    [calls, resultFilter, trainerFilter]
+    () => calls.filter((c) => resultFilter === 'all' || c.result === resultFilter),
+    [calls, resultFilter]
   )
 
   const selectClass = 'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
   const selectStyle = { background: 'var(--card)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }
-
-  const headers = [
-    ...(showTrainerColumn ? ['Trainer'] : []),
-    'Prospect', 'Date', 'Score', 'Result', '',
-  ]
 
   return (
     <div>
@@ -49,12 +26,6 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
           <option value="all">All Results</option>
           {CALL_OUTCOMES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        {showTrainerColumn && trainers.length > 0 && (
-          <select className={selectClass} style={selectStyle} value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)}>
-            <option value="all">All Trainers</option>
-            {trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        )}
         <span className="ml-auto text-xs self-center" style={{ color: 'var(--am-muted)' }}>
           {filtered.length} {filtered.length === 1 ? 'call' : 'calls'}
         </span>
@@ -71,7 +42,7 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
             <table className="w-full border-collapse">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--am-border)' }}>
-                  {headers.map((h) => (
+                  {['Prospect', 'Date', 'Score', 'Result', ''].map((h) => (
                     <th key={h} className="text-[11px] font-medium text-left px-4 py-3" style={{ color: 'var(--am-muted)' }}>
                       {h}
                     </th>
@@ -86,17 +57,10 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
                       key={call.id}
                       className="cursor-pointer transition-colors"
                       style={{ borderBottom: '1px solid var(--am-border)' }}
-                      onClick={() => router.push(`/calls/${call.id}`)}
+                      onClick={() => router.push(`/me/calls/${call.id}`)}
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--am-bg3)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                      {showTrainerColumn && (
-                        <td className="px-4 py-3">
-                          <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: 'var(--am-text)' }}>
-                            {call.trainerName}
-                          </span>
-                        </td>
-                      )}
                       <td className="px-4 py-3">
                         <span className="text-[13px]" style={{ color: 'var(--am-text)' }}>{call.prospect}</span>
                       </td>
@@ -105,7 +69,9 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
                           {new Date(call.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </td>
-                      <td className="px-4 py-3"><ScorePill score={call.score} /></td>
+                      <td className="px-4 py-3">
+                        <ScorePill score={call.score} />
+                      </td>
                       <td className="px-4 py-3">
                         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
                           {result.label}
