@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server'
 import { getGeminiModel } from '@/lib/gemini'
 import { dbGetActiveRubricWithCriteria } from '@/lib/db/rubric'
 import { dbCreateCall } from '@/lib/db/calls'
+import { syncTrainerStats } from '@/lib/db/trainers'
 import { getSession, getTrainerDbId } from '@/lib/auth'
 
 interface AnalyzeRequestBody {
@@ -282,7 +283,14 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       detectedOutcome,
     })
 
-    // ── 6. Normalise criteriaScores for page compatibility ──────────────────
+    // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────
+    if (sessionTrainerId) {
+      syncTrainerStats(sessionTrainerId).catch((e) =>
+        console.error('[analyze] syncTrainerStats failed:', e)
+      )
+    }
+
+    // ── 7. Normalise criteriaScores for page compatibility ──────────────────
     // Page expects { name, score, feedback }; AI returns { criterionName, score, justification }
     const normalisedSections = parsed.criteriaScores.map((c) => ({
       ...c,
