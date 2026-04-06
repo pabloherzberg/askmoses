@@ -3,8 +3,6 @@ import { normaliseOutcome } from '@/lib/constants'
 import type { Call, RubricScores } from '@/lib/types'
 import type { DbCall, CreateCallInput, UpdateCallInput, GetCallsFilters } from '@/lib/db/calls'
 
-const USE_MOCK = process.env.USE_MOCK_DATA !== 'false'
-
 export type { CreateCallInput, UpdateCallInput, GetCallsFilters }
 
 // ─── Criteria parser: JSONB array → RubricScores (0–100) ─────────────────────
@@ -77,14 +75,6 @@ export function avgRubricScores(calls: Call[]): RubricScores {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getCalls(filters?: GetCallsFilters): Promise<Call[]> {
-  if (USE_MOCK) {
-    const { calls } = await import('@/lib/mock-data')
-    let result = [...calls]
-    if (filters?.trainerId) result = result.filter((c) => c.trainerId === filters.trainerId)
-    if (filters?.limit) result = result.slice(filters.offset ?? 0, (filters.offset ?? 0) + filters.limit)
-    return result
-  }
-
   const rows = await dbGetCalls({
     trainerId: filters?.trainerId,
     trainerName: filters?.trainerName,
@@ -97,11 +87,6 @@ export async function getCalls(filters?: GetCallsFilters): Promise<Call[]> {
 }
 
 export async function getCallById(id: string): Promise<Call | null> {
-  if (USE_MOCK) {
-    const { calls } = await import('@/lib/mock-data')
-    return calls.find((c) => c.id === id) ?? null
-  }
-
   const row = await dbGetCallById(id)
   return row ? toCall(row) : null
 }

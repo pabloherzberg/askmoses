@@ -1,21 +1,64 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Trainer } from '@/lib/types'
+import type { Trainer, AvatarColor } from '@/lib/types'
 
 export interface GetTrainersFilters {
   ownerId?: string
 }
 
-/**
- * Busca lista de trainers do banco.
- * TODO: implementar query real quando tabela `trainers` existir no Supabase.
- */
+interface DbTrainerRow {
+  id: string
+  user_id: string
+  owner_id: string
+  total_calls: number
+  close_rate: number
+  close_delta: number
+  score: number
+  score_delta: number
+  last_active: string
+  score_discovery: number
+  score_problem_agitation: number
+  score_offer_presentation: number
+  score_objection_handling: number
+  score_close_next_steps: number
+  users: {
+    name: string
+    avatar: string
+    avatar_color: AvatarColor
+    role: string
+  } | null
+}
+
+function toTrainer(row: DbTrainerRow): Trainer {
+  return {
+    id: row.id,
+    name: row.users?.name ?? '—',
+    avatar: row.users?.avatar ?? '??',
+    avatarColor: (row.users?.avatar_color ?? 'blue') as AvatarColor,
+    role: 'trainer',
+    ownerId: row.owner_id,
+    totalCalls: row.total_calls ?? 0,
+    closeRate: row.close_rate ?? 0,
+    closeDelta: row.close_delta ?? 0,
+    score: row.score ?? 0,
+    scoreDelta: row.score_delta ?? 0,
+    lastActive: row.last_active ?? '—',
+    rubricScores: {
+      discovery: row.score_discovery ?? 0,
+      problemAgitation: row.score_problem_agitation ?? 0,
+      offerPresentation: row.score_offer_presentation ?? 0,
+      objectionHandling: row.score_objection_handling ?? 0,
+      closeAndNextSteps: row.score_close_next_steps ?? 0,
+    },
+  }
+}
+
 export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Trainer[]> {
   const supabase = createAdminClient()
 
   let query = supabase
     .from('trainers')
-    .select('*')
-    .order('name', { ascending: true })
+    .select('*, users(name, avatar, avatar_color, role)')
+    .order('score', { ascending: false })
 
   if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
 
@@ -23,20 +66,15 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
 
   if (error) throw new Error(`dbGetTrainers: ${error.message}`)
 
-  // TODO: mapear snake_case → camelCase e calcular stats derivados
-  return (data ?? []) as unknown as Trainer[]
+  return (data ?? []).map((row) => toTrainer(row as unknown as DbTrainerRow))
 }
 
-/**
- * Busca um trainer por ID.
- * TODO: implementar quando tabela existir.
- */
 export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('trainers')
-    .select('*')
+    .select('*, users(name, avatar, avatar_color, role)')
     .eq('id', id)
     .single()
 
@@ -45,6 +83,5 @@ export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
     throw new Error(`dbGetTrainerById: ${error.message}`)
   }
 
-  // TODO: mapear snake_case → camelCase
-  return data as unknown as Trainer
+  return toTrainer(data as unknown as DbTrainerRow)
 }

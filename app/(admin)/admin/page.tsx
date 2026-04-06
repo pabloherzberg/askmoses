@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
