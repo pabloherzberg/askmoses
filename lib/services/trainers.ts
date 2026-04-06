@@ -1,9 +1,9 @@
 import type { Trainer } from '@/lib/types'
 
-const IS_DEV = process.env.NODE_ENV === 'development'
+const USE_MOCK = process.env.USE_MOCK_DATA !== 'false'
 
 export async function getTrainers(): Promise<Trainer[]> {
-  if (IS_DEV) {
+  if (USE_MOCK) {
     const { trainers } = await import('@/lib/mock-data')
     return trainers
   }
@@ -13,7 +13,7 @@ export async function getTrainers(): Promise<Trainer[]> {
 }
 
 export async function getTrainerById(id: string): Promise<Trainer | null> {
-  if (IS_DEV) {
+  if (USE_MOCK) {
     const { trainers } = await import('@/lib/mock-data')
     return trainers.find((t) => t.id === id) ?? null
   }
