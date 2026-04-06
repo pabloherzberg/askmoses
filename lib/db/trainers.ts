@@ -118,6 +118,7 @@ interface DbTrainerRow {
   score_close_next_steps: number
   users: {
     name: string
+    email: string
     avatar: string
     avatar_color: AvatarColor
     role: string
@@ -128,6 +129,7 @@ function toTrainer(row: DbTrainerRow): Trainer {
   return {
     id: row.id,
     name: row.users?.name ?? '—',
+    email: row.users?.email ?? undefined,
     avatar: row.users?.avatar ?? '??',
     avatarColor: (row.users?.avatar_color ?? 'blue') as AvatarColor,
     role: 'trainer',
@@ -153,7 +155,7 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
 
   let query = supabase
     .from('trainers')
-    .select('*, users(name, avatar, avatar_color, role)')
+    .select('*, users(name, email, avatar, avatar_color, role)')
     .order('score', { ascending: false })
 
   if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
@@ -170,7 +172,7 @@ export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
 
   const { data, error } = await supabase
     .from('trainers')
-    .select('*, users(name, avatar, avatar_color, role)')
+    .select('*, users(name, email, avatar, avatar_color, role)')
     .eq('id', id)
     .single()
 

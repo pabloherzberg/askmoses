@@ -16,6 +16,7 @@ export interface RubricScores {
 export interface Trainer {
   id: string
   name: string
+  email?: string
   avatar: string
   avatarColor: AvatarColor
   role: Role
