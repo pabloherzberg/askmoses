@@ -11,7 +11,7 @@ const DEMO_USERS = [
   { label: 'Trainer 2', email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
   { label: 'Trainer 3', email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
   { label: 'Trainer 4', email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
-  { label: 'Gestor', email: 'owner@demo.askmoses.ai', password: 'demo123', hint: 'Owner' },
+  { label: 'Manager', email: 'owner@demo.askmoses.ai', password: 'demo123', hint: 'Owner' },
   { label: 'Admin', email: 'admin@askmoses.ai', password: 'demo123', hint: 'AskMoses Team' },
 ]
 
