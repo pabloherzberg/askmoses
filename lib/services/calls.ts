@@ -31,7 +31,7 @@ function parseCriteria(criteria: unknown): RubricScores {
   for (const item of criteria as Item[]) {
     const rawName = (item.criterionName ?? item.name ?? '').toLowerCase().trim()
     const key = CRITERIA_NAME_MAP[rawName]
-    if (key) result[key] = Math.round((item.score ?? 0) * 10) / 10  // keep 0–5 with 1 decimal
+    if (key) result[key] = Math.round((item.score ?? 0) * 20)  // normalise 0–5 → 0–100
   }
   return result
 }
