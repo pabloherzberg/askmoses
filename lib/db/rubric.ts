@@ -75,19 +75,126 @@ export async function dbGetActiveRubricWithCriteria(): Promise<{
   return { rubric, criteria }
 }
 
-/** @deprecated use dbGetActiveRubricWithCriteria */
-export async function dbGetRubricConfig() {
-  return dbGetActiveRubricWithCriteria()
+// ─── Input interfaces ────────────────────────────────────────────────────────
+
+export interface UpdateRubricInput {
+  name?: string
+  description?: string | null
+  systemPrompt?: string | null
+  llmModel?: string | null
 }
 
-/** @deprecated use dbGetActiveRubric */
-export async function dbGetRubricSections(): Promise<DbCriterion[]> {
-  const rubric = await dbGetActiveRubric()
-  if (!rubric) return []
-  return dbGetCriteriaByRubric(rubric.id)
+export interface CreateCriterionInput {
+  rubricId: string
+  name: string
+  description?: string | null
+  sortOrder: number
 }
 
-/** @deprecated not applicable to current schema */
-export async function dbGetTrendData(_weeks = 6) {
-  return []
+export interface UpdateCriterionInput {
+  name?: string
+  description?: string | null
+  sortOrder?: number
+}
+
+// ─── Write operations ────────────────────────────────────────────────────────
+
+export async function dbUpdateRubric(id: string, input: UpdateRubricInput): Promise<DbRubric> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (input.name !== undefined) patch.name = input.name
+  if (input.description !== undefined) patch.description = input.description
+  if (input.systemPrompt !== undefined) patch.system_prompt = input.systemPrompt
+  if (input.llmModel !== undefined) patch.llm_model = input.llmModel
+
+  const { data, error } = await supabase
+    .from('rubrics')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw new Error(`dbUpdateRubric: ${error.message}`)
+  return data as DbRubric
+}
+
+export async function dbCreateCriterion(input: CreateCriterionInput): Promise<DbCriterion> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('criteria')
+    .insert({
+      rubric_id: input.rubricId,
+      name: input.name,
+      description: input.description ?? null,
+      sort_order: input.sortOrder,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(`dbCreateCriterion: ${error.message}`)
+  return data as DbCriterion
+}
+
+export async function dbUpdateCriterion(id: string, input: UpdateCriterionInput): Promise<DbCriterion> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = {}
+  if (input.name !== undefined) patch.name = input.name
+  if (input.description !== undefined) patch.description = input.description
+  if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder
+
+  const { data, error } = await supabase
+    .from('criteria')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw new Error(`dbUpdateCriterion: ${error.message}`)
+  return data as DbCriterion
+}
+
+export async function dbDeleteCriterion(id: string): Promise<void> {
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('criteria')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw new Error(`dbDeleteCriterion: ${error.message}`)
+}
+
+export async function dbBulkReplaceCriteria(
+  rubricId: string,
+  criteria: Omit<CreateCriterionInput, 'rubricId'>[],
+): Promise<DbCriterion[]> {
+  const supabase = createAdminClient()
+
+  // Delete existing criteria
+  const { error: delError } = await supabase
+    .from('criteria')
+    .delete()
+    .eq('rubric_id', rubricId)
+
+  if (delError) throw new Error(`dbBulkReplaceCriteria (delete): ${delError.message}`)
+
+  // Insert new criteria
+  const rows = criteria.map((c, i) => ({
+    rubric_id: rubricId,
+    name: c.name,
+    description: c.description ?? null,
+    sort_order: c.sortOrder ?? i,
+  }))
+
+  const { data, error: insError } = await supabase
+    .from('criteria')
+    .insert(rows)
+    .select()
+    .order('sort_order', { ascending: true })
+
+  if (insError) throw new Error(`dbBulkReplaceCriteria (insert): ${insError.message}`)
+  return (data ?? []) as DbCriterion[]
 }

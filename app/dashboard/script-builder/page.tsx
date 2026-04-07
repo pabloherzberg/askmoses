@@ -229,7 +229,7 @@ export default function ScriptBuilderPage() {
     setSaving(true)
     try {
       // Busca rubric ativa via MSW
-      const rubricRes = await fetch("/api/rubric-config")
+      const rubricRes = await fetch("/api/rubric?config=true")
       const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
       const rubricId = rubricData?.id ?? 'rubric-001'
 
@@ -532,7 +532,7 @@ export default function ScriptBuilderPage() {
                 <Button
                   onClick={async () => {
                     // Load rubric system prompt and llm model
-                    const rubricRes = await fetch("/api/rubric-config")
+                    const rubricRes = await fetch("/api/rubric?config=true")
                     const { data: rubricData } = (await rubricRes.json()) as { data: { system_prompt?: string; llm_model?: string } | null; error: unknown }
                     setConfirmSystemPrompt(rubricData?.system_prompt || "")
                     setConfirmLlmModel(rubricData?.llm_model || "openai/gpt-4o-mini")
@@ -746,7 +746,7 @@ export default function ScriptBuilderPage() {
                 if (!editedName) return
                 setSaving(true)
                 try {
-                  const rubricRes = await fetch("/api/rubric-config")
+                  const rubricRes = await fetch("/api/rubric?config=true")
                   const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
                   const rubricId = rubricData?.id ?? 'rubric-001'
 
