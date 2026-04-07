@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import {
   trainers,
-  calls,
   insights,
   clients,
   globalMetrics,
@@ -10,7 +9,6 @@ import {
   supabaseCalls,
   demoCredentials,
 } from '@/lib/mock-data'
-import { buildInsightsAnalysis } from './data/insights-analysis'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
@@ -83,10 +81,7 @@ const apiHandlers = [
     return ok(insights)
   }),
 
-  // POST /api/insights — mock da análise de padrões (real usa LLM)
-  http.post('/api/insights', async () => {
-    return HttpResponse.json(buildInsightsAnalysis(calls))
-  }),
+  // POST /api/insights — passthrough to real API route (Gemini)
 
   // GET /api/clients
   http.get('/api/clients', () => {

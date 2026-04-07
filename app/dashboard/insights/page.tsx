@@ -106,13 +106,12 @@ export default function InsightsPage() {
         body: JSON.stringify({ scriptId: selectedScript }),
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Failed to generate insights")
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        throw new Error(json.error?.message || "Failed to generate insights")
       }
 
-      const data = await res.json()
-      setInsights(data)
+      setInsights(json.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
