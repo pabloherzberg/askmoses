@@ -1,13 +1,5 @@
 "use client";
 
-// ─── Transition guide ─────────────────────────────────────────────────────────
-// BEFORE (Supabase): const { data } = await supabase.from("calls").select("*")
-// AFTER  (API route): const { data } = await fetch("/api/calls").then(r => r.json())
-//
-// Phase 1 → MSW intercepts /api/calls and returns mock data from lib/mock-data.ts
-// Phase 2 → app/api/calls/route.ts is implemented; zero changes needed here
-// ─────────────────────────────────────────────────────────────────────────────
-
 import type { Call } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -74,8 +66,6 @@ export default function AnalyticsPage() {
     async function fetchAnalytics() {
       setLoading(true);
 
-      // ─── BEFORE: supabase.from("calls").select("*").order("created_at", ...)
-      // ─── AFTER:  fetch("/api/calls") — intercepted by MSW (Phase 1) or real route (Phase 2)
       const res = await fetch("/api/calls");
       const { data: callsData, error } = (await res.json()) as {
         data: Call[] | null;
@@ -87,15 +77,10 @@ export default function AnalyticsPage() {
         return;
       }
 
-      // Sort by date ascending for trend calculations
-      // BEFORE: Supabase .order("created_at", { ascending: true })
-      // AFTER:  client-side sort on call.date (YYYY-MM-DD)
       const sorted = [...callsData].sort((a, b) => a.date.localeCompare(b.date));
       setCalls(sorted);
 
-      // ─── Trend data — group by date, average score per day
-      // BEFORE: group by call.created_at (ISO timestamp), score = overall_score / total_criteria * 100
-      // AFTER:  group by call.date (YYYY-MM-DD), score = call.score (already 0–100)
+      // Trend data — group by date, average score per day
       const trends = new Map<string, { total: number; count: number }>();
       sorted.forEach((call) => {
         const label = new Date(call.date).toLocaleDateString("en-US", {
@@ -115,9 +100,6 @@ export default function AnalyticsPage() {
         })),
       );
 
-      // ─── Weak sections — average rubricScores per section, sorted ascending
-      // BEFORE: criteria[] array with { name, passed } — failure = not passed
-      // AFTER:  rubricScores object with numeric values per section — lower = weaker
       const sectionTotals: Record<string, { total: number; count: number }> = {};
       sorted.forEach((call) => {
         for (const [key, value] of Object.entries(call.rubricScores)) {
@@ -135,9 +117,6 @@ export default function AnalyticsPage() {
           .sort((a, b) => a.avgScore - b.avgScore),
       );
 
-      // ─── Achievements
-      // BEFORE: call.trainer_name, call.overall_score === call.total_criteria (perfect)
-      // AFTER:  call.trainerName, call.score >= 95 (perfect)
       const trainerStats = new Map<
         string,
         { total: number; count: number; perfect: number }
@@ -221,19 +200,13 @@ export default function AnalyticsPage() {
       }
       setInsights(insightsList);
 
-      // ─── Outcome metrics
-      // BEFORE: call.call_outcome === "closed" | "not_closed" | "partial"
-      // AFTER:  call.result === "closed" | "no-close" | "follow-up"  (CallResult type)
       const closed = sorted.filter((c) => c.result === "closed").length;
-      const notClosed = sorted.filter((c) => c.result === "no-close").length;
-      const partial = sorted.filter((c) => c.result === "follow-up").length;
+      const notClosed = sorted.filter((c) => c.result === "no_decision" || c.result === "objection_unresolved").length;
+      const partial = sorted.filter((c) => c.result === "follow_up").length;
       const closeRate =
         sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
       setOutcomeMetrics({ closed, notClosed, partial, closeRate });
 
-      // ─── Per-trainer conversion rates
-      // BEFORE: call.trainer_name, call.call_outcome === "closed"
-      // AFTER:  call.trainerName, call.result === "closed"
       const trainerMap = new Map<string, { closed: number; total: number }>();
       sorted.forEach((call) => {
         if (!trainerMap.has(call.trainerName))
