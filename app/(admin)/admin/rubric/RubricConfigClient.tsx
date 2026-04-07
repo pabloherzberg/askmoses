@@ -26,11 +26,39 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
   const toggleCritical = (id: string) =>
     setCriticalMap((prev) => ({ ...prev, [id]: !prev[id] }))
 
-  const handleSave = () => {
-    toast({
-      title: 'Feature coming soon',
-      description: 'Rubric persistence will be available in Phase 2.',
-    })
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      // Bulk replace criteria with current critical state
+      const criteriaPayload = sections.map((s, i) => ({
+        name: s.name,
+        description: s.description || null,
+        sortOrder: i,
+      }))
+
+      const res = await fetch('/api/rubric/criteria', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ criteria: criteriaPayload }),
+      })
+
+      if (!res.ok) throw new Error('Failed to save')
+
+      toast({
+        title: 'Saved',
+        description: 'Rubric criteria updated successfully.',
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to save rubric changes. Try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -125,10 +153,11 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-80"
+          disabled={saving}
+          className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
           style={{ background: 'var(--am-accent)' }}
         >
-          Save Changes
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>

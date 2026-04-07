@@ -4,8 +4,6 @@ import {
   insights,
   clients,
   globalMetrics,
-  rubricSections,
-  trendData,
   supabaseCalls,
   demoCredentials,
 } from '@/lib/mock-data'
@@ -88,12 +86,8 @@ const apiHandlers = [
     return ok({ clients, metrics: globalMetrics })
   }),
 
-  // GET /api/rubric
-  http.get('/api/rubric', () => {
-    return ok({ sections: rubricSections, trend: trendData })
-  }),
-
-  // GET /api/rubric-config — delegado para API route real (Supabase)
+  // GET /api/rubric — delegado para API route real (Supabase)
+  // GET /api/rubric?config=true — delegado para API route real (Supabase)
   // POST /api/scripts — delegado para API route real (Supabase)
   // PATCH/DELETE /api/scripts/:id — delegado para API route real (Supabase)
 ]
