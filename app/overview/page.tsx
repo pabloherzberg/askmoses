@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getTrainers } from '@/lib/services/trainers'
 import { getInsights } from '@/lib/services/insights'
 import { getRubric } from '@/lib/services/rubric'

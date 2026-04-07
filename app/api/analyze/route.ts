@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server'
 import { getGeminiModel } from '@/lib/gemini'
 import { dbGetActiveRubricWithCriteria } from '@/lib/db/rubric'
 import { dbCreateCall } from '@/lib/db/calls'
+import { syncTrainerStats } from '@/lib/db/trainers'
 import { getSession, getTrainerDbId } from '@/lib/auth'
 
 interface AnalyzeRequestBody {
@@ -10,6 +11,7 @@ interface AnalyzeRequestBody {
   clientName?: string
   trainerName?: string
   trainerEmail?: string
+  trainerId?: string
   scriptId?: string
   callOutcome?: string
 }
@@ -39,9 +41,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as AnalyzeRequestBody
     const { transcript, clientName, trainerName, trainerEmail } = body
 
-    // Resolve trainer_id from session (set when logged-in trainer uploads)
+    // Resolve trainer_id: body.trainerId (owner uploading for a trainer) OR session trainer
     const session = await getSession()
-    const sessionTrainerId = session ? await getTrainerDbId() : null
+    const sessionTrainerId = body.trainerId ?? (session ? await getTrainerDbId() : null)
 
     if (!transcript) {
       return Response.json(
@@ -282,7 +284,14 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       detectedOutcome,
     })
 
-    // ── 6. Normalise criteriaScores for page compatibility ──────────────────
+    // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────
+    if (sessionTrainerId) {
+      syncTrainerStats(sessionTrainerId).catch((e) =>
+        console.error('[analyze] syncTrainerStats failed:', e)
+      )
+    }
+
+    // ── 7. Normalise criteriaScores for page compatibility ──────────────────
     // Page expects { name, score, feedback }; AI returns { criterionName, score, justification }
     const normalisedSections = parsed.criteriaScores.map((c) => ({
       ...c,

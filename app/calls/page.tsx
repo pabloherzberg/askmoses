@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getCalls } from '@/lib/services/calls'
 import { getRole, getTrainerDbId } from '@/lib/auth'
 import { SectionLabel } from '@/components/shared/SectionLabel'
