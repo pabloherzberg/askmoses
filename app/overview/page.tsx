@@ -25,15 +25,8 @@ const avatarTextMap: Record<string, string> = {
   red: 'var(--am-red)',
 }
 
-const alerts = [
-  { dotColor: 'red' as const, text: "Taylor's score dropped 12pts this week", actionLabel: 'Review' },
-  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days', actionLabel: 'Contact' },
-  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team', actionLabel: 'Celebrate' },
-  { dotColor: 'blue' as const, text: '3 trainers are skipping objection handling', actionLabel: 'Train' },
-]
-
 export default async function OverviewPage() {
-  const [trainers, insights, { sections: rubric, trend }] = await Promise.all([
+  const [trainers, insights, { sections: rubric, trend, trainerSectionScores }] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
@@ -41,9 +34,18 @@ export default async function OverviewPage() {
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score)
   const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0)
-  const avgClose = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
-  const avgScore = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+  const avgClose = trainers.length > 0 ? Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length) : 0
+  const avgScore = trainers.length > 0 ? Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length) : 0
   const topTrainer = sorted[0]
+
+  // ── Computed alerts from real trainer data ────────────────────────────────
+  const alerts: { dotColor: 'red' | 'amber' | 'green' | 'blue'; text: string; actionLabel: string }[] = []
+  const droppedTrainer = sorted.find((t) => t.scoreDelta < 0)
+  if (droppedTrainer) alerts.push({ dotColor: 'red', text: `${droppedTrainer.name}'s score dropped ${Math.abs(droppedTrainer.scoreDelta)}pts`, actionLabel: 'Review' })
+  const topByClose = [...trainers].sort((a, b) => b.closeRate - a.closeRate)[0]
+  if (topByClose) alerts.push({ dotColor: 'green', text: `${topByClose.name} hit ${topByClose.closeRate}% — best close rate on the team`, actionLabel: 'Celebrate' })
+  const lowScorers = trainers.filter((t) => t.score > 0 && t.score < 75)
+  if (lowScorers.length > 0) alerts.push({ dotColor: 'amber', text: `${lowScorers.length} trainer${lowScorers.length > 1 ? 's' : ''} scoring below 75`, actionLabel: 'Train' })
 
   return (
     <div>
@@ -201,26 +203,27 @@ export default async function OverviewPage() {
               >
                 Section
               </th>
-              {['Team', 'Marcus R.', 'Jamie L.', 'Jordan K.', 'Taylor M.'].map((h) => (
+              <th
+                className="text-[11px] font-medium text-right pb-2.5 px-2"
+                style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
+              >
+                Team
+              </th>
+              {trainerSectionScores.map((t) => (
                 <th
-                  key={h}
+                  key={t.trainerId}
                   className="text-[11px] font-medium text-right pb-2.5 px-2"
                   style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
                 >
-                  {h}
+                  {t.trainerName}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rubric.map((section) => {
-              const scores = [
-                section.trainerScores.marcus,
-                section.trainerScores.jamie,
-                section.trainerScores.jordan,
-                section.trainerScores.taylor,
-              ]
-              const maxScore = Math.max(...scores)
+              const trainerScores = trainerSectionScores.map((t) => t.scores[section.name] ?? 0)
+              const maxScore = trainerScores.length > 0 ? Math.max(...trainerScores) : 0
 
               return (
                 <tr key={section.id}>
@@ -239,17 +242,12 @@ export default async function OverviewPage() {
                   >
                     {section.teamAvg}
                   </td>
-                  {scores.map((s, idx) => (
+                  {trainerScores.map((s, idx) => (
                     <td
                       key={idx}
                       className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
-                        color:
-                          s === maxScore
-                            ? 'var(--am-green)'
-                            : s < 65
-                              ? 'var(--am-red)'
-                              : 'var(--am-text)',
+                        color: s === maxScore ? 'var(--am-green)' : s < 65 ? 'var(--am-red)' : 'var(--am-text)',
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: '1px solid var(--am-border)',
                       }}

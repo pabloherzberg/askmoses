@@ -28,12 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Search, CheckCircle, XCircle, Eye, Loader2 } from "lucide-react"
-
-const OUTCOME_LABELS: Record<string, string> = {
-  closed: "Closed",
-  "no-close": "Not Closed",
-  "follow-up": "Follow-up",
-}
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
 
 const RUBRIC_LABELS: Record<string, string> = {
   discovery: "Discovery",
@@ -43,11 +38,6 @@ const RUBRIC_LABELS: Record<string, string> = {
   closeAndNextSteps: "Close & Next Steps",
 }
 
-function outcomeVariant(result: string) {
-  if (result === "closed") return "default" as const
-  if (result === "follow-up") return "secondary" as const
-  return "destructive" as const
-}
 
 export default function HistoryPage() {
   const [calls, setCalls] = useState<Call[]>([])
@@ -152,8 +142,8 @@ export default function HistoryPage() {
                           {new Date(call.date).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={outcomeVariant(call.result)}>
-                            {OUTCOME_LABELS[call.result] ?? call.result}
+                          <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                            {(RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).label}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -253,8 +243,8 @@ export default function HistoryPage() {
                 {/* Outcome */}
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground mb-1">Outcome</p>
-                  <Badge variant={outcomeVariant(selectedCall.result)}>
-                    {OUTCOME_LABELS[selectedCall.result] ?? selectedCall.result}
+                  <Badge style={{ background: (RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                    {(RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).label}
                   </Badge>
                 </div>
 

@@ -164,7 +164,7 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
 
   if (error) throw new Error(`dbGetTrainers: ${error.message}`)
 
-  return (data ?? []).map((row) => toTrainer(row as unknown as DbTrainerRow))
+  return (data ?? []).map((row) => toTrainer(row as DbTrainerRow))
 }
 
 export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
@@ -181,5 +181,5 @@ export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
     throw new Error(`dbGetTrainerById: ${error.message}`)
   }
 
-  return toTrainer(data as unknown as DbTrainerRow)
+  return toTrainer(data as DbTrainerRow)
 }
