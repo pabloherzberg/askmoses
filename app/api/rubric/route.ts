@@ -1,20 +1,41 @@
-import { ok, unauthorized } from '@/lib/auth'
-import { getSession } from '@/lib/auth'
+import { type NextRequest } from 'next/server'
+import { ok, unauthorized, forbidden } from '@/lib/auth'
+import { getSession, getRole } from '@/lib/auth'
+import { getRubric, getRubricConfig, updateRubricConfig } from '@/lib/services/rubric'
+import type { UpdateRubricInput } from '@/lib/db/rubric'
 
-const IS_DEV = process.env.NODE_ENV === 'development'
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
 
-  if (IS_DEV) {
-    const { rubricSections } = await import('@/lib/mock-data')
-    return ok({ sections: rubricSections })
+  const { searchParams } = request.nextUrl
+  const configOnly = searchParams.get('config') === 'true'
+
+  if (configOnly) {
+    const data = await getRubricConfig()
+    return ok(data)
   }
 
-  const { dbGetActiveRubricWithCriteria } = await import('@/lib/db/rubric')
-  const result = await dbGetActiveRubricWithCriteria()
-  if (!result) return ok({ rubric: null, criteria: [] })
+  const data = await getRubric()
+  return ok(data)
+}
 
-  return ok(result)
+export async function PATCH(request: NextRequest) {
+  const session = await getSession()
+  if (!session) return unauthorized()
+
+  const role = await getRole()
+  if (role === 'trainer') return forbidden()
+
+  try {
+    const body = (await request.json()) as UpdateRubricInput
+    const updated = await updateRubricConfig(body)
+    return ok(updated)
+  } catch (err) {
+    console.error(err)
+    return Response.json(
+      { data: null, error: { message: 'Erro ao atualizar rubric', code: 500 } },
+      { status: 500 },
+    )
+  }
 }

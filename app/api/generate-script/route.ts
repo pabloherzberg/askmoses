@@ -2,7 +2,7 @@ import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { getSession, unauthorized } from '@/lib/auth'
-import { getRubricConfig } from '@/lib/services/scripts'
+import { getRubricConfig } from '@/lib/services/rubric'
 
 const SYSTEM_PROMPT = `You are a sales script architect. Analyze the provided call transcripts and/or text and generate a structured sales script.
 

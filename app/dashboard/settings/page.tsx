@@ -74,7 +74,7 @@ export default function SettingsPage() {
   async function fetchData() {
     setLoading(true)
     const [rubricRes, scriptsRes] = await Promise.all([
-      fetch("/api/rubric-config"),
+      fetch("/api/rubric?config=true"),
       fetch("/api/scripts"),
     ])
     const { data: rubricData } = (await rubricRes.json()) as { data: Rubric | null; error: unknown }
@@ -153,10 +153,10 @@ export default function SettingsPage() {
     if (!rubric) return
 
     setSaving(true)
-    await fetch("/api/rubric-config", {
+    await fetch("/api/rubric", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system_prompt: systemPrompt, llm_model: llmModel }),
+      body: JSON.stringify({ systemPrompt: systemPrompt, llmModel: llmModel }),
     })
     setSystemPromptEdited(false)
     setLlmModelEdited(false)
@@ -243,9 +243,10 @@ export default function SettingsPage() {
               }}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
             >
-              <option value="openai/gpt-4o-mini">OpenAI GPT-4o Mini (Fast & Cheap)</option>
-              <option value="google/gemini-2.5-flash">Google Gemini 2.5 Flash (Balanced)</option>
-              <option value="google/gemini-2.5-pro">Google Gemini 2.5 Pro (Powerful)</option>
+              <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (Fast & Balanced)</option>
+              <option value="google/gemini-2.5-pro">Gemini 2.5 Pro (Most Powerful)</option>
+              <option value="google/gemini-2.0-flash">Gemini 2.0 Flash (Lightweight)</option>
+              <option value="google/gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (Fastest)</option>
             </select>
             <p className="text-xs text-muted-foreground">Choose the AI model to use for analyzing sales calls</p>
           </div>

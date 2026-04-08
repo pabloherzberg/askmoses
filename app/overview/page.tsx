@@ -236,23 +236,23 @@ export default async function OverviewPage() {
                   <td
                     className="text-xs text-right font-mono px-2 py-2.5"
                     style={{
-                      color: section.teamAvg < 65 ? 'var(--am-red)' : 'var(--am-text)',
+                      color: section.teamAvg < 3.25 ? 'var(--am-red)' : 'var(--am-text)',
                       borderBottom: '1px solid var(--am-border)',
                     }}
                   >
-                    {section.teamAvg}
+                    {section.teamAvg.toFixed(1)}
                   </td>
                   {trainerScores.map((s, idx) => (
                     <td
                       key={idx}
                       className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
-                        color: s === maxScore ? 'var(--am-green)' : s < 65 ? 'var(--am-red)' : 'var(--am-text)',
+                        color: s === maxScore ? 'var(--am-green)' : s < 3.25 ? 'var(--am-red)' : 'var(--am-text)',
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: '1px solid var(--am-border)',
                       }}
                     >
-                      {s}
+                      {s.toFixed(1)}
                     </td>
                   ))}
                 </tr>
