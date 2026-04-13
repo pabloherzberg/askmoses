@@ -27,6 +27,7 @@ export interface Trainer {
   scoreDelta: number
   lastActive: string
   ownerId: string
+  orgId?: string
   rubricScores: RubricScores
 }
 
@@ -44,6 +45,7 @@ export interface Call {
   strengths: string[]
   improvements: string[]
   transcript: string
+  orgId?: string
 }
 
 export interface TrainerScore {

@@ -99,12 +99,14 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
 
 export interface GetTrainersFilters {
   ownerId?: string
+  orgId?: string
 }
 
 interface DbTrainerRow {
   id: string
   user_id: string
   owner_id: string
+  org_id: string | null
   total_calls: number
   close_rate: number
   close_delta: number
@@ -134,6 +136,7 @@ function toTrainer(row: DbTrainerRow): Trainer {
     avatarColor: (row.users?.avatar_color ?? 'blue') as AvatarColor,
     role: 'trainer',
     ownerId: row.owner_id,
+    orgId: row.org_id ?? undefined,
     totalCalls: row.total_calls ?? 0,
     closeRate: row.close_rate ?? 0,
     closeDelta: row.close_delta ?? 0,
@@ -158,7 +161,8 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
     .select('*, users(name, email, avatar, avatar_color, role)')
     .order('score', { ascending: false })
 
-  if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
+  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
+  else if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
 
   const { data, error } = await query
 

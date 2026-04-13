@@ -1,0 +1,24 @@
+#!/bin/bash
+
+COMMIT_MSG=$(cat "$1")
+
+# Validar formato: origem: <branch> - <mensagem>
+if ! echo "$COMMIT_MSG" | grep -qE '^origem: .+ - .+'; then
+  echo ""
+  echo "❌ COMMIT BLOQUEADO — mensagem fora do padrão"
+  echo ""
+  echo "   Formato esperado:"
+  echo "     origem: <branch-de-origem> - <descrição do que foi desenvolvido>"
+  echo ""
+  echo "   Exemplos:"
+  echo "     origem: main - adiciona validação de email"
+  echo "     origem: dev - corrige redirect após logout"
+  echo "     origem: feature/login - ajusta layout do formulário"
+  echo ""
+  echo "   Sua mensagem foi:"
+  echo "     \"$COMMIT_MSG\""
+  echo ""
+  exit 1
+fi
+
+exit 0
