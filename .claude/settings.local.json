@@ -23,7 +23,15 @@
       "Bash(find /c/pcdoc/askmoses -name \"*.sql\" -type f -exec grep -l \"CREATE TABLE.*trainers\" {} \\\\;)",
       "Bash(supabase --version)",
       "Bash(cat .supabase/config.toml)",
-      "Bash(cat supabase/config.toml)"
+      "Bash(cat supabase/config.toml)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT id, user_id, owner_id, org_id, score FROM public.trainers;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked --file scripts/016_seed_askmoses_dev.sql)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT column_name, is_nullable, column_default FROM information_schema.columns WHERE table_name = 'calls' AND table_schema = 'public' AND is_nullable = 'NO' ORDER BY ordinal_position;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT id, name, avg_ticket FROM public.organizations;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT id, org_id, score, close_rate FROM public.trainers;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT COUNT\\(*\\) as calls_total, COUNT\\(org_id\\) as calls_with_org FROM public.calls;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT COUNT\\(*\\) FROM public.insights;\")",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_a0472499a811799e70645fe6b0bcec6ed6ec3790 npx supabase db query --linked \"SELECT id, email, raw_app_meta_data->>'role' as role, raw_app_meta_data->>'org_id' as org_id FROM auth.users ORDER BY email;\")"
     ]
   }
 }
