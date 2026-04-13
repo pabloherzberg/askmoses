@@ -18,7 +18,12 @@
       "Bash(npx next:*)",
       "Bash(tasklist //FI 'IMAGENAME eq node.exe')",
       "Bash(git checkout:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -E \"\\\\.sql$\")",
+      "Bash(find /c/pcdoc/askmoses -name \"*.sql\" -type f -exec grep -l \"CREATE TABLE.*trainers\" {} \\\\;)",
+      "Bash(supabase --version)",
+      "Bash(cat .supabase/config.toml)",
+      "Bash(cat supabase/config.toml)"
     ]
   }
 }

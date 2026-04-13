@@ -13,6 +13,11 @@ export async function getRole(): Promise<Role | null> {
   return (session?.user?.app_metadata?.role as Role) ?? null
 }
 
+export async function getOrgId(): Promise<string | null> {
+  const session = await getSession()
+  return (session?.user?.app_metadata?.org_id as string) ?? null
+}
+
 export async function getTrainerDbId(): Promise<string | null> {
   const session = await getSession()
   if (!session) return null

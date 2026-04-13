@@ -26,6 +26,7 @@ function toInsight(db: DbInsight): Insight {
 }
 
 export async function dbGetInsights(filters?: {
+  orgId?: string
   ownerId?: string
   limit?: number
 }): Promise<Insight[]> {
@@ -36,7 +37,8 @@ export async function dbGetInsights(filters?: {
     .select('*')
     .order('created_at', { ascending: false })
 
-  if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
+  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
+  else if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
   if (filters?.limit) query = query.limit(filters.limit)
 
   const { data, error } = await query
@@ -54,13 +56,13 @@ export async function dbGetInsights(filters?: {
  */
 export async function dbSaveInsights(
   insights: Omit<Insight, 'id'>[],
-  ownerId: string
+  orgId: string
 ): Promise<void> {
   const supabase = createAdminClient()
 
   const rows = insights.map((i) => ({
     ...i,
-    owner_id: ownerId,
+    org_id: orgId,
     created_at: new Date().toISOString(),
   }))
 

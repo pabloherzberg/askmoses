@@ -20,14 +20,13 @@ export interface DbCriterion {
   created_at: string
 }
 
-export async function dbGetActiveRubric(): Promise<DbRubric | null> {
+export async function dbGetActiveRubric(orgId?: string): Promise<DbRubric | null> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('rubrics')
-    .select('*')
-    .eq('is_active', true)
-    .single()
+  let query = supabase.from('rubrics').select('*').eq('is_active', true)
+  if (orgId) query = query.eq('org_id', orgId)
+
+  const { data, error } = await query.single()
 
   if (error) {
     if (error.code === 'PGRST116') return null
@@ -37,13 +36,13 @@ export async function dbGetActiveRubric(): Promise<DbRubric | null> {
   return data as DbRubric
 }
 
-export async function dbGetRubrics(): Promise<DbRubric[]> {
+export async function dbGetRubrics(orgId?: string): Promise<DbRubric[]> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('rubrics')
-    .select('*')
-    .order('created_at', { ascending: false })
+  let query = supabase.from('rubrics').select('*').order('created_at', { ascending: false })
+  if (orgId) query = query.eq('org_id', orgId)
+
+  const { data, error } = await query
 
   if (error) throw new Error(`dbGetRubrics: ${error.message}`)
 
@@ -64,11 +63,11 @@ export async function dbGetCriteriaByRubric(rubricId: string): Promise<DbCriteri
   return (data ?? []) as DbCriterion[]
 }
 
-export async function dbGetActiveRubricWithCriteria(): Promise<{
+export async function dbGetActiveRubricWithCriteria(orgId?: string): Promise<{
   rubric: DbRubric
   criteria: DbCriterion[]
 } | null> {
-  const rubric = await dbGetActiveRubric()
+  const rubric = await dbGetActiveRubric(orgId)
   if (!rubric) return null
 
   const criteria = await dbGetCriteriaByRubric(rubric.id)

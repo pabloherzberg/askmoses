@@ -23,6 +23,7 @@ export interface DbCall {
 }
 
 export interface CreateCallInput {
+  orgId?: string
   rubricId?: string
   trainerId?: string
   trainerName: string
@@ -58,6 +59,7 @@ export interface UpdateCallInput {
 }
 
 export interface GetCallsFilters {
+  orgId?: string
   trainerId?: string
   trainerName?: string
   callOutcome?: string
@@ -74,6 +76,7 @@ export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
     .select('*')
     .order('created_at', { ascending: false })
 
+  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
   if (filters?.trainerId) query = query.eq('trainer_id', filters.trainerId)
   else if (filters?.trainerName) query = query.eq('trainer_name', filters.trainerName)
   if (filters?.callOutcome) query = query.eq('call_outcome', filters.callOutcome)
@@ -113,6 +116,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
   const { data, error } = await supabase
     .from('calls')
     .insert({
+      org_id: input.orgId ?? null,
       rubric_id: input.rubricId ?? null,
       trainer_id: input.trainerId ?? null,
       trainer_name: input.trainerName,

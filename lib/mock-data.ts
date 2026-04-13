@@ -13,7 +13,7 @@ import type {
 
 export const trainers: Trainer[] = [
   {
-    id: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000301',
     name: 'Marcus R.',
     avatar: 'MR',
     avatarColor: 'blue',
@@ -24,7 +24,7 @@ export const trainers: Trainer[] = [
     score: 91,
     scoreDelta: 11,
     lastActive: 'Active today',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 94,
       problemAgitation: 89,
@@ -34,7 +34,7 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000302',
     name: 'Jamie L.',
     avatar: 'JL',
     avatarColor: 'purple',
@@ -45,7 +45,7 @@ export const trainers: Trainer[] = [
     score: 87,
     scoreDelta: 7,
     lastActive: 'Yesterday',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 88,
       problemAgitation: 88,
@@ -55,7 +55,7 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000303',
     name: 'Jordan K.',
     avatar: 'JK',
     avatarColor: 'green',
@@ -66,7 +66,7 @@ export const trainers: Trainer[] = [
     score: 79,
     scoreDelta: 3,
     lastActive: 'Active today',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 79,
       problemAgitation: 61,
@@ -76,7 +76,7 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000304',
     name: 'Taylor M.',
     avatar: 'TM',
     avatarColor: 'red',
@@ -87,7 +87,7 @@ export const trainers: Trainer[] = [
     score: 74,
     scoreDelta: -12,
     lastActive: '3 days ago',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 67,
       problemAgitation: 58,
@@ -103,8 +103,8 @@ export const trainers: Trainer[] = [
 export const calls: Call[] = [
   // Marcus R. — 7 calls, mostly closed
   {
-    id: 'call-001',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000601',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-22',
     duration: '38min',
@@ -124,8 +124,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Hi Bob, thanks for making time today. Before anything else, tell me — what\'s going on with Rex that brought you to us?\nBob: Man, he just doesn\'t listen to anything. We can barely leave the house with him.\nMarcus: I get it. When you say he doesn\'t listen — give me a concrete example from recently.\nBob: Last week he escaped the yard for the third time. We spent two hours looking for him in the neighborhood.\nMarcus: Wow, that must\'ve been terrifying. Does this affect your daily life beyond the safety concern?\nBob: Absolutely. My daughter is scared to play with him now, and my wife said if it doesn\'t get fixed, we\'ll have to rehome him.\nMarcus: I understand the gravity of that. Before I show you what we do — have you tried anything before? Group classes, YouTube, another trainer?\n...',
   },
   {
-    id: 'call-002',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000602',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-20',
     duration: '42min',
@@ -145,8 +145,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Sarah, tell me a bit about Thor. What motivated you to reach out today?\nSarah: He\'s destroying everything at home when we leave. Sofa, baseboards, he was even scratching the door...\nMarcus: How long has this been going on?\nSarah: Since we went back to working in-office, about 4 months or so.\n...',
   },
   {
-    id: 'call-003',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000603',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-18',
     duration: '35min',
@@ -165,8 +165,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Mike, what\'s going on with Bolt?\nMike: He pulls the leash like crazy. I walk crooked from holding him so tight. I\'m embarrassed to take him to the park...\n...',
   },
   {
-    id: 'call-004',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000604',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-15',
     duration: '45min',
@@ -183,8 +183,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Linda, how old is Bella now?\nLinda: Almost 8 months. And she\'s already too big for us to hold when she gets hyper...\n...',
   },
   {
-    id: 'call-005',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000605',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-12',
     duration: '30min',
@@ -201,8 +201,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Tom, first of all — do you already know our method or are you coming in fresh?\nTom: I\'ve done a lot of research. Saw the testimonials on Instagram. Just want to know how it works in practice.\n...',
   },
   {
-    id: 'call-006',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000606',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-09',
     duration: '28min',
@@ -219,8 +219,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Amy, tell me — when you picture Duke fully trained, how do you see your day-to-day looking different?\nAmy: It would be amazing. We could take him anywhere without stress...\n...',
   },
   {
-    id: 'call-007',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000607',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-06',
     duration: '40min',
@@ -239,8 +239,8 @@ export const calls: Call[] = [
 
   // Jamie L. — 5 calls
   {
-    id: 'call-008',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000608',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-21',
     duration: '35min',
@@ -257,8 +257,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Diana, what happens at your house when you need to have guests over?\nDiana: It\'s chaos. Toby barks and jumps on everyone. I even stopped having my mom over because of it...\nJamie: How long has this been going on?\nDiana: Over a year. I\'m exhausted...\n...',
   },
   {
-    id: 'call-009',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000609',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-19',
     duration: '32min',
@@ -275,8 +275,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Robert, when you say Luna "doesn\'t focus" — describe a specific situation from last week.\nRobert: Just yesterday. I tried teaching "sit" for half an hour. She knows how to do it, but ignores me when she wants...\n...',
   },
   {
-    id: 'call-010',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000610',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-16',
     duration: '38min',
@@ -293,8 +293,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Karen, what made you decide to look for a professional trainer now?\nKaren: My husband was reluctant, but after Buddy scratched the child, we agreed we needed help...\n...',
   },
   {
-    id: 'call-011',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000611',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-13',
     duration: '25min',
@@ -308,8 +308,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Steve, quick question — what would change in your routine if Rocky was fully obedient in the first 3 months?\nSteve: Mainly the runs. He has potential but doesn\'t focus...\n...',
   },
   {
-    id: 'call-012',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000612',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-10',
     duration: '42min',
@@ -328,8 +328,8 @@ export const calls: Call[] = [
 
   // Jordan K. — 5 calls
   {
-    id: 'call-013',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000613',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-22',
     duration: '28min',
@@ -346,8 +346,8 @@ export const calls: Call[] = [
     transcript: 'Jordan: Peter, tell me what\'s going on with Gobi.\nPeter: He\'s super hyper. Jumps on everyone, can\'t stay still.\nJordan: Got it. So what we offer is an 8-week program...\n...',
   },
   {
-    id: 'call-014',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000614',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-19',
     duration: '35min',
@@ -364,8 +364,8 @@ export const calls: Call[] = [
     transcript: 'Jordan: Donna, I\'ll be straight — if you sign up today, I can apply a 10% discount...\nDonna: Oh, that works better for me...\n...',
   },
   {
-    id: 'call-015',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000615',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-16',
     duration: '30min',
@@ -382,8 +382,8 @@ export const calls: Call[] = [
     transcript: 'Jordan: Mark, great to meet you. So you\'re interested in training for Rocky, right?\nMark: Yeah, saw it on Google...\nJordan: Great! Let me tell you about our program...\n...',
   },
   {
-    id: 'call-016',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000616',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-13',
     duration: '25min',
@@ -401,8 +401,8 @@ export const calls: Call[] = [
     transcript: 'Jordan: Susan, what\'s Coco\'s issue?\nSusan: Oh, he\'s kind of hyper...\nJordan: Got it. Want me to send you more info about the program?\n...',
   },
   {
-    id: 'call-017',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000617',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-10',
     duration: '20min',
@@ -422,8 +422,8 @@ export const calls: Call[] = [
 
   // Taylor M. — 4 calls
   {
-    id: 'call-018',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000618',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-20',
     duration: '22min',
@@ -440,8 +440,8 @@ export const calls: Call[] = [
     transcript: 'Taylor: Helen, which command specifically is Ziggy having trouble with? Stay, sit, or is it more aggression?\nHelen: He\'s very reactive to other dogs on walks...\nTaylor: I see. Reactivity is one of our specialties...\n...',
   },
   {
-    id: 'call-019',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000619',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-17',
     duration: '28min',
@@ -459,8 +459,8 @@ export const calls: Call[] = [
     transcript: 'Paul: It\'s expensive for what it is...\nTaylor: I understand the price might seem high, but if you break it down by week...\nPaul: Hmm...\nTaylor: I can also explain what\'s included...\n...',
   },
   {
-    id: 'call-020',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000620',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-14',
     duration: '18min',
@@ -478,8 +478,8 @@ export const calls: Call[] = [
     transcript: 'Taylor: Alice, what motivated you to look into dog training?\nAlice: Mel has been chewing things around the house a bit...\nTaylor: Got it. Let me send you the program info via WhatsApp?\n...',
   },
   {
-    id: 'call-021',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000621',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-11',
     duration: '25min',
@@ -662,10 +662,10 @@ export const trendData: TrendPoint[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerScore> = {
-  'trainer-marcus': 'marcus',
-  'trainer-jamie': 'jamie',
-  'trainer-jordan': 'jordan',
-  'trainer-taylor': 'taylor',
+  '00000000-0000-0000-0000-000000000301': 'marcus',
+  '00000000-0000-0000-0000-000000000302': 'jamie',
+  '00000000-0000-0000-0000-000000000303': 'jordan',
+  '00000000-0000-0000-0000-000000000304': 'taylor',
 }
 
 // ─── Rubric (Supabase format) ────────────────────────────────────────────────
@@ -759,10 +759,10 @@ export const supabaseCalls = calls.map((call) => ({
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
 export const demoCredentials = [
-  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: 'trainer-marcus' as string | null },
-  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: 'trainer-jamie'  as string | null },
-  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: 'trainer-jordan' as string | null },
-  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: 'trainer-taylor' as string | null },
+  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: '00000000-0000-0000-0000-000000000303' as string | null },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: '00000000-0000-0000-0000-000000000304' as string | null },
   { email: 'owner@demo.askmoses.ai',    password: 'demo123', role: 'owner'   as Role, name: 'Dog Wizard HQ',  trainerId: null },
   { email: 'admin@askmoses.ai',         password: 'demo123', role: 'admin'   as Role, name: 'AskMoses Admin', trainerId: null },
 ]
