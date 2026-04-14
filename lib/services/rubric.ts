@@ -1,6 +1,6 @@
 import {
-  dbGetActiveRubric,
-  dbGetActiveRubricWithCriteria,
+  dbGetDefaultRubric,
+  dbGetDefaultRubricWithCriteria,
   dbUpdateRubric,
   dbCreateCriterion,
   dbUpdateCriterion,
@@ -14,6 +14,7 @@ import type {
   DbRubric,
   DbCriterion,
 } from '@/lib/db/rubric'
+import { getOrgId } from '@/lib/auth'
 import { getCalls, avgRubricScores } from '@/lib/services/calls'
 import type { RubricSection, RubricScores, TrendPoint } from '@/lib/types'
 
@@ -80,8 +81,9 @@ export async function getRubric(): Promise<{
   trend: TrendPoint[]
   trainerSectionScores: TrainerSectionScore[]
 }> {
+  const orgId = await getOrgId()
   const [result, calls] = await Promise.all([
-    dbGetActiveRubricWithCriteria(),
+    orgId ? dbGetDefaultRubricWithCriteria(orgId) : Promise.resolve(null),
     getCalls({ limit: 200 }),
   ])
 
@@ -131,22 +133,28 @@ export async function getRubric(): Promise<{
 }
 
 export async function getRubricConfig() {
-  return dbGetActiveRubricWithCriteria()
+  const orgId = await getOrgId()
+  if (!orgId) return null
+  return dbGetDefaultRubricWithCriteria(orgId)
 }
 
 // ─── Write operations ────────────────────────────────────────────────────────
 
 export async function updateRubricConfig(input: UpdateRubricInput): Promise<DbRubric> {
-  const rubric = await dbGetActiveRubric()
-  if (!rubric) throw new Error('No active rubric found')
+  const orgId = await getOrgId()
+  if (!orgId) throw new Error('No org in session')
+  const rubric = await dbGetDefaultRubric(orgId)
+  if (!rubric) throw new Error('No default rubric found for org')
   return dbUpdateRubric(rubric.id, input)
 }
 
 export async function createCriterion(
   input: Omit<CreateCriterionInput, 'rubricId'>,
 ): Promise<DbCriterion> {
-  const rubric = await dbGetActiveRubric()
-  if (!rubric) throw new Error('No active rubric found')
+  const orgId = await getOrgId()
+  if (!orgId) throw new Error('No org in session')
+  const rubric = await dbGetDefaultRubric(orgId)
+  if (!rubric) throw new Error('No default rubric found for org')
   return dbCreateCriterion({ ...input, rubricId: rubric.id })
 }
 
@@ -164,7 +172,9 @@ export async function deleteCriterion(id: string): Promise<void> {
 export async function bulkReplaceCriteria(
   criteria: Omit<CreateCriterionInput, 'rubricId'>[],
 ): Promise<DbCriterion[]> {
-  const rubric = await dbGetActiveRubric()
-  if (!rubric) throw new Error('No active rubric found')
+  const orgId = await getOrgId()
+  if (!orgId) throw new Error('No org in session')
+  const rubric = await dbGetDefaultRubric(orgId)
+  if (!rubric) throw new Error('No default rubric found for org')
   return dbBulkReplaceCriteria(rubric.id, criteria)
 }

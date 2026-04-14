@@ -1,9 +1,9 @@
 import { type NextRequest } from 'next/server'
 import { getGeminiModel } from '@/lib/gemini'
-import { dbGetActiveRubricWithCriteria } from '@/lib/db/rubric'
+import { dbGetDefaultRubricWithCriteria } from '@/lib/db/rubric'
 import { dbCreateCall } from '@/lib/db/calls'
 import { syncTrainerStats } from '@/lib/db/trainers'
-import { getSession, getTrainerDbId } from '@/lib/auth'
+import { getSession, getOrgId, getTrainerDbId } from '@/lib/auth'
 
 interface AnalyzeRequestBody {
   transcript: string
@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── 1. Fetch active rubric + criteria from Supabase ──────────────────────
-    const rubricData = await dbGetActiveRubricWithCriteria()
+    // ── 1. Fetch default rubric + criteria for the org ───────────────────────
+    const orgId = await getOrgId()
+    const rubricData = orgId ? await dbGetDefaultRubricWithCriteria(orgId) : null
 
     const criteria = rubricData?.criteria ?? []
     const rubricId = rubricData?.rubric.id ?? null
