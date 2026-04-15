@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <AppHeader mobileSidebar={role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />} />
       <div className="flex">
         <AppSidebar role={role} />
-        <main className="flex-1 lg:pl-56 pt-[61px]">
+        <main className="flex-1 min-w-0 lg:pl-56 pt-[61px]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
             {children}
           </div>

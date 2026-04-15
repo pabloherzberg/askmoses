@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { getTrainers } from '@/lib/services/trainers'
 import { getInsights } from '@/lib/services/insights'
-import { getRubric } from '@/lib/services/rubric'
+import { getRubric, getRevenueEstimator } from '@/lib/services/rubric'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { RubricBar } from '@/components/shared/RubricBar'
@@ -13,6 +13,7 @@ import { TrendChart } from './TrendChart'
 import { CorrelationEngine } from '@/components/shared/CorrelationEngine'
 import { correlationEngine, rubricGaps } from '@/lib/mock-data'
 import { RubricGapDetection } from '@/components/shared/RubricGapDetection'
+import { RevenueEstimator } from '@/components/shared/RevenueEstimator'
 
 const avatarBgMap: Record<string, string> = {
   blue: 'var(--am-blue-bg)',
@@ -29,10 +30,11 @@ const avatarTextMap: Record<string, string> = {
 }
 
 export default async function OverviewPage() {
-  const [trainers, insights, { sections: rubric, trend, trainerSectionScores }] = await Promise.all([
+  const [trainers, insights, { sections: rubric, trend, trainerSectionScores }, revenueData] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
+    getRevenueEstimator(),
   ])
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score)
@@ -200,6 +202,9 @@ export default async function OverviewPage() {
           <TrendChart data={trend} />
         </div>
       </div>
+
+      {/* ── Revenue Impact Estimator ──────────────────────────── */}
+      <RevenueEstimator items={revenueData.items} total={revenueData.total} />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
       <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>

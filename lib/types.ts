@@ -128,3 +128,11 @@ export interface BestCall {
 }
 
 export type BestCallsMap = Record<string, BestCall[]>
+
+export interface RevenueEstimatorItem {
+  section: string
+  current: number
+  target: number
+  monthlyImpact: number
+  confidence: CorrelationLevel
+}

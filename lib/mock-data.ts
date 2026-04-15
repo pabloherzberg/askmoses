@@ -7,6 +7,7 @@ import type {
   TrendPoint,
   GlobalMetrics,
   Role,
+  RevenueEstimatorItem,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -759,6 +760,19 @@ export const supabaseCalls = calls.map((call) => ({
   email_id: `email-${call.id}`,
   created_at: `${call.date}T10:00:00Z`,
 }))
+
+// ─── Revenue Impact Estimator ─────────────────────────────────────────────────
+
+export const revenueEstimator: RevenueEstimatorItem[] = [
+  { section: 'Objection Handling',  current: 71, target: 85, monthlyImpact: 2400, confidence: 'High' },
+  { section: 'Assertiveness',       current: 65, target: 80, monthlyImpact: 1800, confidence: 'Med'  },
+  { section: 'Close & Next Steps',  current: 75, target: 88, monthlyImpact: 1200, confidence: 'Low'  },
+]
+
+export const revenueEstimatorTotal = revenueEstimator.reduce(
+  (total, item) => total + item.monthlyImpact,
+  0,
+)
 
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
