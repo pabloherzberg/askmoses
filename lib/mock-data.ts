@@ -758,6 +758,18 @@ export const supabaseCalls = calls.map((call) => ({
 
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
+// ─── Correlation Engine ───────────────────────────────────────────────────────
+
+export const correlationEngine: import('./types').CorrelationFactor[] = [
+  { label: 'Objection Handling', score: 89, correlation: 'High', impact: 'High', source: 'Rubric' },
+  { label: 'Assertiveness',      score: 83, correlation: 'High', impact: 'High', source: 'Behavioral' },
+  { label: 'Close & Next Steps', score: 79, correlation: 'High', impact: 'High', source: 'Rubric' },
+  { label: 'Tone & Energy',      score: 64, correlation: 'Med',  impact: 'Med',  source: 'Behavioral' },
+  { label: 'Empathy',            score: 58, correlation: 'Med',  impact: 'Med',  source: 'Behavioral' },
+  { label: 'Discovery',          score: 41, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
+  { label: 'Problem Agitation',  score: 35, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
+]
+
 export const demoCredentials = [
   { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
   { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },
