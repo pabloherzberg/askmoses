@@ -2,7 +2,7 @@
 -- Depends on: organizations table (TASK-F2-001)
 
 -- 1. New columns
--- NOTE: org_id FK to organizations added later in 013_create_organizations.sql
+-- NOTE: org_id FK may already exist because rubrics.org_id/FK is created in 012_create_organizations
 ALTER TABLE public.rubrics
   ADD COLUMN IF NOT EXISTS org_id UUID,
   ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false,
@@ -22,6 +22,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS rubrics_one_default_per_org
 -- 3. Backfill demo data — patch the seeded rubric
 UPDATE public.rubrics
 SET
+  org_id              = '00000000-0000-0000-0000-000000000100',
   is_default          = true,
   role_label          = 'trainer',
   call_goal           = 'close deal',

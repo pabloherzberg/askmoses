@@ -1,71 +1,86 @@
-import { type NextRequest } from 'next/server'
-import { getGeminiModel } from '@/lib/gemini'
-import { dbGetDefaultRubricWithCriteria } from '@/lib/db/rubric'
-import { dbCreateCall } from '@/lib/db/calls'
-import { syncTrainerStats } from '@/lib/db/trainers'
-import { getSession, getOrgId, getTrainerDbId } from '@/lib/auth'
+import { type NextRequest } from "next/server";
+import { getGeminiModel } from "@/lib/gemini";
+import {
+  dbGetDefaultRubricWithCriteria,
+  dbGetRubricById,
+  dbGetCriteriaByRubric,
+} from "@/lib/db/rubric";
+import { dbCreateCall } from "@/lib/db/calls";
+import { syncTrainerStats } from "@/lib/db/trainers";
+import { getSession, getOrgId, getTrainerDbId } from "@/lib/auth";
 
 interface AnalyzeRequestBody {
-  transcript: string
-  rubricId?: string
-  clientName?: string
-  trainerName?: string
-  trainerEmail?: string
-  trainerId?: string
-  scriptId?: string
-  callOutcome?: string
+  transcript: string;
+  rubricId?: string;
+  clientName?: string;
+  trainerName?: string;
+  trainerEmail?: string;
+  trainerId?: string;
+  scriptId?: string;
+  callOutcome?: string;
 }
 
 export interface CriterionScore {
-  criterionId: string
-  criterionName: string
-  score: number       // 0–5
-  justification: string
+  criterionId: string;
+  criterionName: string;
+  score: number; // 0–5
+  justification: string;
 }
 
 export interface AnalyzeResult {
-  overallScore: number
-  detectedOutcome: 'closed' | 'no-close' | 'follow-up'
-  summary: string
-  strengths: string[]
-  improvements: string[]
-  criteriaScores: CriterionScore[]
+  overallScore: number;
+  detectedOutcome: "closed" | "no-close" | "follow-up";
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  criteriaScores: CriterionScore[];
   // aliases for dashboard/upload page compatibility
-  criteria: CriterionScore[]
-  sections: CriterionScore[]
-  transcript: string
+  criteria: CriterionScore[];
+  sections: CriterionScore[];
+  transcript: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as AnalyzeRequestBody
-    const { transcript, clientName, trainerName, trainerEmail } = body
+    const body = (await request.json()) as AnalyzeRequestBody;
+    const { transcript, clientName, trainerName, trainerEmail } = body;
 
     // Resolve trainer_id: body.trainerId (owner uploading for a trainer) OR session trainer
-    const session = await getSession()
-    const sessionTrainerId = body.trainerId ?? (session ? await getTrainerDbId() : null)
+    const session = await getSession();
+    const sessionTrainerId =
+      body.trainerId ?? (session ? await getTrainerDbId() : null);
 
     if (!transcript) {
       return Response.json(
-        { error: 'transcript is required' },
-        { status: 400 }
-      )
+        { error: "transcript is required" },
+        { status: 400 },
+      );
     }
 
     // ── 1. Fetch default rubric + criteria for the org ───────────────────────
-    const orgId = await getOrgId()
-    const rubricData = orgId ? await dbGetDefaultRubricWithCriteria(orgId) : null
+    const orgId = await getOrgId();
+    const rubricData =
+      orgId && body.rubricId
+        ? await resolveRubricForOrg(orgId, body.rubricId)
+        : orgId
+          ? await dbGetDefaultRubricWithCriteria(orgId)
+          : null;
 
-    const criteria = rubricData?.criteria ?? []
-    const rubricId = rubricData?.rubric.id ?? null
-    const systemPrompt = rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt()
-    const llmModel = rubricData?.rubric.llm_model ?? null
+    const criteria = rubricData?.criteria ?? [];
+    const rubricId = rubricData?.rubric.id ?? null;
+    const systemPrompt =
+      rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt();
+    const llmModel = rubricData?.rubric.llm_model ?? null;
 
-    const criteriaBlock = criteria.length > 0
-      ? criteria
-          .map((c, i) => `${i + 1}. **${c.name}**${c.description ? `: ${c.description}` : ''}`)
-          .join('\n')
-      : buildDefaultCriteria()
+    const criteriaBlock =
+      criteria.length > 0
+        ? criteria
+            .map(
+              (c, i) =>
+                `${i + 1}. **${c.name}**${c.description ? `: ${c.description}` : ""}`,
+            )
+            .join("\n")
+        : buildDefaultCriteria();
 
     // ── 2. Build prompt and call Gemini ──────────────────────────────────────
     const userPrompt = `
@@ -141,9 +156,9 @@ Evaluate how objections were received and addressed.
 ${criteriaBlock}
 
 ## Call information:
-- Trainer: ${trainerName ?? 'not provided'}
-- Prospect/Client: ${clientName ?? 'not provided'}
-- Reported outcome: ${body.callOutcome ?? 'not provided'}
+- Trainer: ${trainerName ?? "not provided"}
+- Prospect/Client: ${clientName ?? "not provided"}
+- Reported outcome: ${body.callOutcome ?? "not provided"}
 
 ## Transcript:
 ${transcript}
@@ -173,105 +188,120 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
     }
   ]
 }
-`.trim()
+`.trim();
 
-    const model = getGeminiModel(llmModel)
-    const result = await model.generateContent(userPrompt)
-    const text = result.response.text().trim()
+    const model = getGeminiModel(llmModel);
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text().trim();
 
     // Strip markdown code fences and find the JSON object
     const cleaned = text
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/, '')
-      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
     // Extract first {...} block in case there's surrounding text
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-    const jsonStr = jsonMatch ? jsonMatch[0] : cleaned
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : cleaned;
 
     let parsed: {
-      detectedOutcome: string
-      summary: string
-      strengths: string[]
-      improvements: string[]
-      criteriaScores: CriterionScore[]
-    }
+      detectedOutcome: string;
+      summary: string;
+      strengths: string[];
+      improvements: string[];
+      criteriaScores: CriterionScore[];
+    };
     try {
-      parsed = JSON.parse(jsonStr)
+      parsed = JSON.parse(jsonStr);
     } catch {
-      console.error('[analyze] Raw AI response:', text)
+      console.error("[analyze] Raw AI response:", text);
       return Response.json(
-        { error: 'Failed to parse AI response', raw: text },
-        { status: 500 }
-      )
+        { error: "Failed to parse AI response", raw: text },
+        { status: 500 },
+      );
     }
 
     // ── 3. Normalise strengths/improvements — flatten objects/JSON into strings
     const flattenItem = (item: unknown): string => {
       // Already a plain string — try to parse in case Gemini serialized an object as JSON string
-      if (typeof item === 'string') {
-        const trimmed = item.trim()
-        if (trimmed.startsWith('{')) {
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        if (trimmed.startsWith("{")) {
           try {
-            const obj = JSON.parse(trimmed) as Record<string, unknown>
-            item = obj // fall through to object handling below
+            const obj = JSON.parse(trimmed) as Record<string, unknown>;
+            item = obj; // fall through to object handling below
           } catch {
             // not valid JSON, use as-is
-            return trimmed.replace(/\*\*/g, '')
+            return trimmed.replace(/\*\*/g, "");
           }
         } else {
-          return trimmed.replace(/\*\*/g, '')
+          return trimmed.replace(/\*\*/g, "");
         }
       }
-      if (typeof item === 'object' && item !== null) {
-        const obj = item as Record<string, unknown>
+      if (typeof item === "object" && item !== null) {
+        const obj = item as Record<string, unknown>;
         // Prefer known keys in logical order, fall back to all values
-        const ordered = ['what happened', 'what to do instead', 'why it matters']
-        const parts = ordered
-          .filter((k) => obj[k])
-          .map((k) => String(obj[k]))
-        return (parts.length > 0 ? parts.join(' → ') : Object.values(obj).join(' → '))
-          .replace(/\*\*/g, '')
+        const ordered = [
+          "what happened",
+          "what to do instead",
+          "why it matters",
+        ];
+        const parts = ordered.filter((k) => obj[k]).map((k) => String(obj[k]));
+        return (
+          parts.length > 0 ? parts.join(" → ") : Object.values(obj).join(" → ")
+        ).replace(/\*\*/g, "");
       }
-      return String(item).replace(/\*\*/g, '')
-    }
-    parsed.strengths = (parsed.strengths ?? []).map(flattenItem)
-    parsed.improvements = (parsed.improvements ?? []).map(flattenItem)
+      return String(item).replace(/\*\*/g, "");
+    };
+    parsed.strengths = (parsed.strengths ?? []).map(flattenItem);
+    parsed.improvements = (parsed.improvements ?? []).map(flattenItem);
 
     // ── 4. Compute overallScore: average of criteria × 20, capped by outcome ─
-    const scores = parsed.criteriaScores.map((c) => c.score)
-    const avg = scores.length > 0
-      ? scores.reduce((sum, s) => sum + s, 0) / scores.length
-      : 0
-    const rawScore = Math.round(avg * 20)
+    const scores = parsed.criteriaScores.map((c) => c.score);
+    const avg =
+      scores.length > 0
+        ? scores.reduce((sum, s) => sum + s, 0) / scores.length
+        : 0;
+    const rawScore = Math.round(avg * 20);
     const outcomeCap: Record<string, number> = {
       closed: 100,
       follow_up: 80,
       objection_unresolved: 60,
       no_decision: 50,
-    }
-    const reportedOutcome = body.callOutcome ?? parsed.detectedOutcome?.toLowerCase() ?? 'no_decision'
-    const cap = outcomeCap[reportedOutcome] ?? 75
-    const overallScore = Math.min(rawScore, cap)
+    };
+    const reportedOutcome =
+      body.callOutcome ??
+      parsed.detectedOutcome?.toLowerCase() ??
+      "no_decision";
+    const cap = outcomeCap[reportedOutcome] ?? 75;
+    const overallScore = Math.min(rawScore, cap);
 
     // ── 4. Normalise detectedOutcome to DB-allowed values ───────────────────
-    const VALID_OUTCOMES = ['closed', 'follow_up', 'objection_unresolved', 'no_decision'] as const
-    type ValidOutcome = typeof VALID_OUTCOMES[number]
+    const VALID_OUTCOMES = [
+      "closed",
+      "follow_up",
+      "objection_unresolved",
+      "no_decision",
+    ] as const;
+    type ValidOutcome = (typeof VALID_OUTCOMES)[number];
     const outcomeAliases: Record<string, ValidOutcome> = {
-      'no-close': 'no_decision',
-      'no_close': 'no_decision',
-      'follow-up': 'follow_up',
-    }
-    const rawOutcome = parsed.detectedOutcome?.toLowerCase?.() ?? ''
-    const detectedOutcome: ValidOutcome = VALID_OUTCOMES.includes(rawOutcome as ValidOutcome)
+      "no-close": "no_decision",
+      no_close: "no_decision",
+      "follow-up": "follow_up",
+    };
+    const rawOutcome = parsed.detectedOutcome?.toLowerCase?.() ?? "";
+    const detectedOutcome: ValidOutcome = VALID_OUTCOMES.includes(
+      rawOutcome as ValidOutcome,
+    )
       ? (rawOutcome as ValidOutcome)
-      : (outcomeAliases[rawOutcome] ?? 'no_decision')
+      : (outcomeAliases[rawOutcome] ?? "no_decision");
 
     // ── 5. Save call to Supabase ────────────────────────────────────────────
     const savedCall = await dbCreateCall({
+      orgId: orgId ?? undefined,
       rubricId: rubricId ?? undefined,
       trainerId: sessionTrainerId ?? undefined,
-      trainerName: trainerName ?? 'Unknown',
+      trainerName: trainerName ?? "Unknown",
       trainerEmail: trainerEmail ?? undefined,
       transcript,
       overallScore,
@@ -283,22 +313,28 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       callOutcome: body.callOutcome ?? detectedOutcome,
       clientName: clientName ?? undefined,
       detectedOutcome,
-    })
+    });
 
     // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────
     if (sessionTrainerId) {
       syncTrainerStats(sessionTrainerId).catch((e) =>
-        console.error('[analyze] syncTrainerStats failed:', e)
-      )
+        console.error("[analyze] syncTrainerStats failed:", e),
+      );
     }
 
     // ── 7. Normalise criteriaScores for page compatibility ──────────────────
     // Page expects { name, score, feedback }; AI returns { criterionName, score, justification }
     const normalisedSections = parsed.criteriaScores.map((c) => ({
       ...c,
-      name: c.criterionName ?? (c as unknown as Record<string, unknown>)['name'] ?? '',
-      feedback: c.justification ?? (c as unknown as Record<string, unknown>)['feedback'] ?? '',
-    }))
+      name:
+        c.criterionName ??
+        (c as unknown as Record<string, unknown>)["name"] ??
+        "",
+      feedback:
+        c.justification ??
+        (c as unknown as Record<string, unknown>)["feedback"] ??
+        "",
+    }));
 
     return Response.json({
       id: savedCall.id,
@@ -311,18 +347,27 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       criteria: normalisedSections,
       sections: normalisedSections,
       transcript,
-    })
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error'
-    console.error('[analyze] Error:', message)
-    return Response.json({ error: message }, { status: 500 })
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    console.error("[analyze] Error:", message);
+    return Response.json({ error: message }, { status: 500 });
   }
+}
+
+async function resolveRubricForOrg(orgId: string, rubricId: string) {
+  const rubric = await dbGetRubricById(orgId, rubricId);
+  if (!rubric) return dbGetDefaultRubricWithCriteria(orgId);
+
+  const criteria = await dbGetCriteriaByRubric(rubric.id);
+  return { rubric, criteria };
 }
 
 function buildDefaultSystemPrompt(): string {
   return `You are a senior sales coach specialising in dog training businesses.
 Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback.
-You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.`
+You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.`;
 }
 
 function buildDefaultCriteria(): string {
@@ -330,5 +375,5 @@ function buildDefaultCriteria(): string {
 2. **Problem Agitation**: Deepening urgency around identified problems
 3. **Offer Presentation**: Clarity and fit of the service presentation
 4. **Objection Handling**: Quality of objection responses
-5. **Close & Next Steps**: Effectiveness of closing or defining next steps`
+5. **Close & Next Steps**: Effectiveness of closing or defining next steps`;
 }
