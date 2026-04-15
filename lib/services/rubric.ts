@@ -136,6 +136,11 @@ export async function getRevenueEstimator(): Promise<{
   items: RevenueEstimatorItem[]
   total: number
 }> {
+  const useMockData = process.env.USE_MOCK_DATA === 'true' || process.env.USE_MOCK_DATA === '1'
+
+  if (!useMockData) {
+    return { items: [], total: 0 }
+  }
   const { revenueEstimator, revenueEstimatorTotal } = await import('@/lib/mock-data')
   return { items: revenueEstimator, total: revenueEstimatorTotal }
 }
