@@ -769,7 +769,10 @@ export const revenueEstimator: RevenueEstimatorItem[] = [
   { section: 'Close & Next Steps',  current: 75, target: 88, monthlyImpact: 1200, confidence: 'Low'  },
 ]
 
-export const revenueEstimatorTotal = 5400
+export const revenueEstimatorTotal = revenueEstimator.reduce(
+  (total, item) => total + item.monthlyImpact,
+  0,
+)
 
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
