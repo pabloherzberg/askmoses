@@ -16,7 +16,7 @@ import type {
 } from '@/lib/db/rubric'
 import { getOrgId } from '@/lib/auth'
 import { getCalls, avgRubricScores } from '@/lib/services/calls'
-import type { RubricSection, RubricScores, TrendPoint } from '@/lib/types'
+import type { RubricSection, RubricScores, TrendPoint, RevenueEstimatorItem } from '@/lib/types'
 
 const CRITERION_KEY_MAP: Record<string, keyof RubricScores> = {
   'discovery': 'discovery',
@@ -130,6 +130,14 @@ export async function getRubric(): Promise<{
   const trend = buildWeeklyTrend(calls, 6)
 
   return { sections, trend, trainerSectionScores }
+}
+
+export async function getRevenueEstimator(): Promise<{
+  items: RevenueEstimatorItem[]
+  total: number
+}> {
+  const { revenueEstimator, revenueEstimatorTotal } = await import('@/lib/mock-data')
+  return { items: revenueEstimator, total: revenueEstimatorTotal }
 }
 
 export async function getRubricConfig() {
