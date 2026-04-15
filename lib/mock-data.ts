@@ -758,6 +758,14 @@ export const supabaseCalls = calls.map((call) => ({
 
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
+// ─── Rubric Gap Detection ─────────────────────────────────────────────────────
+
+export const rubricGaps: import('./types').RubricGap[] = [
+  { frequency: 71, description: 'Price comparison to competitors not in rubric' },
+  { frequency: 54, description: 'Follow-up timeline never set on call' },
+  { frequency: 38, description: '"My dog is too old" objection unhandled' },
+]
+
 // ─── Correlation Engine ───────────────────────────────────────────────────────
 
 export const correlationEngine: import('./types').CorrelationFactor[] = [

@@ -11,7 +11,8 @@ import { InsightCard } from '@/components/shared/InsightCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { TrendChart } from './TrendChart'
 import { CorrelationEngine } from '@/components/shared/CorrelationEngine'
-import { correlationEngine } from '@/lib/mock-data'
+import { correlationEngine, rubricGaps } from '@/lib/mock-data'
+import { RubricGapDetection } from '@/components/shared/RubricGapDetection'
 
 const avatarBgMap: Record<string, string> = {
   blue: 'var(--am-blue-bg)',
@@ -84,6 +85,11 @@ export default async function OverviewPage() {
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
         <CorrelationEngine factors={correlationEngine} />
+      </div>
+
+      {/* ── Rubric Gap Detection ───────────────────────────────── */}
+      <div className="mb-4">
+        <RubricGapDetection gaps={rubricGaps} />
       </div>
 
       {/* ── Main grid: ranking + alerts ───────────────────────── */}

@@ -111,3 +111,8 @@ export interface CorrelationFactor {
   impact: CorrelationLevel
   source: CorrelationSource
 }
+
+export interface RubricGap {
+  frequency: number
+  description: string
+}
