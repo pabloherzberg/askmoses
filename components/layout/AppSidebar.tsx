@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload, History,
-  BarChart3, Brain, Wand2, Settings, HelpCircle, Home
+  BarChart3, Brain, Wand2, Settings, HelpCircle, Home, GraduationCap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -17,19 +17,20 @@ const trainerNav = [
 ]
 
 const mainNav = [
-  { label: 'Dashboard', href: '/dashboard', icon: Home },
-  { label: 'Team Overview', href: '/overview', icon: LayoutDashboard },
-  { label: 'Calls', href: '/calls', icon: Phone },
+  { label: 'Dashboard',     href: '/dashboard', icon: Home },
+  { label: 'Team Overview', href: '/overview',  icon: LayoutDashboard },
+  { label: 'Calls',         href: '/calls',     icon: Phone },
 ]
 
 const toolsNav = [
-  { label: 'Upload Call', href: '/dashboard/upload', icon: Upload },
-  { label: 'History', href: '/dashboard/history', icon: History },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { label: 'Insights', href: '/dashboard/insights', icon: Brain },
+  { label: 'Upload Call',     href: '/dashboard/upload',        icon: Upload },
+  { label: 'History',        href: '/dashboard/history',        icon: History },
+  { label: 'Analytics',      href: '/dashboard/analytics',      icon: BarChart3 },
+  { label: 'Insights',       href: '/dashboard/insights',       icon: Brain },
+  { label: 'Coaching Center', href: '/coaching',                icon: GraduationCap },
   { label: 'Script Builder', href: '/dashboard/script-builder', icon: Wand2 },
-  { label: 'Rubric', href: '/dashboard/settings', icon: Settings },
-  { label: 'How to Use', href: '/dashboard/guide', icon: HelpCircle },
+  { label: 'Rubric',         href: '/dashboard/settings',       icon: Settings },
+  { label: 'How to Use',     href: '/dashboard/guide',          icon: HelpCircle },
 ]
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {

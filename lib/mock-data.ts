@@ -16,14 +16,15 @@ export const trainers: Trainer[] = [
     id: '00000000-0000-0000-0000-000000000301',
     name: 'Marcus R.',
     avatar: 'MR',
-    avatarColor: 'blue',
+    avatarColor: 'amber',
     role: 'trainer',
-    totalCalls: 28,
-    closeRate: 74,
-    closeDelta: 9,
+    totalCalls: 47,
+    callsThisWeek: 6,
+    closeRate: 68,
+    closeDelta: 5,
     score: 91,
     scoreDelta: 11,
-    lastActive: 'Active today',
+    lastActive: '4/10/2026',
     ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 94,
@@ -40,6 +41,7 @@ export const trainers: Trainer[] = [
     avatarColor: 'purple',
     role: 'trainer',
     totalCalls: 22,
+    callsThisWeek: 4,
     closeRate: 68,
     closeDelta: 4,
     score: 87,
@@ -61,6 +63,7 @@ export const trainers: Trainer[] = [
     avatarColor: 'green',
     role: 'trainer',
     totalCalls: 19,
+    callsThisWeek: 3,
     closeRate: 61,
     closeDelta: 1,
     score: 79,
@@ -82,6 +85,7 @@ export const trainers: Trainer[] = [
     avatarColor: 'red',
     role: 'trainer',
     totalCalls: 14,
+    callsThisWeek: 2,
     closeRate: 55,
     closeDelta: -2,
     score: 74,
@@ -777,6 +781,83 @@ export const correlationEngine: import('./types').CorrelationFactor[] = [
   { label: 'Discovery',          score: 41, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
   { label: 'Problem Agitation',  score: 35, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
 ]
+
+// ─── Best Call This Week ──────────────────────────────────────────────────────
+
+export const bestCalls: import('./types').BestCallsMap = {
+  marcus: [
+    {
+      prospect: 'Bob W.',
+      date:     '3/21/2026',
+      score:    94,
+      result:   'Closed',
+      analysis: 'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      listenAt: '2:14',
+    },
+    {
+      prospect: 'Sarah K.',
+      date:     '3/19/2026',
+      score:    91,
+      result:   'Closed',
+      analysis: 'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this.',
+      listenAt: '1:48',
+    },
+  ],
+  jamie: [
+    {
+      prospect: 'Carlos M.',
+      date:     '3/20/2026',
+      score:    90,
+      result:   'Closed',
+      analysis: 'At 3:05 Jamie reframed the value proposition with a ROI story that resonated immediately — prospect stopped negotiating on price.',
+      listenAt: '3:05',
+    },
+    {
+      prospect: 'Dana P.',
+      date:     '3/18/2026',
+      score:    88,
+      result:   'Closed',
+      analysis: 'Strong close sequence: summarized pain points, confirmed fit, and asked for the next step decisively without over-explaining.',
+      listenAt: '4:22',
+    },
+  ],
+  jordan: [
+    {
+      prospect: 'Mike T.',
+      date:     '3/22/2026',
+      score:    84,
+      result:   'Closed',
+      analysis: 'At 1:50 Jordan handled the "my dog is too old" objection with a success story — effectively shifted emotional state of the prospect.',
+      listenAt: '1:50',
+    },
+    {
+      prospect: 'Lisa R.',
+      date:     '3/17/2026',
+      score:    81,
+      result:   'Closed',
+      analysis: 'Opened with a strong discovery question that uncovered the real pain (dog aggression at the park) before presenting any offer.',
+      listenAt: '0:45',
+    },
+  ],
+  taylor: [
+    {
+      prospect: 'Amy J.',
+      date:     '3/21/2026',
+      score:    78,
+      result:   'Closed',
+      analysis: 'At 2:30 Taylor used silence effectively after presenting the price — waited for the prospect to self-convince rather than filling the gap.',
+      listenAt: '2:30',
+    },
+    {
+      prospect: 'Ben C.',
+      date:     '3/19/2026',
+      score:    76,
+      result:   'Closed',
+      analysis: 'Strongest tone and energy of the week — kept energy high through a 25-minute call, matching the prospect\'s excitement level throughout.',
+      listenAt: '5:10',
+    },
+  ],
+}
 
 export const demoCredentials = [
   { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
