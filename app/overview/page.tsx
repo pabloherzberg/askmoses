@@ -10,6 +10,8 @@ import { AlertItem } from '@/components/shared/AlertItem'
 import { InsightCard } from '@/components/shared/InsightCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { TrendChart } from './TrendChart'
+import { CorrelationEngine } from '@/components/shared/CorrelationEngine'
+import { correlationEngine } from '@/lib/mock-data'
 
 const avatarBgMap: Record<string, string> = {
   blue: 'var(--am-blue-bg)',
@@ -77,6 +79,11 @@ export default async function OverviewPage() {
           delta={topTrainer.closeDelta}
           deltaLabel={topTrainer.name}
         />
+      </div>
+
+      {/* ── Correlation Engine ────────────────────────────────── */}
+      <div className="mb-4">
+        <CorrelationEngine factors={correlationEngine} />
       </div>
 
       {/* ── Main grid: ranking + alerts ───────────────────────── */}

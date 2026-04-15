@@ -100,3 +100,14 @@ export interface GlobalMetrics {
   totalMRR: number
   avgScore: number
 }
+
+export type CorrelationLevel = 'High' | 'Med' | 'Low'
+export type CorrelationSource = 'Rubric' | 'Behavioral'
+
+export interface CorrelationFactor {
+  label: string
+  score: number
+  correlation: CorrelationLevel
+  impact: CorrelationLevel
+  source: CorrelationSource
+}
