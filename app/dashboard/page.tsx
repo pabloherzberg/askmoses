@@ -5,12 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import type { Call } from "@/lib/types"
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
 import {
   Upload,
   Phone,
   CheckCircle,
-  XCircle,
   TrendingUp,
   Clock,
   Loader2,
@@ -23,7 +21,6 @@ export default function DashboardPage() {
     avgScore: "-",
     thisWeekCalls: 0,
   })
-  const [recentCalls, setRecentCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -59,7 +56,6 @@ export default function DashboardPage() {
         avgScore: avgScore === "-" ? "-" : `${avgScore}/100`,
         thisWeekCalls,
       })
-      setRecentCalls(sorted.slice(0, 5))
       setLoading(false)
     }
 
@@ -146,67 +142,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Calls */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Calls</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentCalls.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Phone className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">No calls yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Upload your first call to get started with AI coaching
-              </p>
-              <Button asChild className="mt-4">
-                <Link href="/dashboard/upload">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Call
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentCalls.map((call) => {
-                const isPassed = call.score >= 75
-                const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
-                return (
-                  <div
-                    key={call.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      {isPassed ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <div>
-                        <p className="font-medium">{call.trainerName}</p>
-                        <p className="text-sm text-muted-foreground">{call.prospect}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(call.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <p className="font-medium">{call.score}/100</p>
-                      <span
-                        className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono"
-                        style={{ background: result.bg, color: result.color }}
-                      >
-                        {result.label}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Quick Links */}
       <Card>
