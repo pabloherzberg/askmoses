@@ -49,6 +49,27 @@ export async function dbGetDefaultRubric(
   return data as DbRubric;
 }
 
+export async function dbGetRubricById(
+  orgId: string,
+  rubricId: string,
+): Promise<DbRubric | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("rubrics")
+    .select("*")
+    .eq("org_id", orgId)
+    .eq("id", rubricId)
+    .eq("is_active", true)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(`dbGetRubricById: ${error.message}`);
+  }
+
+  return data as DbRubric;
+}
 
 /** Lists all active rubrics for an org (RB-05). */
 export async function dbGetRubrics(orgId: string): Promise<DbRubric[]> {
@@ -92,7 +113,6 @@ export async function dbGetDefaultRubricWithCriteria(orgId: string): Promise<{
   const criteria = await dbGetCriteriaByRubric(rubric.id);
   return { rubric, criteria };
 }
-
 
 // ─── Input interfaces ────────────────────────────────────────────────────────
 
