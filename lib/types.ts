@@ -134,5 +134,5 @@ export interface RevenueEstimatorItem {
   current: number
   target: number
   monthlyImpact: number
-  confidence: 'High' | 'Med' | 'Low'
+  confidence: CorrelationLevel
 }
