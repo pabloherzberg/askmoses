@@ -1,7 +1,8 @@
-import { bestCalls, trainers } from '@/lib/mock-data'
+import { bestCalls, worstCalls, trainers } from '@/lib/mock-data'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallHighlightCard } from '@/components/shared/CallHighlightCard'
+import { WorstCallCard } from '@/components/shared/WorstCallCard'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
@@ -40,6 +41,7 @@ export default function CoachingPage() {
       {trainers.map((trainer) => {
         const key = trainerKeyMap[trainer.id]
         const calls = bestCalls[key] ?? []
+        const worst = worstCalls[key] ?? []
 
         return (
           <div key={trainer.id} className="mb-10">
@@ -121,6 +123,38 @@ export default function CoachingPage() {
 
               <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
                 † all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo
+              </p>
+            </div>
+
+            {/* Worst Call This Week */}
+            <div
+              className="rounded-2xl p-5 border shadow-md mt-4"
+              style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+            >
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+                  Worst Call This Week
+                </p>
+                <span
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+                  style={{
+                    color: 'var(--am-amber)',
+                    borderColor: 'rgba(255,171,46,0.35)',
+                    background: 'rgba(255,171,46,0.08)',
+                  }}
+                >
+                  mock data only
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {worst.map((call) => (
+                  <WorstCallCard key={call.prospect + call.date} call={call} />
+                ))}
+              </div>
+
+              <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
+                † all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo
               </p>
             </div>
           </div>

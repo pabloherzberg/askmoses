@@ -6,14 +6,14 @@ interface Props {
   call: BestCall
 }
 
-export function CallHighlightCard({ call }: Props) {
+export function WorstCallCard({ call }: Props) {
   return (
     <div
       className="rounded-xl p-4 flex flex-col gap-3 border border-l-[3px]"
       style={{
         background: 'var(--card)',
-        borderColor: 'rgba(34,217,160,0.3)',
-        borderLeftColor: 'var(--am-green)',
+        borderColor: 'rgba(255,94,94,0.25)',
+        borderLeftColor: 'var(--am-red)',
       }}
     >
       {/* Top row: prospect + score */}
@@ -29,9 +29,9 @@ export function CallHighlightCard({ call }: Props) {
         <span
           className="text-[12px] font-mono font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0"
           style={{
-            color: 'var(--am-green)',
-            borderColor: 'rgba(34,217,160,0.4)',
-            background: 'rgba(34,217,160,0.10)',
+            color: 'var(--am-red)',
+            borderColor: 'rgba(255,94,94,0.4)',
+            background: 'rgba(255,94,94,0.10)',
           }}
         >
           {call.score}/100
@@ -43,21 +43,21 @@ export function CallHighlightCard({ call }: Props) {
         <span
           className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full"
           style={{
-            color: 'var(--am-green)',
-            background: 'rgba(34,217,160,0.12)',
+            color: 'var(--am-amber)',
+            background: 'rgba(255,171,46,0.12)',
           }}
         >
           {call.result}
         </span>
       </div>
 
-      {/* AI Analysis */}
+      {/* Error Analysis */}
       <div>
         <p
           className="text-[10px] font-medium uppercase tracking-widest mb-1"
           style={{ color: 'var(--am-muted)' }}
         >
-          AI Analysis
+          Error Analysis
         </p>
         <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-text)' }}>
           {call.analysis}
@@ -69,12 +69,12 @@ export function CallHighlightCard({ call }: Props) {
         onClick={() => {}}
         className="self-start text-[11px] font-mono px-3 py-1.5 rounded-lg border cursor-default"
         style={{
-          color: 'var(--am-accent2)',
-          borderColor: 'rgba(155,135,255,0.35)',
-          background: 'rgba(110,86,255,0.08)',
+          color: 'var(--am-red)',
+          borderColor: 'rgba(255,94,94,0.35)',
+          background: 'rgba(255,94,94,0.08)',
         }}
       >
-        Listen at {call.listenAt} →
+        Review at {call.listenAt} →
       </button>
     </div>
   )
