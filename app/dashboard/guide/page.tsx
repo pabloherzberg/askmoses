@@ -257,7 +257,7 @@ export default function GuidePage() {
               </div>
               <div>
                 <p className="font-medium">Send Feedback</p>
-                <p className="text-sm text-muted-foreground">Email coaching to trainer</p>
+                <p className="text-sm text-muted-foreground">Email coaching to sales person</p>
               </div>
             </div>
           </div>

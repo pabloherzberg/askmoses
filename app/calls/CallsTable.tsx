@@ -51,7 +51,7 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
         </select>
         {showTrainerColumn && trainers.length > 0 && (
           <select className={selectClass} style={selectStyle} value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)}>
-            <option value="all">All Trainers</option>
+            <option value="all">All Sales People</option>
             {trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         )}

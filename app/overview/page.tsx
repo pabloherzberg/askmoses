@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { getTrainers } from "@/lib/services/trainers";
+import { getTrainers, getPerformanceTrends } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
@@ -9,11 +9,11 @@ import { RubricBar } from "@/components/shared/RubricBar";
 import { AlertItem } from "@/components/shared/AlertItem";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
-import { TrendChart } from "./TrendChart";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
 import { correlationEngine, rubricGaps } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
+import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 
 const avatarBgMap: Record<string, string> = {
   blue: "var(--am-blue-bg)",
@@ -33,7 +33,7 @@ export default async function OverviewPage() {
   const [
     trainers,
     insights,
-    { sections: rubric, trend, trainerSectionScores },
+    { sections: rubric, trainerSectionScores },
     revenueData,
   ] = await Promise.all([
     getTrainers(),
@@ -41,6 +41,8 @@ export default async function OverviewPage() {
     getRubric(),
     getRevenueEstimator(),
   ]);
+
+  const performanceTrends = await getPerformanceTrends(trainers);
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score);
   const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
@@ -80,7 +82,7 @@ export default async function OverviewPage() {
   if (lowScorers.length > 0)
     alerts.push({
       dotColor: "amber",
-      text: `${lowScorers.length} trainer${lowScorers.length > 1 ? "s" : ""} scoring below 75`,
+      text: `${lowScorers.length} sales person${lowScorers.length > 1 ? "s" : ""} scoring below 75`,
       actionLabel: "Train",
     });
 
@@ -106,7 +108,7 @@ export default async function OverviewPage() {
         <ScoreCard
           label="Total Calls"
           value={totalCalls}
-          deltaLabel={`${trainers.length} active trainers`}
+          deltaLabel={`${trainers.length} active sales people`}
         />
         <ScoreCard
           label="Best Close Rate"
@@ -137,7 +139,7 @@ export default async function OverviewPage() {
             className="text-[13px] font-medium mb-4"
             style={{ color: "var(--am-text)" }}
           >
-            Trainer Ranking
+            Sales Team Ranking
           </p>
           {sorted.map((trainer, i) => (
             <div
@@ -232,7 +234,7 @@ export default async function OverviewPage() {
         </div>
       </div>
 
-      {/* ── Charts: rubric + trend ─────────────────────────────── */}
+      {/* ── Charts: rubric + performance trend ───────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Rubric bars */}
         <div
@@ -257,26 +259,18 @@ export default async function OverviewPage() {
           </div>
         </div>
 
-        {/* Trend chart */}
-        <div
-          className="rounded-2xl p-5 border shadow-md"
-          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
-        >
-          <p
-            className="text-[13px] font-medium mb-3"
-            style={{ color: "var(--am-text)" }}
-          >
-            6-Week Trend
-          </p>
-          <TrendChart data={trend} />
-        </div>
+        {/* Performance trend */}
+        <PerformanceTrend
+          trends={performanceTrends}
+          salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
+        />
       </div>
 
       {/* ── Revenue Impact Estimator ──────────────────────────── */}
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>
+      <SectionLabel>Score by Sales Person — Detailed Rubric</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}

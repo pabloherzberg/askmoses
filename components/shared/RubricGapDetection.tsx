@@ -52,10 +52,10 @@ export function RubricGapDetection({ gaps }: Props) {
       {/* Single grid — headers + rows share the same column template */}
       <div
         className="grid gap-x-3 px-1"
-        style={{ gridTemplateColumns: '3.5rem 1fr 9rem 7rem' }}
+        style={{ gridTemplateColumns: '3.5rem 1fr' }}
       >
-        {/* Column headers */}
-        {['Freq.', 'Gap detected', 'Action', 'Status'].map((h) => (
+        {/* Column headers — mobile: 2 cols; sm+: 4 cols via extra hidden spans */}
+        {['Freq.', 'Gap detected'].map((h) => (
           <span
             key={h}
             className="text-[10px] font-medium mb-2"
@@ -65,7 +65,7 @@ export function RubricGapDetection({ gaps }: Props) {
           </span>
         ))}
 
-        {/* Rows — use `contents` so each cell participates in the parent grid */}
+        {/* Rows */}
         {gaps.map((gap, i) => (
           <div key={gap.description} className="contents">
             <div
@@ -76,45 +76,35 @@ export function RubricGapDetection({ gaps }: Props) {
             </div>
 
             <div
-              className="flex items-center py-3"
+              className="flex items-start py-3 gap-2 flex-wrap"
               style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
             >
-              <span className="text-[12px]" style={{ color: 'var(--am-text)' }}>
+              <span className="text-[12px] flex-1 min-w-0" style={{ color: 'var(--am-text)' }}>
                 {gap.description}
               </span>
-            </div>
-
-            <div
-              className="flex items-center py-3"
-              style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
-            >
-              <button
-                onClick={() => {}}
-                className="text-[11px] font-mono px-2.5 py-1 rounded-lg border cursor-default"
-                style={{
-                  color: 'var(--am-accent2)',
-                  borderColor: 'rgba(155,135,255,0.35)',
-                  background: 'rgba(110,86,255,0.08)',
-                }}
-              >
-                Add to rubric →
-              </button>
-            </div>
-
-            <div
-              className="flex items-center py-3"
-              style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
-            >
-              <span
-                className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full border"
-                style={{
-                  color: 'var(--am-red)',
-                  borderColor: 'rgba(255,94,94,0.35)',
-                  background: 'rgba(255,94,94,0.08)',
-                }}
-              >
-                Not covered
-              </span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => {}}
+                  className="text-[11px] font-mono px-2.5 py-1 rounded-lg border cursor-default"
+                  style={{
+                    color: 'var(--am-accent2)',
+                    borderColor: 'rgba(155,135,255,0.35)',
+                    background: 'rgba(110,86,255,0.08)',
+                  }}
+                >
+                  Add to rubric →
+                </button>
+                <span
+                  className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full border"
+                  style={{
+                    color: 'var(--am-red)',
+                    borderColor: 'rgba(255,94,94,0.35)',
+                    background: 'rgba(255,94,94,0.08)',
+                  }}
+                >
+                  Not covered
+                </span>
+              </div>
             </div>
           </div>
         ))}

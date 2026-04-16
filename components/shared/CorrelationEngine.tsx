@@ -88,8 +88,8 @@ export function CorrelationEngine({ factors }: Props) {
       </div>
 
       {/* Column headers */}
-      <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '1fr 3fr 3rem 4rem 4rem 5rem' }}>
-        {['Factor', 'Score', '%', 'Corr.', 'Impact', 'Source'].map((h) => (
+      <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}>
+        {['Score', '%', 'Corr.', 'Impact', 'Source'].map((h) => (
           <span key={h} className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>
             {h}
           </span>
@@ -97,54 +97,68 @@ export function CorrelationEngine({ factors }: Props) {
       </div>
 
       {/* Rows */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col">
         {factors.map((f, i) => (
           <div
             key={f.label}
-            className="grid items-center gap-2 py-2"
-            style={{
-              gridTemplateColumns: '1fr 3fr 3rem 4rem 4rem 5rem',
-              borderTop: i > 0 ? '1px solid var(--am-border)' : 'none',
-            }}
+            className="py-2"
+            style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
           >
-            {/* Factor name */}
-            <span className="text-[12px] font-medium truncate" style={{ color: 'var(--am-text)' }}>
+            {/* Label — full width on mobile only */}
+            <span
+              className="block sm:hidden text-[11px] font-medium mb-1.5"
+              style={{ color: 'var(--am-text)' }}
+            >
               {f.label}
             </span>
 
-            {/* Bar */}
+            {/* Grid row: bar + badges */}
             <div
-              className="h-2.5 rounded-full overflow-hidden"
-              style={{ background: 'var(--am-bg4)' }}
+              className="grid items-center gap-2"
+              style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}
             >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${f.score}%`,
-                  background: barColor[f.correlation],
-                  transition: 'width 0.4s ease',
-                }}
-              />
-            </div>
+              {/* Bar (with label on sm+) */}
+              <div className="flex flex-col gap-1 min-w-0">
+                <span
+                  className="hidden sm:block text-[11px] font-medium truncate"
+                  style={{ color: 'var(--am-text)' }}
+                >
+                  {f.label}
+                </span>
+                <div
+                  className="h-2 rounded-full overflow-hidden"
+                  style={{ background: 'var(--am-bg4)' }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${f.score}%`,
+                      background: barColor[f.correlation],
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+              </div>
 
-            {/* Score % */}
-            <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
-              {f.score}%
-            </span>
+              {/* Score % */}
+              <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
+                {f.score}%
+              </span>
 
-            {/* Correlation badge */}
-            <div className="flex justify-center">
-              <LevelBadge value={f.correlation} />
-            </div>
+              {/* Correlation badge */}
+              <div className="flex justify-center">
+                <LevelBadge value={f.correlation} />
+              </div>
 
-            {/* Impact badge */}
-            <div className="flex justify-center">
-              <LevelBadge value={f.impact} />
-            </div>
+              {/* Impact badge */}
+              <div className="flex justify-center">
+                <LevelBadge value={f.impact} />
+              </div>
 
-            {/* Source badge */}
-            <div className="flex justify-center">
-              <SourceBadge value={f.source} />
+              {/* Source badge */}
+              <div className="flex justify-center">
+                <SourceBadge value={f.source} />
+              </div>
             </div>
           </div>
         ))}

@@ -3,10 +3,12 @@ export const dynamic = 'force-dynamic'
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
+import { getPerformanceTrends } from "@/lib/services/trainers";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
 import { ScorePill } from "@/components/shared/ScorePill";
 import { SectionLabel } from "@/components/shared/SectionLabel";
+import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 import { getSession, getTrainerDbId } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants";
@@ -33,9 +35,10 @@ export default async function TrainerDashboardPage() {
     .eq("id", session.user.id)
     .single();
 
-  const [trainerCalls, allCalls] = await Promise.all([
+  const [trainerCalls, allCalls, performanceTrends] = await Promise.all([
     getCalls({ trainerId }),
     getCalls(),
+    getPerformanceTrends([{ id: trainerId, email: session.user.email ?? undefined }]),
   ]);
 
   const trainerName = trainerProfile?.name ?? "Trainer";
@@ -134,6 +137,9 @@ export default async function TrainerDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Performance trend ─────────────────────────────────── */}
+      <PerformanceTrend trends={performanceTrends} fixedId={trainerId} />
 
       {/* ── Recent calls ──────────────────────────────────────── */}
       <SectionLabel>Recent Calls</SectionLabel>
