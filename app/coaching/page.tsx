@@ -1,4 +1,5 @@
 import { bestCalls, trainers } from '@/lib/mock-data'
+import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CallHighlightCard } from '@/components/shared/CallHighlightCard'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { ScorePill } from '@/components/shared/ScorePill'
@@ -78,6 +79,11 @@ export default function CoachingPage() {
               <ScoreCard label="Close Rate"  value={`${trainer.closeRate}%`} valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel="delta" />
               <ScoreCard label="Total Calls" value={trainer.totalCalls}      deltaLabel="all time" />
               <ScoreCard label="This Week"   value={trainer.callsThisWeek ?? 0}            deltaLabel="calls processed" />
+            </div>
+
+            {/* Behavioral Correlation Profile */}
+            <div className="mb-4">
+              <BehavioralProfile trainerKey={key} />
             </div>
 
             {/* Best Call This Week */}
