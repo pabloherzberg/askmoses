@@ -8,6 +8,7 @@ import type {
   GlobalMetrics,
   Role,
   RevenueEstimatorItem,
+  PerformanceTrendPoint,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -768,6 +769,52 @@ export const revenueEstimator: RevenueEstimatorItem[] = [
   { section: 'Assertiveness',       current: 65, target: 80, monthlyImpact: 1800, confidence: 'Med'  },
   { section: 'Close & Next Steps',  current: 75, target: 88, monthlyImpact: 1200, confidence: 'Low'  },
 ]
+
+// ─── Performance Trends (per sales person + team aggregate) ──────────────────
+
+export const performanceTrends: Record<string, PerformanceTrendPoint[]> = {
+  // trainerId → trend data (keys match mock trainer IDs)
+  '00000000-0000-0000-0000-000000000301': [ // Marcus R.
+    { week: 'W1', closeRate: 60, avgScore: 72 },
+    { week: 'W2', closeRate: 63, avgScore: 76 },
+    { week: 'W3', closeRate: 65, avgScore: 80 },
+    { week: 'W4', closeRate: 68, avgScore: 84 },
+    { week: 'W5', closeRate: 71, avgScore: 88 },
+    { week: 'W6', closeRate: 74, avgScore: 91 },
+  ],
+  '00000000-0000-0000-0000-000000000302': [ // Jamie L.
+    { week: 'W1', closeRate: 55, avgScore: 70 },
+    { week: 'W2', closeRate: 57, avgScore: 73 },
+    { week: 'W3', closeRate: 60, avgScore: 75 },
+    { week: 'W4', closeRate: 62, avgScore: 78 },
+    { week: 'W5', closeRate: 65, avgScore: 81 },
+    { week: 'W6', closeRate: 68, avgScore: 84 },
+  ],
+  '00000000-0000-0000-0000-000000000303': [ // Jordan K.
+    { week: 'W1', closeRate: 50, avgScore: 68 },
+    { week: 'W2', closeRate: 53, avgScore: 70 },
+    { week: 'W3', closeRate: 56, avgScore: 73 },
+    { week: 'W4', closeRate: 58, avgScore: 76 },
+    { week: 'W5', closeRate: 60, avgScore: 79 },
+    { week: 'W6', closeRate: 61, avgScore: 82 },
+  ],
+  '00000000-0000-0000-0000-000000000304': [ // Taylor M.
+    { week: 'W1', closeRate: 59, avgScore: 74 },
+    { week: 'W2', closeRate: 58, avgScore: 73 },
+    { week: 'W3', closeRate: 57, avgScore: 71 },
+    { week: 'W4', closeRate: 56, avgScore: 69 },
+    { week: 'W5', closeRate: 55, avgScore: 67 },
+    { week: 'W6', closeRate: 55, avgScore: 66 },
+  ],
+  team: [ // aggregate average across all sales people
+    { week: 'W1', closeRate: 56, avgScore: 71 },
+    { week: 'W2', closeRate: 58, avgScore: 73 },
+    { week: 'W3', closeRate: 60, avgScore: 75 },
+    { week: 'W4', closeRate: 61, avgScore: 77 },
+    { week: 'W5', closeRate: 63, avgScore: 79 },
+    { week: 'W6', closeRate: 65, avgScore: 81 },
+  ],
+}
 
 export const revenueEstimatorTotal = revenueEstimator.reduce(
   (total, item) => total + item.monthlyImpact,

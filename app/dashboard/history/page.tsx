@@ -121,7 +121,7 @@ export default function HistoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Trainer</TableHead>
+                      <TableHead>Sales Person</TableHead>
                       <TableHead>Prospect</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Outcome</TableHead>

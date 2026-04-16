@@ -328,7 +328,7 @@ export default function AnalyticsPage() {
               <Award className="h-4 w-4" />
               Conversion Leaderboard
             </CardTitle>
-            <CardDescription>Close rate per trainer</CardDescription>
+            <CardDescription>Close rate per sales person</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

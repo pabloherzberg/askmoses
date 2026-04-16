@@ -7,10 +7,10 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 
 const DEMO_USERS = [
-  { label: 'Trainer', email: 'trainer@demo.askmoses.ai', password: 'demo123', hint: 'Marcus R.' },
-  { label: 'Trainer 2', email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
-  { label: 'Trainer 3', email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
-  { label: 'Trainer 4', email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
+  { label: 'Sales Person', email: 'trainer@demo.askmoses.ai', password: 'demo123', hint: 'Marcus R.' },
+  { label: 'Sales Person 2', email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
+  { label: 'Sales Person 3', email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
+  { label: 'Sales Person 4', email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
   { label: 'Manager', email: 'owner@demo.askmoses.ai', password: 'demo123', hint: 'Owner' },
   { label: 'Admin', email: 'admin@askmoses.ai', password: 'demo123', hint: 'AskMoses Team' },
 ]

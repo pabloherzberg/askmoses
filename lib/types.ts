@@ -129,6 +129,12 @@ export interface BestCall {
 
 export type CallsByTrainerMap = Record<string, BestCall[]>
 
+export interface PerformanceTrendPoint {
+  week: string
+  closeRate: number
+  avgScore: number
+}
+
 export interface RevenueEstimatorItem {
   section: string
   current: number

@@ -617,7 +617,7 @@ export default function UploadPage() {
         {/* Trainer Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Trainer Information</CardTitle>
+            <CardTitle>Sales Person Information</CardTitle>
             <CardDescription>
               Who should receive the coaching email?
             </CardDescription>
@@ -625,12 +625,12 @@ export default function UploadPage() {
           <CardContent className="space-y-4">
             {isTrainer ? (
               <div className="space-y-2">
-                <Label>Trainer</Label>
+                <Label>Sales Person</Label>
                 <Input value={formData.trainerName} disabled />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="trainerId">Trainer</Label>
+                <Label htmlFor="trainerId">Sales Person</Label>
                 <Select
                   value={formData.trainerId}
                   onValueChange={(value) => {
