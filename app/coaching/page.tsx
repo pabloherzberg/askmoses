@@ -1,5 +1,6 @@
 import { bestCalls, trainers } from '@/lib/mock-data'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
+import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallHighlightCard } from '@/components/shared/CallHighlightCard'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { ScorePill } from '@/components/shared/ScorePill'
@@ -84,6 +85,11 @@ export default function CoachingPage() {
             {/* Behavioral Correlation Profile */}
             <div className="mb-4">
               <BehavioralProfile trainerKey={key} />
+            </div>
+
+            {/* AI Coaching Recommendations */}
+            <div className="mb-4">
+              <CoachingRecommendations trainerKey={key} />
             </div>
 
             {/* Best Call This Week */}

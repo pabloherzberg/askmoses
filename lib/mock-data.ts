@@ -873,6 +873,98 @@ export const bestCalls: import('./types').BestCallsMap = {
   ],
 }
 
+// ─── Coaching Recommendations ────────────────────────────────────────────────
+
+export type CoachingRec = {
+  order: number
+  title: string
+  text: string
+  cta: string
+}
+
+export const coachingRecs: Record<string, CoachingRec[]> = {
+  marcus: [
+    {
+      order: 1,
+      title: 'Work on empathy',
+      text: 'Trending down 3 weeks. Pull Lisa M. call and identify where emotional connection dropped.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 2,
+      title: "Use Marcus's Bob W. call as team training",
+      text: 'Best objection handling example in 6 weeks — share at next team meeting.',
+      cta: 'Share call →',
+    },
+    {
+      order: 3,
+      title: 'Review 3 missing calls before next session',
+      text: 'Submission gaps are a coaching signal, not just a compliance issue.',
+      cta: 'View missing →',
+    },
+  ],
+  jamie: [
+    {
+      order: 1,
+      title: 'Close more decisively',
+      text: 'Last 3 calls ended without a firm commitment. Pull the Karen H. follow-up and practice a direct close script.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 2,
+      title: 'Identify co-decision makers early',
+      text: 'Two calls this month were derailed by an unidentified second decision-maker. Add one qualifying question in discovery.',
+      cta: 'View script →',
+    },
+    {
+      order: 3,
+      title: 'Use Diana M. call in the next team session',
+      text: 'Best problem agitation example on the team — empathetic and never manipulative.',
+      cta: 'Share call →',
+    },
+  ],
+  jordan: [
+    {
+      order: 1,
+      title: 'Stop jumping to the offer too early',
+      text: 'Presenting the offer before minute 15 correlates with 0% close rate for Jordan. Add a problem agitation checkpoint.',
+      cta: 'View script →',
+    },
+    {
+      order: 2,
+      title: 'No more discounts without objection reframe',
+      text: "Jordan offered a discount in 2 of 5 calls this week. Review Marcus's objection handling technique first.",
+      cta: 'Reference call →',
+    },
+    {
+      order: 3,
+      title: 'Set a specific follow-up time on every call',
+      text: 'Vague follow-ups ("I\'ll send you info") have zero conversion. Commit to a date and time before hanging up.',
+      cta: 'View missing →',
+    },
+  ],
+  taylor: [
+    {
+      order: 1,
+      title: 'Schedule a 1:1 this week — priority',
+      text: 'Score dropped 12pts in 2 weeks and call volume is down 40%. This is a confidence issue, not a skills gap.',
+      cta: 'View calls →',
+    },
+    {
+      order: 2,
+      title: 'Stop over-explaining after presenting price',
+      text: 'Taylor fills silence with justifications. Review the strategic silence technique from Marcus\'s Bob W. call.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 3,
+      title: 'Focus discovery on emotional impact, not behaviors',
+      text: 'Questions are too technical. Ask "how does this affect your family?" not "which command is the problem?"',
+      cta: 'View script →',
+    },
+  ],
+}
+
 // ─── Behavioral Correlation Profile ──────────────────────────────────────────
 
 export type BehavioralDimension = {
