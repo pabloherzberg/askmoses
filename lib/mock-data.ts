@@ -798,7 +798,7 @@ export const correlationEngine: import('./types').CorrelationFactor[] = [
 
 // ─── Best Call This Week ──────────────────────────────────────────────────────
 
-export const bestCalls: import('./types').BestCallsMap = {
+export const bestCalls: import('./types').CallsByTrainerMap = {
   marcus: [
     {
       prospect: 'Bob W.',
@@ -869,6 +869,83 @@ export const bestCalls: import('./types').BestCallsMap = {
       result:   'Closed',
       analysis: 'Strongest tone and energy of the week — kept energy high through a 25-minute call, matching the prospect\'s excitement level throughout.',
       listenAt: '5:10',
+    },
+  ],
+}
+
+// ─── Worst Call This Week ─────────────────────────────────────────────────────
+
+export const worstCalls: import('./types').CallsByTrainerMap = {
+  marcus: [
+    {
+      prospect: 'Greg N.',
+      date:     '3/18/2026',
+      score:    61,
+      result:   'No Close',
+      analysis: 'At 1:42 Marcus skipped discovery entirely and jumped straight to pricing — prospect disengaged after 3 minutes. No pain established before the offer.',
+      listenAt: '1:42',
+    },
+    {
+      prospect: 'Pam D.',
+      date:     '3/20/2026',
+      score:    64,
+      result:   'No Close',
+      analysis: 'Objection at 4:10 ("too expensive") was met with silence, then a discount offer — reinforced price anchoring without defending value.',
+      listenAt: '4:10',
+    },
+  ],
+  jamie: [
+    {
+      prospect: 'Tom R.',
+      date:     '3/19/2026',
+      score:    63,
+      result:   'No Close',
+      analysis: 'At 2:55 Jamie talked over the prospect\'s hesitation instead of asking a clarifying question. Lost the emotional thread and never recovered.',
+      listenAt: '2:55',
+    },
+    {
+      prospect: 'Nora S.',
+      date:     '3/21/2026',
+      score:    66,
+      result:   'Follow-up',
+      analysis: 'Offer presentation was vague — benefits listed without connecting them to the prospect\'s stated problems. No urgency created.',
+      listenAt: '3:40',
+    },
+  ],
+  jordan: [
+    {
+      prospect: 'Fred L.',
+      date:     '3/17/2026',
+      score:    58,
+      result:   'No Close',
+      analysis: 'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      listenAt: '0:55',
+    },
+    {
+      prospect: 'Cara B.',
+      date:     '3/20/2026',
+      score:    62,
+      result:   'No Close',
+      analysis: 'Close sequence at 5:15 was rushed — asked for the sale twice in 30 seconds without pausing for a response, creating pressure that backfired.',
+      listenAt: '5:15',
+    },
+  ],
+  taylor: [
+    {
+      prospect: 'Owen M.',
+      date:     '3/18/2026',
+      score:    55,
+      result:   'No Close',
+      analysis: 'At 3:00 Taylor filled every silence with filler words instead of letting the prospect process. Nervous energy was audible and undermined trust.',
+      listenAt: '3:00',
+    },
+    {
+      prospect: 'Iris W.',
+      date:     '3/22/2026',
+      score:    59,
+      result:   'No Close',
+      analysis: 'Problem agitation phase was skipped entirely — moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
+      listenAt: '1:28',
     },
   ],
 }
