@@ -1,8 +1,7 @@
 import { bestCalls, worstCalls, trainers } from '@/lib/mock-data'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
-import { CallHighlightCard } from '@/components/shared/CallHighlightCard'
-import { WorstCallCard } from '@/components/shared/WorstCallCard'
+import { CallCard } from '@/components/shared/CallCard'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
@@ -117,7 +116,7 @@ export default function CoachingPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {calls.map((call) => (
-                  <CallHighlightCard key={call.prospect + call.date} call={call} />
+                  <CallCard key={call.prospect + call.date} call={call} variant="best" />
                 ))}
               </div>
 
@@ -149,7 +148,7 @@ export default function CoachingPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {worst.map((call) => (
-                  <WorstCallCard key={call.prospect + call.date} call={call} />
+                  <CallCard key={call.prospect + call.date} call={call} variant="worst" />
                 ))}
               </div>
 
