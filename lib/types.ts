@@ -127,7 +127,7 @@ export interface BestCall {
   listenAt: string
 }
 
-export type BestCallsMap = Record<string, BestCall[]>
+export type CallsByTrainerMap = Record<string, BestCall[]>
 
 export interface RevenueEstimatorItem {
   section: string

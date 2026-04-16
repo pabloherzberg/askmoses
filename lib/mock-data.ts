@@ -798,7 +798,7 @@ export const correlationEngine: import('./types').CorrelationFactor[] = [
 
 // ─── Best Call This Week ──────────────────────────────────────────────────────
 
-export const bestCalls: import('./types').BestCallsMap = {
+export const bestCalls: import('./types').CallsByTrainerMap = {
   marcus: [
     {
       prospect: 'Bob W.',
@@ -875,7 +875,7 @@ export const bestCalls: import('./types').BestCallsMap = {
 
 // ─── Worst Call This Week ─────────────────────────────────────────────────────
 
-export const worstCalls: import('./types').BestCallsMap = {
+export const worstCalls: import('./types').CallsByTrainerMap = {
   marcus: [
     {
       prospect: 'Greg N.',
