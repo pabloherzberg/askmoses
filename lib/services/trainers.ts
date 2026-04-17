@@ -1,5 +1,5 @@
 import type { Trainer, PerformanceTrendPoint } from "@/lib/types";
-import type { CallsByTrainerMap, BehavioralDimension, CoachingRec, BehavioralTrendDimension } from "@/lib/mock-data";
+import type { CallsByTrainerMap, BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
 
 const USE_MOCK = process.env.USE_MOCK_DATA !== "false";
 import { getOrgId } from "@/lib/auth";
@@ -50,6 +50,11 @@ export async function getCoachingRecs(trainerKey: string): Promise<CoachingRec[]
 export async function getBehavioralTrends(trainerKey: string): Promise<BehavioralTrendDimension[]> {
   const { trainerTrends } = await import("@/lib/mock-data");
   return trainerTrends[trainerKey] ?? [];
+}
+
+export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
+  const { teamHealth } = await import("@/lib/mock-data");
+  return teamHealth;
 }
 
 export async function getPerformanceTrends(
