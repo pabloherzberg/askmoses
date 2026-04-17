@@ -1168,6 +1168,36 @@ export const trainerTrends: Record<string, BehavioralTrendDimension[]> = {
   ],
 }
 
+// ─── Active Alerts ────────────────────────────────────────────────────────────
+
+export type ActiveAlert = {
+  type: 'critical' | 'warning' | 'positive'
+  dotColor: 'red' | 'amber' | 'green'
+  message: string
+  cta: string
+}
+
+export const activeAlerts: ActiveAlert[] = [
+  {
+    type: 'critical',
+    dotColor: 'red',
+    message: "Taylor's score dropped 12pts this week",
+    cta: 'Review calls',
+  },
+  {
+    type: 'warning',
+    dotColor: 'amber',
+    message: '3 trainers skipping objection handling',
+    cta: 'Train now',
+  },
+  {
+    type: 'positive',
+    dotColor: 'green',
+    message: 'Close rate up 7pts in 6 weeks',
+    cta: 'Celebrate',
+  },
+]
+
 export const demoCredentials = [
   { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
   { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },

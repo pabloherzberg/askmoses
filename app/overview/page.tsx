@@ -6,11 +6,10 @@ import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { ScorePill } from "@/components/shared/ScorePill";
 import { RubricBar } from "@/components/shared/RubricBar";
-import { AlertItem } from "@/components/shared/AlertItem";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { correlationEngine, rubricGaps } from "@/lib/mock-data";
+import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
@@ -57,34 +56,6 @@ export default async function OverviewPage() {
       ? Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
       : 0;
   const topTrainer = sorted[0] ?? null;
-
-  // ── Computed alerts from real trainer data ────────────────────────────────
-  const alerts: {
-    dotColor: "red" | "amber" | "green" | "blue";
-    text: string;
-    actionLabel: string;
-  }[] = [];
-  const droppedTrainer = sorted.find((t) => t.scoreDelta < 0);
-  if (droppedTrainer)
-    alerts.push({
-      dotColor: "red",
-      text: `${droppedTrainer.name}'s score dropped ${Math.abs(droppedTrainer.scoreDelta)}pts`,
-      actionLabel: "Review",
-    });
-  const topByClose = [...trainers].sort((a, b) => b.closeRate - a.closeRate)[0];
-  if (topByClose)
-    alerts.push({
-      dotColor: "green",
-      text: `${topByClose.name} hit ${topByClose.closeRate}% — best close rate on the team`,
-      actionLabel: "Celebrate",
-    });
-  const lowScorers = trainers.filter((t) => t.score > 0 && t.score < 75);
-  if (lowScorers.length > 0)
-    alerts.push({
-      dotColor: "amber",
-      text: `${lowScorers.length} sales person${lowScorers.length > 1 ? "s" : ""} scoring below 75`,
-      actionLabel: "Train",
-    });
 
   return (
     <div>
@@ -226,18 +197,88 @@ export default async function OverviewPage() {
 
         {/* Active alerts */}
         <div
-          className="rounded-2xl p-5 border shadow-md"
+          className="rounded-2xl p-5 border shadow-md flex flex-col"
           style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
-          <p
-            className="text-[13px] font-medium mb-4"
-            style={{ color: "var(--am-text)" }}
-          >
-            Active Alerts
+          {/* Header */}
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+              Active Alerts
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded border"
+              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
+            >
+              mock data only
+            </span>
+          </div>
+          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
+            {activeAlerts.length} items requiring attention
           </p>
-          {alerts.map((alert) => (
-            <AlertItem key={alert.text} {...alert} />
-          ))}
+
+          {/* Alert items */}
+          <div className="flex flex-col gap-0 flex-1">
+            {activeAlerts.map((alert, i) => {
+              const dotColor =
+                alert.dotColor === "red"
+                  ? "var(--am-red)"
+                  : alert.dotColor === "amber"
+                    ? "var(--am-amber)"
+                    : "var(--am-green)";
+              const ctaColor =
+                alert.dotColor === "red"
+                  ? "var(--am-red)"
+                  : alert.dotColor === "amber"
+                    ? "var(--am-amber)"
+                    : "var(--am-green)";
+              const ctaBorder =
+                alert.dotColor === "red"
+                  ? "rgba(255,94,94,0.35)"
+                  : alert.dotColor === "amber"
+                    ? "rgba(255,171,46,0.35)"
+                    : "rgba(34,217,160,0.35)";
+              const ctaBg =
+                alert.dotColor === "red"
+                  ? "rgba(255,94,94,0.08)"
+                  : alert.dotColor === "amber"
+                    ? "rgba(255,171,46,0.08)"
+                    : "rgba(34,217,160,0.08)";
+
+              return (
+                <div
+                  key={alert.message}
+                  className="py-3"
+                  style={{
+                    borderBottom:
+                      i < activeAlerts.length - 1
+                        ? "1px solid var(--am-border)"
+                        : "none",
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}` }}
+                    />
+                    <span className="text-[12px] font-medium" style={{ color: "var(--am-text)" }}>
+                      {alert.message}
+                    </span>
+                  </div>
+                  <button
+                    className="text-[11px] font-medium px-3 py-1 rounded border ml-[18px]"
+                    style={{ color: ctaColor, borderColor: ctaBorder, background: ctaBg }}
+                  >
+                    {alert.cta} →
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer note */}
+          <p className="text-[10px] mt-4 leading-relaxed" style={{ color: "var(--am-amber)" }}>
+            ↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts
+          </p>
         </div>
       </div>
 
