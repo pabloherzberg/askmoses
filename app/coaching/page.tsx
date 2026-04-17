@@ -1,10 +1,15 @@
-import { bestCalls, worstCalls, trainers } from '@/lib/mock-data'
+import {
+  getTrainersWithMockData,
+  getBestAndWorstCalls,
+  getBehavioralProfile,
+  getCoachingRecs,
+  getBehavioralTrends,
+} from '@/lib/services/trainers'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { BehavioralTrends } from '@/components/shared/BehavioralTrends'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallCard } from '@/components/shared/CallCard'
 import { ScoreCard } from '@/components/shared/ScoreCard'
-import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 
 const trainerKeyMap: Record<string, string> = {
@@ -30,7 +35,24 @@ const avatarTextMap: Record<string, string> = {
   amber:  'var(--am-amber)',
 }
 
-export default function CoachingPage() {
+export default async function CoachingPage() {
+  const [trainers, { bestCalls, worstCalls }] = await Promise.all([
+    getTrainersWithMockData(),
+    getBestAndWorstCalls(),
+  ])
+
+  const trainerData = await Promise.all(
+    trainers.map(async (trainer) => {
+      const key = trainerKeyMap[trainer.id]
+      const [dimensions, recs, trends] = await Promise.all([
+        getBehavioralProfile(key),
+        getCoachingRecs(key),
+        getBehavioralTrends(key),
+      ])
+      return { trainer, key, dimensions, recs, trends }
+    })
+  )
+
   return (
     <div>
       <SectionLabel>Coaching Center</SectionLabel>
@@ -38,8 +60,7 @@ export default function CoachingPage() {
         Best calls of the week — use these as reference material in team training sessions.
       </p>
 
-      {trainers.map((trainer) => {
-        const key = trainerKeyMap[trainer.id]
+      {trainerData.map(({ trainer, key, dimensions, recs, trends }) => {
         const calls = bestCalls[key] ?? []
         const worst = worstCalls[key] ?? []
 
@@ -78,25 +99,25 @@ export default function CoachingPage() {
 
             {/* Stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <ScoreCard label="Avg Score"   value={trainer.score}           valueColor="var(--am-accent2)" deltaLabel="this week" />
-              <ScoreCard label="Close Rate"  value={`${trainer.closeRate}%`} valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel="delta" />
-              <ScoreCard label="Total Calls" value={trainer.totalCalls}      deltaLabel="all time" />
-              <ScoreCard label="This Week"   value={trainer.callsThisWeek ?? 0}            deltaLabel="calls processed" />
+              <ScoreCard label="Avg Score"   value={trainer.score}               valueColor="var(--am-accent2)" deltaLabel="this week" />
+              <ScoreCard label="Close Rate"  value={`${trainer.closeRate}%`}     valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel="delta" />
+              <ScoreCard label="Total Calls" value={trainer.totalCalls}          deltaLabel="all time" />
+              <ScoreCard label="This Week"   value={trainer.callsThisWeek ?? 0}  deltaLabel="calls processed" />
             </div>
 
             {/* Behavioral Correlation Profile */}
             <div className="mb-4">
-              <BehavioralProfile trainerKey={key} />
+              <BehavioralProfile dimensions={dimensions} />
             </div>
 
             {/* Behavioral Trends — 6 Weeks */}
             <div className="mb-4">
-              <BehavioralTrends trainerKey={key} />
+              <BehavioralTrends dimensions={trends} />
             </div>
 
             {/* AI Coaching Recommendations */}
             <div className="mb-4">
-              <CoachingRecommendations trainerKey={key} />
+              <CoachingRecommendations recs={recs} />
             </div>
 
             {/* Best Call This Week */}

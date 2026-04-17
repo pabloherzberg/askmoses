@@ -1198,6 +1198,27 @@ export const activeAlerts: ActiveAlert[] = [
   },
 ]
 
+// ─── Team Health ─────────────────────────────────────────────────────────────
+
+export type TeamHealthEntry = {
+  initials: string
+  name: string
+  avatarColor: 'blue' | 'purple' | 'green' | 'red' | 'amber'
+  calls: number
+  status: string
+  statusType: 'active' | 'recent' | 'away'
+  closeRate: number
+  delta: number
+  trend: 'up' | 'down'
+}
+
+export const teamHealth: TeamHealthEntry[] = [
+  { initials: 'MR', name: 'Marcus R.',  avatarColor: 'amber',  calls: 28, status: 'active today', statusType: 'active', closeRate: 74, delta:  9, trend: 'up'   },
+  { initials: 'JL', name: 'Jamie L.',   avatarColor: 'blue',   calls: 22, status: 'yesterday',    statusType: 'recent', closeRate: 68, delta:  4, trend: 'up'   },
+  { initials: 'JK', name: 'Jordan K.',  avatarColor: 'purple', calls: 19, status: 'active today', statusType: 'active', closeRate: 61, delta:  1, trend: 'up'   },
+  { initials: 'TM', name: 'Taylor M.',  avatarColor: 'green',  calls: 14, status: '3 days ago',   statusType: 'away',   closeRate: 55, delta: -2, trend: 'down' },
+]
+
 export const demoCredentials = [
   { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
   { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },

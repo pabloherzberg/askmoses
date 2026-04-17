@@ -1,4 +1,5 @@
 import type { Trainer, PerformanceTrendPoint } from "@/lib/types";
+import type { CallsByTrainerMap, BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
 
 const USE_MOCK = process.env.USE_MOCK_DATA !== "false";
 import { getOrgId } from "@/lib/auth";
@@ -21,6 +22,39 @@ const EMAIL_TO_MOCK_KEY: Record<string, string> = {
   "trainer2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
   "trainer3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
   "trainer4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
+}
+
+export async function getTrainersWithMockData(): Promise<Trainer[]> {
+  if (USE_MOCK) {
+    const { trainers } = await import("@/lib/mock-data");
+    return trainers;
+  }
+  return getTrainers();
+}
+
+export async function getBestAndWorstCalls(): Promise<{ bestCalls: CallsByTrainerMap; worstCalls: CallsByTrainerMap }> {
+  const { bestCalls, worstCalls } = await import("@/lib/mock-data");
+  return { bestCalls, worstCalls };
+}
+
+export async function getBehavioralProfile(trainerKey: string): Promise<BehavioralDimension[]> {
+  const { trainerBehavioral } = await import("@/lib/mock-data");
+  return trainerBehavioral[trainerKey] ?? [];
+}
+
+export async function getCoachingRecs(trainerKey: string): Promise<CoachingRec[]> {
+  const { coachingRecs } = await import("@/lib/mock-data");
+  return coachingRecs[trainerKey] ?? [];
+}
+
+export async function getBehavioralTrends(trainerKey: string): Promise<BehavioralTrendDimension[]> {
+  const { trainerTrends } = await import("@/lib/mock-data");
+  return trainerTrends[trainerKey] ?? [];
+}
+
+export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
+  const { teamHealth } = await import("@/lib/mock-data");
+  return teamHealth;
 }
 
 export async function getPerformanceTrends(

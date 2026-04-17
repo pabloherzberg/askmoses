@@ -1,10 +1,9 @@
 export const dynamic = "force-dynamic";
 
-import { getTrainers, getPerformanceTrends } from "@/lib/services/trainers";
+import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
-import { ScorePill } from "@/components/shared/ScorePill";
 import { RubricBar } from "@/components/shared/RubricBar";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
@@ -14,19 +13,6 @@ import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 
-const avatarBgMap: Record<string, string> = {
-  blue: "var(--am-blue-bg)",
-  purple: "rgba(110,86,255,0.15)",
-  green: "var(--am-green-bg)",
-  red: "var(--am-red-bg)",
-};
-
-const avatarTextMap: Record<string, string> = {
-  blue: "var(--am-blue)",
-  purple: "var(--am-accent2)",
-  green: "var(--am-green)",
-  red: "var(--am-red)",
-};
 
 export default async function OverviewPage() {
   const [
@@ -34,11 +20,13 @@ export default async function OverviewPage() {
     insights,
     { sections: rubric, trainerSectionScores },
     revenueData,
+    teamHealth,
   ] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
     getRevenueEstimator(),
+    getTeamHealth(),
   ]);
 
   const performanceTrends = await getPerformanceTrends(trainers);
@@ -106,93 +94,124 @@ export default async function OverviewPage() {
         <RubricGapDetection gaps={rubricGaps} />
       </div>
 
-      {/* ── Main grid: ranking + alerts ───────────────────────── */}
+      {/* ── Main grid: team health + alerts ──────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-4">
-        {/* Trainer ranking */}
+        {/* Team Health */}
         <div
           className="rounded-2xl p-5 border shadow-md"
           style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
-          <p
-            className="text-[13px] font-medium mb-4"
-            style={{ color: "var(--am-text)" }}
-          >
-            Sales Team Ranking
-          </p>
-          {sorted.map((trainer, i) => (
-            <div
-              key={trainer.id}
-              className="flex items-center gap-3 py-2.5"
-              style={{
-                borderBottom:
-                  i < sorted.length - 1 ? "1px solid var(--am-border)" : "none",
-              }}
+          {/* Header */}
+          <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
+            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+              Team Health
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded border"
+              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
+              mock data only
+            </span>
+          </div>
+          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
+            Who&apos;s improving · who needs attention this week
+          </p>
+
+          {/* Column headers */}
+          <div
+            className="grid mb-2"
+            style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
+          >
+            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>TRAINER</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>STATUS</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>CLOSE %</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>DELTA</span>
+            <span className="text-[10px] font-medium text-right" style={{ color: "var(--am-muted)" }}>↑↓</span>
+          </div>
+
+          {/* Rows */}
+          {teamHealth.map((entry, i) => {
+            const ringColor = entry.trend === 'up' ? 'var(--am-green)' : 'var(--am-red)'
+            const dotColor =
+              entry.statusType === 'active' ? 'var(--am-green)'
+              : entry.statusType === 'away'   ? 'var(--am-red)'
+              : 'var(--am-muted)'
+            const deltaColor = entry.delta >= 0 ? 'var(--am-green)' : 'var(--am-red)'
+            const deltaLabel = entry.delta > 0
+              ? `+${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+              : `${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+
+            const avatarBg: Record<string, string> = {
+              blue: 'var(--am-blue-bg)', purple: 'rgba(110,86,255,0.15)',
+              green: 'var(--am-green-bg)', red: 'var(--am-red-bg)', amber: 'rgba(255,171,46,0.15)',
+            }
+            const avatarText: Record<string, string> = {
+              blue: 'var(--am-blue)', purple: 'var(--am-accent2)',
+              green: 'var(--am-green)', red: 'var(--am-red)', amber: 'var(--am-amber)',
+            }
+
+            return (
               <div
-                className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono flex-shrink-0"
+                key={entry.name}
+                className="grid items-center py-2.5"
                 style={{
-                  background: avatarBgMap[trainer.avatarColor],
-                  color: avatarTextMap[trainer.avatarColor],
+                  gridTemplateColumns: "1fr auto auto auto auto",
+                  borderTop: i > 0 ? "1px solid var(--am-border)" : "none",
                 }}
               >
-                {trainer.avatar}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p
-                  className="text-[13px] font-medium truncate"
-                  style={{ color: "var(--am-text)" }}
-                >
-                  {trainer.name}
-                </p>
-                <p
-                  className="text-[11px] mt-0.5"
-                  style={{ color: "var(--am-muted)" }}
-                >
-                  {trainer.lastActive} · {trainer.totalCalls} calls
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 md:gap-3.5 flex-shrink-0">
-                <div className="text-right hidden sm:block">
-                  <div
-                    className="text-sm font-semibold font-mono"
-                    style={{ color: "var(--am-text)" }}
-                  >
-                    {trainer.closeRate}%
+                {/* Avatar + name + calls */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    <div
+                      className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono"
+                      style={{ background: avatarBg[entry.avatarColor], color: avatarText[entry.avatarColor] }}
+                    >
+                      {entry.initials}
+                    </div>
+                    <span
+                      className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                      style={{ background: ringColor, borderColor: "var(--card)" }}
+                    />
                   </div>
-                  <div
-                    className="text-[10px]"
-                    style={{ color: "var(--am-muted)" }}
-                  >
-                    close
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--am-text)" }}>
+                      {entry.name}
+                    </p>
+                    <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
+                      {entry.calls} calls
+                    </p>
                   </div>
                 </div>
-                <div className="text-right hidden sm:block">
-                  <div
-                    className="text-sm font-semibold font-mono"
-                    style={{
-                      color:
-                        trainer.closeDelta >= 0
-                          ? "var(--am-green)"
-                          : "var(--am-red)",
-                    }}
-                  >
-                    {trainer.closeDelta > 0
-                      ? `+${trainer.closeDelta}`
-                      : trainer.closeDelta}
-                  </div>
-                  <div
-                    className="text-[10px]"
-                    style={{ color: "var(--am-muted)" }}
-                  >
-                    delta
-                  </div>
+
+                {/* Status */}
+                <div className="pr-4 hidden sm:flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                  <span className="text-[12px] whitespace-nowrap" style={{ color: dotColor }}>
+                    {entry.status}
+                  </span>
                 </div>
-                <ScorePill score={trainer.score} />
+
+                {/* Close rate */}
+                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: "var(--am-text)" }}>
+                  {entry.closeRate}%
+                </span>
+
+                {/* Delta */}
+                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: deltaColor }}>
+                  {deltaLabel}
+                </span>
+
+                {/* Trend arrow */}
+                <span className="text-[16px] font-bold text-right" style={{ color: deltaColor }}>
+                  {entry.trend === 'up' ? '↑' : '↓'}
+                </span>
               </div>
-            </div>
-          ))}
+            )
+          })}
+
+          <p className="mt-3 text-[10px]" style={{ color: "var(--am-amber)" }}>
+            † green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation
+          </p>
         </div>
 
         {/* Active alerts */}
