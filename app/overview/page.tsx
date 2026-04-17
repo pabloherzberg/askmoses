@@ -90,7 +90,14 @@ export default async function OverviewPage() {
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>Team Overview</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <ScoreCard
+          label="Est. Monthly Revenue"
+          value="$18,200"
+          valueColor="var(--am-green)"
+          delta={12}
+          deltaLabel="% vs baseline"
+        />
         <ScoreCard
           label="Avg Close Rate"
           value={`${avgClose}%`}
