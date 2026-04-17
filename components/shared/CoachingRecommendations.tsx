@@ -1,4 +1,4 @@
-import { coachingRecs, type CoachingRec } from '@/lib/mock-data'
+import type { CoachingRec } from '@/lib/mock-data'
 
 const ORDER_COLORS = [
   { bg: '#FF5E5E', text: '#fff' },
@@ -17,11 +17,10 @@ const CTA_COLORS: Record<string, { color: string; border: string; bg: string }> 
 const DEFAULT_CTA = { color: 'var(--am-muted)', border: 'rgba(122,132,154,0.4)', bg: 'rgba(122,132,154,0.08)' }
 
 interface CoachingRecommendationsProps {
-  trainerKey: string
+  recs: CoachingRec[]
 }
 
-export function CoachingRecommendations({ trainerKey }: CoachingRecommendationsProps) {
-  const recs: CoachingRec[] = coachingRecs[trainerKey] ?? []
+export function CoachingRecommendations({ recs }: CoachingRecommendationsProps) {
 
   return (
     <div

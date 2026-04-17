@@ -1,11 +1,10 @@
-import { trainerBehavioral, type BehavioralDimension } from '@/lib/mock-data'
+import type { BehavioralDimension } from '@/lib/mock-data'
 
 interface BehavioralProfileProps {
-  trainerKey: string
+  dimensions: BehavioralDimension[]
 }
 
-export function BehavioralProfile({ trainerKey }: BehavioralProfileProps) {
-  const dimensions: BehavioralDimension[] = trainerBehavioral[trainerKey] ?? []
+export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
 
   return (
     <div

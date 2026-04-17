@@ -1,4 +1,4 @@
-import { trainerTrends, type BehavioralTrendDimension } from '@/lib/mock-data'
+import type { BehavioralTrendDimension } from '@/lib/mock-data'
 
 function scoreColor(score: number) {
   if (score >= 75) return 'var(--am-green)'
@@ -46,11 +46,10 @@ function Sparkline({ trend }: { trend: number[] }) {
 }
 
 interface Props {
-  trainerKey: string
+  dimensions: BehavioralTrendDimension[]
 }
 
-export function BehavioralTrends({ trainerKey }: Props) {
-  const dimensions: BehavioralTrendDimension[] = trainerTrends[trainerKey] ?? []
+export function BehavioralTrends({ dimensions }: Props) {
 
   return (
     <div
