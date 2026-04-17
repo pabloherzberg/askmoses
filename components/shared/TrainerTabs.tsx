@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { bestCalls, worstCalls, trainers } from '@/lib/mock-data'
+import { useState, useEffect } from 'react'
+import type { Trainer, CallsByTrainerMap } from '@/lib/types'
+import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
+import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallCard } from '@/components/shared/CallCard'
@@ -14,36 +16,34 @@ const trainerKeyMap: Record<string, string> = {
   '00000000-0000-0000-0000-000000000304': 'taylor',
 }
 
-const avatarBgMap: Record<string, string> = {
-  blue:   'rgba(94,179,255,0.15)',
-  purple: 'rgba(110,86,255,0.15)',
-  green:  'rgba(34,217,160,0.15)',
-  red:    'rgba(255,94,94,0.15)',
-  amber:  'rgba(255,171,46,0.15)',
-}
-
-const avatarTextMap: Record<string, string> = {
-  blue:   'var(--am-blue)',
-  purple: 'var(--am-accent2)',
-  green:  'var(--am-green)',
-  red:    'var(--am-red)',
-  amber:  'var(--am-amber)',
-}
-
-const TAB_LABELS: Record<string, string> = {
-  '00000000-0000-0000-0000-000000000301': 'Marcus',
-  '00000000-0000-0000-0000-000000000302': 'Jamie',
-  '00000000-0000-0000-0000-000000000303': 'Jordan',
-  '00000000-0000-0000-0000-000000000304': 'Taylor',
-}
-
 export function TrainerTabs() {
-  const [activeId, setActiveId] = useState(trainers[0].id)
+  const [trainers, setTrainers] = useState<Trainer[]>([])
+  const [bestCalls, setBestCalls] = useState<CallsByTrainerMap>({})
+  const [worstCalls, setWorstCalls] = useState<CallsByTrainerMap>({})
+  const [behavioral, setBehavioral] = useState<Record<string, BehavioralDimension[]>>({})
+  const [recs, setRecs] = useState<Record<string, CoachingRec[]>>({})
+  const [activeId, setActiveId] = useState<string>('')
+
+  useEffect(() => {
+    fetch('/api/coaching')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (!data) return
+        setTrainers(data.trainers)
+        setBestCalls(data.bestCalls)
+        setWorstCalls(data.worstCalls)
+        setBehavioral(data.trainerBehavioral)
+        setRecs(data.coachingRecs)
+        setActiveId(data.trainers[0]?.id ?? '')
+      })
+  }, [])
+
+  if (!activeId || trainers.length === 0) return null
 
   const trainer = trainers.find((t) => t.id === activeId)!
-  const key = trainerKeyMap[trainer.id]
-  const calls = bestCalls[key] ?? []
-  const worst = worstCalls[key] ?? []
+  const trainerKey = trainerKeyMap[trainer.id]
+  const calls = bestCalls[trainerKey] ?? []
+  const worst = worstCalls[trainerKey] ?? []
 
   return (
     <div>
@@ -57,6 +57,7 @@ export function TrainerTabs() {
           return (
             <button
               key={t.id}
+              type="button"
               onClick={() => setActiveId(t.id)}
               className="px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150"
               style={{
@@ -64,7 +65,7 @@ export function TrainerTabs() {
                 color: isActive ? '#fff' : 'var(--am-muted)',
               }}
             >
-              {TAB_LABELS[t.id]}
+              {t.name.split(' ')[0]}
             </button>
           )
         })}
@@ -72,15 +73,7 @@ export function TrainerTabs() {
 
       {/* Trainer header */}
       <div className="flex items-center gap-3 mb-4">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold font-mono flex-shrink-0"
-          style={{
-            background: avatarBgMap[trainer.avatarColor],
-            color: avatarTextMap[trainer.avatarColor],
-          }}
-        >
-          {trainer.avatar}
-        </div>
+        <TrainerAvatar initials={trainer.avatar} color={trainer.avatarColor} size="md" />
         <div className="flex-1 min-w-0">
           <p className="text-[14px] font-semibold" style={{ color: 'var(--am-text)' }}>
             {trainer.name}
@@ -111,12 +104,12 @@ export function TrainerTabs() {
 
       {/* Behavioral Correlation Profile */}
       <div className="mb-4">
-        <BehavioralProfile trainerKey={key} />
+        <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} />
       </div>
 
       {/* AI Coaching Recommendations */}
       <div className="mb-4">
-        <CoachingRecommendations trainerKey={key} />
+        <CoachingRecommendations recs={recs[trainerKey] ?? []} />
       </div>
 
       {/* Best Call This Week */}

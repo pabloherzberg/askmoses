@@ -1,11 +1,10 @@
-import { trainerBehavioral, type BehavioralDimension } from '@/lib/mock-data'
+import type { BehavioralDimension } from '@/lib/mock-data'
 
 interface BehavioralProfileProps {
-  trainerKey: string
+  dimensions: BehavioralDimension[]
 }
 
-export function BehavioralProfile({ trainerKey }: BehavioralProfileProps) {
-  const dimensions: BehavioralDimension[] = trainerBehavioral[trainerKey] ?? []
+export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
 
   return (
     <div
@@ -46,8 +45,7 @@ export function BehavioralProfile({ trainerKey }: BehavioralProfileProps) {
       </div>
 
       {/* Column headers */}
-      <div className="grid items-center mb-2" style={{ gridTemplateColumns: '10rem 1fr 3.5rem 3.5rem 3.5rem' }}>
-        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>Dimension</span>
+      <div className="grid items-center mb-2" style={{ gridTemplateColumns: '1fr 3.5rem 3.5rem 3.5rem' }}>
         <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>Score vs team avg</span>
         <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>Score</span>
         <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>Delta</span>
@@ -64,56 +62,63 @@ export function BehavioralProfile({ trainerKey }: BehavioralProfileProps) {
           const barWidth = `${dim.score}%`
 
           return (
-            <div
-              key={dim.dimension}
-              className="grid items-center"
-              style={{ gridTemplateColumns: '10rem 1fr 3.5rem 3.5rem 3.5rem' }}
-            >
-              {/* Dimension name */}
+            <div key={dim.dimension}>
+              {/* Dimension name — full width on mobile only */}
               <span
-                className="text-[12px] font-medium truncate pr-2"
+                className="block sm:hidden text-[11px] font-medium mb-1"
                 style={{ color: 'var(--am-text)' }}
               >
                 {dim.dimension}
               </span>
 
-              {/* Bar track */}
-              <div className="relative h-3 rounded-full mr-3" style={{ background: 'var(--am-bg4)' }}>
-                {/* Score bar */}
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full transition-all"
-                  style={{ width: barWidth, background: barColor, opacity: 0.85 }}
-                />
-                {/* Team avg marker */}
-                <div
-                  className="absolute top-0 h-full w-px"
-                  style={{ left: markerPct, background: 'var(--am-muted)', zIndex: 1 }}
-                />
+              <div
+                className="grid items-center"
+                style={{ gridTemplateColumns: '1fr 3.5rem 3.5rem 3.5rem' }}
+              >
+                {/* Bar track (with label on sm+) */}
+                <div className="flex flex-col gap-1 min-w-0 mr-3">
+                  <span
+                    className="hidden sm:block text-[12px] font-medium truncate"
+                    style={{ color: 'var(--am-text)' }}
+                  >
+                    {dim.dimension}
+                  </span>
+                  <div className="relative h-3 rounded-full" style={{ background: 'var(--am-bg4)' }}>
+                    <div
+                      className="absolute left-0 top-0 h-full rounded-full transition-all"
+                      style={{ width: barWidth, background: barColor, opacity: 0.85 }}
+                    />
+                    <div
+                      className="absolute top-0 h-full w-px"
+                      style={{ left: markerPct, background: 'var(--am-muted)', zIndex: 1 }}
+                    />
+                  </div>
+                </div>
+
+                {/* Score */}
+                <span
+                  className="text-[12px] font-mono font-semibold text-right"
+                  style={{ color: 'var(--am-text)' }}
+                >
+                  {dim.score}
+                </span>
+
+                {/* Delta */}
+                <span
+                  className="text-[12px] font-mono font-semibold text-right"
+                  style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-amber)' }}
+                >
+                  {isAbove ? `+${dim.delta}` : dim.delta}
+                </span>
+
+                {/* Team avg */}
+                <span
+                  className="text-[12px] font-mono text-right"
+                  style={{ color: 'var(--am-muted)' }}
+                >
+                  {dim.teamAvg}
+                </span>
               </div>
-
-              {/* Score */}
-              <span
-                className="text-[12px] font-mono font-semibold text-right"
-                style={{ color: 'var(--am-text)' }}
-              >
-                {dim.score}
-              </span>
-
-              {/* Delta */}
-              <span
-                className="text-[12px] font-mono font-semibold text-right"
-                style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-amber)' }}
-              >
-                {isAbove ? `+${dim.delta}` : dim.delta}
-              </span>
-
-              {/* Team avg */}
-              <span
-                className="text-[12px] font-mono text-right"
-                style={{ color: 'var(--am-muted)' }}
-              >
-                {dim.teamAvg}
-              </span>
             </div>
           )
         })}

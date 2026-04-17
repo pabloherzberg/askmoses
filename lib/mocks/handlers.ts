@@ -6,6 +6,10 @@ import {
   globalMetrics,
   supabaseCalls,
   demoCredentials,
+  bestCalls,
+  worstCalls,
+  trainerBehavioral,
+  coachingRecs,
 } from '@/lib/mock-data'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -84,6 +88,11 @@ const apiHandlers = [
   // GET /api/clients
   http.get('/api/clients', () => {
     return ok({ clients, metrics: globalMetrics })
+  }),
+
+  // GET /api/coaching — trainers + bestCalls + worstCalls + behavioral para o Coaching Center
+  http.get('/api/coaching', () => {
+    return ok({ trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs })
   }),
 
   // GET /api/rubric — delegado para API route real (Supabase)

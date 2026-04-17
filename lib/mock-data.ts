@@ -1133,6 +1133,92 @@ export const trainerBehavioral: Record<string, BehavioralDimension[]> = {
   ],
 }
 
+// ─── Behavioral Trends — 6 Weeks ─────────────────────────────────────────────
+
+export type BehavioralTrendDimension = {
+  dimension: string
+  trend: number[]
+  currentScore: number
+}
+
+export const trainerTrends: Record<string, BehavioralTrendDimension[]> = {
+  marcus: [
+    { dimension: 'Objection Handling', trend: [72, 78, 82, 86, 90, 94], currentScore: 94 },
+    { dimension: 'Assertiveness',      trend: [68, 73, 77, 83, 87, 91], currentScore: 91 },
+    { dimension: 'Empathy',            trend: [72, 69, 64, 61, 63, 65], currentScore: 65 },
+    { dimension: 'Tone & Energy',      trend: [60, 64, 68, 71, 75, 78], currentScore: 78 },
+  ],
+  jamie: [
+    { dimension: 'Objection Handling', trend: [68, 71, 74, 76, 79, 81], currentScore: 81 },
+    { dimension: 'Assertiveness',      trend: [63, 67, 70, 74, 77, 79], currentScore: 79 },
+    { dimension: 'Empathy',            trend: [71, 73, 76, 78, 79, 80], currentScore: 80 },
+    { dimension: 'Tone & Energy',      trend: [66, 69, 71, 72, 73, 74], currentScore: 74 },
+  ],
+  jordan: [
+    { dimension: 'Objection Handling', trend: [74, 72, 70, 68, 66, 65], currentScore: 65 },
+    { dimension: 'Assertiveness',      trend: [68, 66, 64, 62, 61, 60], currentScore: 60 },
+    { dimension: 'Empathy',            trend: [67, 68, 70, 71, 72, 72], currentScore: 72 },
+    { dimension: 'Tone & Energy',      trend: [74, 72, 71, 70, 69, 68], currentScore: 68 },
+  ],
+  taylor: [
+    { dimension: 'Objection Handling', trend: [68, 65, 62, 59, 57, 55], currentScore: 55 },
+    { dimension: 'Assertiveness',      trend: [60, 58, 56, 54, 53, 52], currentScore: 52 },
+    { dimension: 'Empathy',            trend: [62, 63, 64, 65, 66, 66], currentScore: 66 },
+    { dimension: 'Tone & Energy',      trend: [68, 66, 64, 63, 62, 61], currentScore: 61 },
+  ],
+}
+
+// ─── Active Alerts ────────────────────────────────────────────────────────────
+
+export type ActiveAlert = {
+  type: 'critical' | 'warning' | 'positive'
+  dotColor: 'red' | 'amber' | 'green'
+  message: string
+  cta: string
+}
+
+export const activeAlerts: ActiveAlert[] = [
+  {
+    type: 'critical',
+    dotColor: 'red',
+    message: "Taylor's score dropped 12pts this week",
+    cta: 'Review calls',
+  },
+  {
+    type: 'warning',
+    dotColor: 'amber',
+    message: '3 trainers skipping objection handling',
+    cta: 'Train now',
+  },
+  {
+    type: 'positive',
+    dotColor: 'green',
+    message: 'Close rate up 7pts in 6 weeks',
+    cta: 'Celebrate',
+  },
+]
+
+// ─── Team Health ─────────────────────────────────────────────────────────────
+
+export type TeamHealthEntry = {
+  initials: string
+  name: string
+  avatarColor: 'blue' | 'purple' | 'green' | 'red' | 'amber'
+  calls: number
+  status: string
+  statusType: 'active' | 'recent' | 'away'
+  closeRate: number
+  delta: number
+  trend: 'up' | 'down'
+}
+
+export const teamHealth: TeamHealthEntry[] = [
+  { initials: 'MR', name: 'Marcus R.',  avatarColor: 'amber',  calls: 28, status: 'active today', statusType: 'active', closeRate: 74, delta:  9, trend: 'up'   },
+  { initials: 'JL', name: 'Jamie L.',   avatarColor: 'blue',   calls: 22, status: 'yesterday',    statusType: 'recent', closeRate: 68, delta:  4, trend: 'up'   },
+  { initials: 'JK', name: 'Jordan K.',  avatarColor: 'purple', calls: 19, status: 'active today', statusType: 'active', closeRate: 61, delta:  1, trend: 'up'   },
+  { initials: 'TM', name: 'Taylor M.',  avatarColor: 'green',  calls: 14, status: '3 days ago',   statusType: 'away',   closeRate: 55, delta: -2, trend: 'down' },
+]
+
 export const demoCredentials = [
   { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
   { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },
