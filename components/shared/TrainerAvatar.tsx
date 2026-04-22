@@ -6,6 +6,7 @@ const colorMap: Record<AvatarColor, { bg: string; text: string }> = {
   purple: { bg: 'rgba(110,86,255,0.2)',   text: 'var(--am-accent2)' },
   green:  { bg: 'rgba(34,217,160,0.15)',  text: 'var(--am-green)' },
   red:    { bg: 'rgba(255,94,94,0.15)',   text: 'var(--am-red)' },
+  amber:  { bg: 'rgba(255,171,46,0.15)', text: 'var(--am-amber)' },
 }
 
 const sizeMap = {

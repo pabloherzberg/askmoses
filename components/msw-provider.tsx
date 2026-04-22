@@ -7,6 +7,11 @@ export function MSWProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function init() {
+      if (process.env.NODE_ENV !== 'development') {
+        setReady(true)
+        return
+      }
+
       try {
         const { worker } = await import('@/lib/mocks/browser')
         await worker.start({

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# Branches especiais que sempre passam
+ALLOWED_BRANCHES=("main" "master" "dev" "develop" "HEAD")
+
+for allowed in "${ALLOWED_BRANCHES[@]}"; do
+  if [ "$BRANCH" = "$allowed" ]; then
+    exit 0
+  fi
+done
+
+# Validar padrão: feature/, fix/ ou bug/ seguido de ao menos um caractere
+if ! echo "$BRANCH" | grep -qE '^(feature|fix|bug)/.+'; then
+  echo ""
+  echo "❌ COMMIT BLOQUEADO"
+  echo ""
+  echo "   Branch atual: \"$BRANCH\""
+  echo ""
+  echo "   O nome da branch deve seguir um dos padrões:"
+  echo "     feature/<nome>   ex: feature/login-page"
+  echo "     fix/<nome>       ex: fix/auth-redirect"
+  echo "     bug/<nome>       ex: bug/score-overflow"
+  echo ""
+  echo "   Renomeie a branch com:"
+  echo "     git branch -m $BRANCH feature/<nome>"
+  echo ""
+  exit 1
+fi
+
+exit 0

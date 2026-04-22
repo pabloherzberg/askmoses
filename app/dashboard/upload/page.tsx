@@ -36,12 +36,12 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react"
+import type { CallResult as CallOutcome, Trainer } from "@/lib/types"
 
 type UploadStep = "input" | "processing" | "results" | "sending" | "complete"
 
-type CallOutcome = "closed" | "follow_up" | "objection_unresolved" | "no_decision"
-
 interface FormData {
+  trainerId: string
   trainerName: string
   trainerEmail: string
   clientName: string
@@ -81,6 +81,7 @@ export default function UploadPage() {
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
   const [progress, setProgress] = useState(0)
   const [formData, setFormData] = useState<FormData>({
+    trainerId: "",
     trainerName: "",
     trainerEmail: "",
     clientName: "",
@@ -94,17 +95,39 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [scripts, setScripts] = useState<Script[]>([])
+  const [trainers, setTrainers] = useState<Trainer[]>([])
   const [loading, setLoading] = useState(true)
+  const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
-    async function fetchScripts() {
-      const res = await fetch("/api/scripts?active=true")
-      const { data } = (await res.json()) as { data: { id: string; name: string; description: string }[] | null; error: unknown }
-      if (data) setScripts(data)
+    async function init() {
+      const [scriptsRes, meRes] = await Promise.all([
+        fetch("/api/scripts?active=true"),
+        fetch("/api/me"),
+      ])
+
+      const { data: scriptsData } = (await scriptsRes.json()) as { data: { id: string; name: string; description: string }[] | null; error: unknown }
+      if (scriptsData) setScripts(scriptsData)
+
+      const { data: meData } = (await meRes.json()) as { data: { id: string; email: string | null; role: string; name: string; trainerId: string | null } | null; error: unknown }
+      if (meData?.role === 'trainer') {
+        setIsTrainer(true)
+        setFormData((prev) => ({
+          ...prev,
+          trainerEmail: meData.email ?? '',
+          trainerName: meData.name ?? '',
+        }))
+      } else {
+        // Owner/admin: fetch trainers list for the select
+        const trainersRes = await fetch("/api/trainers")
+        const { data: trainersData } = (await trainersRes.json()) as { data: { trainers: Trainer[] } | null; error: unknown }
+        if (trainersData?.trainers) setTrainers(trainersData.trainers)
+      }
+
       setLoading(false)
     }
 
-    fetchScripts()
+    init()
   }, [])
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
@@ -142,7 +165,9 @@ export default function UploadPage() {
   }
 
   const isFormValid = () => {
-    const hasTrainerInfo = formData.trainerName && formData.trainerEmail
+    const hasTrainerInfo = isTrainer
+      ? !!formData.trainerName
+      : !!formData.trainerId
     const hasContent =
       uploadType === "audio" ? formData.audioFile : formData.transcript.trim()
     return hasTrainerInfo && hasContent
@@ -233,7 +258,10 @@ export default function UploadPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transcript,
+          trainerId: formData.trainerId || undefined,
           trainerName: formData.trainerName,
+          trainerEmail: formData.trainerEmail,
+          clientName: formData.clientName,
           scriptId: formData.scriptId,
           callOutcome: formData.callOutcome,
         }),
@@ -315,6 +343,7 @@ export default function UploadPage() {
     setAnalysisResult(null)
     setError(null)
     setFormData({
+      trainerId: "",
       trainerName: "",
       trainerEmail: "",
       clientName: "",
@@ -397,7 +426,22 @@ export default function UploadPage() {
                  analysisResult.overallScore >= 40 ? "Needs Work" : "Critical"}
               </Badge>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Average of section scores (1–5 scale) × 20</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>Average of section scores (0–5 scale) × 20</span>
+              {analysisResult.detectedOutcome && (() => {
+                const outcomeLabels: Record<string, { label: string; cap: number; note: string }> = {
+                  closed:               { label: 'Closed',              cap: 100, note: 'Deal was closed — full score range available.' },
+                  follow_up:            { label: 'Follow-up',           cap: 80,  note: 'No close secured — score capped at 80.' },
+                  objection_unresolved: { label: 'Objection Unresolved',cap: 60,  note: 'Objection was not overcome — score capped at 60.' },
+                  no_decision:          { label: 'No Decision',         cap: 50,  note: 'Prospect left without a decision — score capped at 50.' },
+                }
+                const info = outcomeLabels[analysisResult.detectedOutcome!] ?? { label: analysisResult.detectedOutcome, cap: 100, note: '' }
+                return (
+                  <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium" title={info.note}>
+                    Outcome: {info.label} · Max {info.cap}/100
+                  </span>
+                )
+              })()}</div>
           </CardContent>
         </Card>
 
@@ -410,27 +454,29 @@ export default function UploadPage() {
           <CardContent className="space-y-4">
             {(analysisResult.sections || analysisResult.criteria).map((section, index) => {
               const score = section.score ?? 0
-              const pct = ((score - 1) / 4) * 100
-              const color = score >= 5 ? "text-green-700 bg-green-50 border-green-200" :
-                            score >= 4 ? "text-blue-700 bg-blue-50 border-blue-200" :
-                            score >= 3 ? "text-amber-700 bg-amber-50 border-amber-200" :
+              const pct = (score / 5) * 100
+              const color = score >= 4.5 ? "text-green-700 bg-green-50 border-green-200" :
+                            score >= 3.5 ? "text-blue-700 bg-blue-50 border-blue-200" :
+                            score >= 2.5 ? "text-amber-700 bg-amber-50 border-amber-200" :
                             "text-red-700 bg-red-50 border-red-200"
-              const barColor = score >= 5 ? "bg-green-500" :
-                               score >= 4 ? "bg-blue-500" :
-                               score >= 3 ? "bg-amber-500" : "bg-red-500"
-              const label = score >= 5 ? "Excellent" : score >= 4 ? "Strong" : score >= 3 ? "Adequate" : score >= 2 ? "Needs Work" : "Not Attempted"
+              const barColor = score >= 4.5 ? "bg-green-500" :
+                               score >= 3.5 ? "bg-blue-500" :
+                               score >= 2.5 ? "bg-amber-500" : "bg-red-500"
+              const label = score >= 4.5 ? "Excellent" : score >= 3.5 ? "Strong" : score >= 2.5 ? "Adequate" : score >= 1.5 ? "Needs Work" : "Not Attempted"
               return (
                 <div key={index} className={`rounded-lg border p-4 ${color}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold">{section.name}</span>
-                    <Badge variant="outline" className="font-bold text-sm">
+                    <span className="font-semibold text-base">{section.name}</span>
+                    <Badge variant="outline" className="font-bold text-sm shrink-0 ml-2">
                       {score}/5 — {label}
                     </Badge>
                   </div>
                   <div className="h-2 rounded-full bg-black/10 mb-3">
                     <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="text-sm opacity-80">{section.feedback}</p>
+                  {section.feedback && (
+                    <p className="text-sm opacity-80 leading-relaxed">{section.feedback}</p>
+                  )}
                 </div>
               )
             })}
@@ -571,41 +617,46 @@ export default function UploadPage() {
         {/* Trainer Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Trainer Information</CardTitle>
+            <CardTitle>Sales Person Information</CardTitle>
             <CardDescription>
               Who should receive the coaching email?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="trainerName">Trainer Name</Label>
-              <Input
-                id="trainerName"
-                placeholder="e.g., John Smith"
-                value={formData.trainerName}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    trainerName: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="trainerEmail">Trainer Email</Label>
-              <Input
-                id="trainerEmail"
-                type="email"
-                placeholder="e.g., john@example.com"
-                value={formData.trainerEmail}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    trainerEmail: e.target.value,
-                  }))
-                }
-              />
-            </div>
+            {isTrainer ? (
+              <div className="space-y-2">
+                <Label>Sales Person</Label>
+                <Input value={formData.trainerName} disabled />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="trainerId">Sales Person</Label>
+                <Select
+                  value={formData.trainerId}
+                  onValueChange={(value) => {
+                    const trainer = trainers.find((t) => t.id === value)
+                    if (!trainer) return
+                    setFormData((prev) => ({
+                      ...prev,
+                      trainerId: trainer.id,
+                      trainerName: trainer.name,
+                      trainerEmail: trainer.email ?? '',
+                    }))
+                  }}
+                >
+                  <SelectTrigger id="trainerId">
+                    <SelectValue placeholder="Select a trainer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainers.map((trainer) => (
+                      <SelectItem key={trainer.id} value={trainer.id}>
+                        {trainer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="clientName">Client Name</Label>
               <Input

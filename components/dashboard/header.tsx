@@ -52,9 +52,9 @@ export function DashboardHeader() {
   const title = pageTitles[pathname] || "Dashboard"
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    document.cookie = 'demo-role=; path=/; max-age=0'
-    document.cookie = 'demo-trainer-id=; path=/; max-age=0'
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+    await supabase.auth.signOut()
     router.push('/login')
   }
 

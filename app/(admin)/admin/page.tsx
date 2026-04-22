@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
@@ -70,7 +72,7 @@ export default async function AdminPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--am-border)' }}>
-                {['Client', 'Plan', 'Trainers', 'Calls / mo', 'Avg Score', 'MRR', 'Health'].map((h) => (
+                {['Client', 'Plan', 'Sales People', 'Calls / mo', 'Avg Score', 'MRR', 'Health'].map((h) => (
                   <th
                     key={h}
                     className="text-[11px] font-medium text-left px-5 py-3"

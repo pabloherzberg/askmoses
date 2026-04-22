@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
 import { getSession } from '@/lib/auth'
 import { getScripts } from '@/lib/services/scripts'
+import { dbCreateScript } from '@/lib/db/scripts'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -20,13 +21,16 @@ export async function POST(request: NextRequest) {
   if (!session) return unauthorized()
 
   const body = await request.json() as Record<string, unknown>
-  // Fase 1 — mock create (não persiste)
-  const newScript = {
-    id: `script-${Date.now()}`,
-    created_at: new Date().toISOString(),
-    is_active: true,
-    rubric_id: 'rubric-001',
-    ...body,
-  }
+
+  const newScript = await dbCreateScript({
+    rubricId: body.rubric_id as string,
+    name: body.name as string,
+    description: body.description as string | undefined,
+    sections: (body.sections as { name: string; instructions: string; tips: string }[]) ?? [],
+    full_script: body.full_script as string | undefined,
+    criteria: (body.criteria as { name: string; description: string }[]) ?? [],
+    isActive: body.is_active as boolean | undefined,
+  })
+
   return ok(newScript)
 }

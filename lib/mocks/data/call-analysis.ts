@@ -1,3 +1,5 @@
+import type { AnalyzeResult } from '@/app/api/analyze/route'
+
 /**
  * Mock data for POST /api/analyze (individual call analysis).
  * In Phase 2 this will be replaced by a real GPT-4o call.
@@ -181,6 +183,35 @@ export const mockGeneratedScript = {
     { name: 'Clear Next Steps', description: 'Call ends with clear commitment' },
   ],
   explanation: 'Script generated based on the best practices identified in the provided transcripts.',
+}
+
+export function buildMockAnalysis(): AnalyzeResult {
+  const criteriaScores = [
+    { criterionId: 'discovery', criterionName: 'Discovery', score: 82, justification: 'Good open-ended questions, identified the main pain point.' },
+    { criterionId: 'problem-agitation', criterionName: 'Problem Agitation', score: 71, justification: 'Mentioned impacts but did not go deep enough.' },
+    { criterionId: 'offer-presentation', criterionName: 'Offer Presentation', score: 79, justification: 'Clear presentation but loosely connected to the identified pain.' },
+    { criterionId: 'objection-handling', criterionName: 'Objection Handling', score: 75, justification: 'Handled the price objection but conceded too quickly.' },
+    { criterionId: 'close', criterionName: 'Close & Next Steps', score: 80, justification: 'Next steps defined with a date, but without urgency.' },
+  ]
+  return {
+    overallScore: 78,
+    detectedOutcome: 'follow-up',
+    summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The trainer showed solid product knowledge but needs to deepen problem agitation.',
+    strengths: [
+      'Discovery correctly identified the real pain of the prospect',
+      'Maintained prospect engagement throughout the call',
+      'Follow-up scheduled with a specific date and time',
+    ],
+    improvements: [
+      'Identify co-decision makers earlier in discovery',
+      'Deepen problem agitation to create more urgency',
+      'Practice direct closing techniques',
+    ],
+    criteriaScores,
+    criteria: criteriaScores,
+    sections: criteriaScores,
+    transcript: '',
+  }
 }
 
 export const mockGeneratedCriteria = {

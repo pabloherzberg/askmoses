@@ -7,24 +7,27 @@ import type {
   TrendPoint,
   GlobalMetrics,
   Role,
+  RevenueEstimatorItem,
+  PerformanceTrendPoint,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
 
 export const trainers: Trainer[] = [
   {
-    id: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000301',
     name: 'Marcus R.',
     avatar: 'MR',
-    avatarColor: 'blue',
+    avatarColor: 'amber',
     role: 'trainer',
-    totalCalls: 28,
-    closeRate: 74,
-    closeDelta: 9,
+    totalCalls: 47,
+    callsThisWeek: 6,
+    closeRate: 68,
+    closeDelta: 5,
     score: 91,
     scoreDelta: 11,
-    lastActive: 'Active today',
-    ownerId: 'owner-1',
+    lastActive: '4/10/2026',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 94,
       problemAgitation: 89,
@@ -34,18 +37,19 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000302',
     name: 'Jamie L.',
     avatar: 'JL',
     avatarColor: 'purple',
     role: 'trainer',
     totalCalls: 22,
+    callsThisWeek: 4,
     closeRate: 68,
     closeDelta: 4,
     score: 87,
     scoreDelta: 7,
     lastActive: 'Yesterday',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 88,
       problemAgitation: 88,
@@ -55,18 +59,19 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000303',
     name: 'Jordan K.',
     avatar: 'JK',
     avatarColor: 'green',
     role: 'trainer',
     totalCalls: 19,
+    callsThisWeek: 3,
     closeRate: 61,
     closeDelta: 1,
     score: 79,
     scoreDelta: 3,
     lastActive: 'Active today',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 79,
       problemAgitation: 61,
@@ -76,18 +81,19 @@ export const trainers: Trainer[] = [
     },
   },
   {
-    id: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000304',
     name: 'Taylor M.',
     avatar: 'TM',
     avatarColor: 'red',
     role: 'trainer',
     totalCalls: 14,
+    callsThisWeek: 2,
     closeRate: 55,
     closeDelta: -2,
     score: 74,
     scoreDelta: -12,
     lastActive: '3 days ago',
-    ownerId: 'owner-1',
+    ownerId: '00000000-0000-0000-0000-000000000100',
     rubricScores: {
       discovery: 67,
       problemAgitation: 58,
@@ -103,8 +109,8 @@ export const trainers: Trainer[] = [
 export const calls: Call[] = [
   // Marcus R. — 7 calls, mostly closed
   {
-    id: 'call-001',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000601',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-22',
     duration: '38min',
@@ -124,8 +130,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Hi Bob, thanks for making time today. Before anything else, tell me — what\'s going on with Rex that brought you to us?\nBob: Man, he just doesn\'t listen to anything. We can barely leave the house with him.\nMarcus: I get it. When you say he doesn\'t listen — give me a concrete example from recently.\nBob: Last week he escaped the yard for the third time. We spent two hours looking for him in the neighborhood.\nMarcus: Wow, that must\'ve been terrifying. Does this affect your daily life beyond the safety concern?\nBob: Absolutely. My daughter is scared to play with him now, and my wife said if it doesn\'t get fixed, we\'ll have to rehome him.\nMarcus: I understand the gravity of that. Before I show you what we do — have you tried anything before? Group classes, YouTube, another trainer?\n...',
   },
   {
-    id: 'call-002',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000602',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-20',
     duration: '42min',
@@ -145,8 +151,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Sarah, tell me a bit about Thor. What motivated you to reach out today?\nSarah: He\'s destroying everything at home when we leave. Sofa, baseboards, he was even scratching the door...\nMarcus: How long has this been going on?\nSarah: Since we went back to working in-office, about 4 months or so.\n...',
   },
   {
-    id: 'call-003',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000603',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-18',
     duration: '35min',
@@ -165,8 +171,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Mike, what\'s going on with Bolt?\nMike: He pulls the leash like crazy. I walk crooked from holding him so tight. I\'m embarrassed to take him to the park...\n...',
   },
   {
-    id: 'call-004',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000604',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-15',
     duration: '45min',
@@ -183,8 +189,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Linda, how old is Bella now?\nLinda: Almost 8 months. And she\'s already too big for us to hold when she gets hyper...\n...',
   },
   {
-    id: 'call-005',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000605',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-12',
     duration: '30min',
@@ -201,13 +207,13 @@ export const calls: Call[] = [
     transcript: 'Marcus: Tom, first of all — do you already know our method or are you coming in fresh?\nTom: I\'ve done a lot of research. Saw the testimonials on Instagram. Just want to know how it works in practice.\n...',
   },
   {
-    id: 'call-006',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000606',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-09',
     duration: '28min',
     score: 85,
-    result: 'follow-up',
+    result: 'follow_up',
     prospect: 'Amy C.',
     rubricScores: { discovery: 93, problemAgitation: 88, offerPresentation: 90, objectionHandling: 76, closeAndNextSteps: 83 },
     feedback: 'Excellent discovery and presentation. The call didn\'t close because Amy needed to confirm schedule availability with her husband — follow-up booked for 2 days out.',
@@ -219,8 +225,8 @@ export const calls: Call[] = [
     transcript: 'Marcus: Amy, tell me — when you picture Duke fully trained, how do you see your day-to-day looking different?\nAmy: It would be amazing. We could take him anywhere without stress...\n...',
   },
   {
-    id: 'call-007',
-    trainerId: 'trainer-marcus',
+    id: '00000000-0000-0000-0000-000000000607',
+    trainerId: '00000000-0000-0000-0000-000000000301',
     trainerName: 'Marcus R.',
     date: '2026-03-06',
     duration: '40min',
@@ -239,8 +245,8 @@ export const calls: Call[] = [
 
   // Jamie L. — 5 calls
   {
-    id: 'call-008',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000608',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-21',
     duration: '35min',
@@ -257,8 +263,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Diana, what happens at your house when you need to have guests over?\nDiana: It\'s chaos. Toby barks and jumps on everyone. I even stopped having my mom over because of it...\nJamie: How long has this been going on?\nDiana: Over a year. I\'m exhausted...\n...',
   },
   {
-    id: 'call-009',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000609',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-19',
     duration: '32min',
@@ -275,13 +281,13 @@ export const calls: Call[] = [
     transcript: 'Jamie: Robert, when you say Luna "doesn\'t focus" — describe a specific situation from last week.\nRobert: Just yesterday. I tried teaching "sit" for half an hour. She knows how to do it, but ignores me when she wants...\n...',
   },
   {
-    id: 'call-010',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000610',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-16',
     duration: '38min',
     score: 82,
-    result: 'follow-up',
+    result: 'follow_up',
     prospect: 'Karen H.',
     rubricScores: { discovery: 87, problemAgitation: 85, offerPresentation: 82, objectionHandling: 78, closeAndNextSteps: 80 },
     feedback: 'Good call. Karen is a shared decision-maker with her husband and Jamie identified this halfway through — follow-up to include him.',
@@ -293,8 +299,8 @@ export const calls: Call[] = [
     transcript: 'Jamie: Karen, what made you decide to look for a professional trainer now?\nKaren: My husband was reluctant, but after Buddy scratched the child, we agreed we needed help...\n...',
   },
   {
-    id: 'call-011',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000611',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-13',
     duration: '25min',
@@ -308,13 +314,13 @@ export const calls: Call[] = [
     transcript: 'Jamie: Steve, quick question — what would change in your routine if Rocky was fully obedient in the first 3 months?\nSteve: Mainly the runs. He has potential but doesn\'t focus...\n...',
   },
   {
-    id: 'call-012',
-    trainerId: 'trainer-jamie',
+    id: '00000000-0000-0000-0000-000000000612',
+    trainerId: '00000000-0000-0000-0000-000000000302',
     trainerName: 'Jamie L.',
     date: '2026-03-10',
     duration: '42min',
     score: 75,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'Nancy W.',
     rubricScores: { discovery: 85, problemAgitation: 80, offerPresentation: 78, objectionHandling: 62, closeAndNextSteps: 70 },
     feedback: 'Discovery and agitation well done, but Jamie couldn\'t overcome the price objection effectively. Nancy left without buying and without a clear next step.',
@@ -328,13 +334,13 @@ export const calls: Call[] = [
 
   // Jordan K. — 5 calls
   {
-    id: 'call-013',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000613',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-22',
     duration: '28min',
     score: 81,
-    result: 'follow-up',
+    result: 'follow_up',
     prospect: 'Peter G.',
     rubricScores: { discovery: 82, problemAgitation: 65, offerPresentation: 83, objectionHandling: 70, closeAndNextSteps: 68 },
     feedback: 'Reasonable discovery. Jordan identified the problem but moved too quickly to the offer presentation. Problem agitation was superficial.',
@@ -346,8 +352,8 @@ export const calls: Call[] = [
     transcript: 'Jordan: Peter, tell me what\'s going on with Gobi.\nPeter: He\'s super hyper. Jumps on everyone, can\'t stay still.\nJordan: Got it. So what we offer is an 8-week program...\n...',
   },
   {
-    id: 'call-014',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000614',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-19',
     duration: '35min',
@@ -364,13 +370,13 @@ export const calls: Call[] = [
     transcript: 'Jordan: Donna, I\'ll be straight — if you sign up today, I can apply a 10% discount...\nDonna: Oh, that works better for me...\n...',
   },
   {
-    id: 'call-015',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000615',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-16',
     duration: '30min',
     score: 73,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'Mark T.',
     rubricScores: { discovery: 78, problemAgitation: 60, offerPresentation: 79, objectionHandling: 63, closeAndNextSteps: 62 },
     feedback: 'Call with a good start but lost the thread halfway. Jordan moved to the offer too early and couldn\'t regain the prospect\'s engagement.',
@@ -382,13 +388,13 @@ export const calls: Call[] = [
     transcript: 'Jordan: Mark, great to meet you. So you\'re interested in training for Rocky, right?\nMark: Yeah, saw it on Google...\nJordan: Great! Let me tell you about our program...\n...',
   },
   {
-    id: 'call-016',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000616',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-13',
     duration: '25min',
     score: 70,
-    result: 'follow-up',
+    result: 'follow_up',
     prospect: 'Susan B.',
     rubricScores: { discovery: 76, problemAgitation: 58, offerPresentation: 78, objectionHandling: 62, closeAndNextSteps: 60 },
     feedback: 'Weak call. Jordan managed to present the product but without creating the urgency context needed for the close.',
@@ -401,13 +407,13 @@ export const calls: Call[] = [
     transcript: 'Jordan: Susan, what\'s Coco\'s issue?\nSusan: Oh, he\'s kind of hyper...\nJordan: Got it. Want me to send you more info about the program?\n...',
   },
   {
-    id: 'call-017',
-    trainerId: 'trainer-jordan',
+    id: '00000000-0000-0000-0000-000000000617',
+    trainerId: '00000000-0000-0000-0000-000000000303',
     trainerName: 'Jordan K.',
     date: '2026-03-10',
     duration: '20min',
     score: 65,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'James R.',
     rubricScores: { discovery: 68, problemAgitation: 55, offerPresentation: 72, objectionHandling: 60, closeAndNextSteps: 58 },
     feedback: 'Very short and shallow call. Jordan couldn\'t deepen the conversation enough to create value.',
@@ -422,13 +428,13 @@ export const calls: Call[] = [
 
   // Taylor M. — 4 calls
   {
-    id: 'call-018',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000618',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-20',
     duration: '22min',
     score: 74,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'Helen K.',
     rubricScores: { discovery: 70, problemAgitation: 60, offerPresentation: 74, objectionHandling: 58, closeAndNextSteps: 65 },
     feedback: 'Taylor showed product knowledge but struggled to connect the product to Helen\'s real pain. The call was too technical and not emotional enough.',
@@ -440,13 +446,13 @@ export const calls: Call[] = [
     transcript: 'Taylor: Helen, which command specifically is Ziggy having trouble with? Stay, sit, or is it more aggression?\nHelen: He\'s very reactive to other dogs on walks...\nTaylor: I see. Reactivity is one of our specialties...\n...',
   },
   {
-    id: 'call-019',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000619',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-17',
     duration: '28min',
     score: 71,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'Paul M.',
     rubricScores: { discovery: 68, problemAgitation: 58, offerPresentation: 72, objectionHandling: 55, closeAndNextSteps: 62 },
     feedback: 'Second consecutive call without closing. Taylor is clearly struggling in the objection stage — goes defensive instead of keeping focus on value.',
@@ -459,13 +465,13 @@ export const calls: Call[] = [
     transcript: 'Paul: It\'s expensive for what it is...\nTaylor: I understand the price might seem high, but if you break it down by week...\nPaul: Hmm...\nTaylor: I can also explain what\'s included...\n...',
   },
   {
-    id: 'call-020',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000620',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-14',
     duration: '18min',
     score: 68,
-    result: 'follow-up',
+    result: 'follow_up',
     prospect: 'Alice N.',
     rubricScores: { discovery: 65, problemAgitation: 57, offerPresentation: 71, objectionHandling: 53, closeAndNextSteps: 61 },
     feedback: 'Very short call. Taylor seems to be feeling insecure — discovery questions were timid and the offer presentation was too rushed.',
@@ -478,13 +484,13 @@ export const calls: Call[] = [
     transcript: 'Taylor: Alice, what motivated you to look into dog training?\nAlice: Mel has been chewing things around the house a bit...\nTaylor: Got it. Let me send you the program info via WhatsApp?\n...',
   },
   {
-    id: 'call-021',
-    trainerId: 'trainer-taylor',
+    id: '00000000-0000-0000-0000-000000000621',
+    trainerId: '00000000-0000-0000-0000-000000000304',
     trainerName: 'Taylor M.',
     date: '2026-03-11',
     duration: '25min',
     score: 65,
-    result: 'no-close',
+    result: 'no_decision',
     prospect: 'George T.',
     rubricScores: { discovery: 63, problemAgitation: 55, offerPresentation: 70, objectionHandling: 52, closeAndNextSteps: 60 },
     feedback: 'Concerning call. Taylor is showing clear signs of low confidence. Voice was hesitant and he let the prospect lead the entire conversation.',
@@ -662,10 +668,10 @@ export const trendData: TrendPoint[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerScore> = {
-  'trainer-marcus': 'marcus',
-  'trainer-jamie': 'jamie',
-  'trainer-jordan': 'jordan',
-  'trainer-taylor': 'taylor',
+  '00000000-0000-0000-0000-000000000301': 'marcus',
+  '00000000-0000-0000-0000-000000000302': 'jamie',
+  '00000000-0000-0000-0000-000000000303': 'jordan',
+  '00000000-0000-0000-0000-000000000304': 'taylor',
 }
 
 // ─── Rubric (Supabase format) ────────────────────────────────────────────────
@@ -749,20 +755,475 @@ export const supabaseCalls = calls.map((call) => ({
   summary: call.feedback,
   strengths: call.strengths,
   improvements: call.improvements,
-  call_outcome: call.result === 'closed' ? 'closed' : call.result === 'no-close' ? 'not_closed' : 'partial',
+  call_outcome: call.result === 'closed' ? 'closed' : call.result === 'no_decision' ? 'not_closed' : 'partial',
   detected_outcome: call.result,
   email_sent: true,
   email_id: `email-${call.id}`,
   created_at: `${call.date}T10:00:00Z`,
 }))
 
+// ─── Revenue Impact Estimator ─────────────────────────────────────────────────
+
+export const revenueEstimator: RevenueEstimatorItem[] = [
+  { section: 'Objection Handling',  current: 71, target: 85, monthlyImpact: 2400, confidence: 'High' },
+  { section: 'Assertiveness',       current: 65, target: 80, monthlyImpact: 1800, confidence: 'Med'  },
+  { section: 'Close & Next Steps',  current: 75, target: 88, monthlyImpact: 1200, confidence: 'Low'  },
+]
+
+// ─── Performance Trends (per sales person + team aggregate) ──────────────────
+
+export const performanceTrends: Record<string, PerformanceTrendPoint[]> = {
+  // trainerId → trend data (keys match mock trainer IDs)
+  '00000000-0000-0000-0000-000000000301': [ // Marcus R.
+    { week: 'W1', closeRate: 60, avgScore: 72 },
+    { week: 'W2', closeRate: 63, avgScore: 76 },
+    { week: 'W3', closeRate: 65, avgScore: 80 },
+    { week: 'W4', closeRate: 68, avgScore: 84 },
+    { week: 'W5', closeRate: 71, avgScore: 88 },
+    { week: 'W6', closeRate: 74, avgScore: 91 },
+  ],
+  '00000000-0000-0000-0000-000000000302': [ // Jamie L.
+    { week: 'W1', closeRate: 55, avgScore: 70 },
+    { week: 'W2', closeRate: 57, avgScore: 73 },
+    { week: 'W3', closeRate: 60, avgScore: 75 },
+    { week: 'W4', closeRate: 62, avgScore: 78 },
+    { week: 'W5', closeRate: 65, avgScore: 81 },
+    { week: 'W6', closeRate: 68, avgScore: 84 },
+  ],
+  '00000000-0000-0000-0000-000000000303': [ // Jordan K.
+    { week: 'W1', closeRate: 50, avgScore: 68 },
+    { week: 'W2', closeRate: 53, avgScore: 70 },
+    { week: 'W3', closeRate: 56, avgScore: 73 },
+    { week: 'W4', closeRate: 58, avgScore: 76 },
+    { week: 'W5', closeRate: 60, avgScore: 79 },
+    { week: 'W6', closeRate: 61, avgScore: 82 },
+  ],
+  '00000000-0000-0000-0000-000000000304': [ // Taylor M.
+    { week: 'W1', closeRate: 59, avgScore: 74 },
+    { week: 'W2', closeRate: 58, avgScore: 73 },
+    { week: 'W3', closeRate: 57, avgScore: 71 },
+    { week: 'W4', closeRate: 56, avgScore: 69 },
+    { week: 'W5', closeRate: 55, avgScore: 67 },
+    { week: 'W6', closeRate: 55, avgScore: 66 },
+  ],
+  team: [ // aggregate average across all sales people
+    { week: 'W1', closeRate: 56, avgScore: 71 },
+    { week: 'W2', closeRate: 58, avgScore: 73 },
+    { week: 'W3', closeRate: 60, avgScore: 75 },
+    { week: 'W4', closeRate: 61, avgScore: 77 },
+    { week: 'W5', closeRate: 63, avgScore: 79 },
+    { week: 'W6', closeRate: 65, avgScore: 81 },
+  ],
+}
+
+export const revenueEstimatorTotal = revenueEstimator.reduce(
+  (total, item) => total + item.monthlyImpact,
+  0,
+)
+
 // ─── Demo credentials ─────────────────────────────────────────────────────────
 
+// ─── Rubric Gap Detection ─────────────────────────────────────────────────────
+
+export const rubricGaps: import('./types').RubricGap[] = [
+  { frequency: 71, description: 'Price comparison to competitors not in rubric' },
+  { frequency: 54, description: 'Follow-up timeline never set on call' },
+  { frequency: 38, description: '"My dog is too old" objection unhandled' },
+]
+
+// ─── Correlation Engine ───────────────────────────────────────────────────────
+
+export const correlationEngine: import('./types').CorrelationFactor[] = [
+  { label: 'Objection Handling', score: 89, correlation: 'High', impact: 'High', source: 'Rubric' },
+  { label: 'Assertiveness',      score: 83, correlation: 'High', impact: 'High', source: 'Behavioral' },
+  { label: 'Close & Next Steps', score: 79, correlation: 'High', impact: 'High', source: 'Rubric' },
+  { label: 'Tone & Energy',      score: 64, correlation: 'Med',  impact: 'Med',  source: 'Behavioral' },
+  { label: 'Empathy',            score: 58, correlation: 'Med',  impact: 'Med',  source: 'Behavioral' },
+  { label: 'Discovery',          score: 41, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
+  { label: 'Problem Agitation',  score: 35, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
+]
+
+// ─── Best Call This Week ──────────────────────────────────────────────────────
+
+export const bestCalls: import('./types').CallsByTrainerMap = {
+  marcus: [
+    {
+      prospect: 'Bob W.',
+      date:     '3/21/2026',
+      score:    94,
+      result:   'Closed',
+      analysis: 'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      listenAt: '2:14',
+    },
+    {
+      prospect: 'Sarah K.',
+      date:     '3/19/2026',
+      score:    91,
+      result:   'Closed',
+      analysis: 'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this.',
+      listenAt: '1:48',
+    },
+  ],
+  jamie: [
+    {
+      prospect: 'Carlos M.',
+      date:     '3/20/2026',
+      score:    90,
+      result:   'Closed',
+      analysis: 'At 3:05 Jamie reframed the value proposition with a ROI story that resonated immediately — prospect stopped negotiating on price.',
+      listenAt: '3:05',
+    },
+    {
+      prospect: 'Dana P.',
+      date:     '3/18/2026',
+      score:    88,
+      result:   'Closed',
+      analysis: 'Strong close sequence: summarized pain points, confirmed fit, and asked for the next step decisively without over-explaining.',
+      listenAt: '4:22',
+    },
+  ],
+  jordan: [
+    {
+      prospect: 'Mike T.',
+      date:     '3/22/2026',
+      score:    84,
+      result:   'Closed',
+      analysis: 'At 1:50 Jordan handled the "my dog is too old" objection with a success story — effectively shifted emotional state of the prospect.',
+      listenAt: '1:50',
+    },
+    {
+      prospect: 'Lisa R.',
+      date:     '3/17/2026',
+      score:    81,
+      result:   'Closed',
+      analysis: 'Opened with a strong discovery question that uncovered the real pain (dog aggression at the park) before presenting any offer.',
+      listenAt: '0:45',
+    },
+  ],
+  taylor: [
+    {
+      prospect: 'Amy J.',
+      date:     '3/21/2026',
+      score:    78,
+      result:   'Closed',
+      analysis: 'At 2:30 Taylor used silence effectively after presenting the price — waited for the prospect to self-convince rather than filling the gap.',
+      listenAt: '2:30',
+    },
+    {
+      prospect: 'Ben C.',
+      date:     '3/19/2026',
+      score:    76,
+      result:   'Closed',
+      analysis: 'Strongest tone and energy of the week — kept energy high through a 25-minute call, matching the prospect\'s excitement level throughout.',
+      listenAt: '5:10',
+    },
+  ],
+}
+
+// ─── Worst Call This Week ─────────────────────────────────────────────────────
+
+export const worstCalls: import('./types').CallsByTrainerMap = {
+  marcus: [
+    {
+      prospect: 'Greg N.',
+      date:     '3/18/2026',
+      score:    61,
+      result:   'No Close',
+      analysis: 'At 1:42 Marcus skipped discovery entirely and jumped straight to pricing — prospect disengaged after 3 minutes. No pain established before the offer.',
+      listenAt: '1:42',
+    },
+    {
+      prospect: 'Pam D.',
+      date:     '3/20/2026',
+      score:    64,
+      result:   'No Close',
+      analysis: 'Objection at 4:10 ("too expensive") was met with silence, then a discount offer — reinforced price anchoring without defending value.',
+      listenAt: '4:10',
+    },
+  ],
+  jamie: [
+    {
+      prospect: 'Tom R.',
+      date:     '3/19/2026',
+      score:    63,
+      result:   'No Close',
+      analysis: 'At 2:55 Jamie talked over the prospect\'s hesitation instead of asking a clarifying question. Lost the emotional thread and never recovered.',
+      listenAt: '2:55',
+    },
+    {
+      prospect: 'Nora S.',
+      date:     '3/21/2026',
+      score:    66,
+      result:   'Follow-up',
+      analysis: 'Offer presentation was vague — benefits listed without connecting them to the prospect\'s stated problems. No urgency created.',
+      listenAt: '3:40',
+    },
+  ],
+  jordan: [
+    {
+      prospect: 'Fred L.',
+      date:     '3/17/2026',
+      score:    58,
+      result:   'No Close',
+      analysis: 'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      listenAt: '0:55',
+    },
+    {
+      prospect: 'Cara B.',
+      date:     '3/20/2026',
+      score:    62,
+      result:   'No Close',
+      analysis: 'Close sequence at 5:15 was rushed — asked for the sale twice in 30 seconds without pausing for a response, creating pressure that backfired.',
+      listenAt: '5:15',
+    },
+  ],
+  taylor: [
+    {
+      prospect: 'Owen M.',
+      date:     '3/18/2026',
+      score:    55,
+      result:   'No Close',
+      analysis: 'At 3:00 Taylor filled every silence with filler words instead of letting the prospect process. Nervous energy was audible and undermined trust.',
+      listenAt: '3:00',
+    },
+    {
+      prospect: 'Iris W.',
+      date:     '3/22/2026',
+      score:    59,
+      result:   'No Close',
+      analysis: 'Problem agitation phase was skipped entirely — moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
+      listenAt: '1:28',
+    },
+  ],
+}
+
+// ─── Coaching Recommendations ────────────────────────────────────────────────
+
+export type CoachingRec = {
+  order: number
+  title: string
+  text: string
+  cta: string
+}
+
+export const coachingRecs: Record<string, CoachingRec[]> = {
+  marcus: [
+    {
+      order: 1,
+      title: 'Work on empathy',
+      text: 'Trending down 3 weeks. Pull Lisa M. call and identify where emotional connection dropped.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 2,
+      title: "Use Marcus's Bob W. call as team training",
+      text: 'Best objection handling example in 6 weeks — share at next team meeting.',
+      cta: 'Share call →',
+    },
+    {
+      order: 3,
+      title: 'Review 3 missing calls before next session',
+      text: 'Submission gaps are a coaching signal, not just a compliance issue.',
+      cta: 'View missing →',
+    },
+  ],
+  jamie: [
+    {
+      order: 1,
+      title: 'Close more decisively',
+      text: 'Last 3 calls ended without a firm commitment. Pull the Karen H. follow-up and practice a direct close script.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 2,
+      title: 'Identify co-decision makers early',
+      text: 'Two calls this month were derailed by an unidentified second decision-maker. Add one qualifying question in discovery.',
+      cta: 'View script →',
+    },
+    {
+      order: 3,
+      title: 'Use Diana M. call in the next team session',
+      text: 'Best problem agitation example on the team — empathetic and never manipulative.',
+      cta: 'Share call →',
+    },
+  ],
+  jordan: [
+    {
+      order: 1,
+      title: 'Stop jumping to the offer too early',
+      text: 'Presenting the offer before minute 15 correlates with 0% close rate for Jordan. Add a problem agitation checkpoint.',
+      cta: 'View script →',
+    },
+    {
+      order: 2,
+      title: 'No more discounts without objection reframe',
+      text: "Jordan offered a discount in 2 of 5 calls this week. Review Marcus's objection handling technique first.",
+      cta: 'Reference call →',
+    },
+    {
+      order: 3,
+      title: 'Set a specific follow-up time on every call',
+      text: 'Vague follow-ups ("I\'ll send you info") have zero conversion. Commit to a date and time before hanging up.',
+      cta: 'View missing →',
+    },
+  ],
+  taylor: [
+    {
+      order: 1,
+      title: 'Schedule a 1:1 this week — priority',
+      text: 'Score dropped 12pts in 2 weeks and call volume is down 40%. This is a confidence issue, not a skills gap.',
+      cta: 'View calls →',
+    },
+    {
+      order: 2,
+      title: 'Stop over-explaining after presenting price',
+      text: 'Taylor fills silence with justifications. Review the strategic silence technique from Marcus\'s Bob W. call.',
+      cta: 'Reference call →',
+    },
+    {
+      order: 3,
+      title: 'Focus discovery on emotional impact, not behaviors',
+      text: 'Questions are too technical. Ask "how does this affect your family?" not "which command is the problem?"',
+      cta: 'View script →',
+    },
+  ],
+}
+
+// ─── Behavioral Correlation Profile ──────────────────────────────────────────
+
+export type BehavioralDimension = {
+  dimension: string
+  score: number
+  delta: number
+  teamAvg: number
+}
+
+export const trainerBehavioral: Record<string, BehavioralDimension[]> = {
+  marcus: [
+    { dimension: 'Objection Handling', score: 94, delta: 23,  teamAvg: 71 },
+    { dimension: 'Assertiveness',      score: 91, delta: 26,  teamAvg: 65 },
+    { dimension: 'Close & Next Steps', score: 90, delta: 15,  teamAvg: 75 },
+    { dimension: 'Discovery',          score: 94, delta: 12,  teamAvg: 82 },
+    { dimension: 'Tone & Energy',      score: 78, delta: 6,   teamAvg: 72 },
+    { dimension: 'Empathy',            score: 65, delta: -5,  teamAvg: 70 },
+  ],
+  jamie: [
+    { dimension: 'Objection Handling', score: 81, delta: 10,  teamAvg: 71 },
+    { dimension: 'Assertiveness',      score: 79, delta: 14,  teamAvg: 65 },
+    { dimension: 'Close & Next Steps', score: 82, delta: 7,   teamAvg: 75 },
+    { dimension: 'Discovery',          score: 88, delta: 6,   teamAvg: 82 },
+    { dimension: 'Tone & Energy',      score: 74, delta: 2,   teamAvg: 72 },
+    { dimension: 'Empathy',            score: 80, delta: 10,  teamAvg: 70 },
+  ],
+  jordan: [
+    { dimension: 'Objection Handling', score: 65, delta: -6,  teamAvg: 71 },
+    { dimension: 'Assertiveness',      score: 60, delta: -5,  teamAvg: 65 },
+    { dimension: 'Close & Next Steps', score: 65, delta: -10, teamAvg: 75 },
+    { dimension: 'Discovery',          score: 79, delta: -3,  teamAvg: 82 },
+    { dimension: 'Tone & Energy',      score: 68, delta: -4,  teamAvg: 72 },
+    { dimension: 'Empathy',            score: 72, delta: 2,   teamAvg: 70 },
+  ],
+  taylor: [
+    { dimension: 'Objection Handling', score: 55, delta: -16, teamAvg: 71 },
+    { dimension: 'Assertiveness',      score: 52, delta: -13, teamAvg: 65 },
+    { dimension: 'Close & Next Steps', score: 63, delta: -12, teamAvg: 75 },
+    { dimension: 'Discovery',          score: 67, delta: -15, teamAvg: 82 },
+    { dimension: 'Tone & Energy',      score: 61, delta: -11, teamAvg: 72 },
+    { dimension: 'Empathy',            score: 66, delta: -4,  teamAvg: 70 },
+  ],
+}
+
+// ─── Behavioral Trends — 6 Weeks ─────────────────────────────────────────────
+
+export type BehavioralTrendDimension = {
+  dimension: string
+  trend: number[]
+  currentScore: number
+}
+
+export const trainerTrends: Record<string, BehavioralTrendDimension[]> = {
+  marcus: [
+    { dimension: 'Objection Handling', trend: [72, 78, 82, 86, 90, 94], currentScore: 94 },
+    { dimension: 'Assertiveness',      trend: [68, 73, 77, 83, 87, 91], currentScore: 91 },
+    { dimension: 'Empathy',            trend: [72, 69, 64, 61, 63, 65], currentScore: 65 },
+    { dimension: 'Tone & Energy',      trend: [60, 64, 68, 71, 75, 78], currentScore: 78 },
+  ],
+  jamie: [
+    { dimension: 'Objection Handling', trend: [68, 71, 74, 76, 79, 81], currentScore: 81 },
+    { dimension: 'Assertiveness',      trend: [63, 67, 70, 74, 77, 79], currentScore: 79 },
+    { dimension: 'Empathy',            trend: [71, 73, 76, 78, 79, 80], currentScore: 80 },
+    { dimension: 'Tone & Energy',      trend: [66, 69, 71, 72, 73, 74], currentScore: 74 },
+  ],
+  jordan: [
+    { dimension: 'Objection Handling', trend: [74, 72, 70, 68, 66, 65], currentScore: 65 },
+    { dimension: 'Assertiveness',      trend: [68, 66, 64, 62, 61, 60], currentScore: 60 },
+    { dimension: 'Empathy',            trend: [67, 68, 70, 71, 72, 72], currentScore: 72 },
+    { dimension: 'Tone & Energy',      trend: [74, 72, 71, 70, 69, 68], currentScore: 68 },
+  ],
+  taylor: [
+    { dimension: 'Objection Handling', trend: [68, 65, 62, 59, 57, 55], currentScore: 55 },
+    { dimension: 'Assertiveness',      trend: [60, 58, 56, 54, 53, 52], currentScore: 52 },
+    { dimension: 'Empathy',            trend: [62, 63, 64, 65, 66, 66], currentScore: 66 },
+    { dimension: 'Tone & Energy',      trend: [68, 66, 64, 63, 62, 61], currentScore: 61 },
+  ],
+}
+
+// ─── Active Alerts ────────────────────────────────────────────────────────────
+
+export type ActiveAlert = {
+  type: 'critical' | 'warning' | 'positive'
+  dotColor: 'red' | 'amber' | 'green'
+  message: string
+  cta: string
+}
+
+export const activeAlerts: ActiveAlert[] = [
+  {
+    type: 'critical',
+    dotColor: 'red',
+    message: "Taylor's score dropped 12pts this week",
+    cta: 'Review calls',
+  },
+  {
+    type: 'warning',
+    dotColor: 'amber',
+    message: '3 trainers skipping objection handling',
+    cta: 'Train now',
+  },
+  {
+    type: 'positive',
+    dotColor: 'green',
+    message: 'Close rate up 7pts in 6 weeks',
+    cta: 'Celebrate',
+  },
+]
+
+// ─── Team Health ─────────────────────────────────────────────────────────────
+
+export type TeamHealthEntry = {
+  initials: string
+  name: string
+  avatarColor: 'blue' | 'purple' | 'green' | 'red' | 'amber'
+  calls: number
+  status: string
+  statusType: 'active' | 'recent' | 'away'
+  closeRate: number
+  delta: number
+  trend: 'up' | 'down'
+}
+
+export const teamHealth: TeamHealthEntry[] = [
+  { initials: 'MR', name: 'Marcus R.',  avatarColor: 'amber',  calls: 28, status: 'active today', statusType: 'active', closeRate: 74, delta:  9, trend: 'up'   },
+  { initials: 'JL', name: 'Jamie L.',   avatarColor: 'blue',   calls: 22, status: 'yesterday',    statusType: 'recent', closeRate: 68, delta:  4, trend: 'up'   },
+  { initials: 'JK', name: 'Jordan K.',  avatarColor: 'purple', calls: 19, status: 'active today', statusType: 'active', closeRate: 61, delta:  1, trend: 'up'   },
+  { initials: 'TM', name: 'Taylor M.',  avatarColor: 'green',  calls: 14, status: '3 days ago',   statusType: 'away',   closeRate: 55, delta: -2, trend: 'down' },
+]
+
 export const demoCredentials = [
-  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: 'trainer-marcus' as string | null },
-  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: 'trainer-jamie'  as string | null },
-  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: 'trainer-jordan' as string | null },
-  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: 'trainer-taylor' as string | null },
+  { email: 'trainer@demo.askmoses.ai',  password: 'demo123', role: 'trainer' as Role, name: 'Marcus R.',      trainerId: '00000000-0000-0000-0000-000000000301' as string | null },
+  { email: 'trainer2@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jamie L.',       trainerId: '00000000-0000-0000-0000-000000000302'  as string | null },
+  { email: 'trainer3@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Jordan K.',      trainerId: '00000000-0000-0000-0000-000000000303' as string | null },
+  { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: '00000000-0000-0000-0000-000000000304' as string | null },
   { email: 'owner@demo.askmoses.ai',    password: 'demo123', role: 'owner'   as Role, name: 'Dog Wizard HQ',  trainerId: null },
   { email: 'admin@askmoses.ai',         password: 'demo123', role: 'admin'   as Role, name: 'AskMoses Admin', trainerId: null },
 ]

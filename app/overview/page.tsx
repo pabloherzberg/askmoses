@@ -1,53 +1,62 @@
-import { getTrainers } from '@/lib/services/trainers'
-import { getInsights } from '@/lib/services/insights'
-import { getRubric } from '@/lib/services/rubric'
-import { ScoreCard } from '@/components/shared/ScoreCard'
-import { ScorePill } from '@/components/shared/ScorePill'
-import { RubricBar } from '@/components/shared/RubricBar'
-import { AlertItem } from '@/components/shared/AlertItem'
-import { InsightCard } from '@/components/shared/InsightCard'
-import { SectionLabel } from '@/components/shared/SectionLabel'
-import { TrendChart } from './TrendChart'
+export const dynamic = "force-dynamic";
 
-const avatarBgMap: Record<string, string> = {
-  blue: 'var(--am-blue-bg)',
-  purple: 'rgba(110,86,255,0.15)',
-  green: 'var(--am-green-bg)',
-  red: 'var(--am-red-bg)',
-}
+import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
+import { getInsights } from "@/lib/services/insights";
+import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
+import { ScoreCard } from "@/components/shared/ScoreCard";
+import { RubricBar } from "@/components/shared/RubricBar";
+import { InsightCard } from "@/components/shared/InsightCard";
+import { SectionLabel } from "@/components/shared/SectionLabel";
+import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
+import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
+import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
+import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
+import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 
-const avatarTextMap: Record<string, string> = {
-  blue: 'var(--am-blue)',
-  purple: 'var(--am-accent2)',
-  green: 'var(--am-green)',
-  red: 'var(--am-red)',
-}
-
-const alerts = [
-  { dotColor: 'red' as const, text: "Taylor's score dropped 12pts this week", actionLabel: 'Review' },
-  { dotColor: 'amber' as const, text: 'Taylor has had no calls in 3 days', actionLabel: 'Contact' },
-  { dotColor: 'green' as const, text: 'Marcus hit 74% — best close rate on the team', actionLabel: 'Celebrate' },
-  { dotColor: 'blue' as const, text: '3 trainers are skipping objection handling', actionLabel: 'Train' },
-]
 
 export default async function OverviewPage() {
-  const [trainers, insights, { sections: rubric, trend }] = await Promise.all([
+  const [
+    trainers,
+    insights,
+    { sections: rubric, trainerSectionScores },
+    revenueData,
+    teamHealth,
+  ] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
-  ])
+    getRevenueEstimator(),
+    getTeamHealth(),
+  ]);
 
-  const sorted = [...trainers].sort((a, b) => b.score - a.score)
-  const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0)
-  const avgClose = Math.round(trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length)
-  const avgScore = Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
-  const topTrainer = sorted[0]
+  const performanceTrends = await getPerformanceTrends(trainers);
+
+  const sorted = [...trainers].sort((a, b) => b.score - a.score);
+  const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
+  const avgClose =
+    trainers.length > 0
+      ? Math.round(
+          trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length,
+        )
+      : 0;
+  const avgScore =
+    trainers.length > 0
+      ? Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+      : 0;
+  const topTrainer = sorted[0] ?? null;
 
   return (
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>Team Overview</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <ScoreCard
+          label="Est. Monthly Revenue"
+          value="$18,200"
+          valueColor="var(--am-green)"
+          delta={12}
+          deltaLabel="% vs baseline"
+        />
         <ScoreCard
           label="Avg Close Rate"
           value={`${avgClose}%`}
@@ -65,99 +74,244 @@ export default async function OverviewPage() {
         <ScoreCard
           label="Total Calls"
           value={totalCalls}
-          deltaLabel={`${trainers.length} active trainers`}
+          deltaLabel={`${trainers.length} active sales people`}
         />
         <ScoreCard
           label="Best Close Rate"
-          value={`${topTrainer.closeRate}%`}
-          delta={topTrainer.closeDelta}
-          deltaLabel={topTrainer.name}
+          value={`${topTrainer?.closeRate ?? 0}%`}
+          delta={topTrainer?.closeDelta ?? 0}
+          deltaLabel={topTrainer?.name ?? "No trainers"}
         />
       </div>
 
-      {/* ── Main grid: ranking + alerts ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-4">
+      {/* ── Correlation Engine ────────────────────────────────── */}
+      <div className="mb-4">
+        <CorrelationEngine factors={correlationEngine} />
+      </div>
 
-        {/* Trainer ranking */}
+      {/* ── Rubric Gap Detection ───────────────────────────────── */}
+      <div className="mb-4">
+        <RubricGapDetection gaps={rubricGaps} />
+      </div>
+
+      {/* ── Main grid: team health + alerts ──────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-4">
+        {/* Team Health */}
         <div
           className="rounded-2xl p-5 border shadow-md"
-          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
-          <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
-            Trainer Ranking
-          </p>
-          {sorted.map((trainer, i) => (
-            <div
-              key={trainer.id}
-              className="flex items-center gap-3 py-2.5"
-              style={{
-                borderBottom: i < sorted.length - 1 ? '1px solid var(--am-border)' : 'none',
-              }}
+          {/* Header */}
+          <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
+            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+              Team Health
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded border"
+              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
+              mock data only
+            </span>
+          </div>
+          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
+            Who&apos;s improving · who needs attention this week
+          </p>
+
+          {/* Column headers */}
+          <div
+            className="grid mb-2"
+            style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
+          >
+            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>TRAINER</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>STATUS</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>CLOSE %</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>DELTA</span>
+            <span className="text-[10px] font-medium text-right" style={{ color: "var(--am-muted)" }}>↑↓</span>
+          </div>
+
+          {/* Rows */}
+          {teamHealth.map((entry, i) => {
+            const ringColor = entry.trend === 'up' ? 'var(--am-green)' : 'var(--am-red)'
+            const dotColor =
+              entry.statusType === 'active' ? 'var(--am-green)'
+              : entry.statusType === 'away'   ? 'var(--am-red)'
+              : 'var(--am-muted)'
+            const deltaColor = entry.delta >= 0 ? 'var(--am-green)' : 'var(--am-red)'
+            const deltaLabel = entry.delta > 0
+              ? `+${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+              : `${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+
+            const avatarBg: Record<string, string> = {
+              blue: 'var(--am-blue-bg)', purple: 'rgba(110,86,255,0.15)',
+              green: 'var(--am-green-bg)', red: 'var(--am-red-bg)', amber: 'rgba(255,171,46,0.15)',
+            }
+            const avatarText: Record<string, string> = {
+              blue: 'var(--am-blue)', purple: 'var(--am-accent2)',
+              green: 'var(--am-green)', red: 'var(--am-red)', amber: 'var(--am-amber)',
+            }
+
+            return (
               <div
-                className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono flex-shrink-0"
+                key={entry.name}
+                className="grid items-center py-2.5"
                 style={{
-                  background: avatarBgMap[trainer.avatarColor],
-                  color: avatarTextMap[trainer.avatarColor],
+                  gridTemplateColumns: "1fr auto auto auto auto",
+                  borderTop: i > 0 ? "1px solid var(--am-border)" : "none",
                 }}
               >
-                {trainer.avatar}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate" style={{ color: 'var(--am-text)' }}>
-                  {trainer.name}
-                </p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--am-muted)' }}>
-                  {trainer.lastActive} · {trainer.totalCalls} calls
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 md:gap-3.5 flex-shrink-0">
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm font-semibold font-mono" style={{ color: 'var(--am-text)' }}>
-                    {trainer.closeRate}%
+                {/* Avatar + name + calls */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    <div
+                      className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono"
+                      style={{ background: avatarBg[entry.avatarColor], color: avatarText[entry.avatarColor] }}
+                    >
+                      {entry.initials}
+                    </div>
+                    <span
+                      className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                      style={{ background: ringColor, borderColor: "var(--card)" }}
+                    />
                   </div>
-                  <div className="text-[10px]" style={{ color: 'var(--am-muted)' }}>close</div>
-                </div>
-                <div className="text-right hidden sm:block">
-                  <div
-                    className="text-sm font-semibold font-mono"
-                    style={{ color: trainer.closeDelta >= 0 ? 'var(--am-green)' : 'var(--am-red)' }}
-                  >
-                    {trainer.closeDelta > 0 ? `+${trainer.closeDelta}` : trainer.closeDelta}
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--am-text)" }}>
+                      {entry.name}
+                    </p>
+                    <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
+                      {entry.calls} calls
+                    </p>
                   </div>
-                  <div className="text-[10px]" style={{ color: 'var(--am-muted)' }}>delta</div>
                 </div>
-                <ScorePill score={trainer.score} />
+
+                {/* Status */}
+                <div className="pr-4 hidden sm:flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                  <span className="text-[12px] whitespace-nowrap" style={{ color: dotColor }}>
+                    {entry.status}
+                  </span>
+                </div>
+
+                {/* Close rate */}
+                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: "var(--am-text)" }}>
+                  {entry.closeRate}%
+                </span>
+
+                {/* Delta */}
+                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: deltaColor }}>
+                  {deltaLabel}
+                </span>
+
+                {/* Trend arrow */}
+                <span className="text-[16px] font-bold text-right" style={{ color: deltaColor }}>
+                  {entry.trend === 'up' ? '↑' : '↓'}
+                </span>
               </div>
-            </div>
-          ))}
+            )
+          })}
+
+          <p className="mt-3 text-[10px]" style={{ color: "var(--am-amber)" }}>
+            † green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation
+          </p>
         </div>
 
         {/* Active alerts */}
         <div
-          className="rounded-2xl p-5 border shadow-md"
-          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+          className="rounded-2xl p-5 border shadow-md flex flex-col"
+          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
-          <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
-            Active Alerts
+          {/* Header */}
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+              Active Alerts
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded border"
+              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
+            >
+              mock data only
+            </span>
+          </div>
+          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
+            {activeAlerts.length} items requiring attention
           </p>
-          {alerts.map((alert) => (
-            <AlertItem key={alert.text} {...alert} />
-          ))}
+
+          {/* Alert items */}
+          <div className="flex flex-col gap-0 flex-1">
+            {activeAlerts.map((alert, i) => {
+              const dotColor =
+                alert.dotColor === "red"
+                  ? "var(--am-red)"
+                  : alert.dotColor === "amber"
+                    ? "var(--am-amber)"
+                    : "var(--am-green)";
+              const ctaColor =
+                alert.dotColor === "red"
+                  ? "var(--am-red)"
+                  : alert.dotColor === "amber"
+                    ? "var(--am-amber)"
+                    : "var(--am-green)";
+              const ctaBorder =
+                alert.dotColor === "red"
+                  ? "rgba(255,94,94,0.35)"
+                  : alert.dotColor === "amber"
+                    ? "rgba(255,171,46,0.35)"
+                    : "rgba(34,217,160,0.35)";
+              const ctaBg =
+                alert.dotColor === "red"
+                  ? "rgba(255,94,94,0.08)"
+                  : alert.dotColor === "amber"
+                    ? "rgba(255,171,46,0.08)"
+                    : "rgba(34,217,160,0.08)";
+
+              return (
+                <div
+                  key={alert.message}
+                  className="py-3"
+                  style={{
+                    borderBottom:
+                      i < activeAlerts.length - 1
+                        ? "1px solid var(--am-border)"
+                        : "none",
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}` }}
+                    />
+                    <span className="text-[12px] font-medium" style={{ color: "var(--am-text)" }}>
+                      {alert.message}
+                    </span>
+                  </div>
+                  <button
+                    className="text-[11px] font-medium px-3 py-1 rounded border ml-[18px]"
+                    style={{ color: ctaColor, borderColor: ctaBorder, background: ctaBg }}
+                  >
+                    {alert.cta} →
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer note */}
+          <p className="text-[10px] mt-4 leading-relaxed" style={{ color: "var(--am-amber)" }}>
+            ↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts
+          </p>
         </div>
       </div>
 
-      {/* ── Charts: rubric + trend ─────────────────────────────── */}
+      {/* ── Charts: rubric + performance trend ───────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-
         {/* Rubric bars */}
         <div
           className="rounded-2xl p-5 border shadow-md"
-          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
-          <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
+          <p
+            className="text-[13px] font-medium mb-4"
+            style={{ color: "var(--am-text)" }}
+          >
             Rubric by Section — Team Average
           </p>
           <div className="flex flex-col gap-2.5">
@@ -172,91 +326,108 @@ export default async function OverviewPage() {
           </div>
         </div>
 
-        {/* Trend chart */}
-        <div
-          className="rounded-2xl p-5 border shadow-md"
-          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
-        >
-          <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-            6-Week Trend
-          </p>
-          <TrendChart data={trend} />
-        </div>
+        {/* Performance trend */}
+        <PerformanceTrend
+          trends={performanceTrends}
+          salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
+        />
       </div>
 
+      {/* ── Revenue Impact Estimator ──────────────────────────── */}
+      <RevenueEstimator items={revenueData.items} total={revenueData.total} />
+
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>Score by Trainer — Detailed Rubric</SectionLabel>
+      <SectionLabel>Score by Sales Person — Detailed Rubric</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
-        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+        style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
       >
         <table className="w-full border-collapse">
           <thead>
             <tr>
               <th
                 className="text-[11px] font-medium text-left pb-2.5 pr-2"
-                style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
+                style={{
+                  color: "var(--am-muted)",
+                  borderBottom: "1px solid var(--am-border)",
+                }}
               >
                 Section
               </th>
-              {['Team', 'Marcus R.', 'Jamie L.', 'Jordan K.', 'Taylor M.'].map((h) => (
+              <th
+                className="text-[11px] font-medium text-right pb-2.5 px-2"
+                style={{
+                  color: "var(--am-muted)",
+                  borderBottom: "1px solid var(--am-border)",
+                }}
+              >
+                Team
+              </th>
+              {trainerSectionScores.map((t) => (
                 <th
-                  key={h}
+                  key={t.trainerId}
                   className="text-[11px] font-medium text-right pb-2.5 px-2"
-                  style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
+                  style={{
+                    color: "var(--am-muted)",
+                    borderBottom: "1px solid var(--am-border)",
+                  }}
                 >
-                  {h}
+                  {t.trainerName}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rubric.map((section) => {
-              const scores = [
-                section.trainerScores.marcus,
-                section.trainerScores.jamie,
-                section.trainerScores.jordan,
-                section.trainerScores.taylor,
-              ]
-              const maxScore = Math.max(...scores)
+              const trainerScores = trainerSectionScores.map(
+                (t) => t.scores[section.name] ?? 0,
+              );
+              const maxScore =
+                trainerScores.length > 0 ? Math.max(...trainerScores) : 0;
 
               return (
                 <tr key={section.id}>
                   <td
                     className="text-xs py-2.5 pr-2"
-                    style={{ color: 'var(--am-muted)', borderBottom: '1px solid var(--am-border)' }}
+                    style={{
+                      color: "var(--am-muted)",
+                      borderBottom: "1px solid var(--am-border)",
+                    }}
                   >
                     {section.name}
                   </td>
                   <td
                     className="text-xs text-right font-mono px-2 py-2.5"
                     style={{
-                      color: section.teamAvg < 65 ? 'var(--am-red)' : 'var(--am-text)',
-                      borderBottom: '1px solid var(--am-border)',
+                      color:
+                        section.teamAvg < 3.25
+                          ? "var(--am-red)"
+                          : "var(--am-text)",
+                      borderBottom: "1px solid var(--am-border)",
                     }}
                   >
-                    {section.teamAvg}
+                    {section.teamAvg.toFixed(1)}
                   </td>
-                  {scores.map((s, idx) => (
+                  {trainerScores.map((s, idx) => (
                     <td
                       key={idx}
                       className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
                         color:
                           s === maxScore
-                            ? 'var(--am-green)'
-                            : s < 65
-                              ? 'var(--am-red)'
-                              : 'var(--am-text)',
+                            ? "var(--am-green)"
+                            : s < 3.25
+                              ? "var(--am-red)"
+                              : "var(--am-text)",
                         fontWeight: s === maxScore ? 600 : 400,
-                        borderBottom: '1px solid var(--am-border)',
+                        borderBottom: "1px solid var(--am-border)",
                       }}
                     >
-                      {s}
+                      {s.toFixed(1)}
                     </td>
                   ))}
                 </tr>
-              )
+              );
             })}
           </tbody>
         </table>
@@ -270,5 +441,5 @@ export default async function OverviewPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }
