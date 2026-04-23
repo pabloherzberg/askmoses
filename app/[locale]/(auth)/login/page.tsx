@@ -1,25 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/types'
+import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
-
-const DEMO_USERS = [
-  { label: 'Sales Person', email: 'trainer@demo.askmoses.ai', password: 'demo123', hint: 'Marcus R.' },
-  { label: 'Sales Person 2', email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
-  { label: 'Sales Person 3', email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
-  { label: 'Sales Person 4', email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
-  { label: 'Manager', email: 'owner@demo.askmoses.ai', password: 'demo123', hint: 'Owner' },
-  { label: 'Admin', email: 'admin@askmoses.ai', password: 'demo123', hint: 'AskMoses Team' },
-]
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 
 function redirectByRole(role: Role): string {
   return role === 'trainer' ? '/me' : role === 'owner' ? '/dashboard' : '/admin'
 }
 
 export default function LoginPage() {
+  const t = useTranslations('Login')
+  const locale = useLocale()
+
+  const DEMO_USERS = [
+    { label: t('roleSalesPerson'),             email: 'trainer@demo.askmoses.ai',  password: 'demo123', hint: 'Marcus R.' },
+    { label: t('roleSalesPersonN', { n: 2 }),  email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
+    { label: t('roleSalesPersonN', { n: 3 }),  email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
+    { label: t('roleSalesPersonN', { n: 4 }),  email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
+    { label: t('roleManager'),                 email: 'owner@demo.askmoses.ai',    password: 'demo123', hint: 'Owner' },
+    { label: t('roleAdmin'),                   email: 'admin@askmoses.ai',         password: 'demo123', hint: 'AskMoses Team' },
+  ]
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -35,23 +43,21 @@ export default function LoginPage() {
 
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError || !data.session) {
-        setError('Email or password incorrect')
+        setError(t('invalidCredentials'))
         return
       }
 
-      // Fetch profile via API (admin client bypasses RLS)
-      // Pass access token in header so the server can read the session even before the cookie propagates
       const meRes = await fetch('/api/me', {
         headers: { Authorization: `Bearer ${data.session.access_token}` },
       })
       const { data: meData } = await meRes.json() as { data: { role: string; name: string; trainerId: string | null } | null; error: unknown }
 
       if (!meData) {
-        setError('User profile not found. Run the seed script in Supabase.')
+        setError(t('profileNotFound'))
         return
       }
 
-      window.location.href = redirectByRole(meData.role as Role)
+      window.location.href = `/${locale}${redirectByRole(meData.role as Role)}`
     } finally {
       setLoading(false)
     }
@@ -65,17 +71,26 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm px-6">
-      {/* Logo + ThemeToggle */}
+      {/* Logo + controls */}
       <div className="flex items-center justify-between mb-10">
         <LogoSVG className="h-14 w-auto" />
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Link href={`/${locale}`}>
+              <ArrowLeft className="size-4" />
+              {t('backToHome')}
+            </Link>
+          </Button>
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Form */}
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
           <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
-            Email
+            {t('emailLabel')}
           </label>
           <input
             type="email"
@@ -84,13 +99,13 @@ export default function LoginPage() {
             required
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
             style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
-            placeholder="your@email.com"
+            placeholder={t('emailPlaceholder')}
           />
         </div>
 
         <div>
           <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
-            Password
+            {t('passwordLabel')}
           </label>
           <input
             type="password"
@@ -99,7 +114,7 @@ export default function LoginPage() {
             required
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
             style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
-            placeholder="••••••••"
+            placeholder={t('passwordPlaceholder')}
           />
         </div>
 
@@ -113,7 +128,7 @@ export default function LoginPage() {
           className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-60"
           style={{ background: 'var(--accent)' }}
         >
-          {loading ? 'Signing in...' : 'Login'}
+          {loading ? t('submitting') : t('submit')}
         </button>
       </form>
 
@@ -123,7 +138,7 @@ export default function LoginPage() {
         style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[11px] font-medium tracking-widest uppercase mb-3" style={{ color: 'var(--am-muted)' }}>
-          Demo access
+          {t('demoAccess')}
         </p>
         <div className="flex flex-col gap-2">
           {DEMO_USERS.map((u) => (

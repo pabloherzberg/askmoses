@@ -1,0 +1,508 @@
+{
+  "Common": {
+    "appName": "AskMoses.AI",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "Something went wrong"
+  },
+  "Navigation": {
+    "overview": "Overview",
+    "calls": "Calls",
+    "me": "My dashboard",
+    "admin": "Admin",
+    "logout": "Log out"
+  },
+  "Login": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Login",
+    "submitting": "Signing in...",
+    "invalidCredentials": "Email or password incorrect",
+    "profileNotFound": "User profile not found. Run the seed script in Supabase.",
+    "demoAccess": "Demo access",
+    "roleSalesPerson": "Sales Person",
+    "roleSalesPersonN": "Sales Person {n}",
+    "roleManager": "Manager",
+    "roleAdmin": "Admin",
+    "backToHome": "Back to home"
+  },
+  "LanguageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "pt": "Português",
+    "es": "Español",
+    "fr": "Français"
+  },
+  "Landing": {
+    "Nav": {
+      "overview": "Overview",
+      "workflow": "Workflow",
+      "features": "Features",
+      "metrics": "Metrics",
+      "roadmap": "Roadmap",
+      "pricing": "Pricing",
+      "appendix": "Appendix",
+      "presentation": "Presentation",
+      "dashboard": "Dashboard",
+      "toggleMenu": "Toggle menu"
+    },
+    "Hero": {
+      "poweredBy": "Powered by",
+      "badge": "Rapid MVP Proposal",
+      "title": "AI Post-Call Sales Coaching for Dog Trainers",
+      "subtitle": "Automate coaching feedback after every sales call. Turn your best sales methodology into an AI coach that scales with your team.",
+      "timelineLabel": "Timeline",
+      "timelineValue": "2 Weeks",
+      "teamLabel": "Team",
+      "teamValue": "AI Builder",
+      "approachLabel": "Approach",
+      "approachValue": "Manual Upload"
+    },
+    "Problem": {
+      "badge": "The Problem",
+      "title": "Manual coaching doesn't scale",
+      "items": [
+        "Ariel reviews calls manually — this doesn't scale",
+        "Feedback is delayed, inconsistent, or never delivered",
+        "No structured way to enforce sales methodology",
+        "Trainers miss coaching moments that affect close rates"
+      ]
+    },
+    "Workflow": {
+      "badge": "Core Workflow",
+      "title": "How Ask Moses Works",
+      "steps": {
+        "upload":        { "title": "Upload Call",        "description": "Admin uploads audio file or pastes transcript directly" },
+        "transcription": { "title": "Transcription",      "description": "If audio, Whisper AI transcribes automatically" },
+        "analysis":      { "title": "AI Analysis",        "description": "LLM evaluates transcript against the sales rubric" },
+        "email":         { "title": "Coaching Email",     "description": "Personalized feedback sent to the dog trainer" },
+        "summary":       { "title": "Aggregate Summary",  "description": "Ariel receives daily/weekly coaching digest" },
+        "history":       { "title": "History Log",        "description": "All analyses stored and searchable" }
+      }
+    },
+    "Features": {
+      "badge": "MVP Scope",
+      "title": "What We're Building",
+      "items": {
+        "rubricManager": {
+          "title": "Script / Rubric Manager",
+          "description": "Admin interface for Ariel to create, edit, and version sales scripts and evaluation rubrics.",
+          "details": ["Multi-script support", "Version history", "Markdown editor", "Rubric sections with weights"]
+        },
+        "manualUpload": {
+          "title": "Manual Call Upload",
+          "description": "Simple interface to upload call recordings or paste transcripts for analysis.",
+          "details": ["Audio upload (.mp3, .wav, .m4a)", "Direct transcript paste", "Whisper AI transcription", "Trainer selection"]
+        },
+        "aiAnalysis": {
+          "title": "AI Call Analysis",
+          "description": "LLM-powered evaluation of each call against the active rubric.",
+          "details": ["Per-section scoring", "Specific quote citations", "Improvement suggestions", "Overall rating"]
+        },
+        "coachingEmail": {
+          "title": "Post-Call Coaching Email",
+          "description": "Automated email delivery of personalized coaching feedback to the trainer.",
+          "details": ["Branded HTML template", "Score breakdown", "Actionable tips", "Encouragement tone"]
+        },
+        "aggregateSummary": {
+          "title": "Aggregate Summary",
+          "description": "Daily or weekly digest for Ariel with team-wide coaching insights.",
+          "details": ["Average scores", "Top performers", "Common gaps", "Trend indicators"]
+        },
+        "history": {
+          "title": "Simple History Page",
+          "description": "Searchable log of all past call analyses for reference and debugging.",
+          "details": ["Filter by trainer", "Filter by date", "View full analysis", "Basic search"]
+        }
+      }
+    },
+    "OutOfScope": {
+      "badge": "Exclusions",
+      "title": "Out of All Tiers",
+      "subtitle": "These features are not included in any of the three tiers. They represent future phases after MVP validation.",
+      "groups": {
+        "crm": {
+          "category": "CRM Integration",
+          "items": ["GoHighLevel (Pepper) sync", "Auto-pull trainer contacts", "Sync results to CRM", "CRM workflow triggers"]
+        },
+        "realtime": {
+          "category": "Real-Time Features",
+          "items": ["Live call coaching", "Real-time voice analysis", "Instant feedback during calls", "Tone detection"]
+        },
+        "platform": {
+          "category": "Platform Scale",
+          "items": ["Multi-tenant architecture", "White-label solution", "Mobile app", "SSO / SAML authentication"]
+        },
+        "analytics": {
+          "category": "Advanced Analytics",
+          "items": ["Predictive close-rate modeling", "A/B testing of scripts", "Performance correlation dashboards", "Team leaderboards"]
+        }
+      }
+    },
+    "Metrics": {
+      "badge": "Success Criteria",
+      "title": "How We Measure Success",
+      "items": {
+        "usage": {
+          "category": "Usage",
+          "title": "Do trainers engage?",
+          "items": ["Email open rate > 60%", "Trainers reference feedback in calls", "Ariel uses aggregate summaries weekly"]
+        },
+        "value": {
+          "category": "Value",
+          "title": "Is feedback helpful?",
+          "items": ["Qualitative survey: 4+ out of 5", "Trainers request more detail (good sign)", "Ariel saves 5+ hrs/week on manual review"]
+        },
+        "quality": {
+          "category": "Quality",
+          "title": "Is AI accurate?",
+          "items": ["Rubric scores align with Ariel's judgment 80%+", "No hallucinated quotes", "Actionable suggestions (not generic)"]
+        },
+        "business": {
+          "category": "Business",
+          "title": "Does it impact outcomes?",
+          "items": ["Close rate improvement tracked", "Time-to-close reduction", "Trainer confidence increases"]
+        }
+      }
+    },
+    "Roadmap": {
+      "badge": "What's Next",
+      "title": "Post-MVP Roadmap",
+      "subtitle": "After the MVP (Starter → Pro → Pro + RAG), here's how Ask Moses can continue to evolve.",
+      "mvpTimelineTitle": "MVP Build Timeline",
+      "week12": "Week 1-2",
+      "week12Name": "Starter",
+      "week12Desc": "Manual Upload + AI Core",
+      "week3": "Week 3",
+      "week3Name": "Pro",
+      "week3Desc": "+ Twilio Integration",
+      "week4": "Week 4",
+      "week4Name": "Pro + RAG",
+      "week4Desc": "+ Knowledge Base",
+      "phases": {
+        "crm": {
+          "phase": "Phase 2",
+          "title": "CRM Integration",
+          "timeline": "Post-MVP",
+          "items": ["GoHighLevel (Pepper) sync", "Auto-pull trainer contacts", "Sync coaching results to CRM", "Workflow triggers"]
+        },
+        "coaching": {
+          "phase": "Phase 3",
+          "title": "Enhanced Coaching",
+          "timeline": "Future",
+          "items": ["Interactive coach dashboard", "Trainer response tracking", "Script A/B testing", "Detailed analytics"]
+        },
+        "realtime": {
+          "phase": "Phase 4",
+          "title": "Real-Time Features",
+          "timeline": "Long-term",
+          "items": ["Live call guidance", "Voice tone analysis", "Real-time objection handling", "Instant coaching nudges"]
+        },
+        "platform": {
+          "phase": "Phase 5",
+          "title": "Platform Scale",
+          "timeline": "Long-term",
+          "items": ["Multi-tenant SaaS", "White-label offering", "Enterprise SSO", "Public API"]
+        }
+      }
+    },
+    "Reusability": {
+      "title": "Built to Evolve",
+      "subtitle": "Every component we build in the MVP is designed to scale with your product. This is production-ready code, not a throwaway prototype.",
+      "th": {
+        "component": "MVP Component",
+        "whatWeBuild": "What We Build",
+        "phase15": "Phase 1.5: Twilio",
+        "phase2": "Phase 2: GHL",
+        "phase3": "Phase 3: Enhanced",
+        "reuse": "Reuse"
+      },
+      "components": {
+        "rubric": {
+          "component": "Script/Rubric Manager",
+          "mvp": "Create & edit sales scripts",
+          "phase15": "Same, no change needed",
+          "phase2": "Per-team scripts via GHL",
+          "phase3": "A/B testing scripts",
+          "reusabilityReason": "Core CRUD logic, database schema, and UI components remain unchanged. Only minor additions for team-based filtering."
+        },
+        "upload": {
+          "component": "Manual Call Upload",
+          "mvp": "Audio upload + paste transcript",
+          "phase15": "Replaced by Twilio webhook",
+          "phase2": "Auto-pull from GHL",
+          "phase3": "Multi-source ingestion",
+          "reusabilityReason": "File processing and transcription pipeline reused. Upload UI becomes secondary input method alongside webhooks."
+        },
+        "analysis": {
+          "component": "AI Call Analysis",
+          "mvp": "Per-section scoring & citations",
+          "phase15": "Real-time processing",
+          "phase2": "Sync results to CRM",
+          "phase3": "Detailed analytics",
+          "reusabilityReason": "AI prompts, scoring logic, and analysis pipeline are fully reusable. Only adds output destinations (CRM, real-time)."
+        },
+        "email": {
+          "component": "Post-Call Coaching Email",
+          "mvp": "Branded HTML + tips",
+          "phase15": "Auto-triggered on call end",
+          "phase2": "GHL workflow triggers",
+          "phase3": "Trainer response tracking",
+          "reusabilityReason": "Email templates, sending logic, and formatting are 100% reusable. Future phases only change when/how it's triggered."
+        },
+        "summary": {
+          "component": "Aggregate Summary",
+          "mvp": "Daily/weekly digest",
+          "phase15": "Same, no change needed",
+          "phase2": "Team comparisons",
+          "phase3": "Advanced analytics dashboard",
+          "reusabilityReason": "Data aggregation queries and summary generation reused. Phase 3 adds new visualizations on top of same data layer."
+        },
+        "history": {
+          "component": "Simple History Page",
+          "mvp": "Search & filter calls",
+          "phase15": "Real-time updates",
+          "phase2": "CRM-linked records",
+          "phase3": "Interactive coach dashboard",
+          "reusabilityReason": "Database queries, filtering logic, and table components fully reused. Future phases extend with additional columns and views."
+        }
+      },
+      "stats": {
+        "avgReusability": "Average Code Reusability",
+        "stack": "Industry Standard Stack",
+        "vendorLockIn": "Vendor Lock-in"
+      },
+      "codeVsNoCode": {
+        "title": "Code vs No-Code Platforms",
+        "noCodeTitle": "No-Code (Bubble, Glide)",
+        "noCodeItems": ["Platform lock-in", "Limited AI customization", "Needs specialized \"no-code dev\"", "Rewrite needed to scale", "Monthly platform fees forever"],
+        "codeTitle": "This MVP (Next.js + Vercel)",
+        "codeItems": ["You own the code 100%", "Full AI SDK access", "Any React/Next.js dev can maintain", "Scale without rewriting", "Deploy anywhere (Vercel, AWS, etc.)"]
+      }
+    },
+    "Pricing": {
+      "badge": "Investment",
+      "title": "Choose Your Starting Point",
+      "subtitle": "All tiers include production-ready code you own. ~90% reusable as you scale.",
+      "recommended": "Recommended",
+      "notIncluded": "Not included:",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "price": "$4,050",
+          "timeline": "2 weeks",
+          "description": "Week 1-2: Validate the core AI coaching value with manual workflow",
+          "features": ["Script/Rubric Manager", "Manual Call Upload (audio or transcript)", "AI Call Analysis (Whisper + GPT-4o)", "Post-Call Coaching Email", "Aggregate Summary", "Simple History Page"],
+          "notIncluded": ["Twilio Integration", "RAG System"]
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$8,100",
+          "timeline": "3 weeks",
+          "description": "Week 3: Automated call ingestion for hands-off operation",
+          "features": ["Everything in Starter", "Twilio/GHL Webhook Integration", "Automatic call ingestion", "Contact metadata sync", "Zero manual upload needed"],
+          "notIncluded": ["RAG System"]
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "price": "$11,407",
+          "timeline": "4 weeks",
+          "description": "Week 4: Context-aware coaching powered by your training materials",
+          "features": ["Everything in Pro", "RAG System (vector search)", "Multi-document knowledge base", "Context-aware AI coaching", "Training materials integration", "Dynamic reference lookup"],
+          "notIncluded": []
+        }
+      },
+      "upgrade": {
+        "title": "Upgrade Path",
+        "starter": "Starter",
+        "proPlus": "Pro (+$4,050)",
+        "ragPlus": "Pro + RAG (+$3,307)",
+        "note": "Start with Starter to validate fast. Upgrade anytime — your codebase is built to evolve."
+      },
+      "ongoing": {
+        "title": "Ongoing Costs (Post-MVP)",
+        "perCallTitle": "Per Call Analysis Cost",
+        "perCallNote": "Based on average call duration: 12.5 minutes (range: 5-20 min)",
+        "th": {
+          "stack": "Stack",
+          "transcription": "Transcription",
+          "analysis": "Analysis",
+          "costCall": "Cost/Call"
+        },
+        "rows": {
+          "premium": { "stack": "Premium", "transcription": "Whisper ($0.075)", "analysis": "GPT-4o ($0.10)", "cost": "~$0.18" },
+          "recommended": { "stack": "Recommended", "transcription": "Whisper ($0.075)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.09" },
+          "budget": { "stack": "Budget", "transcription": "Deepgram ($0.054)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.07" },
+          "ultraBudget": { "stack": "Ultra Budget", "transcription": "Groq Whisper ($0.023)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.03" }
+        },
+        "perCallFootnote": "*Based on 12.5-minute average call. Includes email delivery (~$0.001).",
+        "ragTitle": "RAG Knowledge Base Costs (Pro + RAG tier)",
+        "ragNote": "Audio files require transcription before indexing",
+        "ragTh": { "operation": "Operation", "model": "Model", "cost": "Cost" },
+        "ragRows": {
+          "audio": { "operation": "Audio transcription (12.5 min)", "model": "Whisper", "cost": "~$0.075" },
+          "embedding": { "operation": "Text embedding", "model": "OpenAI ada-002", "cost": "~$0.0001" },
+          "total": { "operation": "Total per audio file indexed", "model": "", "cost": "~$0.08" }
+        },
+        "index50": "Index 50 calls",
+        "index50Value": "~$4.00",
+        "index100": "Index 100 calls",
+        "index100Value": "~$8.00",
+        "ragFootnote": "*One-time cost per document. Text documents (PDFs, docs) only require embedding (~$0.0001 each).",
+        "perCall": "Per Call",
+        "perCallValue": "$0.03 - $0.18",
+        "perCallSubtitle": "Depends on stack choice",
+        "hosting": "Hosting",
+        "hostingValue": "~$20/mo",
+        "hostingSubtitle": "Vercel + Supabase",
+        "perDay": "100 calls/day",
+        "perDayValue": "$90 - $540/mo",
+        "perDaySubtitle": "Estimated API costs"
+      }
+    },
+    "Team": {
+      "badge": "Execution",
+      "title": "Team & Timeline",
+      "evolutionTitle": "Team Evolution",
+      "mvpPhase": "MVP Phase",
+      "aiBuilder": "AI Builder",
+      "aiBuilderSubtitle": "Solo execution with v0",
+      "aiBuilderDesc": "Rapid prototyping and validation using AI-assisted development tools (v0, Vercel, AI SDK)",
+      "postMvpScale": "Post-MVP Scale",
+      "fullStack": "Full Stack Developer",
+      "fullStackSubtitle": "Integration & scaling",
+      "seniorAiPm": "Senior AI PM",
+      "seniorAiPmSubtitle": "Product & strategy",
+      "stats": {
+        "weeks": "2-4 Weeks",
+        "weeksSubtitle": "Depending on tier",
+        "growth": "1 → 3",
+        "growthSubtitle": "Team growth",
+        "aiFirst": "AI-First",
+        "aiFirstSubtitle": "Modern stack"
+      },
+      "stackTitle": "MVP Tech Stack"
+    },
+    "Appendix": {
+      "label": "Appendix",
+      "title": "Detailed Deliverables",
+      "subtitle": "Comprehensive breakdown of what is included in each tier. This serves as the scope contract for the engagement.",
+      "tierLabel": "Tier {n}",
+      "deliveredStatus": "DELIVERED ✓",
+      "disclaimer": "Note:",
+      "disclaimerBody": "Any features, integrations, or modifications not explicitly listed above are considered out of scope and will require a separate agreement. Changes to scope during development may affect timeline and pricing.",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "timeline": "Week 1-2",
+          "deliverables": {
+            "rubric": {
+              "category": "Script & Rubric Manager",
+              "items": [
+                { "text": "Create/edit scoring rubric with criteria", "note": "Persisted in Supabase" },
+                { "text": "Define pass/fail thresholds per criterion" },
+                { "text": "Single active script at a time" },
+                { "text": "Customize system prompt for AI analysis" }
+              ]
+            },
+            "upload": {
+              "category": "Manual Call Upload",
+              "items": [
+                { "text": "Upload audio files (.mp3, .wav, .m4a)" },
+                { "text": "Paste transcript text directly" },
+                { "text": "Input trainer name and email manually" },
+                { "text": "Upload progress indicator" }
+              ]
+            },
+            "analysis": {
+              "category": "AI Call Analysis",
+              "items": [
+                { "text": "Whisper transcription (if audio)" },
+                { "text": "GPT-4o analysis against rubric" },
+                { "text": "Fetches criteria + system prompt from Supabase" },
+                { "text": "Score per criterion (pass/fail)" },
+                { "text": "Overall call score" },
+                { "text": "Specific feedback per criterion" },
+                { "text": "Full transcript display for admin review" }
+              ]
+            },
+            "email": {
+              "category": "Post-Call Coaching Email",
+              "items": [
+                { "text": "Manual send coaching email via Resend" },
+                { "text": "Personalized coaching feedback" },
+                { "text": "Actionable improvement tips" },
+                { "text": "Score summary included" },
+                { "text": "Auto-save call to database after email send" }
+              ]
+            },
+            "history": {
+              "category": "Simple History Page",
+              "items": [
+                { "text": "List of all processed calls" },
+                { "text": "Search by trainer name or email" },
+                { "text": "View individual call details with full analysis" },
+                { "text": "Display transcript and scores" }
+              ]
+            },
+            "summary": {
+              "category": "Aggregate Summary",
+              "items": [
+                { "text": "Total calls processed dashboard" },
+                { "text": "Average score trend visualization (line chart)" },
+                { "text": "Top improvement areas aggregated (bar chart)" },
+                { "text": "Smart insights & performance summaries" },
+                { "text": "Achievement badges & trainer recognition" },
+                { "text": "Real-time analytics dashboard" }
+              ]
+            }
+          }
+        },
+        "pro": {
+          "name": "Pro",
+          "timeline": "Week 3",
+          "includes": "Everything in Starter, plus:",
+          "deliverables": {
+            "twilio": {
+              "category": "Twilio Webhook Integration",
+              "items": ["Webhook endpoint for call events", "Automatic call ingestion when call ends", "Twilio signature validation (security)", "Recording URL extraction", "Contact metadata parsing"]
+            },
+            "db": {
+              "category": "Database Enhancements",
+              "items": ["Call queue for processing", "Retry logic for failed processing", "Webhook event logging", "Idempotency handling (no duplicates)"]
+            },
+            "admin": {
+              "category": "Admin Notifications",
+              "items": ["Error alerts for failed processing", "Daily summary email (optional)", "Processing status dashboard"]
+            }
+          }
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "timeline": "Week 4",
+          "includes": "Everything in Pro, plus:",
+          "deliverables": {
+            "rag": {
+              "category": "RAG Knowledge Base",
+              "items": ["Vector database setup (pgvector)", "Document upload interface", "Automatic chunking & embedding", "Support for PDFs, docs, text files"]
+            },
+            "contextual": {
+              "category": "Contextual AI Analysis",
+              "items": ["Semantic search across knowledge base", "Context-aware coaching feedback", "Reference specific training materials", "Quote relevant best practices"]
+            },
+            "management": {
+              "category": "Knowledge Management",
+              "items": ["View/delete uploaded documents", "Re-index documents on demand", "Document usage analytics", "Version tracking for updates"]
+            }
+          }
+        }
+      }
+    },
+    "Footer": {
+      "text": "Ask Moses MVP Proposal — January 2026"
+    }
+  }
+}
