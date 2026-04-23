@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import type { Trainer, CallsByTrainerMap } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
@@ -20,6 +20,7 @@ const trainerKeyMap: Record<string, string> = {
 export function TrainerTabs() {
   const t = useTranslations('Coaching')
   const tStats = useTranslations('Coaching.stats')
+  const locale = useLocale()
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [bestCalls, setBestCalls] = useState<CallsByTrainerMap>({})
   const [worstCalls, setWorstCalls] = useState<CallsByTrainerMap>({})
@@ -28,7 +29,7 @@ export function TrainerTabs() {
   const [activeId, setActiveId] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/coaching')
+    fetch('/api/coaching', { headers: { 'x-locale': locale } })
       .then((r) => r.json())
       .then(({ data }) => {
         if (!data) return
@@ -37,9 +38,9 @@ export function TrainerTabs() {
         setWorstCalls(data.worstCalls)
         setBehavioral(data.trainerBehavioral)
         setRecs(data.coachingRecs)
-        setActiveId(data.trainers[0]?.id ?? '')
+        setActiveId((prev) => prev || data.trainers[0]?.id || '')
       })
-  }, [])
+  }, [locale])
 
   if (!activeId || trainers.length === 0) return null
 

@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
 import { getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
+import type { Locale } from '@/i18n/routing'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -12,7 +13,8 @@ interface Props {
 
 export default async function TrainerCallDetailPage({ params }: Props) {
   const { id } = await params
-  const [call, trainerId] = await Promise.all([getCallById(id), getTrainerDbId()])
+  const locale = (await getLocale()) as Locale
+  const [call, trainerId] = await Promise.all([getCallById(id, { locale }), getTrainerDbId()])
 
   if (!call) notFound()
 

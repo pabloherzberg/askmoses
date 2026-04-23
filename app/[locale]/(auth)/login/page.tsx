@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Role } from '@/lib/types'
-import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
@@ -75,14 +74,19 @@ export default function LoginPage() {
       <div className="flex items-center justify-between mb-10">
         <LogoSVG className="h-14 w-auto" />
         <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            <Link href={`/${locale}`}>
-              <ArrowLeft className="size-4" />
-              {t('backToHome')}
-            </Link>
-          </Button>
           <LanguageSwitcher />
           <ThemeToggle />
+          <Link
+            href={`/${locale}`}
+            aria-label={t('backToHome')}
+            title={t('backToHome')}
+            className="group inline-flex h-8 items-center rounded-md px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <ArrowLeft className="size-4 shrink-0" />
+            <span className="ml-0 max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,margin-left,opacity] duration-300 ease-out group-hover:ml-1.5 group-hover:max-w-[160px] group-hover:opacity-100 group-focus-visible:ml-1.5 group-focus-visible:max-w-[160px] group-focus-visible:opacity-100">
+              {t('backToHome')}
+            </span>
+          </Link>
         </div>
       </div>
 

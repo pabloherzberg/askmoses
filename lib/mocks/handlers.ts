@@ -6,10 +6,6 @@ import {
   globalMetrics,
   supabaseCalls,
   demoCredentials,
-  bestCalls,
-  worstCalls,
-  trainerBehavioral,
-  coachingRecs,
 } from '@/lib/mock-data'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -90,10 +86,8 @@ const apiHandlers = [
     return ok({ clients, metrics: globalMetrics })
   }),
 
-  // GET /api/coaching — trainers + bestCalls + worstCalls + behavioral para o Coaching Center
-  http.get('/api/coaching', () => {
-    return ok({ trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs })
-  }),
+  // GET /api/coaching — passthrough to real API route (server-side translation
+  // of bestCalls/worstCalls.analysis, coachingRecs, and behavioral dimensions)
 
   // GET /api/rubric — delegado para API route real (Supabase)
   // GET /api/rubric?config=true — delegado para API route real (Supabase)

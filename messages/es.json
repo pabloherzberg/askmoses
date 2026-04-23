@@ -173,6 +173,38 @@
       },
       "totalOpportunity": "Oportunidad total",
       "mockFooter": "↑ todos los valores vienen de mock-data.ts — sin cálculo real en el frontend"
+    },
+    "coachingRecommendations": {
+      "title": "Recomendaciones de coaching de IA",
+      "mockBadge": "solo datos mock",
+      "mockFooter": "† todos los valores vienen de mock-data.ts — CTAs no funcionan en la demo · sin lógica real de IA"
+    },
+    "callCard": {
+      "best": {
+        "analysisLabel": "Análisis de IA",
+        "ctaPrefix": "Escuchar en"
+      },
+      "worst": {
+        "analysisLabel": "Análisis de error",
+        "ctaPrefix": "Revisar en"
+      },
+      "ctaAria": "{prefix} {time} — no funcional en la demo"
+    },
+    "behavioralProfile": {
+      "title": "Perfil conductual de correlación",
+      "mockBadge": "solo datos mock",
+      "legend": {
+        "aboveAvg": "Puntuación del vendedor (sobre la media)",
+        "belowAvg": "Puntuación del vendedor (bajo la media)",
+        "teamAvgMarker": "Marcador del promedio del equipo"
+      },
+      "th": {
+        "scoreVsTeam": "Puntuación vs promedio del equipo",
+        "score": "Puntuación",
+        "delta": "Delta",
+        "teamAvg": "Promedio del equipo"
+      },
+      "mockFooter": "† todos los valores vienen de mock-data.ts · verde = sobre la media · naranja = bajo la media · marcador vertical = promedio del equipo · sin cálculo real"
     }
   },
   "Trainer": {

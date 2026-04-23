@@ -173,6 +173,38 @@
       },
       "totalOpportunity": "Total opportunity",
       "mockFooter": "↑ all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "coachingRecommendations": {
+      "title": "AI Coaching Recommendations",
+      "mockBadge": "mock data only",
+      "mockFooter": "† all values from mock-data.ts — CTAs are non-functional in demo · no real AI logic"
+    },
+    "callCard": {
+      "best": {
+        "analysisLabel": "AI Analysis",
+        "ctaPrefix": "Listen at"
+      },
+      "worst": {
+        "analysisLabel": "Error Analysis",
+        "ctaPrefix": "Review at"
+      },
+      "ctaAria": "{prefix} {time} — non-functional in demo"
+    },
+    "behavioralProfile": {
+      "title": "Behavioral Correlation Profile",
+      "mockBadge": "mock data only",
+      "legend": {
+        "aboveAvg": "Trainer score (above avg)",
+        "belowAvg": "Trainer score (below avg)",
+        "teamAvgMarker": "Team avg marker"
+      },
+      "th": {
+        "scoreVsTeam": "Score vs team avg",
+        "score": "Score",
+        "delta": "Delta",
+        "teamAvg": "Team avg"
+      },
+      "mockFooter": "† all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation"
     }
   },
   "Trainer": {

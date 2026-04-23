@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { CoachingRec } from "@/lib/mock-data";
 
 const ORDER_COLORS = [
@@ -50,6 +53,7 @@ interface CoachingRecommendationsProps {
 export function CoachingRecommendations({
   recs,
 }: CoachingRecommendationsProps) {
+  const t = useTranslations('Shared.coachingRecommendations')
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -61,7 +65,7 @@ export function CoachingRecommendations({
           className="text-[13px] font-medium"
           style={{ color: "var(--am-text)" }}
         >
-          AI Coaching Recommendations
+          {t('title')}
         </p>
         <span
           className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
@@ -71,7 +75,7 @@ export function CoachingRecommendations({
             background: "rgba(255,171,46,0.08)",
           }}
         >
-          mock data only
+          {t('mockBadge')}
         </span>
       </div>
 
@@ -79,6 +83,8 @@ export function CoachingRecommendations({
       <div className="flex flex-col gap-3">
         {recs.map((rec) => {
           const badge = ORDER_COLORS[(rec.order - 1) % ORDER_COLORS.length];
+          // CTA styling keys on the English source label; translated labels still
+          // pick the default palette when no color mapping is found.
           const cta = CTA_COLORS[rec.cta] ?? DEFAULT_CTA;
 
           return (
@@ -126,8 +132,7 @@ export function CoachingRecommendations({
 
       {/* Footer note */}
       <p className="mt-4 text-[10px]" style={{ color: "var(--am-amber)" }}>
-        † all values from mock-data.ts — CTAs are non-functional in demo · no
-        real AI logic
+        {t('mockFooter')}
       </p>
     </div>
   );

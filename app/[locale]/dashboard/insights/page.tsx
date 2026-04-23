@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -66,6 +66,7 @@ export default function InsightsPage() {
   const tSuggested = useTranslations("Dashboard.insights.suggestedScript")
   const tShare = useTranslations("Dashboard.insights.shareWithTeam")
   const tFreq = useTranslations("Dashboard.insights.objections.frequency")
+  const locale = useLocale()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
   const [loading, setLoading] = useState(true)
@@ -87,6 +88,15 @@ export default function InsightsPage() {
     loadScripts()
   }, [])
 
+  // Re-fetch insights whenever the user switches language while results are
+  // already on screen. Coaching content is re-translated on each language change
+  // without any client-side cache, per product decision.
+  useEffect(() => {
+    if (!insights || !selectedScript || analyzing) return
+    void handleGenerateInsights()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
+
   async function handleGenerateInsights() {
     if (!selectedScript) return
 
@@ -98,7 +108,7 @@ export default function InsightsPage() {
     try {
       const res = await fetch("/api/insights", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-locale": locale },
         body: JSON.stringify({ scriptId: selectedScript }),
       })
 

@@ -50,7 +50,7 @@ export default function HistoryPage() {
   useEffect(() => {
     async function fetchCalls() {
       setLoading(true)
-      const res = await fetch("/api/calls")
+      const res = await fetch("/api/calls", { headers: { "x-locale": locale } })
       const { data, error } = (await res.json()) as { data: Call[] | null; error: unknown }
       if (!error && data) {
         setCalls([...data].sort((a, b) => b.date.localeCompare(a.date)))
@@ -58,7 +58,7 @@ export default function HistoryPage() {
       setLoading(false)
     }
     fetchCalls()
-  }, [])
+  }, [locale])
 
   const filteredCalls = calls.filter(
     (call) =>
