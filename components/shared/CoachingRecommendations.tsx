@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { CoachingRec } from "@/lib/mock-data";
+import type { CoachingRec, CtaKey } from "@/lib/mock-data";
 
 const ORDER_COLORS = [
   { bg: "#FF5E5E", text: "#fff" },
@@ -9,31 +9,35 @@ const ORDER_COLORS = [
   { bg: "#6E56FF", text: "#fff" },
 ];
 
+// Palette keyed on the stable `ctaKey`, NOT on the translated label.
+// Previously this map used the English label as the key, which caused every
+// non-EN locale to silently fall back to DEFAULT_CTA once `cta` came back
+// translated by the coaching-bundle LLM step.
 const CTA_COLORS: Record<
-  string,
+  CtaKey,
   { color: string; border: string; bg: string }
 > = {
-  "Reference call →": {
+  reference: {
     color: "var(--am-amber)",
     border: "rgba(255,171,46,0.4)",
     bg: "rgba(255,171,46,0.08)",
   },
-  "Share call →": {
+  share: {
     color: "var(--am-green)",
     border: "rgba(34,217,160,0.4)",
     bg: "rgba(34,217,160,0.08)",
   },
-  "View missing →": {
+  viewMissing: {
     color: "var(--am-accent2)",
     border: "rgba(155,135,255,0.4)",
     bg: "rgba(155,135,255,0.08)",
   },
-  "View calls →": {
+  viewCalls: {
     color: "var(--am-blue)",
     border: "rgba(94,179,255,0.4)",
     bg: "rgba(94,179,255,0.08)",
   },
-  "View script →": {
+  viewScript: {
     color: "var(--am-muted)",
     border: "rgba(122,132,154,0.4)",
     bg: "rgba(122,132,154,0.08)",
@@ -83,9 +87,7 @@ export function CoachingRecommendations({
       <div className="flex flex-col gap-3">
         {recs.map((rec) => {
           const badge = ORDER_COLORS[(rec.order - 1) % ORDER_COLORS.length];
-          // CTA styling keys on the English source label; translated labels still
-          // pick the default palette when no color mapping is found.
-          const cta = CTA_COLORS[rec.cta] ?? DEFAULT_CTA;
+          const cta = CTA_COLORS[rec.ctaKey] ?? DEFAULT_CTA;
 
           return (
             <div key={rec.order} className="flex items-start gap-3">

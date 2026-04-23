@@ -50,7 +50,13 @@ export default function HistoryPage() {
   useEffect(() => {
     async function fetchCalls() {
       setLoading(true)
-      const res = await fetch("/api/calls", { headers: { "x-locale": locale } })
+      // `translate=true` opts this listing into server-side translation of
+      // the coaching text fields (feedback/strengths/improvements) used in
+      // the detail modal. Other consumers of /api/calls (the owner /calls
+      // page, /me list) don't render those fields and skip the flag.
+      const res = await fetch(`/api/calls?translate=true`, {
+        headers: { "x-locale": locale },
+      })
       const { data, error } = (await res.json()) as { data: Call[] | null; error: unknown }
       if (!error && data) {
         setCalls([...data].sort((a, b) => b.date.localeCompare(a.date)))

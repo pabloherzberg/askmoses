@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { DM_Sans, DM_Mono } from "next/font/google"
 import { notFound } from "next/navigation"
 import { hasLocale, NextIntlClientProvider } from "next-intl"
-import { setRequestLocale } from "next-intl/server"
+import { getMessages, setRequestLocale } from "next-intl/server"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { MSWProvider } from "@/components/msw-provider"
@@ -64,12 +64,17 @@ export default async function LocaleLayout({ children, params }: Props) {
   }
   setRequestLocale(locale)
 
+  // Pass messages explicitly so every client component under `useTranslations`
+  // has the full dictionary available — relying on provider default silently
+  // breaks `t()` lookups in client components.
+  const messages = await getMessages()
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
         className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}
       >
-        <NextIntlClientProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"

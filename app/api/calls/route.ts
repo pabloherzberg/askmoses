@@ -19,7 +19,12 @@ export async function GET(request: NextRequest) {
   const rubricId = searchParams.get('rubricId') ?? undefined
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined
   const offset = searchParams.get('offset') ? Number(searchParams.get('offset')) : undefined
-  const locale = resolveLocale(request.headers.get('x-locale'))
+  // Translation is opt-in: listings typically don't need the coaching text
+  // (feedback/strengths/improvements only surface on detail). Callers that
+  // DO show that text from the list response pass `?translate=true` to avoid
+  // silently paying LLM cost for columns they never render.
+  const wantsTranslation = searchParams.get('translate') === 'true'
+  const locale = wantsTranslation ? resolveLocale(request.headers.get('x-locale')) : undefined
 
   // Trainer vê somente as próprias calls
   let trainerId: string | undefined

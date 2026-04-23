@@ -27,3 +27,6 @@ yarn-error.log*
 next-env.d.ts
 
 .docs/
+
+# claude code per-machine settings (may contain tokens in permission snippets)
+.claude/settings.local.json
