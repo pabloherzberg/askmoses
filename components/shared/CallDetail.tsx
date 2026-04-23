@@ -1,18 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle, ArrowUpRight } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from '@/lib/constants'
 import type { Call, Role, RubricColor } from '@/lib/types'
 
-const rubricFields: { key: keyof Call['rubricScores']; label: string; color: RubricColor }[] = [
-  { key: 'discovery', label: 'Discovery', color: 'blue' },
-  { key: 'problemAgitation', label: 'Problem Agitation', color: 'amber' },
-  { key: 'offerPresentation', label: 'Offer Presentation', color: 'green' },
-  { key: 'objectionHandling', label: 'Objection Handling', color: 'red' },
-  { key: 'closeAndNextSteps', label: 'Close & Next Steps', color: 'accent2' },
+const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
+  { key: 'discovery',         labelKey: 'discovery',         color: 'blue' },
+  { key: 'problemAgitation',  labelKey: 'problemAgitation',  color: 'amber' },
+  { key: 'offerPresentation', labelKey: 'offerPresentation', color: 'green' },
+  { key: 'objectionHandling', labelKey: 'objectionHandling', color: 'red' },
+  { key: 'closeAndNextSteps', labelKey: 'closeAndNextSteps', color: 'accent2' },
 ]
 
 function scoreColor(score: number) {
@@ -28,8 +29,15 @@ interface CallDetailProps {
 }
 
 export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
+  const t = useTranslations('Shared.callDetail')
+  const tRubric = useTranslations('Shared.rubric')
+  const tOutcomes = useTranslations('Shared.outcomes')
+  const locale = useLocale()
   const [expanded, setExpanded] = useState(false)
   const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
+  const outcomeLabel = call.result in RESULT_STYLES
+    ? tOutcomes(`short.${call.result}`)
+    : tOutcomes('unknown')
 
   const transcriptLines = call.transcript.split('\n')
   const showAll = expanded || transcriptLines.length <= 4
@@ -39,19 +47,19 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
     <div>
       {/* Back */}
       <Link
-        href={backHref}
+        href={`/${locale}${backHref}`}
         className="inline-flex items-center gap-1.5 text-sm mb-6 transition-opacity hover:opacity-70"
         style={{ color: 'var(--am-muted)' }}
       >
         <ArrowLeft size={15} />
-        Back
+        {t('back')}
       </Link>
 
       {/* Header row */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <p className="text-xs mb-1" style={{ color: 'var(--am-muted)' }}>
-            {new Date(call.date).toLocaleDateString('en-US', {
+            {new Date(call.date).toLocaleDateString(locale, {
               weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
             })}{' '}
             · {call.duration} · {call.prospect}
@@ -73,7 +81,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             className="text-xs font-medium px-2.5 py-1 rounded-full font-mono"
             style={{ background: result.bg, color: result.color }}
           >
-            {result.label}
+            {outcomeLabel}
           </span>
         </div>
       </div>
@@ -87,13 +95,13 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
-            Rubric Scores
+            {t('rubricScores')}
           </p>
           <div className="flex flex-col gap-3">
-            {rubricFields.map(({ key, label, color }) => (
+            {rubricFields.map(({ key, labelKey, color }) => (
               <RubricBar
                 key={key}
-                label={label}
+                label={tRubric(labelKey)}
                 value={call.rubricScores[key]}
                 color={color}
               />
@@ -108,7 +116,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-              Strengths
+              {t('strengths')}
             </p>
             <ul className="flex flex-col gap-2">
               {call.strengths.map((s, i) => (
@@ -129,7 +137,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
           >
             <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-              Areas to Improve
+              {t('areasToImprove')}
             </p>
             <ul className="flex flex-col gap-2">
               {call.improvements.map((s, i) => (
@@ -153,7 +161,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
         style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-          Transcript
+          {t('transcript')}
         </p>
         <div
           className="text-xs leading-relaxed font-mono rounded-lg p-4"
@@ -169,7 +177,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             className="mt-2 text-xs transition-opacity hover:opacity-70"
             style={{ color: 'var(--am-accent2)' }}
           >
-            {expanded ? 'Show less ↑' : 'Show more ↓'}
+            {expanded ? t('showLess') : t('showMore')}
           </button>
         )}
       </div>
@@ -181,14 +189,14 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
         >
           <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--am-text)' }}>
-            Coaching Notes
+            {t('coachingNotes')}
           </p>
           <p className="text-xs mb-3" style={{ color: 'var(--am-muted)' }}>
-            Internal notes — not visible to the trainer.
+            {t('coachingNotesSubtitle')}
           </p>
           <textarea
             rows={4}
-            placeholder="Add your coaching notes here..."
+            placeholder={t('coachingNotesPlaceholder')}
             className="w-full text-sm rounded-lg px-3 py-2.5 resize-none outline-none border transition-colors"
             style={{
               background: 'var(--am-bg3)',
@@ -199,7 +207,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--am-border2)')}
           />
           <p className="text-[11px] mt-1.5" style={{ color: 'var(--am-muted)' }}>
-            Notes are not persisted in this demo.
+            {t('coachingNotesFooter')}
           </p>
         </div>
       )}

@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { RevenueEstimatorItem } from '@/lib/types'
 
 interface RevenueEstimatorProps {
@@ -16,6 +19,9 @@ function formatImpact(value: number) {
 }
 
 export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
+  const t = useTranslations('Shared.revenueEstimator')
+  const tLevels = useTranslations('Shared.correlationEngine.levels')
+
   return (
     <div
       className="rounded-2xl p-5 border shadow-md mb-4"
@@ -24,13 +30,13 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          Revenue Impact Estimator
+          {t('title')}
         </p>
         <span
           className="text-[10px] font-medium px-2 py-0.5 rounded"
           style={{ background: 'var(--am-amber-bg)', color: 'var(--am-amber)' }}
         >
-          mock data only
+          {t('mockBadge')}
         </span>
       </div>
 
@@ -38,9 +44,9 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
       <div className="hidden sm:grid grid-cols-[1fr_140px_120px_72px] gap-2 pb-2 mb-1"
         style={{ borderBottom: '1px solid var(--am-border)' }}
       >
-        {(['Skill / section', 'Team avg → target', 'Monthly impact', 'Confidence'] as const).map((label) => (
-          <p key={label} className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-            {label}
+        {(['section', 'teamAvgTarget', 'monthlyImpact', 'confidence'] as const).map((k) => (
+          <p key={k} className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+            {t(`th.${k}`)}
           </p>
         ))}
       </div>
@@ -68,7 +74,7 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
               className="text-[11px] font-medium px-2 py-0.5 rounded"
               style={confidenceStyle[item.confidence]}
             >
-              {item.confidence}
+              {tLevels(item.confidence)}
             </span>
           </div>
         </div>
@@ -77,7 +83,7 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
       {/* Total */}
       <div className="grid grid-cols-2 sm:grid-cols-[1fr_140px_120px_72px] gap-2 pt-3">
         <p className="text-[13px] font-medium col-span-2 sm:col-span-1" style={{ color: 'var(--am-muted)' }}>
-          Total opportunity
+          {t('totalOpportunity')}
         </p>
         <p className="hidden sm:block" />
         <p className="text-base font-bold font-mono" style={{ color: 'var(--am-green)' }}>
@@ -87,7 +93,7 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
 
       {/* Footer note */}
       <p className="text-[10px] mt-3" style={{ color: 'var(--am-amber)' }}>
-        ↑ all values sourced from mock-data.ts — no real calculation on the frontend
+        {t('mockFooter')}
       </p>
     </div>
   )

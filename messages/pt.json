@@ -1,0 +1,1429 @@
+{
+  "Common": {
+    "appName": "AskMoses.AI",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "loading": "Carregando...",
+    "error": "Algo deu errado"
+  },
+  "Navigation": {
+    "overview": "Visão geral",
+    "calls": "Chamadas",
+    "me": "Meu painel",
+    "admin": "Admin",
+    "logout": "Sair"
+  },
+  "Login": {
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Entrar",
+    "submitting": "Entrando...",
+    "invalidCredentials": "E-mail ou senha incorretos",
+    "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
+    "demoAccess": "Acesso demo",
+    "roleSalesPerson": "Vendedor",
+    "roleSalesPersonN": "Vendedor {n}",
+    "roleManager": "Gestor",
+    "roleAdmin": "Admin",
+    "backToHome": "Voltar para o início"
+  },
+  "LanguageSwitcher": {
+    "label": "Idioma",
+    "en": "English",
+    "pt": "Português",
+    "es": "Español",
+    "fr": "Français"
+  },
+  "Shared": {
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "teamOverview": "Visão do time",
+      "calls": "Chamadas",
+      "myDashboard": "Meu painel",
+      "myCalls": "Minhas chamadas",
+      "uploadCall": "Enviar chamada",
+      "history": "Histórico",
+      "analytics": "Analytics",
+      "insights": "Insights",
+      "coachingCenter": "Central de coaching",
+      "scriptBuilder": "Construtor de scripts",
+      "rubric": "Rubrica",
+      "howToUse": "Como usar",
+      "saasPanel": "Painel SaaS",
+      "rubricConfig": "Configuração da rubrica",
+      "tools": "Ferramentas",
+      "starterTier": "Plano Starter",
+      "starterTierSubtitle": "Upload manual",
+      "navigation": "Navegação",
+      "menu": "Menu"
+    },
+    "header": {
+      "openMenu": "Abrir menu",
+      "signOut": "Sair",
+      "clientName": "Unleashed Consulting",
+      "weekProgress": "Semana 6 / 6",
+      "live": "Ao vivo"
+    },
+    "pageTitles": {
+      "dashboard": "Dashboard",
+      "upload": "Enviar chamada",
+      "history": "Histórico de chamadas",
+      "analytics": "Analytics",
+      "insights": "Insights",
+      "scriptBuilder": "Construtor de scripts",
+      "settings": "Configuração da rubrica",
+      "guide": "Como usar"
+    },
+    "outcomes": {
+      "all": "Todos os resultados",
+      "unknown": "Desconhecido",
+      "short": {
+        "closed": "Fechada",
+        "follow_up": "Follow-up",
+        "objection_unresolved": "Objeção",
+        "no_decision": "Sem decisão"
+      },
+      "full": {
+        "closed": "Fechada",
+        "follow_up": "Follow-up",
+        "objection_unresolved": "Objeção não resolvida",
+        "no_decision": "Sem decisão"
+      }
+    },
+    "rubric": {
+      "discovery": "Descoberta",
+      "problemAgitation": "Agitação do problema",
+      "offerPresentation": "Apresentação da oferta",
+      "objectionHandling": "Tratamento de objeções",
+      "closeAndNextSteps": "Fechamento e próximos passos"
+    },
+    "callDetail": {
+      "back": "Voltar",
+      "rubricScores": "Notas da rubrica",
+      "strengths": "Pontos fortes",
+      "areasToImprove": "Pontos a melhorar",
+      "transcript": "Transcrição",
+      "showMore": "Mostrar mais ↓",
+      "showLess": "Mostrar menos ↑",
+      "coachingNotes": "Notas de coaching",
+      "coachingNotesSubtitle": "Notas internas — não visíveis ao vendedor.",
+      "coachingNotesPlaceholder": "Adicione suas notas de coaching aqui...",
+      "coachingNotesFooter": "As notas não são persistidas nesta demo."
+    },
+    "performanceTrend": {
+      "title": "Tendência de performance",
+      "myTrend": "Minha tendência",
+      "mockBadge": "apenas dados mock",
+      "team": "Time",
+      "closeRate": "Taxa de fechamento %",
+      "avgScore": "Nota média",
+      "tooltipCloseRate": "Taxa de fechamento",
+      "tooltipAvgScore": "Nota média",
+      "mockFooter": "↑ valores vindos de mock-data.ts · Recharts LineChart · sem cálculo real"
+    },
+    "correlationEngine": {
+      "title": "Correlation Engine — O que leva ao fechamento",
+      "mockBadge": "apenas dados mock",
+      "legend": {
+        "highCorrelation": "Correlação alta",
+        "medCorrelation": "Correlação média",
+        "lowCorrelation": "Correlação baixa",
+        "rubric": "Rubrica",
+        "behavioral": "Comportamental"
+      },
+      "th": {
+        "score": "Nota",
+        "percent": "%",
+        "correlation": "Corr.",
+        "impact": "Impacto",
+        "source": "Fonte"
+      },
+      "levels": {
+        "High": "Alta",
+        "Med": "Média",
+        "Low": "Baixa"
+      },
+      "sources": {
+        "Rubric": "Rubrica",
+        "Behavioral": "Comportamental"
+      },
+      "mockFooter": "† todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+    },
+    "rubricGapDetection": {
+      "title": "Detecção de gaps na rubrica",
+      "mockBadge": "apenas dados mock",
+      "th": {
+        "frequency": "Freq.",
+        "gapDetected": "Gap detectado"
+      },
+      "addToRubric": "Adicionar à rubrica →",
+      "notCovered": "Não coberto",
+      "mockFooter": "† todos os valores vêm de mock-data.ts — Adicionar à rubrica → não funciona nesta demo"
+    },
+    "revenueEstimator": {
+      "title": "Estimador de impacto em receita",
+      "mockBadge": "apenas dados mock",
+      "th": {
+        "section": "Habilidade / seção",
+        "teamAvgTarget": "Média do time → meta",
+        "monthlyImpact": "Impacto mensal",
+        "confidence": "Confiança"
+      },
+      "totalOpportunity": "Oportunidade total",
+      "mockFooter": "↑ todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+    },
+    "coachingRecommendations": {
+      "title": "Recomendações de coaching da IA",
+      "mockBadge": "apenas dados mock",
+      "mockFooter": "† todos os valores vêm de mock-data.ts — CTAs não funcionam na demo · sem lógica real de IA"
+    },
+    "callCard": {
+      "best": {
+        "analysisLabel": "Análise da IA",
+        "ctaPrefix": "Ouvir em"
+      },
+      "worst": {
+        "analysisLabel": "Análise de erro",
+        "ctaPrefix": "Revisar em"
+      },
+      "ctaAria": "{prefix} {time} — não funcional na demo"
+    },
+    "behavioralProfile": {
+      "title": "Perfil comportamental de correlação",
+      "mockBadge": "apenas dados mock",
+      "legend": {
+        "aboveAvg": "Nota do vendedor (acima da média)",
+        "belowAvg": "Nota do vendedor (abaixo da média)",
+        "teamAvgMarker": "Marcador da média do time"
+      },
+      "th": {
+        "scoreVsTeam": "Nota vs média do time",
+        "score": "Nota",
+        "delta": "Delta",
+        "teamAvg": "Média do time"
+      },
+      "mockFooter": "† todos os valores vêm de mock-data.ts · verde = acima da média · laranja = abaixo da média · marcador vertical = média do time · sem cálculo real"
+    }
+  },
+  "Trainer": {
+    "dashboardLabel": "Meu painel",
+    "greeting": "Olá, {name}",
+    "callsAnalyzedOne": "{count} chamada analisada",
+    "callsAnalyzedOther": "{count} chamadas analisadas",
+    "myScore": "Minha nota",
+    "closeRate": "Taxa de fechamento",
+    "myRubricTitle": "Minha rubrica vs média do time",
+    "myRubricSubtitle": "Verde = acima da média · Vermelho = abaixo da média",
+    "deltaVsTeam": "{delta} vs time ({teamAvg})",
+    "quickStats": "Estatísticas rápidas",
+    "stats": {
+      "closed": "Fechadas",
+      "followUp": "Follow-up",
+      "objection": "Objeção",
+      "noDecision": "Sem decisão"
+    },
+    "recentCalls": "Chamadas recentes",
+    "noCallsYet": "Nenhuma chamada ainda.",
+    "myCallsLabel": "Minhas chamadas",
+    "noCallsFound": "Nenhuma chamada encontrada.",
+    "thProspect": "Prospect",
+    "thDate": "Data",
+    "thScore": "Nota",
+    "thResult": "Resultado",
+    "forbidden": "Você não tem acesso a esta chamada.",
+    "newCall": {
+      "backToDashboard": "Voltar ao meu painel",
+      "title": "Registrar nova chamada",
+      "subtitle": "Preencha os detalhes abaixo e envie para análise.",
+      "callDetails": "Detalhes da chamada",
+      "prospectName": "Nome do prospect",
+      "prospectPlaceholder": "ex. João Silva",
+      "callDate": "Data da chamada",
+      "duration": "Duração",
+      "outcome": "Resultado",
+      "outcomes": {
+        "closed": "Fechada",
+        "followUp": "Follow-up",
+        "noClose": "Não fechada"
+      },
+      "uploadRecording": "Enviar gravação",
+      "pasteTranscript": "Colar transcrição",
+      "dropHere": "Solte sua gravação aqui",
+      "orText": "ou",
+      "browseFiles": "procurar arquivos",
+      "formatHint": "MP3 · MP4 · WAV · M4A · MOV · WebM · até 500 MB",
+      "unsupportedFormat": "Formato não suportado. Envie um arquivo de áudio ou vídeo.",
+      "fileTooBig": "Arquivo excede o limite de 500 MB.",
+      "transcriptPlaceholder": "Cole aqui a transcrição da chamada para análise da IA...",
+      "cancel": "Cancelar",
+      "submit": "Enviar chamada",
+      "submitting": "Enviando…",
+      "success": "Chamada enviada!",
+      "successBody": "Sua chamada com {prospect} foi registrada e enviada para análise da IA.",
+      "successNote": "(Demo da Fase 1 — nenhum dado é persistido)"
+    }
+  },
+  "Owner": {
+    "teamOverview": "Visão do time",
+    "metrics": {
+      "monthlyRevenue": "Receita mensal estimada",
+      "vsBaseline": "% vs base",
+      "avgCloseRate": "Taxa média de fechamento",
+      "ptsSinceWeek1": "pts desde a semana 1",
+      "avgScore": "Nota média",
+      "totalCalls": "Total de chamadas",
+      "activeSalesPeopleOne": "{count} vendedor ativo",
+      "activeSalesPeopleOther": "{count} vendedores ativos",
+      "bestCloseRate": "Melhor taxa de fechamento",
+      "noTrainers": "Sem vendedores"
+    },
+    "teamHealth": {
+      "title": "Saúde do time",
+      "mockBadge": "apenas dados mock",
+      "subtitle": "Quem está evoluindo · quem precisa de atenção esta semana",
+      "th": {
+        "trainer": "VENDEDOR",
+        "status": "STATUS",
+        "closeRate": "FECH. %",
+        "delta": "DELTA"
+      },
+      "callsLabelOne": "{count} chamada",
+      "callsLabelOther": "{count} chamadas",
+      "ptsOne": "pt",
+      "ptsOther": "pts",
+      "mockFooter": "† ponto verde = melhorando · ponto vermelho = piorando · valores de mock-data.ts · sem cálculo real"
+    },
+    "activeAlerts": {
+      "title": "Alertas ativos",
+      "mockBadge": "apenas dados mock",
+      "itemsCountOne": "{count} item requerendo atenção",
+      "itemsCountOther": "{count} itens requerendo atenção",
+      "mockFooter": "↑ vermelho = crítico · amarelo = alerta · verde = positivo · CTAs não funcionam nesta demo · dados de mock-data.ts"
+    },
+    "rubricBySection": "Rubrica por seção — Média do time",
+    "detailedRubricLabel": "Nota por vendedor — Rubrica detalhada",
+    "detailedRubricTh": {
+      "section": "Seção",
+      "team": "Time"
+    },
+    "aiInsights": "Insights de IA",
+    "calls": {
+      "teamCallsLabel": "Chamadas do time",
+      "allCalls": "Todas as chamadas",
+      "myCalls": "Minhas chamadas",
+      "myCallsLabel": "Minhas chamadas",
+      "callsAnalyzedOne": "{count} chamada analisada",
+      "callsAnalyzedOther": "{count} chamadas analisadas",
+      "noCallsFound": "Nenhuma chamada encontrada.",
+      "filterAllSalesPeople": "Todos os vendedores",
+      "thTrainer": "Vendedor",
+      "thProspect": "Prospect",
+      "thDate": "Data",
+      "thScore": "Nota",
+      "thResult": "Resultado",
+      "forbidden": "Você não tem acesso a esta chamada."
+    }
+  },
+  "Admin": {
+    "saasPanel": "Painel SaaS",
+    "globalOverview": "Visão global",
+    "allClientsDate": "Todos os clientes · Março de 2026",
+    "metrics": {
+      "totalClients": "Total de clientes",
+      "activeAccounts": "contas ativas",
+      "callsThisMonth": "Chamadas este mês",
+      "vsLastMonth": "vs mês passado",
+      "mrr": "MRR",
+      "avgScore": "Nota média",
+      "ptsVsLastMonth": "pts vs mês passado"
+    },
+    "clientsLabel": "Clientes",
+    "th": {
+      "client": "Cliente",
+      "plan": "Plano",
+      "salesPeople": "Vendedores",
+      "callsPerMonth": "Chamadas / mês",
+      "avgScore": "Nota média",
+      "mrr": "MRR",
+      "health": "Saúde"
+    },
+    "health": {
+      "healthy": "Saudável",
+      "atRisk": "Em risco",
+      "churning": "Crítico"
+    },
+    "rubric": {
+      "label": "Config. da rubrica",
+      "title": "Configuração da rubrica",
+      "subtitle": "Gerencie os critérios de avaliação enviados à IA em cada análise de chamada.",
+      "critical": "Crítico",
+      "optional": "Opcional",
+      "toggleAria": "Alternar {name} como crítico",
+      "systemPromptTitle": "Prévia do system prompt da IA",
+      "systemPromptSubtitle": "Este prompt é enviado à IA em cada análise de chamada. Somente leitura nesta demo.",
+      "save": "Salvar alterações",
+      "saving": "Salvando...",
+      "toastSavedTitle": "Salvo",
+      "toastSavedBody": "Critérios da rubrica atualizados com sucesso.",
+      "toastErrorTitle": "Erro",
+      "toastErrorBody": "Falha ao salvar alterações da rubrica. Tente novamente."
+    }
+  },
+  "Coaching": {
+    "label": "Central de coaching",
+    "subtitle": "Melhores chamadas da semana — use como material de referência em treinamentos do time.",
+    "callsLabelOne": "{count} chamada",
+    "callsLabelOther": "{count} chamadas",
+    "lastActive": "última atividade {when}",
+    "closeRateSuffix": "{value}% taxa de fechamento",
+    "stats": {
+      "avgScore": "Nota média",
+      "thisWeek": "esta semana",
+      "closeRate": "Taxa de fechamento",
+      "delta": "delta",
+      "totalCalls": "Total de chamadas",
+      "allTime": "total",
+      "thisWeekCard": "Esta semana",
+      "callsProcessed": "chamadas processadas"
+    },
+    "bestCall": "Melhor chamada da semana",
+    "worstCall": "Pior chamada da semana",
+    "mockBadge": "apenas dados mock",
+    "mockFooterBest": "† todos os valores vêm de mock-data.ts — Ouvir em X:XX → não funciona nesta demo",
+    "mockFooterWorst": "† todos os valores vêm de mock-data.ts — Revisar em X:XX → não funciona nesta demo"
+  },
+  "Dashboard": {
+    "home": {
+      "welcomeBack": "Bem-vindo de volta",
+      "subtitle": "Envie uma chamada para receber feedback da IA",
+      "uploadCall": "Enviar chamada",
+      "totalCalls": "Total de chamadas",
+      "callsAnalyzed": "Chamadas analisadas",
+      "passRate": "Taxa de aprovação",
+      "passRateHint": "Nota ≥ 75",
+      "avgScore": "Nota média",
+      "perCall": "Por chamada",
+      "thisWeek": "Esta semana",
+      "callsProcessed": "Chamadas processadas",
+      "quickLinks": "Links rápidos",
+      "uploadNewCall": "Enviar nova chamada",
+      "viewFullHistory": "Ver histórico completo",
+      "configureRubric": "Configurar rubrica",
+      "customizeSystemPrompt": "Customizar system prompt"
+    },
+    "trendChart": {
+      "title": "Tendência de nota",
+      "subtitle": "Nota média ao longo do tempo",
+      "noData": "Sem dados ainda",
+      "scoreLabel": "Nota"
+    },
+    "history": {
+      "title": "Histórico de chamadas",
+      "subtitle": "Revise todas as chamadas processadas e o feedback de coaching",
+      "searchCalls": "Buscar chamadas",
+      "searchPlaceholder": "Buscar por nome do vendedor ou prospect...",
+      "allCalls": "Todas as chamadas",
+      "callsFoundOne": "{count} chamada encontrada",
+      "callsFoundOther": "{count} chamadas encontradas",
+      "noCallsFound": "Nenhuma chamada encontrada",
+      "th": {
+        "salesPerson": "Vendedor",
+        "prospect": "Prospect",
+        "date": "Data",
+        "outcome": "Resultado",
+        "score": "Nota",
+        "actions": "Ações"
+      },
+      "view": "Ver",
+      "showingRange": "Exibindo {from} a {to} de {total}",
+      "previous": "Anterior",
+      "next": "Próxima",
+      "with": "com {prospect}",
+      "overallScore": "Nota geral",
+      "outcome": "Resultado",
+      "summary": "Resumo",
+      "strengths": "Pontos fortes",
+      "areasToImprove": "Pontos a melhorar",
+      "sectionBreakdown": "Detalhamento por seção"
+    },
+    "analytics": {
+      "title": "Analytics e Insights",
+      "subtitle": "Tendências agregadas de performance e recomendações de melhoria",
+      "insightLabel": "Insight",
+      "overallPerformance": "Performance geral: nota média {avg} em {count} chamadas",
+      "topImprovementArea": "Principal área de melhoria: \"{name}\" com nota média {score}",
+      "teamAverage": "Média do time: {avg} — Foque em consistência",
+      "closedDeals": "Negócios fechados",
+      "notClosed": "Não fechados",
+      "partial": "Parcial",
+      "closeRate": "Taxa de fechamento",
+      "conversionLeaderboard": "Ranking de conversão",
+      "conversionSubtitle": "Taxa de fechamento por vendedor",
+      "performanceTrend": "Tendência de performance",
+      "performanceTrendSubtitle": "Nota média ao longo do tempo",
+      "avgScoreLine": "Nota média %",
+      "topImprovementAreas": "Principais áreas de melhoria",
+      "topImprovementSubtitle": "Seções da rubrica com menores notas médias",
+      "avgScoreBar": "Nota média",
+      "noDataYet": "Sem dados disponíveis ainda",
+      "teamAchievements": "Conquistas do time",
+      "badges": {
+        "masterCoach": "Master Coach",
+        "masterCoachReason": "Maior nota média: {score}",
+        "perfectCalls": "Chamadas perfeitas",
+        "perfectCallsReason": "{count} chamada(s) com nota ≥ 95",
+        "risingStar": "Em ascensão",
+        "risingStarReason": "Tendência recente de melhoria"
+      },
+      "emptyTitle": "Sem dados ainda",
+      "emptyBody": "Processe algumas chamadas para ver analytics e insights"
+    },
+    "guide": {
+      "title": "Como usar",
+      "subtitle": "Guia completo para analisar chamadas e fazer coaching do time",
+      "quickStart": "Início rápido",
+      "quickStartSubtitle": "Comece em 3 passos simples",
+      "quickStep1Title": "Criar um script",
+      "quickStep1Desc": "Defina seu processo de vendas",
+      "quickStep2Title": "Enviar uma chamada",
+      "quickStep2Desc": "Áudio ou transcrição",
+      "quickStep3Title": "Enviar feedback",
+      "quickStep3Desc": "E-mail de coaching para o vendedor",
+      "stepByStep": "Guia passo a passo",
+      "stepLabel": "Passo {n}",
+      "howToDoIt": "Como fazer:",
+      "proTips": "Dicas pro",
+      "faqTitle": "Perguntas frequentes",
+      "needMoreHelp": "Precisa de mais ajuda?",
+      "needMoreHelpBody1": "Consulte a ",
+      "needMoreHelpLink": "Documentação técnica",
+      "needMoreHelpBody2": " para detalhes da API, schema do banco e guias de integração. Para pedir features ou reportar problemas, contate seu administrador.",
+      "steps": {
+        "script": {
+          "title": "Configure seu script de vendas",
+          "description": "Defina o processo ideal que os vendedores devem seguir",
+          "location": "Página Rubrica",
+          "details": [
+            "Vá para a página Rubrica no menu lateral",
+            "Clique em 'Criar script' para adicionar um novo script de vendas",
+            "Adicione nome e descrição para o script",
+            "Defina seções (ex.: Saudação, Descoberta, Demo, Fechamento)",
+            "Para cada seção, adicione instruções e dicas",
+            "O sistema gera automaticamente critérios de avaliação"
+          ],
+          "tips": [
+            "Seja específico nas instruções de cada seção para melhor análise da IA",
+            "Inclua dicas que ajudem o vendedor a entender o que é excelente",
+            "Você pode criar vários scripts para diferentes tipos de chamada"
+          ]
+        },
+        "upload": {
+          "title": "Enviar uma chamada",
+          "description": "Envie gravações ou transcrições para análise da IA",
+          "location": "Página Enviar chamada",
+          "details": [
+            "Vá para Enviar chamada no menu lateral",
+            "Informe nome e e-mail do vendedor",
+            "Selecione o script de vendas a ser avaliado",
+            "Escolha o método: áudio ou colar transcrição",
+            "Para áudio: envie MP3, WAV ou M4A (máx. 25MB)",
+            "Para transcrição: cole o texto da chamada diretamente",
+            "Clique em 'Analisar chamada' para iniciar a avaliação da IA"
+          ],
+          "tips": [
+            "Áudios são transcritos automaticamente pela IA",
+            "Áudio limpo gera transcrições melhores",
+            "Inclua marcação de falantes ao colar transcrição manualmente"
+          ]
+        },
+        "review": {
+          "title": "Revisar análise da IA",
+          "description": "Veja o feedback detalhado de como o vendedor seguiu o script",
+          "location": "Após o envio",
+          "details": [
+            "Veja a nota geral (seções cobertas vs. total)",
+            "Veja aprovação/reprovação de cada critério",
+            "Leia o feedback específico de cada seção",
+            "Revise os pontos fortes destacados pela IA",
+            "Confira as sugestões de melhoria",
+            "Acesse a transcrição completa como referência"
+          ],
+          "tips": [
+            "A IA avalia com base nas seções do seu script",
+            "O feedback é construtivo e acionável",
+            "Use a transcrição para validar as observações da IA"
+          ]
+        },
+        "email": {
+          "title": "Enviar e-mail de coaching",
+          "description": "Envie feedback personalizado direto para o vendedor",
+          "location": "Página de resultados",
+          "details": [
+            "Após a análise, clique em 'Enviar e-mail de coaching'",
+            "O e-mail é enviado para o endereço do vendedor",
+            "O e-mail inclui nota, resumo e feedback detalhado",
+            "Vendedores recebem dicas acionáveis de melhoria",
+            "A chamada é automaticamente salva no histórico"
+          ],
+          "tips": [
+            "E-mails são com marca e profissionais",
+            "Vendedores podem revisar no próprio ritmo",
+            "Considere dar follow-up nas áreas que precisam de atenção"
+          ]
+        },
+        "track": {
+          "title": "Acompanhar a performance",
+          "description": "Monitore tendências e identifique oportunidades de coaching",
+          "location": "Páginas Histórico & Analytics",
+          "details": [
+            "Histórico: veja todas as chamadas com busca e filtros",
+            "Filtre por nome, data ou nota",
+            "Clique em qualquer chamada para ver detalhes e transcrição",
+            "Analytics: veja métricas agregadas de performance",
+            "Acompanhe taxas de aprovação por critério",
+            "Identifique quais seções precisam de mais treinamento"
+          ],
+          "tips": [
+            "Revisão regular ajuda a identificar padrões de treinamento",
+            "Critérios com baixa performance indicam oportunidades de coaching",
+            "Use filtros para focar em vendedores ou períodos específicos"
+          ]
+        },
+        "insights": {
+          "title": "Gerar insights do time",
+          "description": "Use reconhecimento de padrões para otimizar o script com base em dados reais",
+          "location": "Página Insights",
+          "details": [
+            "Vá para Insights no menu lateral",
+            "Selecione um script de vendas na lista",
+            "Clique em 'Gerar insights' para analisar todas as chamadas desse script",
+            "O sistema agrupa as chamadas por resultado: Fechada, Não fechada e Parcial",
+            "A IA analisa padrões entre os grupos e gera insights",
+            "Revise os DO's — boas práticas de quem fecha mais",
+            "Revise os DON'Ts — comportamentos que perdem deals",
+            "Estude objeções comuns e como os closers lidam com elas",
+            "Revise o checklist pré-chamada e o script otimizado sugerido",
+            "Clique em 'Salvar como novo script' para criar um script melhorado",
+            "Envie os insights como boletim semanal ao seu time"
+          ],
+          "tips": [
+            "São necessárias ao menos 5-10 chamadas por script para insights significativos",
+            "Insights são baseados em dados reais, não em teoria",
+            "Isso é reconhecimento de padrões, não aprendizado por reforço completo — identifica o que funciona no seu contexto",
+            "Salve padrões de sucesso como novos scripts para testar em campo",
+            "Compartilhe boletins semanais com o time para alinhar boas práticas"
+          ]
+        }
+      },
+      "faqs": [
+        { "q": "Quais formatos de áudio são suportados?", "a": "Suportamos MP3, WAV, M4A e formatos comuns. Arquivos devem ter menos de 25MB. Para maiores, considere comprimir ou dividir." },
+        { "q": "Qual a precisão da transcrição da IA?", "a": "Usamos OpenAI Whisper, altamente preciso para áudio claro. Para melhores resultados, garanta qualidade de áudio com pouco ruído de fundo." },
+        { "q": "Posso editar os critérios gerados?", "a": "Hoje, os critérios são gerados automaticamente das seções do script. Você pode modificar o script e as seções para ajustar o que é avaliado." },
+        { "q": "Como funciona a nota da IA?", "a": "A IA lê a transcrição e compara com as seções definidas. Cada seção é marcada como 'coberta' ou 'não coberta' conforme o vendedor abordou os pontos-chave." },
+        { "q": "Posso usar modelos de IA diferentes?", "a": "Sim! Nas configurações de Rubrica, escolha entre OpenAI GPT-4o Mini (rápido e econômico) ou Google Gemini 2.5 (análise mais profunda)." },
+        { "q": "Por que não consigo enviar e-mail para outros endereços?", "a": "No MVP/testes, e-mails são restritos à conta registrada. Para enviar a qualquer endereço, é preciso verificar um domínio próprio no Resend." },
+        { "q": "Como crio vários scripts?", "a": "Vá para Rubrica, clique em 'Criar script' e defina um novo script com seções próprias. Ao enviar chamadas, selecione qual script avaliar." },
+        { "q": "O que é a feature de Insights?", "a": "Insights usa reconhecimento de padrões nas chamadas agrupadas por resultado (Fechada, Não fechada, Parcial). Identifica o que closers bem-sucedidos têm em comum, erros recorrentes, objeções comuns e sugere um script otimizado. Diferente de reinforcement learning — é pattern matching baseado em dados reais." },
+        { "q": "Qual a diferença entre Insights e Reinforcement Learning?", "a": "Reinforcement learning de verdade iteraria o script automaticamente via ciclos de feedback com sinais de recompensa. Insights é um nível mais simples: reconhecimento de padrões + geração de script. Você envia chamadas, analisamos padrões e sugerimos melhorias. Você decide se testa o novo script. Versões futuras podem automatizar o loop." },
+        { "q": "Quantas chamadas são necessárias para gerar insights?", "a": "É possível gerar com menos, mas 5-10 chamadas por script já fornecem padrões significativos. Com mais chamadas e mais diversidade, os padrões ficam estatisticamente mais significativos." },
+        { "q": "Posso customizar a análise de insights?", "a": "Atualmente a IA analisa com base em resultados e transcrições comparados ao script. A análise inclui DO's, DON'Ts, objeções comuns e script sugerido. Versões futuras podem permitir parâmetros customizados." }
+      ]
+    },
+    "settings": {
+      "title": "Configuração de Coaching",
+      "subtitle": "Gerencie seus scripts de vendas e sistema de coaching",
+      "systemPromptTitle": "System Prompt",
+      "systemPromptDescription": "Personalize as instruções de coaching da IA",
+      "llmModelLabel": "Modelo LLM para análise",
+      "llmModelHint": "Escolha o modelo de IA usado para analisar chamadas de vendas",
+      "llmOptionGemini25Flash": "Gemini 2.5 Flash (Rápido e equilibrado)",
+      "llmOptionGemini25Pro": "Gemini 2.5 Pro (Mais poderoso)",
+      "llmOptionGemini20Flash": "Gemini 2.0 Flash (Leve)",
+      "llmOptionGemini20FlashLite": "Gemini 2.0 Flash Lite (Mais rápido)",
+      "systemPromptLabel": "System Prompt",
+      "systemPromptPlaceholder": "Insira o system prompt para a análise da IA...",
+      "systemPromptFieldHint": "Personalize as instruções de coaching da IA",
+      "saving": "Salvando...",
+      "saveChanges": "Salvar alterações",
+      "scriptsTitle": "Scripts de vendas",
+      "newScript": "Novo script",
+      "createScriptTitle": "Criar novo script de vendas",
+      "scriptNameLabel": "Nome do script",
+      "scriptNamePlaceholder": "Ex.: Consulta de Adestramento de Cães",
+      "descriptionLabel": "Descrição",
+      "descriptionPlaceholder": "Descreva o processo de vendas e objetivos principais...",
+      "scriptSectionsLabel": "Seções do script",
+      "sectionNamePlaceholder": "Nome da seção (ex.: Saudação)",
+      "sectionInstructionsPlaceholder": "Instruções para esta seção",
+      "sectionTipsPlaceholder": "Dicas (opcional)",
+      "addSection": "Adicionar seção",
+      "createAndGenerate": "Criar e gerar critérios",
+      "cancel": "Cancelar",
+      "activeBadge": "Ativo",
+      "createdOn": "Criado em {date}",
+      "completeScript": "Script completo",
+      "editScriptPlaceholder": "Edite o conteúdo do script...",
+      "save": "Salvar",
+      "scriptSectionsHeading": "Seções do script",
+      "tipEmoji": "💡 {tip}",
+      "autoGeneratedCriteria": "Critérios gerados automaticamente",
+      "deleteScript": "Excluir script",
+      "emptyScripts": "Nenhum script criado ainda. Crie seu primeiro script de vendas para começar."
+    },
+    "insights": {
+      "title": "Insights do Time",
+      "subtitle": "Análise com IA do que funciona e do que não funciona nas calls do seu time",
+      "generateCardTitle": "Gerar Insights",
+      "generateCardDescription": "Selecione um script para analisar todas as calls associadas. A IA encontrará padrões em calls bem e mal-sucedidas e gerará recomendações acionáveis.",
+      "selectScriptLabel": "Selecionar Script",
+      "chooseScriptPlaceholder": "Escolha um script para analisar...",
+      "analyzing": "Analisando calls... Isso pode levar um momento",
+      "generateButton": "Gerar Insights",
+      "errors": {
+        "generateFailed": "Falha ao gerar insights",
+        "sendFailed": "Falha ao enviar insights",
+        "saveFailed": "Falha ao salvar script",
+        "unknown": "Erro desconhecido"
+      },
+      "metrics": {
+        "totalCalls": "Total de Calls",
+        "closed": "Fechadas",
+        "notClosed": "Não Fechadas",
+        "partial": "Parciais",
+        "teamCloseRate": "Taxa de Fechamento do Time"
+      },
+      "whatClosersDo": {
+        "title": "O Que Os Closers Fazem",
+        "subtitleOne": "Padrões comuns encontrados em {count} call bem-sucedida",
+        "subtitleOther": "Padrões comuns encontrados em {count} calls bem-sucedidas"
+      },
+      "whatLosesDeals": {
+        "title": "O Que Perde Negócios",
+        "subtitleOne": "Padrões comuns encontrados em {count} call mal-sucedida",
+        "subtitleOther": "Padrões comuns encontrados em {count} calls mal-sucedidas"
+      },
+      "dos": {
+        "title": "FAÇA",
+        "subtitle": "Melhores práticas dos top closers"
+      },
+      "donts": {
+        "title": "NÃO FAÇA",
+        "subtitle": "Comportamentos que perdem negócios"
+      },
+      "objections": {
+        "title": "Objeções Comuns e Como Lidar com Elas",
+        "subtitle": "Objeções encontradas em todas as calls com as melhores vs piores respostas",
+        "bestResponse": "Melhor Resposta (Closers)",
+        "worstResponse": "Pior Resposta (Não-Closers)",
+        "frequency": {
+          "veryCommon": "Muito Comum",
+          "common": "Comum",
+          "rare": "Rara"
+        }
+      },
+      "keyDifferences": {
+        "title": "Diferenças-Chave Entre Closers e Não-Closers"
+      },
+      "preCallChecklist": {
+        "title": "Checklist Pré-Call",
+        "subtitle": "Com base nas calls bem-sucedidas, todo trainer deve seguir estas etapas antes e durante uma call"
+      },
+      "suggestedScript": {
+        "title": "Script Otimizado Sugerido pela IA",
+        "subtitle": "Com base no que funciona em calls bem-sucedidas, aqui está um script melhorado sugerido",
+        "savedMessage": "Script salvo! Confira suas configurações de Rubrica para visualizá-lo.",
+        "saving": "Salvando como novo script...",
+        "saveButton": "Salvar como Novo Script",
+        "aiOptimizedSuffix": "(Otimizado por IA)",
+        "defaultScriptName": "Script",
+        "aiOptimizedSectionName": "Script Otimizado por IA",
+        "descriptionTemplate": "Script otimizado gerado por IA com base na análise de {total} calls ({closeRate}% de taxa de fechamento)"
+      },
+      "shareWithTeam": {
+        "title": "Compartilhar com o Time",
+        "subtitleOne": "Envie este relatório de insights como um resumo semanal para {count} trainer que tem calls para este script",
+        "subtitleOther": "Envie este relatório de insights como um resumo semanal para todos os {count} trainers que têm calls para este script",
+        "sentMessage": "Insights enviados a todos os membros do time!",
+        "sending": "Enviando ao time...",
+        "sendButton": "Enviar Insights ao Time",
+        "defaultScriptName": "Script de Vendas"
+      }
+    },
+    "scriptBuilder": {
+      "title": "Construtor de Scripts",
+      "subtitle": "Gere um script de vendas estruturado a partir de gravações de áudio ou texto",
+      "createCardTitle": "Crie seu Script",
+      "createCardDescription": "Envie até 3 gravações de áudio de calls bem-sucedidas, cole o texto de um script existente ou combine os dois",
+      "tabs": {
+        "audio": "Arquivos de Áudio",
+        "text": "Entrada de Texto"
+      },
+      "dropzone": {
+        "maxReached": "Máximo de 3 arquivos atingido",
+        "dropHere": "Solte seus arquivos de áudio aqui",
+        "dragAndDrop": "Arraste e solte arquivos de áudio aqui",
+        "orClickOne": "ou clique para navegar (mais {count} disponível)",
+        "orClickOther": "ou clique para navegar (mais {count} disponíveis)"
+      },
+      "selectedFiles": "Arquivos Selecionados ({count}/3)",
+      "fileSizeMb": "{size} MB",
+      "textTab": {
+        "label": "Cole seu script ou transcrição de call",
+        "placeholder": "Cole aqui seu script de vendas existente, transcrição de call ou notas sobre seu processo de vendas...",
+        "charsCount": "{count} caracteres (mínimo de 50 recomendado)"
+      },
+      "combinedIndicatorOne": "Combinando {count} arquivo de áudio com entrada de texto para melhores resultados",
+      "combinedIndicatorOther": "Combinando {count} arquivos de áudio com entrada de texto para melhores resultados",
+      "generateButton": "Gerar Script",
+      "processing": {
+        "mayTake": "Isso pode levar um minuto...",
+        "uploadingAudio": "Enviando áudio {current} de {total}...",
+        "transcribingAudio": "Transcrevendo áudio {current} de {total}...",
+        "analyzing": "Analisando conteúdo e gerando script...",
+        "errorPrefix": "Erro: {message}",
+        "unknownError": "Erro desconhecido",
+        "transcriptionFailed": "Falha na transcrição",
+        "generateFailed": "Falha ao gerar script"
+      },
+      "status": {
+        "pending": "pendente",
+        "uploading": "enviando",
+        "transcribing": "transcrevendo",
+        "done": "concluído",
+        "error": "erro"
+      },
+      "preview": {
+        "whyItWorks": "Por Que Este Script Funciona",
+        "generatedScript": "Script Gerado",
+        "reviewBeforeSaving": "Revise e edite antes de salvar como rubrica",
+        "scriptName": "Nome do Script",
+        "description": "Descrição",
+        "sections": "Seções ({count})",
+        "tipPrefix": "Dica: {tip}",
+        "fullScript": "Script Completo",
+        "evaluationCriteria": "Critérios de Avaliação Gerados Automaticamente ({count})",
+        "createRubric": "Criar Rubrica",
+        "startOver": "Recomeçar"
+      },
+      "confirm": {
+        "backToPreview": "← Voltar à Prévia",
+        "finalizeRubric": "Finalizar Rubrica",
+        "reviewAllSettings": "Revise todas as configurações antes de salvar",
+        "scriptInfo": "Informações do Script",
+        "scriptName": "Nome do Script",
+        "description": "Descrição",
+        "aiConfiguration": "Configuração de IA",
+        "aiConfigurationSubtitle": "Modelo LLM e prompt de sistema herdados da sua rubrica ativa",
+        "llmModelLabel": "Modelo LLM para Análise",
+        "systemPromptLabel": "Prompt do Sistema",
+        "scriptSections": "Seções do Script",
+        "scriptSectionsSubtitle": "Edite as instruções e dicas por seção",
+        "sectionNamePlaceholder": "Nome da seção",
+        "sectionInstructionsPlaceholder": "Instruções para esta seção",
+        "sectionTipsPlaceholder": "Dicas (opcional)",
+        "addSection": "+ Adicionar Seção",
+        "autoGeneratedCriteria": "Critérios Gerados Automaticamente",
+        "autoGeneratedCriteriaSubtitle": "Edite ou remova critérios de avaliação",
+        "criterionNamePlaceholder": "Nome do critério",
+        "criterionDescriptionPlaceholder": "Descrição",
+        "addCriterion": "+ Adicionar Critério",
+        "saving": "Salvando...",
+        "saveRubric": "Salvar Rubrica",
+        "back": "Voltar",
+        "saveFailed": "Falha ao salvar script"
+      },
+      "llmModels": {
+        "gpt4oMini": "OpenAI GPT-4o Mini (Rápido e Econômico)",
+        "gemini25Flash": "Google Gemini 2.5 Flash (Balanceado)",
+        "gemini25Pro": "Google Gemini 2.5 Pro (Poderoso)"
+      }
+    },
+    "upload": {
+      "title": "Enviar chamada",
+      "subtitle": "Envie um arquivo de áudio ou vídeo, ou cole uma transcrição para análise de coaching por IA",
+      "analyzeCall": "Analisar chamada",
+      "processing": {
+        "heading": "Processando chamada",
+        "starting": "Iniciando...",
+        "percentComplete": "{progress}% concluído",
+        "uploadingAudio": "Enviando áudio...",
+        "transcribingAudio": "Transcrevendo áudio...",
+        "analyzingRubric": "Analisando contra a rubrica..."
+      },
+      "errors": {
+        "fileTooLarge": "O arquivo deve ter menos de 50MB.",
+        "uploadFailed": "Falha ao enviar o áudio",
+        "transcribeFailed": "Falha ao transcrever o áudio",
+        "analyzeFailed": "Falha ao analisar a chamada",
+        "sendEmailFailed": "Falha ao enviar o e-mail de coaching",
+        "apiUnavailable": "API indisponível — verifique se o mock service worker (MSW) está em execução",
+        "httpStatus": "HTTP {status}",
+        "generic": "Ocorreu um erro"
+      },
+      "results": {
+        "title": "Resultados da análise",
+        "subtitle": "Revise o feedback de coaching da IA para {name}",
+        "startOver": "Começar de novo",
+        "overallScore": "Nota geral",
+        "scoreSuffix": "/100",
+        "scoreScaleHint": "Média das notas por seção (escala 0–5) × 20",
+        "badges": {
+          "strong": "Forte",
+          "adequate": "Adequado",
+          "needsWork": "Precisa melhorar",
+          "critical": "Crítico"
+        },
+        "outcomeBadge": "Resultado: {label} · Máx {cap}/100",
+        "outcomes": {
+          "closed": {
+            "label": "Fechado",
+            "note": "Negócio fechado — faixa total de nota disponível."
+          },
+          "follow_up": {
+            "label": "Follow-up",
+            "note": "Sem fechamento — nota limitada a 80."
+          },
+          "objection_unresolved": {
+            "label": "Objeção não resolvida",
+            "note": "A objeção não foi superada — nota limitada a 60."
+          },
+          "no_decision": {
+            "label": "Sem decisão",
+            "note": "O prospect saiu sem decisão — nota limitada a 50."
+          }
+        },
+        "sectionBreakdown": "Detalhamento por seção",
+        "sectionBreakdownHint": "Nota 1–5 por seção: 1 = Não abordada, 3 = Adequada, 5 = Excelente",
+        "sectionLabels": {
+          "excellent": "Excelente",
+          "strong": "Forte",
+          "adequate": "Adequado",
+          "needsWork": "Precisa melhorar",
+          "notAttempted": "Não abordada"
+        },
+        "sectionScore": "{score}/5 — {label}",
+        "strengths": "Pontos fortes",
+        "areasForImprovement": "Pontos a melhorar",
+        "summary": "Resumo",
+        "callTranscript": "Transcrição da chamada",
+        "transcriptSubtitle": "Transcrição completa para referência e auditoria",
+        "readyToSend": "Pronto para enviar o feedback de coaching?",
+        "readyToSendSubtitle": "Isso enviará um e-mail motivacional de coaching para {email}",
+        "sending": "Enviando...",
+        "sendCoachingEmail": "Enviar e-mail de coaching"
+      },
+      "complete": {
+        "heading": "E-mail enviado com sucesso!",
+        "subtitle": "O feedback de coaching foi enviado para {email}",
+        "uploadAnother": "Enviar outra",
+        "viewHistory": "Ver histórico"
+      },
+      "form": {
+        "salesPersonInfoTitle": "Informações do vendedor",
+        "salesPersonInfoSubtitle": "Quem deve receber o e-mail de coaching?",
+        "salesPersonLabel": "Vendedor",
+        "selectTrainerPlaceholder": "Selecione um vendedor...",
+        "clientNameLabel": "Nome do cliente",
+        "clientNamePlaceholder": "ex.: João Silva",
+        "clientNameHint": "Nome do prospect ou cliente na chamada",
+        "salesScriptLabel": "Script de vendas *",
+        "selectScriptPlaceholder": "Selecione um script...",
+        "scriptOptionFormat": "{name} - {description}",
+        "salesScriptHint": "Obrigatório para analisar a chamada contra o seu processo de vendas",
+        "noScriptsAvailable": "Nenhum script de vendas disponível. Crie um nas Configurações primeiro.",
+        "callOutcomeLabel": "Resultado da chamada *",
+        "callOutcomeHint": "Como esta chamada terminou?",
+        "outcomes": {
+          "closed": "Fechado",
+          "follow_up": "Follow-up agendado",
+          "objection_unresolved": "Objeção não resolvida",
+          "no_decision": "Sem decisão"
+        },
+        "callContentTitle": "Conteúdo da chamada",
+        "callContentSubtitle": "Envie áudio ou vídeo, ou cole a transcrição diretamente",
+        "tabs": {
+          "audio": "Áudio / Vídeo",
+          "transcript": "Transcrição"
+        },
+        "fileSizeMb": "{size} MB",
+        "dropFileHere": "Solte o arquivo aqui",
+        "dragAndDrop": "Arraste e solte o arquivo de áudio",
+        "supportedFormats": "Áudio: MP3, WAV, M4A, OGG, WEBM · Vídeo: MP4, MOV, AVI",
+        "browseFiles": "Procurar arquivos",
+        "transcriptPlaceholder": "Cole a transcrição da chamada aqui...",
+        "charactersCount": "{count} caracteres"
+      }
+    }
+  },
+  "Landing": {
+    "Nav": {
+      "overview": "Visão geral",
+      "workflow": "Fluxo",
+      "features": "Recursos",
+      "metrics": "Métricas",
+      "roadmap": "Roadmap",
+      "pricing": "Preços",
+      "appendix": "Apêndice",
+      "presentation": "Apresentação",
+      "dashboard": "Dashboard",
+      "toggleMenu": "Abrir menu"
+    },
+    "Hero": {
+      "poweredBy": "Desenvolvido por",
+      "badge": "Proposta de MVP Rápido",
+      "title": "Coaching de Vendas Pós-Ligação com IA para Adestradores de Cães",
+      "subtitle": "Automatize o feedback de coaching após cada ligação de vendas. Transforme sua melhor metodologia de vendas em um coach de IA que escala com o time.",
+      "timelineLabel": "Prazo",
+      "timelineValue": "2 semanas",
+      "teamLabel": "Time",
+      "teamValue": "AI Builder",
+      "approachLabel": "Abordagem",
+      "approachValue": "Upload manual"
+    },
+    "Problem": {
+      "badge": "O Problema",
+      "title": "Coaching manual não escala",
+      "items": [
+        "Ariel revisa ligações manualmente — isso não escala",
+        "Feedback atrasado, inconsistente ou nunca entregue",
+        "Sem forma estruturada de reforçar a metodologia de vendas",
+        "Adestradores perdem momentos de coaching que afetam a taxa de fechamento"
+      ]
+    },
+    "Workflow": {
+      "badge": "Fluxo principal",
+      "title": "Como o Ask Moses funciona",
+      "steps": {
+        "upload":        { "title": "Upload da ligação",      "description": "Admin envia o áudio ou cola a transcrição diretamente" },
+        "transcription": { "title": "Transcrição",            "description": "Se for áudio, o Whisper AI transcreve automaticamente" },
+        "analysis":      { "title": "Análise por IA",         "description": "O LLM avalia a transcrição contra a rubrica de vendas" },
+        "email":         { "title": "E-mail de coaching",     "description": "Feedback personalizado enviado ao adestrador" },
+        "summary":       { "title": "Resumo agregado",        "description": "Ariel recebe um digest diário/semanal de coaching" },
+        "history":       { "title": "Histórico",              "description": "Todas as análises ficam armazenadas e pesquisáveis" }
+      }
+    },
+    "Features": {
+      "badge": "Escopo do MVP",
+      "title": "O que vamos construir",
+      "items": {
+        "rubricManager": {
+          "title": "Gestor de Script / Rubrica",
+          "description": "Interface de admin para a Ariel criar, editar e versionar scripts de vendas e rubricas de avaliação.",
+          "details": ["Suporte a múltiplos scripts", "Histórico de versões", "Editor Markdown", "Seções da rubrica com pesos"]
+        },
+        "manualUpload": {
+          "title": "Upload manual de ligação",
+          "description": "Interface simples para enviar gravações ou colar transcrições para análise.",
+          "details": ["Upload de áudio (.mp3, .wav, .m4a)", "Colagem direta de transcrição", "Transcrição via Whisper AI", "Seleção de adestrador"]
+        },
+        "aiAnalysis": {
+          "title": "Análise de ligação com IA",
+          "description": "Avaliação por LLM de cada ligação contra a rubrica ativa.",
+          "details": ["Pontuação por seção", "Citações de trechos específicos", "Sugestões de melhoria", "Nota geral"]
+        },
+        "coachingEmail": {
+          "title": "E-mail de coaching pós-ligação",
+          "description": "Entrega automática de feedback personalizado por e-mail ao adestrador.",
+          "details": ["Template HTML com marca", "Detalhamento de notas", "Dicas acionáveis", "Tom encorajador"]
+        },
+        "aggregateSummary": {
+          "title": "Resumo agregado",
+          "description": "Digest diário ou semanal para a Ariel com insights de coaching do time todo.",
+          "details": ["Notas médias", "Top performers", "Gaps comuns", "Indicadores de tendência"]
+        },
+        "history": {
+          "title": "Página de histórico",
+          "description": "Registro pesquisável de todas as análises passadas para referência e debug.",
+          "details": ["Filtro por adestrador", "Filtro por data", "Ver análise completa", "Busca básica"]
+        }
+      }
+    },
+    "OutOfScope": {
+      "badge": "Exclusões",
+      "title": "Fora de todos os planos",
+      "subtitle": "Esses recursos não estão incluídos em nenhum dos três planos. Representam fases futuras após a validação do MVP.",
+      "groups": {
+        "crm": {
+          "category": "Integração com CRM",
+          "items": ["Sync com GoHighLevel (Pepper)", "Pull automático de contatos", "Sincronizar resultados no CRM", "Triggers de workflow do CRM"]
+        },
+        "realtime": {
+          "category": "Recursos em tempo real",
+          "items": ["Coaching ao vivo", "Análise de voz em tempo real", "Feedback instantâneo durante a ligação", "Detecção de tom"]
+        },
+        "platform": {
+          "category": "Escala de plataforma",
+          "items": ["Arquitetura multi-tenant", "Solução white-label", "App mobile", "Autenticação SSO / SAML"]
+        },
+        "analytics": {
+          "category": "Analytics avançados",
+          "items": ["Modelagem preditiva de close rate", "Teste A/B de scripts", "Dashboards de correlação de performance", "Rankings do time"]
+        }
+      }
+    },
+    "Metrics": {
+      "badge": "Critérios de sucesso",
+      "title": "Como medimos sucesso",
+      "items": {
+        "usage": {
+          "category": "Uso",
+          "title": "Os adestradores engajam?",
+          "items": ["Taxa de abertura de e-mail > 60%", "Adestradores referenciam o feedback nas ligações", "Ariel usa o resumo agregado semanalmente"]
+        },
+        "value": {
+          "category": "Valor",
+          "title": "O feedback ajuda?",
+          "items": ["Pesquisa qualitativa: 4+ em 5", "Adestradores pedem mais detalhes (bom sinal)", "Ariel economiza 5+ h/semana de revisão manual"]
+        },
+        "quality": {
+          "category": "Qualidade",
+          "title": "A IA é precisa?",
+          "items": ["Notas da rubrica concordam com o julgamento da Ariel em 80%+", "Zero citações alucinadas", "Sugestões acionáveis (não genéricas)"]
+        },
+        "business": {
+          "category": "Negócio",
+          "title": "Impacta os resultados?",
+          "items": ["Melhoria da taxa de fechamento rastreada", "Redução do tempo até o fechamento", "Aumento de confiança dos adestradores"]
+        }
+      }
+    },
+    "Roadmap": {
+      "badge": "O que vem a seguir",
+      "title": "Roadmap pós-MVP",
+      "subtitle": "Depois do MVP (Starter → Pro → Pro + RAG), veja como o Ask Moses pode evoluir.",
+      "mvpTimelineTitle": "Cronograma do MVP",
+      "week12": "Semana 1-2",
+      "week12Name": "Starter",
+      "week12Desc": "Upload manual + núcleo de IA",
+      "week3": "Semana 3",
+      "week3Name": "Pro",
+      "week3Desc": "+ Integração Twilio",
+      "week4": "Semana 4",
+      "week4Name": "Pro + RAG",
+      "week4Desc": "+ Base de conhecimento",
+      "phases": {
+        "crm": {
+          "phase": "Fase 2",
+          "title": "Integração com CRM",
+          "timeline": "Pós-MVP",
+          "items": ["Sync com GoHighLevel (Pepper)", "Pull automático de contatos", "Sincronizar coaching com CRM", "Triggers de workflow"]
+        },
+        "coaching": {
+          "phase": "Fase 3",
+          "title": "Coaching aprimorado",
+          "timeline": "Futuro",
+          "items": ["Dashboard interativo de coach", "Rastreio de resposta dos adestradores", "Teste A/B de scripts", "Analytics detalhados"]
+        },
+        "realtime": {
+          "phase": "Fase 4",
+          "title": "Recursos em tempo real",
+          "timeline": "Longo prazo",
+          "items": ["Orientação ao vivo na ligação", "Análise de tom de voz", "Objection handling em tempo real", "Nudges instantâneos de coaching"]
+        },
+        "platform": {
+          "phase": "Fase 5",
+          "title": "Escala de plataforma",
+          "timeline": "Longo prazo",
+          "items": ["SaaS multi-tenant", "Oferta white-label", "SSO Enterprise", "API pública"]
+        }
+      }
+    },
+    "Reusability": {
+      "title": "Construído para evoluir",
+      "subtitle": "Cada componente que construímos no MVP foi pensado para escalar com o produto. Isso é código pronto pra produção, não um protótipo descartável.",
+      "th": {
+        "component": "Componente do MVP",
+        "whatWeBuild": "O que entregamos",
+        "phase15": "Fase 1.5: Twilio",
+        "phase2": "Fase 2: GHL",
+        "phase3": "Fase 3: Aprimorado",
+        "reuse": "Reuso"
+      },
+      "components": {
+        "rubric": {
+          "component": "Gestor de Script/Rubrica",
+          "mvp": "Criar e editar scripts de vendas",
+          "phase15": "Mesmo, sem mudanças",
+          "phase2": "Scripts por time via GHL",
+          "phase3": "Teste A/B de scripts",
+          "reusabilityReason": "Lógica de CRUD, schema do banco e componentes de UI permanecem inalterados. Só adições menores para filtragem por time."
+        },
+        "upload": {
+          "component": "Upload manual de ligação",
+          "mvp": "Upload de áudio + colagem de transcrição",
+          "phase15": "Substituído por webhook Twilio",
+          "phase2": "Pull automático do GHL",
+          "phase3": "Ingestão multi-fonte",
+          "reusabilityReason": "Pipeline de processamento de arquivos e transcrição é reutilizado. UI de upload vira método secundário, junto dos webhooks."
+        },
+        "analysis": {
+          "component": "Análise de ligação com IA",
+          "mvp": "Pontuação por seção e citações",
+          "phase15": "Processamento em tempo real",
+          "phase2": "Sync de resultados com CRM",
+          "phase3": "Analytics detalhados",
+          "reusabilityReason": "Prompts de IA, lógica de pontuação e pipeline de análise são totalmente reutilizáveis. Só adicionam destinos (CRM, tempo real)."
+        },
+        "email": {
+          "component": "E-mail de coaching pós-ligação",
+          "mvp": "HTML com marca + dicas",
+          "phase15": "Disparado automaticamente ao fim da ligação",
+          "phase2": "Triggers de workflow GHL",
+          "phase3": "Rastreio de resposta do adestrador",
+          "reusabilityReason": "Templates de e-mail, lógica de envio e formatação são 100% reutilizáveis. Fases futuras só mudam quando/como o disparo acontece."
+        },
+        "summary": {
+          "component": "Resumo agregado",
+          "mvp": "Digest diário/semanal",
+          "phase15": "Mesmo, sem mudanças",
+          "phase2": "Comparativos por time",
+          "phase3": "Dashboard avançado de analytics",
+          "reusabilityReason": "Queries de agregação e geração de resumo reutilizadas. Fase 3 só adiciona novas visualizações sobre a mesma camada de dados."
+        },
+        "history": {
+          "component": "Página de histórico",
+          "mvp": "Busca e filtro de ligações",
+          "phase15": "Atualizações em tempo real",
+          "phase2": "Registros vinculados ao CRM",
+          "phase3": "Dashboard interativo de coach",
+          "reusabilityReason": "Queries, lógica de filtros e componentes de tabela totalmente reutilizados. Fases futuras estendem com novas colunas e views."
+        }
+      },
+      "stats": {
+        "avgReusability": "Reuso médio de código",
+        "stack": "Stack padrão da indústria",
+        "vendorLockIn": "Vendor lock-in"
+      },
+      "codeVsNoCode": {
+        "title": "Code vs plataformas No-Code",
+        "noCodeTitle": "No-Code (Bubble, Glide)",
+        "noCodeItems": ["Lock-in de plataforma", "Customização de IA limitada", "Precisa de \"dev no-code\" especializado", "Reescrita necessária para escalar", "Mensalidades de plataforma para sempre"],
+        "codeTitle": "Este MVP (Next.js + Vercel)",
+        "codeItems": ["Você é dono de 100% do código", "Acesso total ao AI SDK", "Qualquer dev React/Next.js mantém", "Escala sem reescrever", "Deploy em qualquer lugar (Vercel, AWS, etc.)"]
+      }
+    },
+    "Pricing": {
+      "badge": "Investimento",
+      "title": "Escolha seu ponto de partida",
+      "subtitle": "Todos os planos incluem código pronto pra produção, do qual você é dono. ~90% reutilizável conforme escala.",
+      "recommended": "Recomendado",
+      "notIncluded": "Não incluído:",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "price": "$4.050",
+          "timeline": "2 semanas",
+          "description": "Semana 1-2: Valide o núcleo do coaching com IA via fluxo manual",
+          "features": ["Gestor de Script/Rubrica", "Upload manual de ligação (áudio ou transcrição)", "Análise com IA (Whisper + GPT-4o)", "E-mail de coaching pós-ligação", "Resumo agregado", "Página de histórico"],
+          "notIncluded": ["Integração Twilio", "Sistema RAG"]
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$8.100",
+          "timeline": "3 semanas",
+          "description": "Semana 3: Ingestão automatizada de ligações para operação hands-off",
+          "features": ["Tudo do Starter", "Integração via Webhook Twilio/GHL", "Ingestão automática de ligações", "Sync de metadados de contato", "Zero upload manual"],
+          "notIncluded": ["Sistema RAG"]
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "price": "$11.407",
+          "timeline": "4 semanas",
+          "description": "Semana 4: Coaching com contexto usando seu material de treinamento",
+          "features": ["Tudo do Pro", "Sistema RAG (busca vetorial)", "Base de conhecimento multi-documento", "Coaching com contexto", "Integração de materiais de treinamento", "Lookup dinâmico de referências"],
+          "notIncluded": []
+        }
+      },
+      "upgrade": {
+        "title": "Caminho de upgrade",
+        "starter": "Starter",
+        "proPlus": "Pro (+$4.050)",
+        "ragPlus": "Pro + RAG (+$3.307)",
+        "note": "Comece pelo Starter para validar rápido. Faça upgrade quando quiser — a base foi construída para evoluir."
+      },
+      "ongoing": {
+        "title": "Custos recorrentes (pós-MVP)",
+        "perCallTitle": "Custo por análise de ligação",
+        "perCallNote": "Baseado em duração média de 12,5 min (faixa: 5-20 min)",
+        "th": {
+          "stack": "Stack",
+          "transcription": "Transcrição",
+          "analysis": "Análise",
+          "costCall": "Custo/ligação"
+        },
+        "rows": {
+          "premium":    { "stack": "Premium",      "transcription": "Whisper ($0,075)",     "analysis": "GPT-4o ($0,10)",          "cost": "~$0,18" },
+          "recommended":{ "stack": "Recomendado",  "transcription": "Whisper ($0,075)",     "analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,09" },
+          "budget":     { "stack": "Budget",       "transcription": "Deepgram ($0,054)",    "analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,07" },
+          "ultraBudget":{ "stack": "Ultra Budget", "transcription": "Groq Whisper ($0,023)","analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,03" }
+        },
+        "perCallFootnote": "*Baseado em ligação média de 12,5 min. Inclui envio de e-mail (~$0,001).",
+        "ragTitle": "Custos da Base RAG (plano Pro + RAG)",
+        "ragNote": "Arquivos de áudio precisam de transcrição antes da indexação",
+        "ragTh": { "operation": "Operação", "model": "Modelo", "cost": "Custo" },
+        "ragRows": {
+          "audio":     { "operation": "Transcrição de áudio (12,5 min)", "model": "Whisper",        "cost": "~$0,075" },
+          "embedding": { "operation": "Embedding de texto",              "model": "OpenAI ada-002", "cost": "~$0,0001" },
+          "total":     { "operation": "Total por áudio indexado",        "model": "",               "cost": "~$0,08" }
+        },
+        "index50": "Indexar 50 ligações",
+        "index50Value": "~$4,00",
+        "index100": "Indexar 100 ligações",
+        "index100Value": "~$8,00",
+        "ragFootnote": "*Custo único por documento. Docs de texto (PDFs, docs) só pagam embedding (~$0,0001 cada).",
+        "perCall": "Por ligação",
+        "perCallValue": "$0,03 - $0,18",
+        "perCallSubtitle": "Depende do stack escolhido",
+        "hosting": "Hosting",
+        "hostingValue": "~$20/mês",
+        "hostingSubtitle": "Vercel + Supabase",
+        "perDay": "100 ligações/dia",
+        "perDayValue": "$90 - $540/mês",
+        "perDaySubtitle": "Custos estimados de API"
+      }
+    },
+    "Team": {
+      "badge": "Execução",
+      "title": "Time & Cronograma",
+      "evolutionTitle": "Evolução do time",
+      "mvpPhase": "Fase MVP",
+      "aiBuilder": "AI Builder",
+      "aiBuilderSubtitle": "Execução solo com v0",
+      "aiBuilderDesc": "Prototipagem rápida e validação usando ferramentas de desenvolvimento assistidas por IA (v0, Vercel, AI SDK)",
+      "postMvpScale": "Escala pós-MVP",
+      "fullStack": "Desenvolvedor Full Stack",
+      "fullStackSubtitle": "Integração e escala",
+      "seniorAiPm": "AI PM Sênior",
+      "seniorAiPmSubtitle": "Produto e estratégia",
+      "stats": {
+        "weeks": "2-4 semanas",
+        "weeksSubtitle": "Depende do plano",
+        "growth": "1 → 3",
+        "growthSubtitle": "Crescimento do time",
+        "aiFirst": "AI-First",
+        "aiFirstSubtitle": "Stack moderno"
+      },
+      "stackTitle": "Stack técnico do MVP"
+    },
+    "Appendix": {
+      "label": "Apêndice",
+      "title": "Entregáveis detalhados",
+      "subtitle": "Breakdown completo do que está incluído em cada plano. Serve como contrato de escopo do projeto.",
+      "tierLabel": "Plano {n}",
+      "deliveredStatus": "ENTREGUE ✓",
+      "disclaimer": "Observação:",
+      "disclaimerBody": "Recursos, integrações ou modificações não listados acima são considerados fora de escopo e exigem um acordo separado. Mudanças de escopo durante o desenvolvimento podem afetar prazo e preço.",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "timeline": "Semana 1-2",
+          "deliverables": {
+            "rubric": {
+              "category": "Gestor de Script e Rubrica",
+              "items": [
+                { "text": "Criar/editar rubrica de avaliação com critérios", "note": "Persistido no Supabase" },
+                { "text": "Definir limiares de aprovação/reprovação por critério" },
+                { "text": "Um script ativo por vez" },
+                { "text": "Customizar system prompt da análise de IA" }
+              ]
+            },
+            "upload": {
+              "category": "Upload manual de ligação",
+              "items": [
+                { "text": "Upload de áudio (.mp3, .wav, .m4a)" },
+                { "text": "Colagem direta de transcrição" },
+                { "text": "Informar nome e e-mail do adestrador manualmente" },
+                { "text": "Indicador de progresso do upload" }
+              ]
+            },
+            "analysis": {
+              "category": "Análise de ligação com IA",
+              "items": [
+                { "text": "Transcrição via Whisper (se áudio)" },
+                { "text": "Análise GPT-4o contra a rubrica" },
+                { "text": "Busca critérios + system prompt no Supabase" },
+                { "text": "Nota por critério (aprovado/reprovado)" },
+                { "text": "Nota geral da ligação" },
+                { "text": "Feedback específico por critério" },
+                { "text": "Exibição completa da transcrição para review do admin" }
+              ]
+            },
+            "email": {
+              "category": "E-mail de coaching pós-ligação",
+              "items": [
+                { "text": "Envio manual de e-mail via Resend" },
+                { "text": "Feedback de coaching personalizado" },
+                { "text": "Dicas de melhoria acionáveis" },
+                { "text": "Resumo de notas incluído" },
+                { "text": "Auto-salvar ligação no banco após envio" }
+              ]
+            },
+            "history": {
+              "category": "Página de histórico",
+              "items": [
+                { "text": "Lista de todas as ligações processadas" },
+                { "text": "Busca por nome ou e-mail do adestrador" },
+                { "text": "Ver detalhes individuais da ligação com análise completa" },
+                { "text": "Exibir transcrição e notas" }
+              ]
+            },
+            "summary": {
+              "category": "Resumo agregado",
+              "items": [
+                { "text": "Dashboard de total de ligações processadas" },
+                { "text": "Visualização de tendência da nota média (linha)" },
+                { "text": "Top áreas de melhoria agregadas (barras)" },
+                { "text": "Insights inteligentes e resumos de performance" },
+                { "text": "Badges de conquista e reconhecimento de adestradores" },
+                { "text": "Dashboard de analytics em tempo real" }
+              ]
+            }
+          }
+        },
+        "pro": {
+          "name": "Pro",
+          "timeline": "Semana 3",
+          "includes": "Tudo do Starter, mais:",
+          "deliverables": {
+            "twilio": {
+              "category": "Integração via Webhook Twilio",
+              "items": ["Endpoint de webhook para eventos de ligação", "Ingestão automática ao fim da ligação", "Validação de assinatura Twilio (segurança)", "Extração de URL da gravação", "Parsing de metadados de contato"]
+            },
+            "db": {
+              "category": "Melhorias no banco",
+              "items": ["Fila de processamento de ligações", "Lógica de retry para falhas", "Logging de eventos de webhook", "Tratamento de idempotência (sem duplicatas)"]
+            },
+            "admin": {
+              "category": "Notificações de admin",
+              "items": ["Alertas de erro para falhas de processamento", "E-mail diário de resumo (opcional)", "Dashboard de status de processamento"]
+            }
+          }
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "timeline": "Semana 4",
+          "includes": "Tudo do Pro, mais:",
+          "deliverables": {
+            "rag": {
+              "category": "Base de conhecimento RAG",
+              "items": ["Setup de banco vetorial (pgvector)", "Interface de upload de documentos", "Chunking e embedding automáticos", "Suporte a PDFs, docs, arquivos de texto"]
+            },
+            "contextual": {
+              "category": "Análise de IA contextual",
+              "items": ["Busca semântica na base de conhecimento", "Feedback de coaching com contexto", "Referência a materiais de treinamento específicos", "Citação de best practices relevantes"]
+            },
+            "management": {
+              "category": "Gestão de conhecimento",
+              "items": ["Ver/excluir documentos carregados", "Re-indexar documentos sob demanda", "Analytics de uso de documentos", "Rastreio de versão para updates"]
+            }
+          }
+        }
+      }
+    },
+    "Footer": {
+      "text": "Proposta de MVP do Ask Moses — Janeiro de 2026"
+    }
+  }
+}

@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
   const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
 
   const { text } = await generateText({
-    model: google('gemini-2.5-flash'),
+    // gemini-2.5-flash free tier is 20 req/day; flash-lite is 1,000.
+    model: google('gemini-2.5-flash-lite'),
     system: SYSTEM_PROMPT,
     prompt: buildUserPrompt(transcripts, textInput),
   })

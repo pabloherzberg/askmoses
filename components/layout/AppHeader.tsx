@@ -4,6 +4,7 @@
 import type React from 'react'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { LogOut, Menu } from 'lucide-react'
 import {
   Sheet,
@@ -12,6 +13,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { createClient } from '@/lib/supabase/client'
 
@@ -28,20 +30,26 @@ interface AppHeaderProps {
 
 export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
   const pathname = usePathname()
+  const locale = useLocale()
+  const t = useTranslations('Shared.header')
+  const tSidebar = useTranslations('Shared.sidebar')
   const [open, setOpen] = useState(false)
 
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    window.location.href = `/${locale}/login`
   }
 
-  // Resolve title — string literal or pathname map
+  // Resolve title — string literal or pathname map.
+  // Map keys may be locale-prefixed (e.g. "/en/dashboard") or bare ("/dashboard").
   const resolvedTitle =
     typeof pageTitle === 'string'
       ? pageTitle
       : typeof pageTitle === 'object'
-        ? pageTitle[pathname] ?? 'Dashboard'
+        ? pageTitle[pathname]
+          ?? pageTitle[pathname.replace(`/${locale}`, '') || '/']
+          ?? tSidebar('dashboard')
         : null
 
   return (
@@ -58,7 +66,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
               <button
                 className="lg:hidden p-1.5 rounded-md transition-opacity hover:opacity-70"
                 style={{ color: 'var(--am-muted)' }}
-                aria-label="Open menu"
+                aria-label={t('openMenu')}
               >
                 <Menu size={20} />
               </button>
@@ -67,7 +75,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
               side="left"
               className="w-56 p-0 !bg-[var(--am-bg2)] border-r !border-[var(--am-border)]"
             >
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
+              <SheetTitle className="sr-only">{tSidebar('navigation')}</SheetTitle>
               <div className="pt-6 px-3" onClick={() => setOpen(false)}>
                 {mobileSidebar}
               </div>
@@ -101,11 +109,11 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
                 color: 'var(--am-muted)',
               }}
             >
-              Week 6 / 6
+              {t('weekProgress')}
             </span>
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
-              title="Live"
+              title={t('live')}
               style={{
                 background: 'var(--am-green)',
                 boxShadow: '0 0 8px var(--am-green)',
@@ -117,16 +125,17 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
 
         {resolvedTitle && (
           <span className="hidden text-sm sm:block" style={{ color: 'var(--am-muted)' }}>
-            Unleashed Consulting
+            {t('clientName')}
           </span>
         )}
 
         <div className="flex items-center gap-1.5">
+          <LanguageSwitcher />
           <ThemeToggle />
           <button
             onClick={handleLogout}
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label={t('signOut')}
+            title={t('signOut')}
             className="am-theme-toggle"
             style={{
               background: 'var(--am-bg3)',
