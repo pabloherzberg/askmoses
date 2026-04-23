@@ -1,14 +1,15 @@
 export const dynamic = 'force-dynamic'
 
+import { getTranslations } from 'next-intl/server'
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import type { HealthStatus } from '@/lib/types'
 
-const healthStyles: Record<HealthStatus, { bg: string; color: string; label: string }> = {
-  healthy:  { bg: 'var(--am-green-bg)', color: 'var(--am-green)', label: 'Healthy' },
-  'at-risk':{ bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', label: 'At Risk' },
-  churning: { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   label: 'Critical' },
+const healthStyles: Record<HealthStatus, { bg: string; color: string; key: 'healthy' | 'atRisk' | 'churning' }> = {
+  healthy:  { bg: 'var(--am-green-bg)', color: 'var(--am-green)', key: 'healthy' },
+  'at-risk':{ bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', key: 'atRisk' },
+  churning: { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   key: 'churning' },
 }
 
 const planStyles: Record<string, { bg: string; color: string }> = {
@@ -18,52 +19,58 @@ const planStyles: Record<string, { bg: string; color: string }> = {
 }
 
 export default async function AdminPage() {
-  const { clients, metrics } = await getClients()
+  const [{ clients, metrics }, t, tMetrics, tTh, tHealth] = await Promise.all([
+    getClients(),
+    getTranslations('Admin'),
+    getTranslations('Admin.metrics'),
+    getTranslations('Admin.th'),
+    getTranslations('Admin.health'),
+  ])
 
   return (
     <div>
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="mb-6">
-        <SectionLabel>SaaS Panel</SectionLabel>
+        <SectionLabel>{t('saasPanel')}</SectionLabel>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-          Global Overview
+          {t('globalOverview')}
         </h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
-          All clients · March 2026
+          {t('allClientsDate')}
         </p>
       </div>
 
       {/* ── Global metrics ────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <ScoreCard
-          label="Total Clients"
+          label={tMetrics('totalClients')}
           value={metrics.totalClients}
-          deltaLabel="active accounts"
+          deltaLabel={tMetrics('activeAccounts')}
         />
         <ScoreCard
-          label="Calls This Month"
+          label={tMetrics('callsThisMonth')}
           value={metrics.totalCallsThisMonth}
           delta={23}
-          deltaLabel="vs last month"
+          deltaLabel={tMetrics('vsLastMonth')}
         />
         <ScoreCard
-          label="MRR"
+          label={tMetrics('mrr')}
           value={`$${metrics.totalMRR.toLocaleString()}`}
           valueColor="var(--am-green)"
           delta={297}
-          deltaLabel="vs last month"
+          deltaLabel={tMetrics('vsLastMonth')}
         />
         <ScoreCard
-          label="Avg Score"
+          label={tMetrics('avgScore')}
           value={metrics.avgScore}
           valueColor="var(--am-accent2)"
           delta={4}
-          deltaLabel="pts vs last month"
+          deltaLabel={tMetrics('ptsVsLastMonth')}
         />
       </div>
 
       {/* ── Clients table ─────────────────────────────────────── */}
-      <SectionLabel>Clients</SectionLabel>
+      <SectionLabel>{t('clientsLabel')}</SectionLabel>
       <div
         className="rounded-2xl border overflow-hidden"
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
@@ -72,13 +79,13 @@ export default async function AdminPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--am-border)' }}>
-                {['Client', 'Plan', 'Sales People', 'Calls / mo', 'Avg Score', 'MRR', 'Health'].map((h) => (
+                {(['client', 'plan', 'salesPeople', 'callsPerMonth', 'avgScore', 'mrr', 'health'] as const).map((k) => (
                   <th
-                    key={h}
+                    key={k}
                     className="text-[11px] font-medium text-left px-5 py-3"
                     style={{ color: 'var(--am-muted)' }}
                   >
-                    {h}
+                    {tTh(k)}
                   </th>
                 ))}
               </tr>
@@ -155,7 +162,7 @@ export default async function AdminPage() {
                         className="text-[11px] font-medium px-2.5 py-1 rounded-full font-mono"
                         style={{ background: health.bg, color: health.color }}
                       >
-                        {health.label}
+                        {tHealth(health.key)}
                       </span>
                     </td>
                   </tr>

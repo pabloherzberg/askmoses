@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
 import { upload } from "@vercel/blob/client"
 import { useRouter } from "next/navigation"
+import { useTranslations, useLocale } from "next-intl"
 import {
   Card,
   CardContent,
@@ -56,14 +57,16 @@ interface GeneratedScript {
 
 type BuilderStep = "input" | "processing" | "preview" | "confirm"
 
-const LLM_MODELS = [
-  { value: "openai/gpt-4o-mini", label: "OpenAI GPT-4o Mini (Fast & Cheap)" },
-  { value: "google/gemini-2.5-flash", label: "Google Gemini 2.5 Flash (Balanced)" },
-  { value: "google/gemini-2.5-pro", label: "Google Gemini 2.5 Pro (Powerful)" },
-]
-
 export default function ScriptBuilderPage() {
   const router = useRouter()
+  const t = useTranslations("Dashboard.scriptBuilder")
+  const locale = useLocale()
+
+  const LLM_MODELS = [
+    { value: "openai/gpt-4o-mini", label: t("llmModels.gpt4oMini") },
+    { value: "google/gemini-2.5-flash", label: t("llmModels.gemini25Flash") },
+    { value: "google/gemini-2.5-pro", label: t("llmModels.gemini25Pro") },
+  ]
 
   const [step, setStep] = useState<BuilderStep>("input")
   const [inputType, setInputType] = useState<"audio" | "text">("audio")
@@ -118,7 +121,7 @@ export default function ScriptBuilderPage() {
       setAudioFiles((prev) =>
         prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
       )
-      setProcessingStatus(`Uploading audio ${i + 1} of ${audioFiles.length}...`)
+      setProcessingStatus(t("processing.uploadingAudio", { current: i + 1, total: audioFiles.length }))
       setProgress(((i * 2) / (audioFiles.length * 3)) * 100)
 
       try {
@@ -141,7 +144,7 @@ export default function ScriptBuilderPage() {
         setAudioFiles((prev) =>
           prev.map((f, idx) => (idx === i ? { ...f, status: "transcribing" } : f))
         )
-        setProcessingStatus(`Transcribing audio ${i + 1} of ${audioFiles.length}...`)
+        setProcessingStatus(t("processing.transcribingAudio", { current: i + 1, total: audioFiles.length }))
         setProgress(((i * 2 + 1) / (audioFiles.length * 3)) * 100)
 
         // Transcribe using same pattern as upload call
@@ -152,7 +155,7 @@ export default function ScriptBuilderPage() {
         })
 
         if (!transcribeRes.ok) {
-          throw new Error("Transcription failed")
+          throw new Error(t("processing.transcriptionFailed"))
         }
 
         const { transcript } = await transcribeRes.json()
@@ -169,7 +172,7 @@ export default function ScriptBuilderPage() {
         setAudioFiles((prev) =>
           prev.map((f, idx) =>
             idx === i
-              ? { ...f, status: "error", error: error instanceof Error ? error.message : "Unknown error" }
+              ? { ...f, status: "error", error: error instanceof Error ? error.message : t("processing.unknownError") }
               : f
           )
         )
@@ -192,7 +195,7 @@ export default function ScriptBuilderPage() {
       }
 
       // Generate script
-      setProcessingStatus("Analyzing content and generating script...")
+      setProcessingStatus(t("processing.analyzing"))
       setProgress(80)
 
       const generateRes = await fetch("/api/generate-script", {
@@ -206,7 +209,7 @@ export default function ScriptBuilderPage() {
 
       if (!generateRes.ok) {
         const error = await generateRes.json()
-        throw new Error(error.error || "Failed to generate script")
+        throw new Error(error.error || t("processing.generateFailed"))
       }
 
       const script = await generateRes.json()
@@ -218,7 +221,7 @@ export default function ScriptBuilderPage() {
     } catch (error) {
       console.error("[v0] Generation error:", error)
       setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+        t("processing.errorPrefix", { message: error instanceof Error ? error.message : t("processing.unknownError") })
       )
     }
   }
@@ -247,9 +250,9 @@ export default function ScriptBuilderPage() {
           is_active: true,
         }),
       })
-      if (!res.ok) throw new Error("Failed to save script")
+      if (!res.ok) throw new Error(t("confirm.saveFailed"))
 
-      router.push("/dashboard/settings")
+      router.push(`/${locale}/dashboard/settings`)
     } catch (error) {
       console.error("[v0] Save error:", error)
     }
@@ -262,9 +265,9 @@ export default function ScriptBuilderPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Script Builder</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Generate a structured sales script from audio recordings or text
+          {t("subtitle")}
         </p>
       </div>
 
@@ -273,10 +276,10 @@ export default function ScriptBuilderPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5" />
-              Create Your Script
+              {t("createCardTitle")}
             </CardTitle>
             <CardDescription>
-              Upload up to 3 audio recordings of successful calls, paste existing script text, or combine both
+              {t("createCardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -284,11 +287,11 @@ export default function ScriptBuilderPage() {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="audio" className="flex items-center gap-2">
                   <FileAudio className="h-4 w-4" />
-                  Audio Files
+                  {t("tabs.audio")}
                 </TabsTrigger>
                 <TabsTrigger value="text" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Text Input
+                  {t("tabs.text")}
                 </TabsTrigger>
               </TabsList>
 
@@ -306,16 +309,18 @@ export default function ScriptBuilderPage() {
                   <input {...getInputProps()} />
                   <FileAudio className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   {audioFiles.length >= 3 ? (
-                    <p className="text-muted-foreground">Maximum 3 files reached</p>
+                    <p className="text-muted-foreground">{t("dropzone.maxReached")}</p>
                   ) : isDragActive ? (
-                    <p className="text-primary">Drop your audio files here</p>
+                    <p className="text-primary">{t("dropzone.dropHere")}</p>
                   ) : (
                     <>
                       <p className="text-foreground font-medium">
-                        Drag & drop audio files here
+                        {t("dropzone.dragAndDrop")}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        or click to browse (up to {3 - audioFiles.length} more)
+                        {(3 - audioFiles.length) === 1
+                          ? t("dropzone.orClickOne", { count: 3 - audioFiles.length })
+                          : t("dropzone.orClickOther", { count: 3 - audioFiles.length })}
                       </p>
                     </>
                   )}
@@ -323,7 +328,7 @@ export default function ScriptBuilderPage() {
 
                 {audioFiles.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Selected Files ({audioFiles.length}/3)</Label>
+                    <Label>{t("selectedFiles", { count: audioFiles.length })}</Label>
                     {audioFiles.map((audioFile, index) => (
                       <div
                         key={index}
@@ -334,7 +339,7 @@ export default function ScriptBuilderPage() {
                           <div>
                             <p className="font-medium text-sm">{audioFile.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {(audioFile.file.size / (1024 * 1024)).toFixed(2)} MB
+                              {t("fileSizeMb", { size: (audioFile.file.size / (1024 * 1024)).toFixed(2) })}
                             </p>
                           </div>
                         </div>
@@ -353,15 +358,15 @@ export default function ScriptBuilderPage() {
 
               <TabsContent value="text" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Paste your script or call transcript</Label>
+                  <Label>{t("textTab.label")}</Label>
                   <Textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Paste your existing sales script, call transcript, or notes about your sales process here..."
+                    placeholder={t("textTab.placeholder")}
                     className="min-h-64 font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {textInput.length} characters (minimum 50 recommended)
+                    {t("textTab.charsCount", { count: textInput.length })}
                   </p>
                 </div>
               </TabsContent>
@@ -372,7 +377,9 @@ export default function ScriptBuilderPage() {
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <p className="text-sm">
-                  Combining {audioFiles.length} audio file{audioFiles.length > 1 ? "s" : ""} with text input for better results
+                  {audioFiles.length === 1
+                    ? t("combinedIndicatorOne", { count: audioFiles.length })
+                    : t("combinedIndicatorOther", { count: audioFiles.length })}
                 </p>
               </div>
             )}
@@ -384,7 +391,7 @@ export default function ScriptBuilderPage() {
               size="lg"
             >
               <Wand2 className="mr-2 h-5 w-5" />
-              Generate Script
+              {t("generateButton")}
             </Button>
           </CardContent>
         </Card>
@@ -398,7 +405,7 @@ export default function ScriptBuilderPage() {
               <div>
                 <p className="font-medium">{processingStatus}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This may take a minute...
+                  {t("processing.mayTake")}
                 </p>
               </div>
               <Progress value={progress} className="w-full max-w-md" />
@@ -422,7 +429,7 @@ export default function ScriptBuilderPage() {
                         }
                       >
                         {audioFile.status === "done" && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {audioFile.status}
+                        {t(`status.${audioFile.status}`)}
                       </Badge>
                     </div>
                   ))}
@@ -440,7 +447,7 @@ export default function ScriptBuilderPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Lightbulb className="h-5 w-5" />
-                Why This Script Works
+                {t("preview.whyItWorks")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -451,23 +458,23 @@ export default function ScriptBuilderPage() {
           {/* Script Preview */}
           <Card>
             <CardHeader>
-              <CardTitle>Generated Script</CardTitle>
+              <CardTitle>{t("preview.generatedScript")}</CardTitle>
               <CardDescription>
-                Review and edit before saving as a rubric
+                {t("preview.reviewBeforeSaving")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Editable name and description */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Script Name</Label>
+                  <Label>{t("preview.scriptName")}</Label>
                   <Input
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("preview.description")}</Label>
                   <Input
                     value={editedDescription}
                     onChange={(e) => setEditedDescription(e.target.value)}
@@ -477,7 +484,7 @@ export default function ScriptBuilderPage() {
 
               {/* Sections */}
               <div className="space-y-4">
-                <Label>Sections ({generatedScript.sections.length})</Label>
+                <Label>{t("preview.sections", { count: generatedScript.sections.length })}</Label>
                 {generatedScript.sections.map((section, index) => (
                   <div
                     key={index}
@@ -492,7 +499,7 @@ export default function ScriptBuilderPage() {
                     </p>
                     {section.tips && (
                       <p className="text-xs text-primary bg-primary/10 p-2 rounded">
-                        Tip: {section.tips}
+                        {t("preview.tipPrefix", { tip: section.tips })}
                       </p>
                     )}
                   </div>
@@ -501,7 +508,7 @@ export default function ScriptBuilderPage() {
 
               {/* Full Script */}
               <div className="space-y-2">
-                <Label>Full Script</Label>
+                <Label>{t("preview.fullScript")}</Label>
                 <div className="p-4 rounded-lg border bg-muted text-foreground max-h-64 overflow-y-auto">
                   <pre className="text-xs font-mono whitespace-pre-wrap">
                     {generatedScript.full_script}
@@ -511,7 +518,7 @@ export default function ScriptBuilderPage() {
 
               {/* Criteria */}
               <div className="space-y-2">
-                <Label>Auto-Generated Evaluation Criteria ({generatedScript.criteria.length})</Label>
+                <Label>{t("preview.evaluationCriteria", { count: generatedScript.criteria.length })}</Label>
                 <div className="grid gap-2 md:grid-cols-2">
                   {generatedScript.criteria.map((criterion, index) => (
                     <div
@@ -543,7 +550,7 @@ export default function ScriptBuilderPage() {
                   className="flex-1"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  Create Rubric
+                  {t("preview.createRubric")}
                 </Button>
                 <Button
                   variant="outline"
@@ -554,7 +561,7 @@ export default function ScriptBuilderPage() {
                     setTextInput("")
                   }}
                 >
-                  Start Over
+                  {t("preview.startOver")}
                 </Button>
               </div>
             </CardContent>
@@ -566,29 +573,29 @@ export default function ScriptBuilderPage() {
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setStep("preview")}>
-              ← Back to Preview
+              {t("confirm.backToPreview")}
             </Button>
             <div>
-              <h2 className="text-xl font-bold">Finalize Rubric</h2>
-              <p className="text-sm text-muted-foreground">Review all settings before saving</p>
+              <h2 className="text-xl font-bold">{t("confirm.finalizeRubric")}</h2>
+              <p className="text-sm text-muted-foreground">{t("confirm.reviewAllSettings")}</p>
             </div>
           </div>
 
           {/* Script Name & Description */}
           <Card>
             <CardHeader>
-              <CardTitle>Script Info</CardTitle>
+              <CardTitle>{t("confirm.scriptInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Script Name</Label>
+                <Label>{t("confirm.scriptName")}</Label>
                 <Input
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>{t("confirm.description")}</Label>
                 <Textarea
                   value={editedDescription}
                   onChange={(e) => setEditedDescription(e.target.value)}
@@ -601,12 +608,12 @@ export default function ScriptBuilderPage() {
           {/* LLM & System Prompt */}
           <Card>
             <CardHeader>
-              <CardTitle>AI Configuration</CardTitle>
-              <CardDescription>LLM model and system prompt inherited from your active rubric</CardDescription>
+              <CardTitle>{t("confirm.aiConfiguration")}</CardTitle>
+              <CardDescription>{t("confirm.aiConfigurationSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>LLM Model for Analysis</Label>
+                <Label>{t("confirm.llmModelLabel")}</Label>
                 <select
                   value={confirmLlmModel}
                   onChange={(e) => setConfirmLlmModel(e.target.value)}
@@ -618,7 +625,7 @@ export default function ScriptBuilderPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>System Prompt</Label>
+                <Label>{t("confirm.systemPromptLabel")}</Label>
                 <Textarea
                   value={confirmSystemPrompt}
                   onChange={(e) => setConfirmSystemPrompt(e.target.value)}
@@ -631,8 +638,8 @@ export default function ScriptBuilderPage() {
           {/* Sections */}
           <Card>
             <CardHeader>
-              <CardTitle>Script Sections</CardTitle>
-              <CardDescription>Edit instructions and tips per section</CardDescription>
+              <CardTitle>{t("confirm.scriptSections")}</CardTitle>
+              <CardDescription>{t("confirm.scriptSectionsSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {confirmSections.map((section, idx) => (
@@ -647,7 +654,7 @@ export default function ScriptBuilderPage() {
                         setConfirmSections(updated)
                       }}
                       className="font-semibold"
-                      placeholder="Section name"
+                      placeholder={t("confirm.sectionNamePlaceholder")}
                     />
                     <Button
                       variant="ghost"
@@ -665,7 +672,7 @@ export default function ScriptBuilderPage() {
                       setConfirmSections(updated)
                     }}
                     className="min-h-20 text-sm"
-                    placeholder="Instructions for this section"
+                    placeholder={t("confirm.sectionInstructionsPlaceholder")}
                   />
                   <Input
                     value={section.tips}
@@ -674,7 +681,7 @@ export default function ScriptBuilderPage() {
                       updated[idx].tips = e.target.value
                       setConfirmSections(updated)
                     }}
-                    placeholder="Tips (optional)"
+                    placeholder={t("confirm.sectionTipsPlaceholder")}
                     className="text-sm"
                   />
                 </div>
@@ -684,7 +691,7 @@ export default function ScriptBuilderPage() {
                 size="sm"
                 onClick={() => setConfirmSections([...confirmSections, { name: "", instructions: "", tips: "" }])}
               >
-                + Add Section
+                {t("confirm.addSection")}
               </Button>
             </CardContent>
           </Card>
@@ -692,8 +699,8 @@ export default function ScriptBuilderPage() {
           {/* Criteria */}
           <Card>
             <CardHeader>
-              <CardTitle>Auto-Generated Criteria</CardTitle>
-              <CardDescription>Edit or remove evaluation criteria</CardDescription>
+              <CardTitle>{t("confirm.autoGeneratedCriteria")}</CardTitle>
+              <CardDescription>{t("confirm.autoGeneratedCriteriaSubtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {confirmCriteria.map((criterion, idx) => (
@@ -707,7 +714,7 @@ export default function ScriptBuilderPage() {
                         setConfirmCriteria(updated)
                       }}
                       className="font-medium text-sm"
-                      placeholder="Criterion name"
+                      placeholder={t("confirm.criterionNamePlaceholder")}
                     />
                     <Input
                       value={criterion.description}
@@ -717,7 +724,7 @@ export default function ScriptBuilderPage() {
                         setConfirmCriteria(updated)
                       }}
                       className="text-xs text-muted-foreground"
-                      placeholder="Description"
+                      placeholder={t("confirm.criterionDescriptionPlaceholder")}
                     />
                   </div>
                   <Button
@@ -734,7 +741,7 @@ export default function ScriptBuilderPage() {
                 size="sm"
                 onClick={() => setConfirmCriteria([...confirmCriteria, { name: "", description: "" }])}
               >
-                + Add Criterion
+                {t("confirm.addCriterion")}
               </Button>
             </CardContent>
           </Card>
@@ -751,7 +758,7 @@ export default function ScriptBuilderPage() {
                   const rubricId = rubricData?.id ?? 'rubric-001'
 
                   const fullScriptText = confirmSections
-                    .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\nTip: " + s.tips : ""}`)
+                    .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\n" + t("preview.tipPrefix", { tip: s.tips }) : ""}`)
                     .join("\n\n")
 
                   await fetch("/api/scripts", {
@@ -768,7 +775,7 @@ export default function ScriptBuilderPage() {
                     }),
                   })
 
-                  router.push("/dashboard/settings")
+                  router.push(`/${locale}/dashboard/settings`)
                 } catch (err) {
                   console.error("[v0] Save rubric error:", err)
                 }
@@ -779,13 +786,13 @@ export default function ScriptBuilderPage() {
               size="lg"
             >
               {saving ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("confirm.saving")}</>
               ) : (
-                <><Save className="mr-2 h-4 w-4" /> Save Rubric</>
+                <><Save className="mr-2 h-4 w-4" /> {t("confirm.saveRubric")}</>
               )}
             </Button>
             <Button variant="outline" onClick={() => setStep("preview")} size="lg">
-              Back
+              {t("confirm.back")}
             </Button>
           </div>
         </div>

@@ -36,6 +36,895 @@
     "es": "Español",
     "fr": "Français"
   },
+  "Shared": {
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "teamOverview": "Team Overview",
+      "calls": "Calls",
+      "myDashboard": "My Dashboard",
+      "myCalls": "My Calls",
+      "uploadCall": "Upload Call",
+      "history": "History",
+      "analytics": "Analytics",
+      "insights": "Insights",
+      "coachingCenter": "Coaching Center",
+      "scriptBuilder": "Script Builder",
+      "rubric": "Rubric",
+      "howToUse": "How to Use",
+      "saasPanel": "SaaS Panel",
+      "rubricConfig": "Rubric Config",
+      "tools": "Tools",
+      "starterTier": "Starter Tier",
+      "starterTierSubtitle": "Manual Upload",
+      "navigation": "Navigation",
+      "menu": "Menu"
+    },
+    "header": {
+      "openMenu": "Open menu",
+      "signOut": "Sign out",
+      "clientName": "Unleashed Consulting",
+      "weekProgress": "Week 6 / 6",
+      "live": "Live"
+    },
+    "pageTitles": {
+      "dashboard": "Dashboard",
+      "upload": "Upload Call",
+      "history": "Call History",
+      "analytics": "Analytics",
+      "insights": "Insights",
+      "scriptBuilder": "Script Builder",
+      "settings": "Rubric Settings",
+      "guide": "How to Use"
+    },
+    "outcomes": {
+      "all": "All Results",
+      "unknown": "Unknown",
+      "short": {
+        "closed": "Closed",
+        "follow_up": "Follow-up",
+        "objection_unresolved": "Objection",
+        "no_decision": "No Decision"
+      },
+      "full": {
+        "closed": "Closed",
+        "follow_up": "Follow-up",
+        "objection_unresolved": "Objection Unresolved",
+        "no_decision": "No Decision"
+      }
+    },
+    "rubric": {
+      "discovery": "Discovery",
+      "problemAgitation": "Problem Agitation",
+      "offerPresentation": "Offer Presentation",
+      "objectionHandling": "Objection Handling",
+      "closeAndNextSteps": "Close & Next Steps"
+    },
+    "callDetail": {
+      "back": "Back",
+      "rubricScores": "Rubric Scores",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to Improve",
+      "transcript": "Transcript",
+      "showMore": "Show more ↓",
+      "showLess": "Show less ↑",
+      "coachingNotes": "Coaching Notes",
+      "coachingNotesSubtitle": "Internal notes — not visible to the trainer.",
+      "coachingNotesPlaceholder": "Add your coaching notes here...",
+      "coachingNotesFooter": "Notes are not persisted in this demo."
+    },
+    "performanceTrend": {
+      "title": "Overall Performance Trend",
+      "myTrend": "My Trend",
+      "mockBadge": "mock data only",
+      "team": "Team",
+      "closeRate": "Close Rate %",
+      "avgScore": "Avg Score",
+      "tooltipCloseRate": "Close Rate",
+      "tooltipAvgScore": "Avg Score",
+      "mockFooter": "↑ values sourced from mock-data.ts · Recharts LineChart · no real calculation"
+    },
+    "correlationEngine": {
+      "title": "Correlation Engine — What Drives Closes",
+      "mockBadge": "mock data only",
+      "legend": {
+        "highCorrelation": "High correlation",
+        "medCorrelation": "Med correlation",
+        "lowCorrelation": "Low correlation",
+        "rubric": "Rubric",
+        "behavioral": "Behavioral"
+      },
+      "th": {
+        "score": "Score",
+        "percent": "%",
+        "correlation": "Corr.",
+        "impact": "Impact",
+        "source": "Source"
+      },
+      "levels": {
+        "High": "High",
+        "Med": "Med",
+        "Low": "Low"
+      },
+      "sources": {
+        "Rubric": "Rubric",
+        "Behavioral": "Behavioral"
+      },
+      "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "rubricGapDetection": {
+      "title": "Rubric Gap Detection",
+      "mockBadge": "mock data only",
+      "th": {
+        "frequency": "Freq.",
+        "gapDetected": "Gap detected"
+      },
+      "addToRubric": "Add to rubric →",
+      "notCovered": "Not covered",
+      "mockFooter": "† all values sourced from mock-data.ts — Add to rubric → is non-functional in demo"
+    },
+    "revenueEstimator": {
+      "title": "Revenue Impact Estimator",
+      "mockBadge": "mock data only",
+      "th": {
+        "section": "Skill / section",
+        "teamAvgTarget": "Team avg → target",
+        "monthlyImpact": "Monthly impact",
+        "confidence": "Confidence"
+      },
+      "totalOpportunity": "Total opportunity",
+      "mockFooter": "↑ all values sourced from mock-data.ts — no real calculation on the frontend"
+    }
+  },
+  "Trainer": {
+    "dashboardLabel": "My Dashboard",
+    "greeting": "Hello, {name}",
+    "callsAnalyzedOne": "{count} call analyzed",
+    "callsAnalyzedOther": "{count} calls analyzed",
+    "myScore": "My Score",
+    "closeRate": "Close Rate",
+    "myRubricTitle": "My Rubric vs Team Average",
+    "myRubricSubtitle": "Green = above team avg · Red = below team avg",
+    "deltaVsTeam": "{delta} vs team ({teamAvg})",
+    "quickStats": "Quick Stats",
+    "stats": {
+      "closed": "Closed",
+      "followUp": "Follow-up",
+      "objection": "Objection",
+      "noDecision": "No Decision"
+    },
+    "recentCalls": "Recent Calls",
+    "noCallsYet": "No calls yet.",
+    "myCallsLabel": "My Calls",
+    "noCallsFound": "No calls found.",
+    "thProspect": "Prospect",
+    "thDate": "Date",
+    "thScore": "Score",
+    "thResult": "Result",
+    "forbidden": "You don't have access to this call.",
+    "newCall": {
+      "backToDashboard": "Back to My Dashboard",
+      "title": "Log a New Call",
+      "subtitle": "Fill in the details below and submit for analysis.",
+      "callDetails": "Call Details",
+      "prospectName": "Prospect Name",
+      "prospectPlaceholder": "e.g. John Smith",
+      "callDate": "Call Date",
+      "duration": "Duration",
+      "outcome": "Outcome",
+      "outcomes": {
+        "closed": "Closed",
+        "followUp": "Follow-up",
+        "noClose": "No Close"
+      },
+      "uploadRecording": "Upload Recording",
+      "pasteTranscript": "Paste Transcript",
+      "dropHere": "Drop your recording here",
+      "orText": "or",
+      "browseFiles": "browse files",
+      "formatHint": "MP3 · MP4 · WAV · M4A · MOV · WebM · up to 500 MB",
+      "unsupportedFormat": "Unsupported format. Please upload an audio or video file.",
+      "fileTooBig": "File exceeds 500 MB limit.",
+      "transcriptPlaceholder": "Paste the call transcript here for AI analysis...",
+      "cancel": "Cancel",
+      "submit": "Submit Call",
+      "submitting": "Submitting…",
+      "success": "Call submitted!",
+      "successBody": "Your call with {prospect} has been logged and sent for AI analysis.",
+      "successNote": "(Phase 1 demo — no data is persisted)"
+    }
+  },
+  "Owner": {
+    "teamOverview": "Team Overview",
+    "metrics": {
+      "monthlyRevenue": "Est. Monthly Revenue",
+      "vsBaseline": "% vs baseline",
+      "avgCloseRate": "Avg Close Rate",
+      "ptsSinceWeek1": "pts since week 1",
+      "avgScore": "Avg Score",
+      "totalCalls": "Total Calls",
+      "activeSalesPeopleOne": "{count} active sales person",
+      "activeSalesPeopleOther": "{count} active sales people",
+      "bestCloseRate": "Best Close Rate",
+      "noTrainers": "No trainers"
+    },
+    "teamHealth": {
+      "title": "Team Health",
+      "mockBadge": "mock data only",
+      "subtitle": "Who's improving · who needs attention this week",
+      "th": {
+        "trainer": "TRAINER",
+        "status": "STATUS",
+        "closeRate": "CLOSE %",
+        "delta": "DELTA"
+      },
+      "callsLabelOne": "{count} call",
+      "callsLabelOther": "{count} calls",
+      "ptsOne": "pt",
+      "ptsOther": "pts",
+      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation"
+    },
+    "activeAlerts": {
+      "title": "Active Alerts",
+      "mockBadge": "mock data only",
+      "itemsCountOne": "{count} item requiring attention",
+      "itemsCountOther": "{count} items requiring attention",
+      "mockFooter": "↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts"
+    },
+    "rubricBySection": "Rubric by Section — Team Average",
+    "detailedRubricLabel": "Score by Sales Person — Detailed Rubric",
+    "detailedRubricTh": {
+      "section": "Section",
+      "team": "Team"
+    },
+    "aiInsights": "AI Insights",
+    "calls": {
+      "teamCallsLabel": "Team Calls",
+      "allCalls": "All Calls",
+      "myCalls": "My Calls",
+      "myCallsLabel": "My Calls",
+      "callsAnalyzedOne": "{count} call analyzed",
+      "callsAnalyzedOther": "{count} calls analyzed",
+      "noCallsFound": "No calls found.",
+      "filterAllSalesPeople": "All Sales People",
+      "thTrainer": "Trainer",
+      "thProspect": "Prospect",
+      "thDate": "Date",
+      "thScore": "Score",
+      "thResult": "Result",
+      "forbidden": "You don't have access to this call."
+    }
+  },
+  "Admin": {
+    "saasPanel": "SaaS Panel",
+    "globalOverview": "Global Overview",
+    "allClientsDate": "All clients · March 2026",
+    "metrics": {
+      "totalClients": "Total Clients",
+      "activeAccounts": "active accounts",
+      "callsThisMonth": "Calls This Month",
+      "vsLastMonth": "vs last month",
+      "mrr": "MRR",
+      "avgScore": "Avg Score",
+      "ptsVsLastMonth": "pts vs last month"
+    },
+    "clientsLabel": "Clients",
+    "th": {
+      "client": "Client",
+      "plan": "Plan",
+      "salesPeople": "Sales People",
+      "callsPerMonth": "Calls / mo",
+      "avgScore": "Avg Score",
+      "mrr": "MRR",
+      "health": "Health"
+    },
+    "health": {
+      "healthy": "Healthy",
+      "atRisk": "At Risk",
+      "churning": "Critical"
+    },
+    "rubric": {
+      "label": "Rubric Config",
+      "title": "Rubric Configuration",
+      "subtitle": "Manage evaluation criteria sent to the AI on every call analysis.",
+      "critical": "Critical",
+      "optional": "Optional",
+      "toggleAria": "Toggle {name} critical",
+      "systemPromptTitle": "AI System Prompt Preview",
+      "systemPromptSubtitle": "This prompt is sent to the AI on every call analysis. Read-only in this demo.",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "toastSavedTitle": "Saved",
+      "toastSavedBody": "Rubric criteria updated successfully.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Failed to save rubric changes. Try again."
+    }
+  },
+  "Coaching": {
+    "label": "Coaching Center",
+    "subtitle": "Best calls of the week — use these as reference material in team training sessions.",
+    "callsLabelOne": "{count} call",
+    "callsLabelOther": "{count} calls",
+    "lastActive": "last active {when}",
+    "closeRateSuffix": "{value}% close rate",
+    "stats": {
+      "avgScore": "Avg Score",
+      "thisWeek": "this week",
+      "closeRate": "Close Rate",
+      "delta": "delta",
+      "totalCalls": "Total Calls",
+      "allTime": "all time",
+      "thisWeekCard": "This Week",
+      "callsProcessed": "calls processed"
+    },
+    "bestCall": "Best Call This Week",
+    "worstCall": "Worst Call This Week",
+    "mockBadge": "mock data only",
+    "mockFooterBest": "† all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo",
+    "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo"
+  },
+  "Dashboard": {
+    "home": {
+      "welcomeBack": "Welcome back",
+      "subtitle": "Upload a call to get AI coaching feedback",
+      "uploadCall": "Upload Call",
+      "totalCalls": "Total Calls",
+      "callsAnalyzed": "Calls analyzed",
+      "passRate": "Pass Rate",
+      "passRateHint": "Score ≥ 75",
+      "avgScore": "Avg. Score",
+      "perCall": "Per call",
+      "thisWeek": "This Week",
+      "callsProcessed": "Calls processed",
+      "quickLinks": "Quick Links",
+      "uploadNewCall": "Upload New Call",
+      "viewFullHistory": "View Full History",
+      "configureRubric": "Configure Rubric",
+      "customizeSystemPrompt": "Customize System Prompt"
+    },
+    "trendChart": {
+      "title": "Score Trend",
+      "subtitle": "Average score over time",
+      "noData": "No data yet",
+      "scoreLabel": "Score"
+    },
+    "history": {
+      "title": "Call History",
+      "subtitle": "Review all processed sales calls and coaching feedback",
+      "searchCalls": "Search Calls",
+      "searchPlaceholder": "Search by trainer name or prospect...",
+      "allCalls": "All Calls",
+      "callsFoundOne": "{count} call found",
+      "callsFoundOther": "{count} calls found",
+      "noCallsFound": "No calls found",
+      "th": {
+        "salesPerson": "Sales Person",
+        "prospect": "Prospect",
+        "date": "Date",
+        "outcome": "Outcome",
+        "score": "Score",
+        "actions": "Actions"
+      },
+      "view": "View",
+      "showingRange": "Showing {from} to {to} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "with": "with {prospect}",
+      "overallScore": "Overall Score",
+      "outcome": "Outcome",
+      "summary": "Summary",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to Improve",
+      "sectionBreakdown": "Section Breakdown"
+    },
+    "analytics": {
+      "title": "Analytics & Insights",
+      "subtitle": "Aggregate performance trends and improvement recommendations",
+      "insightLabel": "Insight",
+      "overallPerformance": "Overall performance: {avg} avg score across {count} calls",
+      "topImprovementArea": "Top improvement area: \"{name}\" with avg score {score}",
+      "teamAverage": "Team average: {avg} — Focus on consistency",
+      "closedDeals": "Closed Deals",
+      "notClosed": "Not Closed",
+      "partial": "Partial",
+      "closeRate": "Close Rate",
+      "conversionLeaderboard": "Conversion Leaderboard",
+      "conversionSubtitle": "Close rate per sales person",
+      "performanceTrend": "Performance Trend",
+      "performanceTrendSubtitle": "Average score over time",
+      "avgScoreLine": "Avg Score %",
+      "topImprovementAreas": "Top Improvement Areas",
+      "topImprovementSubtitle": "Rubric sections with lowest average score",
+      "avgScoreBar": "Avg Score",
+      "noDataYet": "No data available yet",
+      "teamAchievements": "Team Achievements",
+      "badges": {
+        "masterCoach": "Master Coach",
+        "masterCoachReason": "Highest average score: {score}",
+        "perfectCalls": "Perfect Calls",
+        "perfectCallsReason": "{count} call(s) with score ≥ 95",
+        "risingStar": "Rising Star",
+        "risingStarReason": "Recent improvement trend"
+      },
+      "emptyTitle": "No data yet",
+      "emptyBody": "Process some calls to see analytics and insights"
+    },
+    "guide": {
+      "title": "How to Use",
+      "subtitle": "Complete guide to analyzing sales calls and coaching your team",
+      "quickStart": "Quick Start",
+      "quickStartSubtitle": "Get up and running in 3 simple steps",
+      "quickStep1Title": "Create a Script",
+      "quickStep1Desc": "Define your sales process",
+      "quickStep2Title": "Upload a Call",
+      "quickStep2Desc": "Audio or transcript",
+      "quickStep3Title": "Send Feedback",
+      "quickStep3Desc": "Email coaching to sales person",
+      "stepByStep": "Step-by-Step Guide",
+      "stepLabel": "Step {n}",
+      "howToDoIt": "How to do it:",
+      "proTips": "Pro Tips",
+      "faqTitle": "Frequently Asked Questions",
+      "needMoreHelp": "Need More Help?",
+      "needMoreHelpBody1": "Check the ",
+      "needMoreHelpLink": "Technical Documentation",
+      "needMoreHelpBody2": " for API details, database schema, and integration guides. For feature requests or issues, contact your administrator.",
+      "steps": {
+        "script": {
+          "title": "Configure Your Sales Script",
+          "description": "Set up your ideal sales process that trainers should follow",
+          "location": "Rubric page",
+          "details": [
+            "Go to the Rubric page in the sidebar",
+            "Click 'Create Script' to add a new sales script",
+            "Add a name and description for your script",
+            "Define sections (e.g., Greeting, Discovery, Demo, Closing)",
+            "For each section, add instructions and tips",
+            "The system will automatically generate evaluation criteria"
+          ],
+          "tips": [
+            "Be specific in your section instructions for better AI analysis",
+            "Include tips that help trainers understand what good looks like",
+            "You can create multiple scripts for different call types"
+          ]
+        },
+        "upload": {
+          "title": "Upload a Sales Call",
+          "description": "Submit call recordings or transcripts for AI analysis",
+          "location": "Upload Call page",
+          "details": [
+            "Navigate to Upload Call in the sidebar",
+            "Enter the trainer's name and email",
+            "Select which sales script to evaluate against",
+            "Choose upload method: Audio file or paste transcript",
+            "For audio: Upload MP3, WAV, or M4A files (max 25MB)",
+            "For transcript: Paste the call transcript directly",
+            "Click 'Analyze Call' to start the AI evaluation"
+          ],
+          "tips": [
+            "Audio files are automatically transcribed using AI",
+            "Clear audio quality produces better transcriptions",
+            "Include speaker labels in transcripts when pasting manually"
+          ]
+        },
+        "review": {
+          "title": "Review AI Analysis",
+          "description": "See detailed feedback on how well the trainer followed the script",
+          "location": "After upload",
+          "details": [
+            "View the overall score (sections covered vs total)",
+            "See pass/fail status for each evaluation criterion",
+            "Read specific feedback for each section",
+            "Review strengths highlighted by the AI",
+            "Check suggested areas for improvement",
+            "Access the full call transcript for reference"
+          ],
+          "tips": [
+            "The AI evaluates based on your script sections",
+            "Feedback is constructive and actionable",
+            "Use the transcript to verify AI observations"
+          ]
+        },
+        "email": {
+          "title": "Send Coaching Email",
+          "description": "Deliver personalized feedback directly to the trainer",
+          "location": "Results page",
+          "details": [
+            "After analysis, click 'Send Coaching Email'",
+            "The email is sent to the trainer's email address",
+            "Email includes score, summary, and detailed feedback",
+            "Trainers receive actionable tips for improvement",
+            "Call is automatically saved to history"
+          ],
+          "tips": [
+            "Emails are branded and professional",
+            "Trainers can review feedback at their own pace",
+            "Consider following up on areas needing improvement"
+          ]
+        },
+        "track": {
+          "title": "Track Performance",
+          "description": "Monitor trends and identify coaching opportunities",
+          "location": "History & Analytics pages",
+          "details": [
+            "History: View all analyzed calls with search and filters",
+            "Filter by trainer name, date range, or score",
+            "Click any call to see full details and transcript",
+            "Analytics: See aggregate performance metrics",
+            "Track pass rates by criteria across all calls",
+            "Identify which script sections need more training"
+          ],
+          "tips": [
+            "Regular review helps identify training patterns",
+            "Low-performing criteria indicate coaching opportunities",
+            "Use filters to focus on specific trainers or periods"
+          ]
+        },
+        "insights": {
+          "title": "Generate Team Insights",
+          "description": "Use pattern recognition to optimize your sales script based on real performance data",
+          "location": "Insights page",
+          "details": [
+            "Navigate to Insights in the sidebar",
+            "Select a sales script from the dropdown",
+            "Click 'Generate Insights' to analyze all calls using that script",
+            "The system groups calls by outcome: Closed, Not Closed, and Partial",
+            "AI analyzes patterns across all groups and generates insights",
+            "Review the DO's - best practices from successful closers",
+            "Review the DON'Ts - behaviors that lose deals",
+            "Study common objections and how closers handle them",
+            "Review the pre-call checklist and suggested optimized script",
+            "Click 'Save as New Script' to create an improved script based on insights",
+            "Send insights as a Weekly Bulletin email to your entire team"
+          ],
+          "tips": [
+            "You need at least 5-10 calls per script for meaningful insights",
+            "Insights are based on REAL performance data, not theory",
+            "This is pattern recognition, not full reinforcement learning - it identifies what works in your specific context",
+            "Save successful patterns as new scripts to test in the field",
+            "Share weekly bulletins with your team to align on best practices"
+          ]
+        }
+      },
+      "faqs": [
+        { "q": "What audio formats are supported?", "a": "We support MP3, WAV, M4A, and most common audio formats. Files must be under 25MB. For larger files, consider compressing or splitting the recording." },
+        { "q": "How accurate is the AI transcription?", "a": "Our AI transcription uses OpenAI Whisper, which is highly accurate for clear audio. For best results, ensure good audio quality with minimal background noise." },
+        { "q": "Can I edit the generated criteria?", "a": "Currently, criteria are auto-generated based on your script sections. You can modify the script and sections to adjust what gets evaluated." },
+        { "q": "How does the AI scoring work?", "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the trainer addressed the key points." },
+        { "q": "Can I use different AI models?", "a": "Yes! In the Rubric settings, you can choose between OpenAI GPT-4o Mini (fast and economical) or Google Gemini 2.5 (more powerful analysis)." },
+        { "q": "Why can't I send emails to other addresses?", "a": "For MVP/testing, emails are restricted to the registered account. To send to any email, a custom domain needs to be verified in Resend settings." },
+        { "q": "How do I create multiple scripts?", "a": "Go to Rubric, click 'Create Script', and define a new script with its own sections. When uploading calls, select which script to evaluate against." },
+        { "q": "What is the Insights feature?", "a": "Insights uses pattern recognition to analyze all your calls grouped by outcome (Closed, Not Closed, Partial). It identifies what successful closers have in common, what non-closers do wrong, common objections, and generates a suggested optimized script. This is different from reinforcement learning - it's data-driven pattern matching based on your actual call data." },
+        { "q": "How is Insights different from Reinforcement Learning?", "a": "True reinforcement learning would automatically iterate on scripts based on continuous feedback loops with reward signals. Insights is one level simpler: it's pattern recognition + script generation. You upload calls, we analyze patterns and suggest improvements. You then decide whether to test the new script. Future versions could automate the iteration loop." },
+        { "q": "How many calls do I need to generate insights?", "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse trainer outcomes, patterns become more statistically significant." },
+        { "q": "Can I customize the insights analysis?", "a": "Currently, the AI analyzes based on call outcomes and transcripts against your script. The analysis includes DO's, DON'Ts, common objections, and a suggested script. Future versions could allow custom analysis parameters." }
+      ]
+    },
+    "settings": {
+      "title": "Coaching Configuration",
+      "subtitle": "Manage your sales scripts and coaching system",
+      "systemPromptTitle": "System Prompt",
+      "systemPromptDescription": "Customize the AI coaching instructions",
+      "llmModelLabel": "LLM Model for Analysis",
+      "llmModelHint": "Choose the AI model to use for analyzing sales calls",
+      "llmOptionGemini25Flash": "Gemini 2.5 Flash (Fast & Balanced)",
+      "llmOptionGemini25Pro": "Gemini 2.5 Pro (Most Powerful)",
+      "llmOptionGemini20Flash": "Gemini 2.0 Flash (Lightweight)",
+      "llmOptionGemini20FlashLite": "Gemini 2.0 Flash Lite (Fastest)",
+      "systemPromptLabel": "System Prompt",
+      "systemPromptPlaceholder": "Enter the system prompt for AI analysis...",
+      "systemPromptFieldHint": "Customize the AI coaching instructions",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "scriptsTitle": "Sales Scripts",
+      "newScript": "New Script",
+      "createScriptTitle": "Create New Sales Script",
+      "scriptNameLabel": "Script Name",
+      "scriptNamePlaceholder": "e.g., Dog Training Consultation",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the sales process and key objectives...",
+      "scriptSectionsLabel": "Script Sections",
+      "sectionNamePlaceholder": "Section name (e.g., Greeting)",
+      "sectionInstructionsPlaceholder": "Instructions for this section",
+      "sectionTipsPlaceholder": "Tips (optional)",
+      "addSection": "Add Section",
+      "createAndGenerate": "Create & Generate Criteria",
+      "cancel": "Cancel",
+      "activeBadge": "Active",
+      "createdOn": "Created {date}",
+      "completeScript": "Complete Script",
+      "editScriptPlaceholder": "Edit script content...",
+      "save": "Save",
+      "scriptSectionsHeading": "Script Sections",
+      "tipEmoji": "💡 {tip}",
+      "autoGeneratedCriteria": "Auto-Generated Criteria",
+      "deleteScript": "Delete Script",
+      "emptyScripts": "No scripts created yet. Create your first sales script to get started."
+    },
+    "insights": {
+      "title": "Team Insights",
+      "subtitle": "AI-powered analysis of what works and what doesn't across your team's calls",
+      "generateCardTitle": "Generate Insights",
+      "generateCardDescription": "Select a script to analyze all associated calls. The AI will find patterns in successful vs unsuccessful calls and generate actionable recommendations.",
+      "selectScriptLabel": "Select Script",
+      "chooseScriptPlaceholder": "Choose a script to analyze...",
+      "analyzing": "Analyzing calls... This may take a moment",
+      "generateButton": "Generate Insights",
+      "errors": {
+        "generateFailed": "Failed to generate insights",
+        "sendFailed": "Failed to send insights",
+        "saveFailed": "Failed to save script",
+        "unknown": "Unknown error"
+      },
+      "metrics": {
+        "totalCalls": "Total Calls",
+        "closed": "Closed",
+        "notClosed": "Not Closed",
+        "partial": "Partial",
+        "teamCloseRate": "Team Close Rate"
+      },
+      "whatClosersDo": {
+        "title": "What Closers Do",
+        "subtitleOne": "Common patterns found in {count} successful call",
+        "subtitleOther": "Common patterns found in {count} successful calls"
+      },
+      "whatLosesDeals": {
+        "title": "What Loses Deals",
+        "subtitleOne": "Common patterns found in {count} unsuccessful call",
+        "subtitleOther": "Common patterns found in {count} unsuccessful calls"
+      },
+      "dos": {
+        "title": "DO's",
+        "subtitle": "Best practices from top closers"
+      },
+      "donts": {
+        "title": "DON'Ts",
+        "subtitle": "Behaviors that lose deals"
+      },
+      "objections": {
+        "title": "Common Objections & How to Handle Them",
+        "subtitle": "Objections found across all calls with best vs worst responses",
+        "bestResponse": "Best Response (Closers)",
+        "worstResponse": "Worst Response (Non-Closers)",
+        "frequency": {
+          "veryCommon": "Very Common",
+          "common": "Common",
+          "rare": "Rare"
+        }
+      },
+      "keyDifferences": {
+        "title": "Key Differences Between Closers and Non-Closers"
+      },
+      "preCallChecklist": {
+        "title": "Pre-Call Checklist",
+        "subtitle": "Based on successful calls, every trainer should follow these steps before and during a call"
+      },
+      "suggestedScript": {
+        "title": "AI-Suggested Optimized Script",
+        "subtitle": "Based on what works in successful calls, here is a suggested improved script",
+        "savedMessage": "Script saved! Check your Rubric settings to view it.",
+        "saving": "Saving as new script...",
+        "saveButton": "Save as New Script",
+        "aiOptimizedSuffix": "(AI Optimized)",
+        "defaultScriptName": "Script",
+        "aiOptimizedSectionName": "AI Optimized Script",
+        "descriptionTemplate": "AI-generated optimized script based on analysis of {total} calls ({closeRate}% close rate)"
+      },
+      "shareWithTeam": {
+        "title": "Share with Team",
+        "subtitleOne": "Send this insights report as a weekly digest to {count} trainer who has calls for this script",
+        "subtitleOther": "Send this insights report as a weekly digest to all {count} trainers who have calls for this script",
+        "sentMessage": "Insights sent to all team members!",
+        "sending": "Sending to team...",
+        "sendButton": "Send Insights to Team",
+        "defaultScriptName": "Sales Script"
+      }
+    },
+    "scriptBuilder": {
+      "title": "Script Builder",
+      "subtitle": "Generate a structured sales script from audio recordings or text",
+      "createCardTitle": "Create Your Script",
+      "createCardDescription": "Upload up to 3 audio recordings of successful calls, paste existing script text, or combine both",
+      "tabs": {
+        "audio": "Audio Files",
+        "text": "Text Input"
+      },
+      "dropzone": {
+        "maxReached": "Maximum 3 files reached",
+        "dropHere": "Drop your audio files here",
+        "dragAndDrop": "Drag & drop audio files here",
+        "orClickOne": "or click to browse (up to {count} more)",
+        "orClickOther": "or click to browse (up to {count} more)"
+      },
+      "selectedFiles": "Selected Files ({count}/3)",
+      "fileSizeMb": "{size} MB",
+      "textTab": {
+        "label": "Paste your script or call transcript",
+        "placeholder": "Paste your existing sales script, call transcript, or notes about your sales process here...",
+        "charsCount": "{count} characters (minimum 50 recommended)"
+      },
+      "combinedIndicatorOne": "Combining {count} audio file with text input for better results",
+      "combinedIndicatorOther": "Combining {count} audio files with text input for better results",
+      "generateButton": "Generate Script",
+      "processing": {
+        "mayTake": "This may take a minute...",
+        "uploadingAudio": "Uploading audio {current} of {total}...",
+        "transcribingAudio": "Transcribing audio {current} of {total}...",
+        "analyzing": "Analyzing content and generating script...",
+        "errorPrefix": "Error: {message}",
+        "unknownError": "Unknown error",
+        "transcriptionFailed": "Transcription failed",
+        "generateFailed": "Failed to generate script"
+      },
+      "status": {
+        "pending": "pending",
+        "uploading": "uploading",
+        "transcribing": "transcribing",
+        "done": "done",
+        "error": "error"
+      },
+      "preview": {
+        "whyItWorks": "Why This Script Works",
+        "generatedScript": "Generated Script",
+        "reviewBeforeSaving": "Review and edit before saving as a rubric",
+        "scriptName": "Script Name",
+        "description": "Description",
+        "sections": "Sections ({count})",
+        "tipPrefix": "Tip: {tip}",
+        "fullScript": "Full Script",
+        "evaluationCriteria": "Auto-Generated Evaluation Criteria ({count})",
+        "createRubric": "Create Rubric",
+        "startOver": "Start Over"
+      },
+      "confirm": {
+        "backToPreview": "← Back to Preview",
+        "finalizeRubric": "Finalize Rubric",
+        "reviewAllSettings": "Review all settings before saving",
+        "scriptInfo": "Script Info",
+        "scriptName": "Script Name",
+        "description": "Description",
+        "aiConfiguration": "AI Configuration",
+        "aiConfigurationSubtitle": "LLM model and system prompt inherited from your active rubric",
+        "llmModelLabel": "LLM Model for Analysis",
+        "systemPromptLabel": "System Prompt",
+        "scriptSections": "Script Sections",
+        "scriptSectionsSubtitle": "Edit instructions and tips per section",
+        "sectionNamePlaceholder": "Section name",
+        "sectionInstructionsPlaceholder": "Instructions for this section",
+        "sectionTipsPlaceholder": "Tips (optional)",
+        "addSection": "+ Add Section",
+        "autoGeneratedCriteria": "Auto-Generated Criteria",
+        "autoGeneratedCriteriaSubtitle": "Edit or remove evaluation criteria",
+        "criterionNamePlaceholder": "Criterion name",
+        "criterionDescriptionPlaceholder": "Description",
+        "addCriterion": "+ Add Criterion",
+        "saving": "Saving...",
+        "saveRubric": "Save Rubric",
+        "back": "Back",
+        "saveFailed": "Failed to save script"
+      },
+      "llmModels": {
+        "gpt4oMini": "OpenAI GPT-4o Mini (Fast & Cheap)",
+        "gemini25Flash": "Google Gemini 2.5 Flash (Balanced)",
+        "gemini25Pro": "Google Gemini 2.5 Pro (Powerful)"
+      }
+    },
+    "upload": {
+      "title": "Upload Call",
+      "subtitle": "Upload an audio or video file, or paste a transcript for AI coaching analysis",
+      "analyzeCall": "Analyze Call",
+      "processing": {
+        "heading": "Processing Call",
+        "starting": "Starting...",
+        "percentComplete": "{progress}% complete",
+        "uploadingAudio": "Uploading audio...",
+        "transcribingAudio": "Transcribing audio...",
+        "analyzingRubric": "Analyzing against rubric..."
+      },
+      "errors": {
+        "fileTooLarge": "File size must be less than 50MB.",
+        "uploadFailed": "Failed to upload audio",
+        "transcribeFailed": "Failed to transcribe audio",
+        "analyzeFailed": "Failed to analyze call",
+        "sendEmailFailed": "Failed to send coaching email",
+        "apiUnavailable": "API not available — ensure the mock service worker is running (MSW)",
+        "httpStatus": "HTTP {status}",
+        "generic": "An error occurred"
+      },
+      "results": {
+        "title": "Analysis Results",
+        "subtitle": "Review the AI coaching feedback for {name}",
+        "startOver": "Start Over",
+        "overallScore": "Overall Score",
+        "scoreSuffix": "/100",
+        "scoreScaleHint": "Average of section scores (0–5 scale) × 20",
+        "badges": {
+          "strong": "Strong",
+          "adequate": "Adequate",
+          "needsWork": "Needs Work",
+          "critical": "Critical"
+        },
+        "outcomeBadge": "Outcome: {label} · Max {cap}/100",
+        "outcomes": {
+          "closed": {
+            "label": "Closed",
+            "note": "Deal was closed — full score range available."
+          },
+          "follow_up": {
+            "label": "Follow-up",
+            "note": "No close secured — score capped at 80."
+          },
+          "objection_unresolved": {
+            "label": "Objection Unresolved",
+            "note": "Objection was not overcome — score capped at 60."
+          },
+          "no_decision": {
+            "label": "No Decision",
+            "note": "Prospect left without a decision — score capped at 50."
+          }
+        },
+        "sectionBreakdown": "Section Breakdown",
+        "sectionBreakdownHint": "Score 1–5 per section: 1 = Not attempted, 3 = Adequate, 5 = Excellent",
+        "sectionLabels": {
+          "excellent": "Excellent",
+          "strong": "Strong",
+          "adequate": "Adequate",
+          "needsWork": "Needs Work",
+          "notAttempted": "Not Attempted"
+        },
+        "sectionScore": "{score}/5 — {label}",
+        "strengths": "Strengths",
+        "areasForImprovement": "Areas for Improvement",
+        "summary": "Summary",
+        "callTranscript": "Call Transcript",
+        "transcriptSubtitle": "Full transcription for reference and audit",
+        "readyToSend": "Ready to send coaching feedback?",
+        "readyToSendSubtitle": "This will send a motivational coaching email to {email}",
+        "sending": "Sending...",
+        "sendCoachingEmail": "Send Coaching Email"
+      },
+      "complete": {
+        "heading": "Email Sent Successfully!",
+        "subtitle": "Coaching feedback has been sent to {email}",
+        "uploadAnother": "Upload Another",
+        "viewHistory": "View History"
+      },
+      "form": {
+        "salesPersonInfoTitle": "Sales Person Information",
+        "salesPersonInfoSubtitle": "Who should receive the coaching email?",
+        "salesPersonLabel": "Sales Person",
+        "selectTrainerPlaceholder": "Select a trainer...",
+        "clientNameLabel": "Client Name",
+        "clientNamePlaceholder": "e.g., Jane Doe",
+        "clientNameHint": "Name of the prospect or customer on the call",
+        "salesScriptLabel": "Sales Script *",
+        "selectScriptPlaceholder": "Select a script...",
+        "scriptOptionFormat": "{name} - {description}",
+        "salesScriptHint": "Required to analyze the call against your sales process",
+        "noScriptsAvailable": "No sales scripts available. Create one in Settings first.",
+        "callOutcomeLabel": "Call Outcome *",
+        "callOutcomeHint": "How did this call end?",
+        "outcomes": {
+          "closed": "Closed",
+          "follow_up": "Follow-up Scheduled",
+          "objection_unresolved": "Objection Unresolved",
+          "no_decision": "No Decision"
+        },
+        "callContentTitle": "Call Content",
+        "callContentSubtitle": "Upload audio or video, or paste the transcript directly",
+        "tabs": {
+          "audio": "Audio / Video",
+          "transcript": "Transcript"
+        },
+        "fileSizeMb": "{size} MB",
+        "dropFileHere": "Drop the file here",
+        "dragAndDrop": "Drag & drop audio file",
+        "supportedFormats": "Audio: MP3, WAV, M4A, OGG, WEBM · Video: MP4, MOV, AVI",
+        "browseFiles": "Browse Files",
+        "transcriptPlaceholder": "Paste the call transcript here...",
+        "charactersCount": "{count} characters"
+      }
+    }
+  },
   "Landing": {
     "Nav": {
       "overview": "Overview",

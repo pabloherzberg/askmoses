@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { getTranslations } from "next-intl/server";
 import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
@@ -21,12 +22,20 @@ export default async function OverviewPage() {
     { sections: rubric, trainerSectionScores },
     revenueData,
     teamHealth,
+    t,
+    tMetrics,
+    tHealth,
+    tAlerts,
   ] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),
+    getTranslations("Owner"),
+    getTranslations("Owner.metrics"),
+    getTranslations("Owner.teamHealth"),
+    getTranslations("Owner.activeAlerts"),
   ]);
 
   const performanceTrends = await getPerformanceTrends(trainers);
@@ -45,42 +54,50 @@ export default async function OverviewPage() {
       : 0;
   const topTrainer = sorted[0] ?? null;
 
+  const activeSalesPeopleLabel = trainers.length === 1
+    ? tMetrics("activeSalesPeopleOne", { count: trainers.length })
+    : tMetrics("activeSalesPeopleOther", { count: trainers.length });
+
+  const alertsCountLabel = activeAlerts.length === 1
+    ? tAlerts("itemsCountOne", { count: activeAlerts.length })
+    : tAlerts("itemsCountOther", { count: activeAlerts.length });
+
   return (
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
-      <SectionLabel>Team Overview</SectionLabel>
+      <SectionLabel>{t("teamOverview")}</SectionLabel>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <ScoreCard
-          label="Est. Monthly Revenue"
+          label={tMetrics("monthlyRevenue")}
           value="$18,200"
           valueColor="var(--am-green)"
           delta={12}
-          deltaLabel="% vs baseline"
+          deltaLabel={tMetrics("vsBaseline")}
         />
         <ScoreCard
-          label="Avg Close Rate"
+          label={tMetrics("avgCloseRate")}
           value={`${avgClose}%`}
           valueColor="var(--am-green)"
           delta={7}
-          deltaLabel="pts since week 1"
+          deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label="Avg Score"
+          label={tMetrics("avgScore")}
           value={avgScore}
           valueColor="var(--am-accent2)"
           delta={11}
-          deltaLabel="pts since week 1"
+          deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label="Total Calls"
+          label={tMetrics("totalCalls")}
           value={totalCalls}
-          deltaLabel={`${trainers.length} active sales people`}
+          deltaLabel={activeSalesPeopleLabel}
         />
         <ScoreCard
-          label="Best Close Rate"
+          label={tMetrics("bestCloseRate")}
           value={`${topTrainer?.closeRate ?? 0}%`}
           delta={topTrainer?.closeDelta ?? 0}
-          deltaLabel={topTrainer?.name ?? "No trainers"}
+          deltaLabel={topTrainer?.name ?? tMetrics("noTrainers")}
         />
       </div>
 
@@ -104,17 +121,17 @@ export default async function OverviewPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
-              Team Health
+              {tHealth("title")}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
-              mock data only
+              {tHealth("mockBadge")}
             </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            Who&apos;s improving · who needs attention this week
+            {tHealth("subtitle")}
           </p>
 
           {/* Column headers */}
@@ -122,10 +139,10 @@ export default async function OverviewPage() {
             className="grid mb-2"
             style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
           >
-            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>TRAINER</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>STATUS</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>CLOSE %</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>DELTA</span>
+            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>{tHealth("th.trainer")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.status")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.closeRate")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.delta")}</span>
             <span className="text-[10px] font-medium text-right" style={{ color: "var(--am-muted)" }}>↑↓</span>
           </div>
 
@@ -137,9 +154,13 @@ export default async function OverviewPage() {
               : entry.statusType === 'away'   ? 'var(--am-red)'
               : 'var(--am-muted)'
             const deltaColor = entry.delta >= 0 ? 'var(--am-green)' : 'var(--am-red)'
+            const ptsLabel = Math.abs(entry.delta) === 1 ? tHealth('ptsOne') : tHealth('ptsOther')
             const deltaLabel = entry.delta > 0
-              ? `+${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
-              : `${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+              ? `+${entry.delta} ${ptsLabel}`
+              : `${entry.delta} ${ptsLabel}`
+            const callsLabel = entry.calls === 1
+              ? tHealth('callsLabelOne', { count: entry.calls })
+              : tHealth('callsLabelOther', { count: entry.calls })
 
             const avatarBg: Record<string, string> = {
               blue: 'var(--am-blue-bg)', purple: 'rgba(110,86,255,0.15)',
@@ -178,7 +199,7 @@ export default async function OverviewPage() {
                       {entry.name}
                     </p>
                     <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
-                      {entry.calls} calls
+                      {callsLabel}
                     </p>
                   </div>
                 </div>
@@ -210,7 +231,7 @@ export default async function OverviewPage() {
           })}
 
           <p className="mt-3 text-[10px]" style={{ color: "var(--am-amber)" }}>
-            † green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation
+            {tHealth("mockFooter")}
           </p>
         </div>
 
@@ -222,17 +243,17 @@ export default async function OverviewPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-1">
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
-              Active Alerts
+              {tAlerts("title")}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
-              mock data only
+              {tAlerts("mockBadge")}
             </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            {activeAlerts.length} items requiring attention
+            {alertsCountLabel}
           </p>
 
           {/* Alert items */}
@@ -296,7 +317,7 @@ export default async function OverviewPage() {
 
           {/* Footer note */}
           <p className="text-[10px] mt-4 leading-relaxed" style={{ color: "var(--am-amber)" }}>
-            ↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts
+            {tAlerts("mockFooter")}
           </p>
         </div>
       </div>
@@ -312,7 +333,7 @@ export default async function OverviewPage() {
             className="text-[13px] font-medium mb-4"
             style={{ color: "var(--am-text)" }}
           >
-            Rubric by Section — Team Average
+            {t("rubricBySection")}
           </p>
           <div className="flex flex-col gap-2.5">
             {rubric.map((section) => (
@@ -337,7 +358,7 @@ export default async function OverviewPage() {
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>Score by Sales Person — Detailed Rubric</SectionLabel>
+      <SectionLabel>{t("detailedRubricLabel")}</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
@@ -352,7 +373,7 @@ export default async function OverviewPage() {
                   borderBottom: "1px solid var(--am-border)",
                 }}
               >
-                Section
+                {t("detailedRubricTh.section")}
               </th>
               <th
                 className="text-[11px] font-medium text-right pb-2.5 px-2"
@@ -361,18 +382,18 @@ export default async function OverviewPage() {
                   borderBottom: "1px solid var(--am-border)",
                 }}
               >
-                Team
+                {t("detailedRubricTh.team")}
               </th>
-              {trainerSectionScores.map((t) => (
+              {trainerSectionScores.map((tr) => (
                 <th
-                  key={t.trainerId}
+                  key={tr.trainerId}
                   className="text-[11px] font-medium text-right pb-2.5 px-2"
                   style={{
                     color: "var(--am-muted)",
                     borderBottom: "1px solid var(--am-border)",
                   }}
                 >
-                  {t.trainerName}
+                  {tr.trainerName}
                 </th>
               ))}
             </tr>
@@ -380,7 +401,7 @@ export default async function OverviewPage() {
           <tbody>
             {rubric.map((section) => {
               const trainerScores = trainerSectionScores.map(
-                (t) => t.scores[section.name] ?? 0,
+                (tr) => tr.scores[section.name] ?? 0,
               );
               const maxScore =
                 trainerScores.length > 0 ? Math.max(...trainerScores) : 0;
@@ -434,7 +455,7 @@ export default async function OverviewPage() {
       </div>
 
       {/* ── AI Insights ───────────────────────────────────────── */}
-      <SectionLabel>AI Insights</SectionLabel>
+      <SectionLabel>{t("aiInsights")}</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {insights.map((insight) => (
           <InsightCard key={insight.id} insight={insight} />

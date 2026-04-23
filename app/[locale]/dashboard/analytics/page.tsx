@@ -1,6 +1,7 @@
 "use client";
 
 import type { Call } from "@/lib/types";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -24,14 +25,7 @@ import {
   YAxis,
 } from "recharts";
 
-// Maps rubricScores keys → display labels
-const RUBRIC_LABELS: Record<string, string> = {
-  discovery: "Discovery",
-  problemAgitation: "Problem Agitation",
-  offerPresentation: "Offer Presentation",
-  objectionHandling: "Objection Handling",
-  closeAndNextSteps: "Close & Next Steps",
-};
+const RUBRIC_KEYS = ['discovery', 'problemAgitation', 'offerPresentation', 'objectionHandling', 'closeAndNextSteps'] as const
 
 interface SectionAvg {
   name: string;
@@ -40,18 +34,23 @@ interface SectionAvg {
 
 interface Achievement {
   trainer: string;
-  badge: string;
+  badgeKey: 'masterCoach' | 'perfectCalls' | 'risingStar';
   icon: string;
-  reason: string;
+  reasonKey: string;
+  reasonVars?: Record<string, string | number>;
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations("Dashboard.analytics")
+  const tBadges = useTranslations("Dashboard.analytics.badges")
+  const tRubric = useTranslations("Shared.rubric")
+  const locale = useLocale()
   const [calls, setCalls] = useState<Call[]>([]);
   const [trendData, setTrendData] = useState<{ date: string; avgScore: number; calls: number }[]>([]);
   const [weakSections, setWeakSections] = useState<SectionAvg[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [insights, setInsights] = useState<string[]>([]);
+  const [insights, setInsights] = useState<{ key: string; vars: Record<string, string | number> }[]>([]);
   const [outcomeMetrics, setOutcomeMetrics] = useState({
     closed: 0,
     notClosed: 0,
@@ -80,10 +79,13 @@ export default function AnalyticsPage() {
       const sorted = [...callsData].sort((a, b) => a.date.localeCompare(b.date));
       setCalls(sorted);
 
+      const rubricLabel = (key: string) =>
+        (RUBRIC_KEYS as readonly string[]).includes(key) ? tRubric(key) : key
+
       // Trend data — group by date, average score per day
       const trends = new Map<string, { total: number; count: number }>();
       sorted.forEach((call) => {
-        const label = new Date(call.date).toLocaleDateString("en-US", {
+        const label = new Date(call.date).toLocaleDateString(locale, {
           month: "short",
           day: "numeric",
         });
@@ -111,7 +113,7 @@ export default function AnalyticsPage() {
       setWeakSections(
         Object.entries(sectionTotals)
           .map(([key, d]) => ({
-            name: RUBRIC_LABELS[key] ?? key,
+            name: rubricLabel(key),
             avgScore: Math.round(d.total / d.count),
           }))
           .sort((a, b) => a.avgScore - b.avgScore),
@@ -140,9 +142,10 @@ export default function AnalyticsPage() {
         if (topStats.count > 0) {
           achievementsList.push({
             trainer: topName,
-            badge: "Master Coach",
+            badgeKey: 'masterCoach',
             icon: "👑",
-            reason: `Highest average score: ${(topStats.total / topStats.count).toFixed(1)}`,
+            reasonKey: 'masterCoachReason',
+            reasonVars: { score: (topStats.total / topStats.count).toFixed(1) },
           });
         }
       }
@@ -151,9 +154,10 @@ export default function AnalyticsPage() {
       if (perfectEntry) {
         achievementsList.push({
           trainer: perfectEntry[0],
-          badge: "Perfect Calls",
+          badgeKey: 'perfectCalls',
           icon: "⭐",
-          reason: `${perfectEntry[1].perfect} call(s) with score ≥ 95`,
+          reasonKey: 'perfectCallsReason',
+          reasonVars: { count: perfectEntry[1].perfect },
         });
       }
 
@@ -167,9 +171,9 @@ export default function AnalyticsPage() {
         if (recentAvg > olderAvg) {
           achievementsList.push({
             trainer: recent[recent.length - 1].trainerName,
-            badge: "Rising Star",
+            badgeKey: 'risingStar',
             icon: "🚀",
-            reason: "Recent improvement trend",
+            reasonKey: 'risingStarReason',
           });
         }
       }
@@ -177,26 +181,31 @@ export default function AnalyticsPage() {
       setAchievements(achievementsList);
 
       // ─── Insights
-      const insightsList: string[] = [];
+      const insightsList: { key: string; vars: Record<string, string | number> }[] = [];
       if (sorted.length > 0) {
         const avg = sorted.reduce((sum, c) => sum + c.score, 0) / sorted.length;
-        insightsList.push(
-          `Overall performance: ${avg.toFixed(0)} avg score across ${sorted.length} calls`,
-        );
+        insightsList.push({
+          key: 'overallPerformance',
+          vars: { avg: avg.toFixed(0), count: sorted.length },
+        });
       }
       const sections = Object.entries(sectionTotals)
-        .map(([key, d]) => ({ name: RUBRIC_LABELS[key] ?? key, avgScore: Math.round(d.total / d.count) }))
+        .map(([key, d]) => ({ name: rubricLabel(key), avgScore: Math.round(d.total / d.count) }))
         .sort((a, b) => a.avgScore - b.avgScore);
       if (sections.length > 0) {
-        insightsList.push(
-          `Top improvement area: "${sections[0].name}" with avg score ${sections[0].avgScore}`,
-        );
+        insightsList.push({
+          key: 'topImprovementArea',
+          vars: { name: sections[0].name, score: sections[0].avgScore },
+        });
       }
       if (trainerEntries.length > 0) {
         const teamAvg =
           trainerEntries.reduce((sum, [, s]) => sum + s.total / s.count, 0) /
           trainerEntries.length;
-        insightsList.push(`Team average: ${teamAvg.toFixed(0)} — Focus on consistency`);
+        insightsList.push({
+          key: 'teamAverage',
+          vars: { avg: teamAvg.toFixed(0) },
+        });
       }
       setInsights(insightsList);
 
@@ -211,9 +220,9 @@ export default function AnalyticsPage() {
       sorted.forEach((call) => {
         if (!trainerMap.has(call.trainerName))
           trainerMap.set(call.trainerName, { closed: 0, total: 0 });
-        const t = trainerMap.get(call.trainerName)!;
-        t.total += 1;
-        if (call.result === "closed") t.closed += 1;
+        const tr = trainerMap.get(call.trainerName)!;
+        tr.total += 1;
+        if (call.result === "closed") tr.closed += 1;
       });
       setTrainerConversions(
         Array.from(trainerMap.entries())
@@ -230,7 +239,7 @@ export default function AnalyticsPage() {
     }
 
     fetchAnalytics();
-  }, []);
+  }, [locale, tRubric]);
 
   if (loading) {
     return (
@@ -245,10 +254,10 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Analytics & Insights
+          {t('title')}
         </h2>
         <p className="text-muted-foreground">
-          Aggregate performance trends and improvement recommendations
+          {t('subtitle')}
         </p>
       </div>
 
@@ -264,12 +273,12 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-blue-400" />
                   <CardTitle className="text-sm text-foreground">
-                    Insight
+                    {t('insightLabel')}
                   </CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-foreground">{insight}</p>
+                <p className="text-sm text-foreground">{t(insight.key as 'overallPerformance' | 'topImprovementArea' | 'teamAverage', insight.vars)}</p>
               </CardContent>
             </Card>
           ))}
@@ -283,7 +292,7 @@ export default function AnalyticsPage() {
             <p className="text-3xl font-bold text-green-600 dark:text-green-400">
               {outcomeMetrics.closed}
             </p>
-            <p className="text-sm text-muted-foreground">Closed Deals</p>
+            <p className="text-sm text-muted-foreground">{t('closedDeals')}</p>
           </CardContent>
         </Card>
         <Card>
@@ -291,7 +300,7 @@ export default function AnalyticsPage() {
             <p className="text-3xl font-bold text-red-600 dark:text-red-400">
               {outcomeMetrics.notClosed}
             </p>
-            <p className="text-sm text-muted-foreground">Not Closed</p>
+            <p className="text-sm text-muted-foreground">{t('notClosed')}</p>
           </CardContent>
         </Card>
         <Card>
@@ -299,7 +308,7 @@ export default function AnalyticsPage() {
             <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
               {outcomeMetrics.partial}
             </p>
-            <p className="text-sm text-muted-foreground">Partial</p>
+            <p className="text-sm text-muted-foreground">{t('partial')}</p>
           </CardContent>
         </Card>
         <Card
@@ -315,7 +324,7 @@ export default function AnalyticsPage() {
             >
               {outcomeMetrics.closeRate}%
             </p>
-            <p className="text-sm text-muted-foreground">Close Rate</p>
+            <p className="text-sm text-muted-foreground">{t('closeRate')}</p>
           </CardContent>
         </Card>
       </div>
@@ -326,9 +335,9 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-4 w-4" />
-              Conversion Leaderboard
+              {t('conversionLeaderboard')}
             </CardTitle>
-            <CardDescription>Close rate per sales person</CardDescription>
+            <CardDescription>{t('conversionSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -367,9 +376,9 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Performance Trend
+              {t('performanceTrend')}
             </CardTitle>
-            <CardDescription>Average score over time</CardDescription>
+            <CardDescription>{t('performanceTrendSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             {trendData.length > 0 ? (
@@ -384,14 +393,14 @@ export default function AnalyticsPage() {
                     type="monotone"
                     dataKey="avgScore"
                     stroke="#3b82f6"
-                    name="Avg Score %"
+                    name={t('avgScoreLine')}
                     isAnimationActive={true}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-80 items-center justify-center text-muted-foreground">
-                No data available yet
+                {t('noDataYet')}
               </div>
             )}
           </CardContent>
@@ -402,10 +411,10 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-4 w-4" />
-              Top Improvement Areas
+              {t('topImprovementAreas')}
             </CardTitle>
             <CardDescription>
-              Rubric sections with lowest average score
+              {t('topImprovementSubtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -420,12 +429,12 @@ export default function AnalyticsPage() {
                   <XAxis type="number" domain={[0, 100]} />
                   <YAxis dataKey="name" type="category" width={110} />
                   <Tooltip />
-                  <Bar dataKey="avgScore" fill="#ef4444" name="Avg Score" />
+                  <Bar dataKey="avgScore" fill="#ef4444" name={t('avgScoreBar')} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-80 items-center justify-center text-muted-foreground">
-                No data available yet
+                {t('noDataYet')}
               </div>
             )}
           </CardContent>
@@ -438,7 +447,7 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Award className="h-4 w-4" />
-              Team Achievements
+              {t('teamAchievements')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -452,11 +461,11 @@ export default function AnalyticsPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{achievement.icon}</span>
-                        <Badge variant="secondary">{achievement.badge}</Badge>
+                        <Badge variant="secondary">{tBadges(achievement.badgeKey)}</Badge>
                       </div>
                       <p className="mt-2 font-medium">{achievement.trainer}</p>
                       <p className="text-sm text-muted-foreground">
-                        {achievement.reason}
+                        {tBadges(achievement.reasonKey as 'masterCoachReason' | 'perfectCallsReason' | 'risingStarReason', achievement.reasonVars ?? {})}
                       </p>
                     </div>
                   </div>
@@ -472,9 +481,9 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Target className="h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mt-4 text-lg font-semibold">No data yet</h3>
+            <h3 className="mt-4 text-lg font-semibold">{t('emptyTitle')}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Process some calls to see analytics and insights
+              {t('emptyBody')}
             </p>
           </CardContent>
         </Card>

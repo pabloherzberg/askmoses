@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +48,8 @@ interface Rubric {
 }
 
 export default function SettingsPage() {
+  const t = useTranslations("Dashboard.settings")
+  const locale = useLocale()
   const [scripts, setScripts] = useState<Script[]>([])
   const [rubric, setRubric] = useState<Rubric | null>(null)
   const [systemPrompt, setSystemPrompt] = useState("")
@@ -218,23 +221,23 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 pb-16 lg:pb-0">
       <div>
-        <h1 className="text-3xl font-bold">Coaching Configuration</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your sales scripts and coaching system
+          {t('subtitle')}
         </p>
       </div>
 
       {/* System Prompt Section */}
       <Card>
         <CardHeader>
-          <CardTitle>System Prompt</CardTitle>
+          <CardTitle>{t('systemPromptTitle')}</CardTitle>
           <CardDescription>
-            Customize the AI coaching instructions
+            {t('systemPromptDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>LLM Model for Analysis</Label>
+            <Label>{t('llmModelLabel')}</Label>
             <select
               value={llmModel}
               onChange={(e) => {
@@ -243,26 +246,26 @@ export default function SettingsPage() {
               }}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
             >
-              <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (Fast & Balanced)</option>
-              <option value="google/gemini-2.5-pro">Gemini 2.5 Pro (Most Powerful)</option>
-              <option value="google/gemini-2.0-flash">Gemini 2.0 Flash (Lightweight)</option>
-              <option value="google/gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (Fastest)</option>
+              <option value="google/gemini-2.5-flash">{t('llmOptionGemini25Flash')}</option>
+              <option value="google/gemini-2.5-pro">{t('llmOptionGemini25Pro')}</option>
+              <option value="google/gemini-2.0-flash">{t('llmOptionGemini20Flash')}</option>
+              <option value="google/gemini-2.0-flash-lite">{t('llmOptionGemini20FlashLite')}</option>
             </select>
-            <p className="text-xs text-muted-foreground">Choose the AI model to use for analyzing sales calls</p>
+            <p className="text-xs text-muted-foreground">{t('llmModelHint')}</p>
           </div>
 
           <div className="space-y-2">
-            <Label>System Prompt</Label>
+            <Label>{t('systemPromptLabel')}</Label>
             <Textarea
               value={systemPrompt}
               onChange={(e) => {
                 setSystemPrompt(e.target.value)
                 setSystemPromptEdited(true)
               }}
-              placeholder="Enter the system prompt for AI analysis..."
+              placeholder={t('systemPromptPlaceholder')}
               className="min-h-32"
             />
-            <p className="text-xs text-muted-foreground">Customize the AI coaching instructions</p>
+            <p className="text-xs text-muted-foreground">{t('systemPromptFieldHint')}</p>
           </div>
 
           {(systemPromptEdited || llmModelEdited) && (
@@ -270,12 +273,12 @@ export default function SettingsPage() {
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('saving')}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+                  {t('saveChanges')}
                 </>
               )}
             </Button>
@@ -286,10 +289,10 @@ export default function SettingsPage() {
       {/* Scripts Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Sales Scripts</h2>
+          <h2 className="text-2xl font-bold">{t('scriptsTitle')}</h2>
           <Button onClick={() => setCreatingScript(!creatingScript)}>
             <Plus className="mr-2 h-4 w-4" />
-            New Script
+            {t('newScript')}
           </Button>
         </div>
 
@@ -297,39 +300,39 @@ export default function SettingsPage() {
         {creatingScript && (
           <Card className="border-blue-500">
             <CardHeader>
-              <CardTitle>Create New Sales Script</CardTitle>
+              <CardTitle>{t('createScriptTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Script Name</Label>
+                <Label>{t('scriptNameLabel')}</Label>
                 <Input
                   value={newScriptForm.name}
                   onChange={(e) =>
                     setNewScriptForm({ ...newScriptForm, name: e.target.value })
                   }
-                  placeholder="e.g., Dog Training Consultation"
+                  placeholder={t('scriptNamePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label>Description</Label>
+                <Label>{t('descriptionLabel')}</Label>
                 <Textarea
                   value={newScriptForm.description}
                   onChange={(e) =>
                     setNewScriptForm({ ...newScriptForm, description: e.target.value })
                   }
-                  placeholder="Describe the sales process and key objectives..."
+                  placeholder={t('descriptionPlaceholder')}
                   className="min-h-24"
                 />
               </div>
 
               <div>
-                <Label>Script Sections</Label>
+                <Label>{t('scriptSectionsLabel')}</Label>
                 <div className="space-y-3 mt-2">
                   {newScriptForm.sections.map((section, idx) => (
                     <div key={idx} className="p-3 border rounded-lg space-y-2">
                       <Input
-                        placeholder="Section name (e.g., Greeting)"
+                        placeholder={t('sectionNamePlaceholder')}
                         value={section.name}
                         onChange={(e) => {
                           const updated = [...newScriptForm.sections]
@@ -338,7 +341,7 @@ export default function SettingsPage() {
                         }}
                       />
                       <Textarea
-                        placeholder="Instructions for this section"
+                        placeholder={t('sectionInstructionsPlaceholder')}
                         value={section.instructions}
                         onChange={(e) => {
                           const updated = [...newScriptForm.sections]
@@ -348,7 +351,7 @@ export default function SettingsPage() {
                         className="min-h-20"
                       />
                       <Input
-                        placeholder="Tips (optional)"
+                        placeholder={t('sectionTipsPlaceholder')}
                         value={section.tips}
                         onChange={(e) => {
                           const updated = [...newScriptForm.sections]
@@ -371,7 +374,7 @@ export default function SettingsPage() {
                     }
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Section
+                    {t('addSection')}
                   </Button>
                 </div>
               </div>
@@ -379,10 +382,10 @@ export default function SettingsPage() {
               <div className="flex gap-2">
                 <Button onClick={handleCreateScript} disabled={!newScriptForm.name}>
                   <Zap className="mr-2 h-4 w-4" />
-                  Create & Generate Criteria
+                  {t('createAndGenerate')}
                 </Button>
                 <Button variant="outline" onClick={() => setCreatingScript(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </div>
             </CardContent>
@@ -444,13 +447,13 @@ export default function SettingsPage() {
                               <Pencil className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              Created {new Date(script.created_at || "").toLocaleDateString()}
+                              {t('createdOn', { date: new Date(script.created_at || "").toLocaleDateString(locale) })}
                             </p>
                             <p className="text-sm text-muted-foreground">{script.description}</p>
                           </div>
                         )}
                       </div>
-                      {script.is_active && <Badge>Active</Badge>}
+                      {script.is_active && <Badge>{t('activeBadge')}</Badge>}
                     </div>
                   </AccordionTrigger>
 
@@ -459,7 +462,7 @@ export default function SettingsPage() {
                       {/* Complete Script */}
                       <div>
                           <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">Complete Script</h4>
+                          <h4 className="font-semibold">{t('completeScript')}</h4>
                           {!isEditingContent ? (
                             <Button
                               variant="ghost"
@@ -479,7 +482,7 @@ export default function SettingsPage() {
                               value={editingScriptContent}
                               onChange={(e) => setEditingScriptContent(e.target.value)}
                               className="font-mono text-xs min-h-64"
-                              placeholder="Edit script content..."
+                              placeholder={t('editScriptPlaceholder')}
                             />
                             <div className="flex gap-2">
                               <Button
@@ -488,7 +491,7 @@ export default function SettingsPage() {
                                 onClick={() => handleUpdateScriptContent(script.id, editingScriptContent)}
                               >
                                 <Save className="h-4 w-4 mr-1" />
-                                Save
+                                {t('save')}
                               </Button>
                               <Button
                                 size="sm"
@@ -496,7 +499,7 @@ export default function SettingsPage() {
                                 onClick={() => setIsEditingContent(false)}
                               >
                                 <X className="h-4 w-4 mr-1" />
-                                Cancel
+                                {t('cancel')}
                               </Button>
                             </div>
                           </div>
@@ -511,14 +514,14 @@ export default function SettingsPage() {
 
                       {/* Sections */}
                       <div>
-                        <h4 className="font-semibold mb-2">Script Sections</h4>
+                        <h4 className="font-semibold mb-2">{t('scriptSectionsHeading')}</h4>
                         <div className="space-y-2">
                           {script.sections.map((section, idx) => (
                             <div key={idx} className="p-3 bg-muted rounded">
                               <p className="font-medium">{section.name}</p>
                               <p className="text-sm text-muted-foreground">{section.instructions}</p>
                               {section.tips && (
-                                <p className="text-xs text-blue-500 mt-1">💡 {section.tips}</p>
+                                <p className="text-xs text-blue-500 mt-1">{t('tipEmoji', { tip: section.tips })}</p>
                               )}
                             </div>
                           ))}
@@ -528,7 +531,7 @@ export default function SettingsPage() {
                       {/* Generated Criteria */}
                       {script.criteria && script.criteria.length > 0 && (
                         <div>
-                          <h4 className="font-semibold mb-2">Auto-Generated Criteria</h4>
+                          <h4 className="font-semibold mb-2">{t('autoGeneratedCriteria')}</h4>
                           <div className="space-y-2">
                             {script.criteria.map((criterion: GeneratedCriteria, idx: number) => (
                               <div key={idx} className="p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
@@ -550,7 +553,7 @@ export default function SettingsPage() {
                         onClick={() => handleDeleteScript(script.id)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Script
+                        {t('deleteScript')}
                       </Button>
                     </div>
                   </AccordionContent>
@@ -561,7 +564,7 @@ export default function SettingsPage() {
         ) : (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
-              No scripts created yet. Create your first sales script to get started.
+              {t('emptyScripts')}
             </CardContent>
           </Card>
         )}

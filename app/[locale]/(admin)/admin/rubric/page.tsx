@@ -1,9 +1,13 @@
+import { getTranslations } from 'next-intl/server'
 import { getRubric } from '@/lib/services/rubric'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RubricConfigClient } from './RubricConfigClient'
 
 export default async function AdminRubricPage() {
-  const { sections } = await getRubric()
+  const [{ sections }, t] = await Promise.all([
+    getRubric(),
+    getTranslations('Admin.rubric'),
+  ])
 
   const systemPrompt = `You are an expert sales coach for dog training businesses.
 
@@ -21,12 +25,12 @@ Return the response as structured JSON.`
   return (
     <div>
       <div className="mb-6">
-        <SectionLabel>Rubric Config</SectionLabel>
+        <SectionLabel>{t('label')}</SectionLabel>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-          Rubric Configuration
+          {t('title')}
         </h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--am-muted)' }}>
-          Manage evaluation criteria sent to the AI on every call analysis.
+          {t('subtitle')}
         </p>
       </div>
 

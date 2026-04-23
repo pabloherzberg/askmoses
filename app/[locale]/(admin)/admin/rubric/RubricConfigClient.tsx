@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import type { RubricSection } from '@/lib/types'
 
@@ -19,6 +20,7 @@ interface Props {
 
 export function RubricConfigClient({ sections, systemPrompt }: Props) {
   const { toast } = useToast()
+  const t = useTranslations('Admin.rubric')
   const [criticalMap, setCriticalMap] = useState<Record<string, boolean>>(
     Object.fromEntries(sections.map((s) => [s.id, s.isCritical]))
   )
@@ -47,13 +49,13 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
       if (!res.ok) throw new Error('Failed to save')
 
       toast({
-        title: 'Saved',
-        description: 'Rubric criteria updated successfully.',
+        title: t('toastSavedTitle'),
+        description: t('toastSavedBody'),
       })
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to save rubric changes. Try again.',
+        title: t('toastErrorTitle'),
+        description: t('toastErrorBody'),
         variant: 'destructive',
       })
     } finally {
@@ -102,7 +104,7 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
               {/* Critical toggle */}
               <div className="flex items-center gap-2.5 flex-shrink-0">
                 <span className="text-xs" style={{ color: 'var(--am-muted)' }}>
-                  {isCritical ? 'Critical' : 'Optional'}
+                  {isCritical ? t('critical') : t('optional')}
                 </span>
                 <button
                   onClick={() => toggleCritical(section.id)}
@@ -110,7 +112,7 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
                   style={{
                     background: isCritical ? 'var(--am-accent)' : 'var(--am-bg4)',
                   }}
-                  aria-label={`Toggle ${section.name} critical`}
+                  aria-label={t('toggleAria', { name: section.name })}
                 >
                   <span
                     className="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 mt-0.5"
@@ -131,10 +133,10 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--am-text)' }}>
-          AI System Prompt Preview
+          {t('systemPromptTitle')}
         </p>
         <p className="text-xs mb-3" style={{ color: 'var(--am-muted)' }}>
-          This prompt is sent to the AI on every call analysis. Read-only in this demo.
+          {t('systemPromptSubtitle')}
         </p>
         <textarea
           readOnly
@@ -157,7 +159,7 @@ export function RubricConfigClient({ sections, systemPrompt }: Props) {
           className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
           style={{ background: 'var(--am-accent)' }}
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? t('saving') : t('save')}
         </button>
       </div>
     </div>

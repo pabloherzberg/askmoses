@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -31,17 +32,6 @@ interface Script {
   rubric_id: string
 }
 
-interface CallData {
-  id: string
-  trainer_name: string
-  trainer_email: string
-  call_outcome: string
-  transcript: string
-  overall_score: number
-  total_criteria: number
-  created_at: string
-}
-
 interface Objection {
   objection: string
   frequency: string
@@ -70,6 +60,12 @@ interface InsightsResult {
 }
 
 export default function InsightsPage() {
+  const t = useTranslations("Dashboard.insights")
+  const tMetrics = useTranslations("Dashboard.insights.metrics")
+  const tErrors = useTranslations("Dashboard.insights.errors")
+  const tSuggested = useTranslations("Dashboard.insights.suggestedScript")
+  const tShare = useTranslations("Dashboard.insights.shareWithTeam")
+  const tFreq = useTranslations("Dashboard.insights.objections.frequency")
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
   const [loading, setLoading] = useState(true)
@@ -108,12 +104,12 @@ export default function InsightsPage() {
 
       const json = await res.json()
       if (!res.ok || json.error) {
-        throw new Error(json.error?.message || "Failed to generate insights")
+        throw new Error(json.error?.message || tErrors('generateFailed'))
       }
 
       setInsights(json.data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error")
+      setError(err instanceof Error ? err.message : tErrors('unknown'))
     } finally {
       setAnalyzing(false)
     }
@@ -127,7 +123,7 @@ export default function InsightsPage() {
 
     try {
       const originalScript = scripts.find((s) => s.id === selectedScript)
-      const newName = `${originalScript?.name || "Script"} (AI Optimized)`
+      const newName = `${originalScript?.name || tSuggested('defaultScriptName')} ${tSuggested('aiOptimizedSuffix')}`
 
       // Parse suggested script into sections
       const lines = insights.suggestedScript.split("\n").filter((l) => l.trim())
@@ -147,7 +143,7 @@ export default function InsightsPage() {
 
       // If parsing failed, create a single section
       if (sections.length === 0) {
-        sections.push({ name: "AI Optimized Script", instructions: insights.suggestedScript, tips: "" })
+        sections.push({ name: tSuggested('aiOptimizedSectionName'), instructions: insights.suggestedScript, tips: "" })
       }
 
       const res = await fetch("/api/scripts", {
@@ -155,7 +151,10 @@ export default function InsightsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName,
-          description: `AI-generated optimized script based on analysis of ${insights.metrics.total} calls (${insights.metrics.closeRate}% close rate)`,
+          description: tSuggested('descriptionTemplate', {
+            total: insights.metrics.total,
+            closeRate: insights.metrics.closeRate,
+          }),
           rubric_id: originalScript?.rubric_id,
           sections,
           full_script: insights.suggestedScript,
@@ -167,7 +166,7 @@ export default function InsightsPage() {
 
       setSavedScript(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save script")
+      setError(err instanceof Error ? err.message : tErrors('saveFailed'))
     } finally {
       setSavingScript(false)
     }
@@ -185,22 +184,29 @@ export default function InsightsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scriptName: script?.name || "Sales Script",
+          scriptName: script?.name || tShare('defaultScriptName'),
           insights,
         }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "Failed to send insights")
+        throw new Error(data.error || tErrors('sendFailed'))
       }
 
       setSent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error")
+      setError(err instanceof Error ? err.message : tErrors('unknown'))
     } finally {
       setSending(false)
     }
+  }
+
+  function frequencyLabel(freq: string): string {
+    if (freq === "Very Common") return tFreq('veryCommon')
+    if (freq === "Common") return tFreq('common')
+    if (freq === "Rare") return tFreq('rare')
+    return freq
   }
 
   if (loading) {
@@ -215,9 +221,9 @@ export default function InsightsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">Team Insights</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-balance">{t('title')}</h1>
         <p className="text-muted-foreground">
-          AI-powered analysis of what works and what doesn't across your team's calls
+          {t('subtitle')}
         </p>
       </div>
 
@@ -226,16 +232,15 @@ export default function InsightsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
-            Generate Insights
+            {t('generateCardTitle')}
           </CardTitle>
           <CardDescription>
-            Select a script to analyze all associated calls. The AI will find patterns
-            in successful vs unsuccessful calls and generate actionable recommendations.
+            {t('generateCardDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Select Script</Label>
+            <Label>{t('selectScriptLabel')}</Label>
             <select
               value={selectedScript}
               onChange={(e) => {
@@ -246,7 +251,7 @@ export default function InsightsPage() {
               }}
               className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
             >
-              <option value="">Choose a script to analyze...</option>
+              <option value="">{t('chooseScriptPlaceholder')}</option>
               {scripts.map((script) => (
                 <option key={script.id} value={script.id}>
                   {script.name}
@@ -264,12 +269,12 @@ export default function InsightsPage() {
             {analyzing ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Analyzing calls... This may take a moment
+                {t('analyzing')}
               </>
             ) : (
               <>
                 <Brain className="mr-2 h-5 w-5" />
-                Generate Insights
+                {t('generateButton')}
               </>
             )}
           </Button>
@@ -295,7 +300,7 @@ export default function InsightsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{insights.metrics.total}</p>
-                    <p className="text-xs text-muted-foreground">Total Calls</p>
+                    <p className="text-xs text-muted-foreground">{tMetrics('totalCalls')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -309,7 +314,7 @@ export default function InsightsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">{insights.metrics.closed}</p>
-                    <p className="text-xs text-muted-foreground">Closed</p>
+                    <p className="text-xs text-muted-foreground">{tMetrics('closed')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -323,7 +328,7 @@ export default function InsightsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-red-600 dark:text-red-400">{insights.metrics.notClosed}</p>
-                    <p className="text-xs text-muted-foreground">Not Closed</p>
+                    <p className="text-xs text-muted-foreground">{tMetrics('notClosed')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -337,7 +342,7 @@ export default function InsightsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{insights.metrics.partial}</p>
-                    <p className="text-xs text-muted-foreground">Partial</p>
+                    <p className="text-xs text-muted-foreground">{tMetrics('partial')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -349,7 +354,7 @@ export default function InsightsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Team Close Rate</p>
+                  <p className="text-sm text-muted-foreground">{tMetrics('teamCloseRate')}</p>
                   <p className="text-4xl font-bold">{insights.metrics.closeRate}%</p>
                 </div>
                 <div className={`rounded-full p-4 ${insights.metrics.closeRate >= 60 ? "bg-green-100 dark:bg-green-900" : "bg-red-100 dark:bg-red-900"}`}>
@@ -370,10 +375,12 @@ export default function InsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
                   <TrendingUp className="h-5 w-5" />
-                  What Closers Do
+                  {t('whatClosersDo.title')}
                 </CardTitle>
                 <CardDescription>
-                  Common patterns found in {insights.metrics.closed} successful calls
+                  {insights.metrics.closed === 1
+                    ? t('whatClosersDo.subtitleOne', { count: insights.metrics.closed })
+                    : t('whatClosersDo.subtitleOther', { count: insights.metrics.closed })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -393,10 +400,12 @@ export default function InsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
                   <TrendingDown className="h-5 w-5" />
-                  What Loses Deals
+                  {t('whatLosesDeals.title')}
                 </CardTitle>
                 <CardDescription>
-                  Common patterns found in {insights.metrics.notClosed} unsuccessful calls
+                  {insights.metrics.notClosed === 1
+                    ? t('whatLosesDeals.subtitleOne', { count: insights.metrics.notClosed })
+                    : t('whatLosesDeals.subtitleOther', { count: insights.metrics.notClosed })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -418,9 +427,9 @@ export default function InsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-300">
                   <ThumbsUp className="h-5 w-5" />
-                  DO's
+                  {t('dos.title')}
                 </CardTitle>
-                <CardDescription className="text-green-200/70">Best practices from top closers</CardDescription>
+                <CardDescription className="text-green-200/70">{t('dos.subtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
@@ -438,9 +447,9 @@ export default function InsightsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-300">
                   <ThumbsDown className="h-5 w-5" />
-                  DON'Ts
+                  {t('donts.title')}
                 </CardTitle>
-                <CardDescription className="text-red-200/70">Behaviors that lose deals</CardDescription>
+                <CardDescription className="text-red-200/70">{t('donts.subtitle')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
@@ -460,10 +469,10 @@ export default function InsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquareWarning className="h-5 w-5" />
-                Common Objections & How to Handle Them
+                {t('objections.title')}
               </CardTitle>
               <CardDescription>
-                Objections found across all calls with best vs worst responses
+                {t('objections.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -472,12 +481,12 @@ export default function InsightsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm text-foreground">"{obj.objection}"</span>
+                        <span className="font-semibold text-sm text-foreground">&quot;{obj.objection}&quot;</span>
                         <Badge variant={
                           obj.frequency === "Very Common" ? "destructive" :
                           obj.frequency === "Common" ? "default" : "secondary"
                         } className="text-xs">
-                          {obj.frequency}
+                          {frequencyLabel(obj.frequency)}
                         </Badge>
                       </div>
                     </div>
@@ -485,13 +494,13 @@ export default function InsightsPage() {
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-600 transition-colors">
                       <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Best Response (Closers)
+                        <CheckCircle2 className="h-3 w-3" /> {t('objections.bestResponse')}
                       </p>
                       <p className="text-sm text-green-900 dark:text-green-100">{obj.bestResponse}</p>
                     </div>
                     <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 hover:border-red-400 dark:hover:border-red-600 transition-colors">
                       <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 flex items-center gap-1">
-                        <XCircle className="h-3 w-3" /> Worst Response (Non-Closers)
+                        <XCircle className="h-3 w-3" /> {t('objections.worstResponse')}
                       </p>
                       <p className="text-sm text-red-900 dark:text-red-100">{obj.worstResponse}</p>
                     </div>
@@ -506,7 +515,7 @@ export default function InsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                Key Differences Between Closers and Non-Closers
+                {t('keyDifferences.title')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -528,10 +537,10 @@ export default function InsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
-                Pre-Call Checklist
+                {t('preCallChecklist.title')}
               </CardTitle>
               <CardDescription>
-                Based on successful calls, every trainer should follow these steps before and during a call
+                {t('preCallChecklist.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -556,21 +565,21 @@ export default function InsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                AI-Suggested Optimized Script
+                {tSuggested('title')}
               </CardTitle>
               <CardDescription>
-                Based on what works in successful calls, here is a suggested improved script
+                {tSuggested('subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-wrap max-h-96 overflow-y-auto">
                 {insights.suggestedScript}
               </div>
-              
+
               {savedScript ? (
                 <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
                   <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <p className="text-sm text-green-700 dark:text-green-300">Script saved! Check your Rubric settings to view it.</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">{tSuggested('savedMessage')}</p>
                 </div>
               ) : (
                 <Button
@@ -583,12 +592,12 @@ export default function InsightsPage() {
                   {savingScript ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Saving as new script...
+                      {tSuggested('saving')}
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-5 w-5" />
-                      Save as New Script
+                      {tSuggested('saveButton')}
                     </>
                   )}
                 </Button>
@@ -601,11 +610,12 @@ export default function InsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Share with Team
+                {tShare('title')}
               </CardTitle>
               <CardDescription>
-                Send this insights report as a weekly digest to all {insights.trainers.length} trainers
-                who have calls for this script
+                {insights.trainers.length === 1
+                  ? tShare('subtitleOne', { count: insights.trainers.length })
+                  : tShare('subtitleOther', { count: insights.trainers.length })}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -620,7 +630,7 @@ export default function InsightsPage() {
               {sent ? (
                 <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md">
                   <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  <p className="text-sm text-green-700 dark:text-green-300">Insights sent to all team members!</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">{tShare('sentMessage')}</p>
                 </div>
               ) : (
                 <Button
@@ -632,12 +642,12 @@ export default function InsightsPage() {
                   {sending ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Sending to team...
+                      {tShare('sending')}
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-5 w-5" />
-                      Send Insights to Team
+                      {tShare('sendButton')}
                     </>
                   )}
                 </Button>

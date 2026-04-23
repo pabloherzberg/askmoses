@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
 import { getPerformanceTrends } from "@/lib/services/trainers";
 import { ScoreCard } from "@/components/shared/ScoreCard";
@@ -14,17 +15,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants";
 import type { RubricColor, RubricScores } from "@/lib/types";
 
-const RUBRIC_SECTIONS: { key: keyof RubricScores; name: string; color: RubricColor }[] = [
-  { key: "discovery",         name: "Discovery",          color: "blue" },
-  { key: "problemAgitation",  name: "Problem Agitation",  color: "amber" },
-  { key: "offerPresentation", name: "Offer Presentation", color: "green" },
-  { key: "objectionHandling", name: "Objection Handling", color: "accent2" },
-  { key: "closeAndNextSteps", name: "Close & Next Steps", color: "red" },
+const RUBRIC_SECTIONS: { key: keyof RubricScores; labelKey: string; color: RubricColor }[] = [
+  { key: "discovery",         labelKey: "discovery",         color: "blue" },
+  { key: "problemAgitation",  labelKey: "problemAgitation",  color: "amber" },
+  { key: "offerPresentation", labelKey: "offerPresentation", color: "green" },
+  { key: "objectionHandling", labelKey: "objectionHandling", color: "accent2" },
+  { key: "closeAndNextSteps", labelKey: "closeAndNextSteps", color: "red" },
 ];
 
 
 export default async function TrainerDashboardPage() {
-  const [session, trainerId] = await Promise.all([getSession(), getTrainerDbId()]);
+  const [session, trainerId, locale, t, tRubric, tOutcomes] = await Promise.all([
+    getSession(),
+    getTrainerDbId(),
+    getLocale(),
+    getTranslations("Trainer"),
+    getTranslations("Shared.rubric"),
+    getTranslations("Shared.outcomes"),
+  ]);
   if (!trainerId || !session) return null;
 
   // Fetch trainer profile + all calls for this trainer + all calls for team avg
@@ -70,23 +78,27 @@ export default async function TrainerDashboardPage() {
     delta:   myRubric[s.key] - teamRubric[s.key],
   }));
 
+  const countLabel = totalCalls === 1
+    ? t("callsAnalyzedOne", { count: totalCalls })
+    : t("callsAnalyzedOther", { count: totalCalls });
+
   return (
     <div>
       {/* ── Greeting ──────────────────────────────────────────── */}
       <div className="mb-6">
-        <SectionLabel>My Dashboard</SectionLabel>
+        <SectionLabel>{t("dashboardLabel")}</SectionLabel>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--am-text)" }}>
-          Hello, {trainerName}
+          {t("greeting", { name: trainerName })}
         </h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--am-muted)" }}>
-          {totalCalls} calls analyzed
+          {countLabel}
         </p>
       </div>
 
       {/* ── Personal metrics ──────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <ScoreCard label="My Score"   value={myScore}      valueColor="var(--am-accent2)" />
-        <ScoreCard label="Close Rate" value={`${closeRate}%`} valueColor="var(--am-green)" />
+        <ScoreCard label={t("myScore")}   value={myScore}      valueColor="var(--am-accent2)" />
+        <ScoreCard label={t("closeRate")} value={`${closeRate}%`} valueColor="var(--am-green)" />
       </div>
 
       {/* ── Main grid: rubric + coaching tip ──────────────────── */}
@@ -95,21 +107,24 @@ export default async function TrainerDashboardPage() {
         {/* Personal rubric vs team avg */}
         <div className="rounded-2xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--am-border)" }}>
           <p className="text-[13px] font-medium mb-1" style={{ color: "var(--am-text)" }}>
-            My Rubric vs Team Average
+            {t("myRubricTitle")}
           </p>
           <p className="text-xs mb-4" style={{ color: "var(--am-muted)" }}>
-            Green = above team avg · Red = below team avg
+            {t("myRubricSubtitle")}
           </p>
           <div className="flex flex-col gap-4">
             {rubricWithDelta.map((row) => (
               <div key={row.key}>
-                <RubricBar label={row.name} value={row.value} color={row.color} />
+                <RubricBar label={tRubric(row.labelKey)} value={row.value} color={row.color} />
                 <div className="flex justify-between mt-1 pl-[148px]">
                   <span
                     className="text-[10px] font-mono"
                     style={{ color: row.delta >= 0 ? "var(--am-green)" : "var(--am-red)" }}
                   >
-                    {row.delta > 0 ? `+${row.delta}` : row.delta} vs team ({row.teamAvg})
+                    {t("deltaVsTeam", {
+                      delta: row.delta > 0 ? `+${row.delta}` : row.delta,
+                      teamAvg: row.teamAvg,
+                    })}
                   </span>
                 </div>
               </div>
@@ -120,13 +135,13 @@ export default async function TrainerDashboardPage() {
         <div className="flex flex-col gap-4">
           {/* Quick stats */}
           <div className="rounded-2xl p-5 border" style={{ background: "var(--card)", borderColor: "var(--am-border)" }}>
-            <p className="text-[13px] font-medium mb-3" style={{ color: "var(--am-text)" }}>Quick Stats</p>
+            <p className="text-[13px] font-medium mb-3" style={{ color: "var(--am-text)" }}>{t("quickStats")}</p>
             <div className="grid grid-cols-2 gap-3 text-center">
               {[
-                { label: "Closed",      value: closedCalls,      color: "var(--am-green)" },
-                { label: "Follow-up",   value: followUpCalls,    color: "var(--am-amber)" },
-                { label: "Objection",   value: objectionCalls,   color: "var(--am-amber)" },
-                { label: "No Decision", value: noDecisionCalls,  color: "var(--am-red)" },
+                { label: t("stats.closed"),     value: closedCalls,      color: "var(--am-green)" },
+                { label: t("stats.followUp"),   value: followUpCalls,    color: "var(--am-amber)" },
+                { label: t("stats.objection"),  value: objectionCalls,   color: "var(--am-amber)" },
+                { label: t("stats.noDecision"), value: noDecisionCalls,  color: "var(--am-red)" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <p className="text-2xl font-semibold font-mono" style={{ color }}>{value}</p>
@@ -142,28 +157,31 @@ export default async function TrainerDashboardPage() {
       <PerformanceTrend trends={performanceTrends} fixedId={trainerId} />
 
       {/* ── Recent calls ──────────────────────────────────────── */}
-      <SectionLabel>Recent Calls</SectionLabel>
+      <SectionLabel>{t("recentCalls")}</SectionLabel>
       <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--card)", borderColor: "var(--am-border)" }}>
         {recentCalls.length === 0 ? (
-          <p className="text-sm text-center py-10" style={{ color: "var(--am-muted)" }}>No calls yet.</p>
+          <p className="text-sm text-center py-10" style={{ color: "var(--am-muted)" }}>{t("noCallsYet")}</p>
         ) : recentCalls.map((call, i) => {
           const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE;
+          const outcomeLabel = call.result in RESULT_STYLES
+            ? tOutcomes(`short.${call.result}`)
+            : tOutcomes("unknown");
           return (
             <Link
               key={call.id}
-              href={`/me/calls/${call.id}`}
+              href={`/${locale}/me/calls/${call.id}`}
               className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--am-bg3)]"
               style={{ borderBottom: i < recentCalls.length - 1 ? "1px solid var(--am-border)" : "none" }}
             >
               <span className="text-xs font-mono w-20 flex-shrink-0" style={{ color: "var(--am-muted)" }}>
-                {new Date(call.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {new Date(call.date).toLocaleDateString(locale, { month: "short", day: "numeric" })}
               </span>
               <span className="flex-1 text-sm truncate" style={{ color: "var(--am-text)" }}>{call.prospect}</span>
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono flex-shrink-0"
                 style={{ background: result.bg, color: result.color }}
               >
-                {result.label}
+                {outcomeLabel}
               </span>
               <ScorePill score={call.score} />
               <ChevronRight size={15} style={{ color: "var(--am-muted)", flexShrink: 0 }} />

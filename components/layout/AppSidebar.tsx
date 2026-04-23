@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -10,38 +11,24 @@ import { cn } from '@/lib/utils'
 import type React from 'react'
 import type { Role } from '@/lib/types'
 
-const trainerNav = [
-  { label: 'My Dashboard', href: '/me', icon: LayoutDashboard },
-  { label: 'My Calls',     href: '/calls', icon: Phone },
-  { label: 'Upload Call',  href: '/dashboard/upload', icon: Upload },
-]
-
-const mainNav = [
-  { label: 'Dashboard',     href: '/dashboard', icon: Home },
-  { label: 'Team Overview', href: '/overview',  icon: LayoutDashboard },
-  { label: 'Calls',         href: '/calls',     icon: Phone },
-]
-
-const toolsNav = [
-  { label: 'Upload Call',     href: '/dashboard/upload',        icon: Upload },
-  { label: 'History',        href: '/dashboard/history',        icon: History },
-  { label: 'Analytics',      href: '/dashboard/analytics',      icon: BarChart3 },
-  { label: 'Insights',       href: '/dashboard/insights',       icon: Brain },
-  { label: 'Coaching Center', href: '/coaching',                icon: GraduationCap },
-  { label: 'Script Builder', href: '/dashboard/script-builder', icon: Wand2 },
-  { label: 'Rubric',         href: '/dashboard/settings',       icon: Settings },
-  { label: 'How to Use',     href: '/dashboard/guide',          icon: HelpCircle },
-]
+// Parent routes that should only match on exact path equality — otherwise they
+// would also match every nested child (e.g. /me would also highlight on /me/calls).
+const EXACT_ONLY = new Set(['/overview', '/dashboard', '/me', '/admin'])
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
   const pathname = usePathname()
+  const locale = useLocale()
+  const localizedHref = `/${locale}${href}`
+  // Strip locale prefix when comparing against pathname so "active" still works
+  const bareHref = href
+  const barePath = pathname.replace(`/${locale}`, '') || '/'
   const active =
-    pathname === href ||
-    (href !== '/overview' && href !== '/dashboard' && pathname.startsWith(href))
+    barePath === bareHref ||
+    (!EXACT_ONLY.has(bareHref) && barePath.startsWith(`${bareHref}/`))
 
   return (
     <Link
-      href={href}
+      href={localizedHref}
       className={cn(
         'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
         active ? 'text-white' : 'hover:opacity-80'
@@ -59,6 +46,12 @@ export function NavItem({ label, href, icon: Icon }: { label: string; href: stri
 }
 
 export function TrainerNavItems() {
+  const t = useTranslations('Shared.sidebar')
+  const trainerNav = [
+    { label: t('myDashboard'), href: '/me', icon: LayoutDashboard },
+    { label: t('myCalls'),     href: '/me/calls', icon: Phone },
+    { label: t('uploadCall'),  href: '/dashboard/upload', icon: Upload },
+  ]
   return (
     <nav className="flex flex-col gap-1">
       {trainerNav.map((item) => <NavItem key={item.href} {...item} />)}
@@ -67,6 +60,22 @@ export function TrainerNavItems() {
 }
 
 export function OwnerNavItems() {
+  const t = useTranslations('Shared.sidebar')
+  const mainNav = [
+    { label: t('dashboard'),     href: '/dashboard', icon: Home },
+    { label: t('teamOverview'),  href: '/overview',  icon: LayoutDashboard },
+    { label: t('calls'),         href: '/calls',     icon: Phone },
+  ]
+  const toolsNav = [
+    { label: t('uploadCall'),     href: '/dashboard/upload',        icon: Upload },
+    { label: t('history'),        href: '/dashboard/history',        icon: History },
+    { label: t('analytics'),      href: '/dashboard/analytics',      icon: BarChart3 },
+    { label: t('insights'),       href: '/dashboard/insights',       icon: Brain },
+    { label: t('coachingCenter'), href: '/coaching',                 icon: GraduationCap },
+    { label: t('scriptBuilder'),  href: '/dashboard/script-builder', icon: Wand2 },
+    { label: t('rubric'),         href: '/dashboard/settings',       icon: Settings },
+    { label: t('howToUse'),       href: '/dashboard/guide',          icon: HelpCircle },
+  ]
   return (
     <nav className="flex flex-col gap-1">
       {mainNav.map((item) => <NavItem key={item.href} {...item} />)}
@@ -74,7 +83,7 @@ export function OwnerNavItems() {
       <div className="my-2 mx-3 h-px" style={{ background: 'var(--am-border)' }} />
 
       <p className="px-3 mb-1 text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>
-        Tools
+        {t('tools')}
       </p>
 
       {toolsNav.map((item) => <NavItem key={item.href} {...item} />)}
@@ -83,6 +92,7 @@ export function OwnerNavItems() {
 }
 
 export function AppSidebar({ role, children }: { role?: Role | null; children?: React.ReactNode }) {
+  const t = useTranslations('Shared.sidebar')
   const nav = children ?? (role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />)
 
   return (
@@ -93,8 +103,8 @@ export function AppSidebar({ role, children }: { role?: Role | null; children?: 
       {nav}
       <div className="mt-auto pb-4 px-3">
         <div className="rounded-md border border-border bg-secondary/50 p-3">
-          <p className="text-xs text-muted-foreground">Starter Tier</p>
-          <p className="text-sm font-medium">Manual Upload</p>
+          <p className="text-xs text-muted-foreground">{t('starterTier')}</p>
+          <p className="text-sm font-medium">{t('starterTierSubtitle')}</p>
         </div>
       </div>
     </aside>

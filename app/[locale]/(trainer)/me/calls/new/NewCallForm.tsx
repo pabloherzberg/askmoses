@@ -1,14 +1,9 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Upload, FileVideo, FileAudio, X, FileText } from 'lucide-react'
-
-const RESULT_OPTIONS = [
-  { value: 'closed',    label: 'Closed',    color: 'var(--am-green)' },
-  { value: 'follow-up', label: 'Follow-up', color: 'var(--am-amber)' },
-  { value: 'no-close',  label: 'No Close',  color: 'var(--am-red)'   },
-]
 
 const DURATION_OPTIONS = ['5 min', '10 min', '15 min', '20 min', '30 min', '45 min', '60 min+']
 
@@ -50,7 +45,15 @@ function fileIcon(type: string) {
 
 export function NewCallForm() {
   const router = useRouter()
+  const locale = useLocale()
+  const t = useTranslations('Trainer.newCall')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const RESULT_OPTIONS = [
+    { value: 'closed',    label: t('outcomes.closed'),   color: 'var(--am-green)' },
+    { value: 'follow-up', label: t('outcomes.followUp'), color: 'var(--am-amber)' },
+    { value: 'no-close',  label: t('outcomes.noClose'),  color: 'var(--am-red)'   },
+  ]
 
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -74,11 +77,11 @@ export function NewCallForm() {
   function handleFile(file: File) {
     setFileError(null)
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setFileError('Unsupported format. Please upload an audio or video file.')
+      setFileError(t('unsupportedFormat'))
       return
     }
     if (file.size > 500 * 1024 * 1024) {
-      setFileError('File exceeds 500 MB limit.')
+      setFileError(t('fileTooBig'))
       return
     }
     setUploadedFile(file)
@@ -119,23 +122,25 @@ export function NewCallForm() {
         </div>
         <div>
           <p className="text-[15px] font-semibold mb-1" style={{ color: 'var(--am-text)' }}>
-            Call submitted!
+            {t('success')}
           </p>
           <p className="text-sm" style={{ color: 'var(--am-muted)' }}>
-            Your call with{' '}
-            <strong style={{ color: 'var(--am-text)' }}>{form.prospect}</strong>{' '}
-            has been logged and sent for AI analysis.
+            {t.rich('successBody', {
+              prospect: () => (
+                <strong style={{ color: 'var(--am-text)' }}>{form.prospect}</strong>
+              ),
+            })}
           </p>
         </div>
         <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
-          (Phase 1 demo — no data is persisted)
+          {t('successNote')}
         </p>
         <button
-          onClick={() => router.push('/me')}
+          onClick={() => router.push(`/${locale}/me`)}
           className="mt-2 px-5 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
           style={{ background: 'var(--am-accent)', color: '#fff' }}
         >
-          Back to My Dashboard
+          {t('backToDashboard')}
         </button>
       </div>
     )
@@ -151,23 +156,23 @@ export function NewCallForm() {
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
       >
         <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
-          Call Details
+          {t('callDetails')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-          <Field label="Prospect Name" required>
+          <Field label={t('prospectName')} required>
             <input
               type="text"
               required
               value={form.prospect}
               onChange={(e) => set('prospect', e.target.value)}
-              placeholder="e.g. John Smith"
+              placeholder={t('prospectPlaceholder')}
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-[var(--am-accent)]"
               style={inputStyle}
             />
           </Field>
 
-          <Field label="Call Date" required>
+          <Field label={t('callDate')} required>
             <input
               type="date"
               required
@@ -178,7 +183,7 @@ export function NewCallForm() {
             />
           </Field>
 
-          <Field label="Duration">
+          <Field label={t('duration')}>
             <select
               value={form.duration}
               onChange={(e) => set('duration', e.target.value)}
@@ -191,7 +196,7 @@ export function NewCallForm() {
             </select>
           </Field>
 
-          <Field label="Outcome" required>
+          <Field label={t('outcome')} required>
             <div className="flex gap-2 flex-wrap">
               {RESULT_OPTIONS.map((opt) => (
                 <button
@@ -220,11 +225,11 @@ export function NewCallForm() {
       >
         {/* Tab toggle */}
         <div className="flex items-center gap-1 mb-5 p-1 rounded-lg w-fit" style={{ background: 'var(--am-bg3)' }}>
-          {([['file', 'Upload Recording'], ['transcript', 'Paste Transcript']] as const).map(([val, lbl]) => (
+          {([['file', t('uploadRecording')], ['transcript', t('pasteTranscript')]] as const).map(([val, lbl]) => (
             <button
               key={val}
               type="button"
-              onClick={() => setInputSource(val)}
+              onClick={() => setInputSource(val as InputSource)}
               className="px-3 py-1 rounded-md text-xs font-medium transition-all"
               style={{
                 background: inputSource === val ? 'var(--am-bg2)' : 'transparent',
@@ -260,14 +265,14 @@ export function NewCallForm() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium" style={{ color: 'var(--am-text)' }}>
-                    Drop your recording here
+                    {t('dropHere')}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--am-muted)' }}>
-                    or <span style={{ color: 'var(--am-accent)' }}>browse files</span>
+                    {t('orText')} <span style={{ color: 'var(--am-accent)' }}>{t('browseFiles')}</span>
                   </p>
                 </div>
                 <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-                  MP3 · MP4 · WAV · M4A · MOV · WebM · up to 500 MB
+                  {t('formatHint')}
                 </p>
                 <input
                   ref={fileInputRef}
@@ -316,7 +321,7 @@ export function NewCallForm() {
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
             rows={7}
-            placeholder="Paste the call transcript here for AI analysis..."
+            placeholder={t('transcriptPlaceholder')}
             className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-[var(--am-accent)] resize-none"
             style={inputStyle}
           />
@@ -327,11 +332,11 @@ export function NewCallForm() {
       <div className="flex items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => router.push('/me')}
+          onClick={() => router.push(`/${locale}/me`)}
           className="px-4 py-2 rounded-lg text-sm transition-opacity hover:opacity-70"
           style={{ color: 'var(--am-muted)' }}
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           type="submit"
@@ -339,7 +344,7 @@ export function NewCallForm() {
           className="px-5 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
           style={{ background: 'var(--am-accent)', color: '#fff' }}
         >
-          {loading ? 'Submitting…' : 'Submit Call'}
+          {loading ? t('submitting') : t('submit')}
         </button>
       </div>
     </form>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
+import { useTranslations, useLocale } from "next-intl"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -77,6 +78,8 @@ interface Script {
 const analysisMode = "scripts"; // Declare the analysisMode variable
 
 export default function UploadPage() {
+  const t = useTranslations("Dashboard.upload")
+  const locale = useLocale()
   const [step, setStep] = useState<UploadStep>("input")
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
   const [progress, setProgress] = useState(0)
@@ -134,14 +137,14 @@ export default function UploadPage() {
     if (rejectedFiles.length > 0) {
       const rejection = rejectedFiles[0]
       if (rejection.errors[0]?.code === "file-too-large") {
-        alert("File size must be less than 50MB.")
+        alert(t("errors.fileTooLarge"))
         return
       }
     }
     if (acceptedFiles.length > 0) {
       setFormData((prev) => ({ ...prev, audioFile: acceptedFiles[0] }))
     }
-  }, [])
+  }, [t])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -187,7 +190,7 @@ export default function UploadPage() {
       // Step 1: Transcribe audio if needed
       if (uploadType === "audio" && formData.audioFile) {
         // Step 1a: Upload to Vercel Blob via server
-        setProcessingStatus("Uploading audio...")
+        setProcessingStatus(t("processing.uploadingAudio"))
         setProgress(10)
 
         // Create FormData to send file to server
@@ -202,7 +205,7 @@ export default function UploadPage() {
 
         if (!uploadRes.ok) {
           const errData = await uploadRes.json().catch(() => ({}))
-          throw new Error(errData.error || "Failed to upload audio")
+          throw new Error(errData.error || t("errors.uploadFailed"))
         }
 
         const uploadData = await uploadRes.json()
@@ -211,22 +214,22 @@ export default function UploadPage() {
         setProgress(30)
 
         // Step 1b: Transcribe using Blob URL
-        setProcessingStatus("Transcribing audio...")
+        setProcessingStatus(t("processing.transcribingAudio"))
         setProgress(40)
 
         const transcribeRes = await fetch("/api/transcribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            blobUrl, 
-            filename: formData.audioFile.name 
+          body: JSON.stringify({
+            blobUrl,
+            filename: formData.audioFile.name
           }),
         })
 
         console.log("[v0] Transcribe response status:", transcribeRes.status)
 
         if (!transcribeRes.ok) {
-          let errorMsg = "Failed to transcribe audio"
+          let errorMsg = t("errors.transcribeFailed")
           const contentType = transcribeRes.headers.get("content-type") || ""
           if (contentType.includes("application/json")) {
             try {
@@ -235,8 +238,8 @@ export default function UploadPage() {
             } catch { /* ignore parse error */ }
           } else {
             errorMsg = transcribeRes.status === 404
-              ? "API not available — ensure the mock service worker is running (MSW)"
-              : `HTTP ${transcribeRes.status}`
+              ? t("errors.apiUnavailable")
+              : t("errors.httpStatus", { status: transcribeRes.status })
           }
           console.error("[v0] Transcribe error:", errorMsg)
           throw new Error(errorMsg)
@@ -249,7 +252,7 @@ export default function UploadPage() {
       }
 
       // Step 2: Analyze transcript (API fetches criteria + system prompt from Supabase)
-      setProcessingStatus("Analyzing against rubric...")
+      setProcessingStatus(t("processing.analyzingRubric"))
       setProgress(60)
 
       console.log("[v0] Starting analysis with transcript length:", transcript.length)
@@ -270,7 +273,7 @@ export default function UploadPage() {
       console.log("[v0] Analyze response status:", analyzeRes.status)
 
       if (!analyzeRes.ok) {
-        let errorMsg = "Failed to analyze call"
+        let errorMsg = t("errors.analyzeFailed")
         const contentType = analyzeRes.headers.get("content-type") || ""
         if (contentType.includes("application/json")) {
           try {
@@ -279,8 +282,8 @@ export default function UploadPage() {
           } catch { /* ignore parse error */ }
         } else {
           errorMsg = analyzeRes.status === 404
-            ? "API not available — ensure the mock service worker is running (MSW)"
-            : `HTTP ${analyzeRes.status}`
+            ? t("errors.apiUnavailable")
+            : t("errors.httpStatus", { status: analyzeRes.status })
         }
         console.error("[v0] Analyze error:", errorMsg)
         throw new Error(errorMsg)
@@ -293,7 +296,7 @@ export default function UploadPage() {
       setStep("results")
     } catch (err) {
       console.error("[v0] Full error:", err)
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : t("errors.generic"))
       setStep("input")
     }
   }
@@ -326,12 +329,12 @@ export default function UploadPage() {
       })
 
       if (!emailRes.ok) {
-        throw new Error("Failed to send coaching email")
+        throw new Error(t("errors.sendEmailFailed"))
       }
 
       setStep("complete")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : t("errors.generic"))
     } finally {
       setSendingEmail(false)
     }
@@ -361,13 +364,13 @@ export default function UploadPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <h3 className="mt-4 text-lg font-semibold">Processing Call</h3>
+              <h3 className="mt-4 text-lg font-semibold">{t("processing.heading")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                {processingStatus || "Starting..."}
+                {processingStatus || t("processing.starting")}
               </p>
               <Progress value={progress} className="mt-4 w-full" />
               <p className="mt-2 text-sm text-muted-foreground">
-                {progress}% complete
+                {t("processing.percentComplete", { progress })}
               </p>
             </div>
           </CardContent>
@@ -377,19 +380,25 @@ export default function UploadPage() {
   }
 
   if (step === "results" && analysisResult) {
+    const overallScore = analysisResult.overallScore
+    const overallLabel =
+      overallScore >= 80 ? t("results.badges.strong") :
+      overallScore >= 60 ? t("results.badges.adequate") :
+      overallScore >= 40 ? t("results.badges.needsWork") : t("results.badges.critical")
+
     return (
       <div className="space-y-6 pb-16 lg:pb-0">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Analysis Results</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{t("results.title")}</h2>
             <p className="text-muted-foreground">
-              Review the AI coaching feedback for {formData.trainerName}
+              {t("results.subtitle", { name: formData.trainerName })}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={resetForm}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Start Over
+              {t("results.startOver")}
             </Button>
           </div>
         </div>
@@ -405,40 +414,47 @@ export default function UploadPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Overall Score
+              {t("results.overallScore")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="text-5xl font-bold tabular-nums">
-                {analysisResult.overallScore}
-                <span className="text-2xl font-normal text-muted-foreground">/100</span>
+                {overallScore}
+                <span className="text-2xl font-normal text-muted-foreground">{t("results.scoreSuffix")}</span>
               </div>
               <div className="flex-1">
-                <Progress value={analysisResult.overallScore} className="h-3" />
+                <Progress value={overallScore} className="h-3" />
               </div>
               <Badge
-                variant={analysisResult.overallScore >= 80 ? "default" : analysisResult.overallScore >= 60 ? "secondary" : "destructive"}
+                variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
                 className="text-sm"
               >
-                {analysisResult.overallScore >= 80 ? "Strong" :
-                 analysisResult.overallScore >= 60 ? "Adequate" :
-                 analysisResult.overallScore >= 40 ? "Needs Work" : "Critical"}
+                {overallLabel}
               </Badge>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>Average of section scores (0–5 scale) × 20</span>
+              <span>{t("results.scoreScaleHint")}</span>
               {analysisResult.detectedOutcome && (() => {
-                const outcomeLabels: Record<string, { label: string; cap: number; note: string }> = {
-                  closed:               { label: 'Closed',              cap: 100, note: 'Deal was closed — full score range available.' },
-                  follow_up:            { label: 'Follow-up',           cap: 80,  note: 'No close secured — score capped at 80.' },
-                  objection_unresolved: { label: 'Objection Unresolved',cap: 60,  note: 'Objection was not overcome — score capped at 60.' },
-                  no_decision:          { label: 'No Decision',         cap: 50,  note: 'Prospect left without a decision — score capped at 50.' },
+                const outcomeMeta: Record<string, { cap: number }> = {
+                  closed:               { cap: 100 },
+                  follow_up:            { cap: 80 },
+                  objection_unresolved: { cap: 60 },
+                  no_decision:          { cap: 50 },
                 }
-                const info = outcomeLabels[analysisResult.detectedOutcome!] ?? { label: analysisResult.detectedOutcome, cap: 100, note: '' }
+                const outcomeKey = analysisResult.detectedOutcome
+                const meta = outcomeMeta[outcomeKey] ?? { cap: 100 }
+                const knownOutcomes = ["closed", "follow_up", "objection_unresolved", "no_decision"] as const
+                const isKnown = (knownOutcomes as readonly string[]).includes(outcomeKey)
+                const label = isKnown
+                  ? t(`results.outcomes.${outcomeKey as typeof knownOutcomes[number]}.label`)
+                  : outcomeKey
+                const note = isKnown
+                  ? t(`results.outcomes.${outcomeKey as typeof knownOutcomes[number]}.note`)
+                  : ''
                 return (
-                  <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium" title={info.note}>
-                    Outcome: {info.label} · Max {info.cap}/100
+                  <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium" title={note}>
+                    {t("results.outcomeBadge", { label, cap: meta.cap })}
                   </span>
                 )
               })()}</div>
@@ -448,8 +464,8 @@ export default function UploadPage() {
         {/* Section Scores */}
         <Card>
           <CardHeader>
-            <CardTitle>Section Breakdown</CardTitle>
-            <CardDescription>Score 1–5 per section: 1 = Not attempted, 3 = Adequate, 5 = Excellent</CardDescription>
+            <CardTitle>{t("results.sectionBreakdown")}</CardTitle>
+            <CardDescription>{t("results.sectionBreakdownHint")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {(analysisResult.sections || analysisResult.criteria).map((section, index) => {
@@ -462,13 +478,17 @@ export default function UploadPage() {
               const barColor = score >= 4.5 ? "bg-green-500" :
                                score >= 3.5 ? "bg-blue-500" :
                                score >= 2.5 ? "bg-amber-500" : "bg-red-500"
-              const label = score >= 4.5 ? "Excellent" : score >= 3.5 ? "Strong" : score >= 2.5 ? "Adequate" : score >= 1.5 ? "Needs Work" : "Not Attempted"
+              const label =
+                score >= 4.5 ? t("results.sectionLabels.excellent") :
+                score >= 3.5 ? t("results.sectionLabels.strong") :
+                score >= 2.5 ? t("results.sectionLabels.adequate") :
+                score >= 1.5 ? t("results.sectionLabels.needsWork") : t("results.sectionLabels.notAttempted")
               return (
                 <div key={index} className={`rounded-lg border p-4 ${color}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-base">{section.name}</span>
                     <Badge variant="outline" className="font-bold text-sm shrink-0 ml-2">
-                      {score}/5 — {label}
+                      {t("results.sectionScore", { score, label })}
                     </Badge>
                   </div>
                   <div className="h-2 rounded-full bg-black/10 mb-3">
@@ -487,7 +507,7 @@ export default function UploadPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-green-500">Strengths</CardTitle>
+              <CardTitle className="text-green-500">{t("results.strengths")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -503,7 +523,7 @@ export default function UploadPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-amber-500">Areas for Improvement</CardTitle>
+              <CardTitle className="text-amber-500">{t("results.areasForImprovement")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -521,7 +541,7 @@ export default function UploadPage() {
         {/* Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Summary</CardTitle>
+            <CardTitle>{t("results.summary")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">{analysisResult.summary}</p>
@@ -531,8 +551,8 @@ export default function UploadPage() {
         {/* Transcript */}
         <Card>
           <CardHeader>
-            <CardTitle>Call Transcript</CardTitle>
-            <CardDescription>Full transcription for reference and audit</CardDescription>
+            <CardTitle>{t("results.callTranscript")}</CardTitle>
+            <CardDescription>{t("results.transcriptSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border bg-muted/50 p-4 font-mono text-sm max-h-96 overflow-y-auto whitespace-pre-wrap break-words scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50">
@@ -546,13 +566,13 @@ export default function UploadPage() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
               <div>
-                <h3 className="font-semibold">Ready to send coaching feedback?</h3>
+                <h3 className="font-semibold">{t("results.readyToSend")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  This will send a motivational coaching email to {formData.trainerEmail}
+                  {t("results.readyToSendSubtitle", { email: formData.trainerEmail })}
                 </p>
               </div>
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="mt-4 sm:mt-0"
                 onClick={handleSendEmail}
                 disabled={sendingEmail}
@@ -560,12 +580,12 @@ export default function UploadPage() {
                 {sendingEmail ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    {t("results.sending")}
                   </>
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Send Coaching Email
+                    {t("results.sendCoachingEmail")}
                   </>
                 )}
               </Button>
@@ -585,16 +605,16 @@ export default function UploadPage() {
               <div className="rounded-full bg-green-500/10 p-3">
                 <CheckCircle className="h-12 w-12 text-green-500" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold">Email Sent Successfully!</h3>
+              <h3 className="mt-4 text-lg font-semibold">{t("complete.heading")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Coaching feedback has been sent to {formData.trainerEmail}
+                {t("complete.subtitle", { email: formData.trainerEmail })}
               </p>
               <div className="mt-6 flex gap-2">
                 <Button variant="outline" onClick={resetForm}>
-                  Upload Another
+                  {t("complete.uploadAnother")}
                 </Button>
                 <Button asChild>
-                  <a href="/dashboard/history">View History</a>
+                  <a href={`/${locale}/dashboard/history`}>{t("complete.viewHistory")}</a>
                 </Button>
               </div>
             </div>
@@ -607,9 +627,9 @@ export default function UploadPage() {
   return (
     <div className="space-y-6 pb-16 lg:pb-0">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Upload Call</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("title")}</h2>
         <p className="text-muted-foreground">
-          Upload an audio or video file, or paste a transcript for AI coaching analysis
+          {t("subtitle")}
         </p>
       </div>
 
@@ -617,20 +637,20 @@ export default function UploadPage() {
         {/* Trainer Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Sales Person Information</CardTitle>
+            <CardTitle>{t("form.salesPersonInfoTitle")}</CardTitle>
             <CardDescription>
-              Who should receive the coaching email?
+              {t("form.salesPersonInfoSubtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isTrainer ? (
               <div className="space-y-2">
-                <Label>Sales Person</Label>
+                <Label>{t("form.salesPersonLabel")}</Label>
                 <Input value={formData.trainerName} disabled />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="trainerId">Sales Person</Label>
+                <Label htmlFor="trainerId">{t("form.salesPersonLabel")}</Label>
                 <Select
                   value={formData.trainerId}
                   onValueChange={(value) => {
@@ -645,7 +665,7 @@ export default function UploadPage() {
                   }}
                 >
                   <SelectTrigger id="trainerId">
-                    <SelectValue placeholder="Select a trainer..." />
+                    <SelectValue placeholder={t("form.selectTrainerPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {trainers.map((trainer) => (
@@ -658,10 +678,10 @@ export default function UploadPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
+              <Label htmlFor="clientName">{t("form.clientNameLabel")}</Label>
               <Input
                 id="clientName"
-                placeholder="e.g., Jane Doe"
+                placeholder={t("form.clientNamePlaceholder")}
                 value={formData.clientName}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -670,11 +690,11 @@ export default function UploadPage() {
                   }))
                 }
               />
-              <p className="text-xs text-muted-foreground">Name of the prospect or customer on the call</p>
+              <p className="text-xs text-muted-foreground">{t("form.clientNameHint")}</p>
             </div>
             {scripts.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="scriptId">Sales Script *</Label>
+                <Label htmlFor="scriptId">{t("form.salesScriptLabel")}</Label>
                 <select
                   id="scriptId"
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
@@ -686,31 +706,31 @@ export default function UploadPage() {
                     }))
                   }
                 >
-                  <option value="">Select a script...</option>
+                  <option value="">{t("form.selectScriptPlaceholder")}</option>
                   {scripts.map((script) => (
                     <option key={script.id} value={script.id}>
-                      {script.name} - {script.description}
+                      {t("form.scriptOptionFormat", { name: script.name, description: script.description })}
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground">Required to analyze the call against your sales process</p>
+                <p className="text-xs text-muted-foreground">{t("form.salesScriptHint")}</p>
               </div>
             )}
             {scripts.length === 0 && (
               <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
-                <p className="text-sm text-amber-800 dark:text-amber-200">No sales scripts available. Create one in Settings first.</p>
+                <p className="text-sm text-amber-800 dark:text-amber-200">{t("form.noScriptsAvailable")}</p>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>Call Outcome *</Label>
+              <Label>{t("form.callOutcomeLabel")}</Label>
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "closed", label: "Closed", color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
-                  { value: "follow_up", label: "Follow-up Scheduled", color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
-                  { value: "objection_unresolved", label: "Objection Unresolved", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
-                  { value: "no_decision", label: "No Decision", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
-                ].map((option) => (
+                {([
+                  { value: "closed", color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
+                  { value: "follow_up", color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
+                  { value: "objection_unresolved", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
+                  { value: "no_decision", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                ] as const).map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -721,11 +741,11 @@ export default function UploadPage() {
                         : "bg-muted/50 border-transparent text-muted-foreground hover:bg-muted"
                     }`}
                   >
-                    {option.label}
+                    {t(`form.outcomes.${option.value}`)}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">How did this call end?</p>
+              <p className="text-xs text-muted-foreground">{t("form.callOutcomeHint")}</p>
             </div>
           </CardContent>
         </Card>
@@ -733,9 +753,9 @@ export default function UploadPage() {
         {/* Call Content */}
         <Card>
           <CardHeader>
-            <CardTitle>Call Content</CardTitle>
+            <CardTitle>{t("form.callContentTitle")}</CardTitle>
             <CardDescription>
-              Upload audio or video, or paste the transcript directly
+              {t("form.callContentSubtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -746,11 +766,11 @@ export default function UploadPage() {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="audio">
                   <FileAudio className="mr-2 h-4 w-4" />
-                  Audio / Video
+                  {t("form.tabs.audio")}
                 </TabsTrigger>
                 <TabsTrigger value="transcript">
                   <FileText className="mr-2 h-4 w-4" />
-                  Transcript
+                  {t("form.tabs.transcript")}
                 </TabsTrigger>
               </TabsList>
 
@@ -765,7 +785,7 @@ export default function UploadPage() {
                       <div>
                         <p className="font-medium">{formData.audioFile.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {(formData.audioFile.size / 1024 / 1024).toFixed(2)} MB
+                          {t("form.fileSizeMb", { size: (formData.audioFile.size / 1024 / 1024).toFixed(2) })}
                         </p>
                       </div>
                     </div>
@@ -786,14 +806,14 @@ export default function UploadPage() {
                     <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
                     <p className="mt-2 text-sm font-medium">
                       {isDragActive
-                        ? "Drop the file here"
-                        : "Drag & drop audio file"}
+                        ? t("form.dropFileHere")
+                        : t("form.dragAndDrop")}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Audio: MP3, WAV, M4A, OGG, WEBM · Video: MP4, MOV, AVI
+                      {t("form.supportedFormats")}
                     </p>
                     <Button variant="outline" size="sm" className="mt-4 bg-transparent">
-                      Browse Files
+                      {t("form.browseFiles")}
                     </Button>
                   </div>
                 )}
@@ -801,7 +821,7 @@ export default function UploadPage() {
 
               <TabsContent value="transcript" className="mt-4">
                 <Textarea
-                  placeholder="Paste the call transcript here..."
+                  placeholder={t("form.transcriptPlaceholder")}
                   rows={10}
                   value={formData.transcript}
                   onChange={(e) =>
@@ -812,7 +832,7 @@ export default function UploadPage() {
                   }
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {formData.transcript.length} characters
+                  {t("form.charactersCount", { count: formData.transcript.length })}
                 </p>
               </TabsContent>
             </Tabs>
@@ -828,7 +848,7 @@ export default function UploadPage() {
           disabled={!isFormValid()}
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          Analyze Call
+          {t("analyzeCall")}
         </Button>
       </div>
     </div>

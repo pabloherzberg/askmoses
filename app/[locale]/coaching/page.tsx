@@ -1,12 +1,14 @@
+import { getTranslations } from 'next-intl/server'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { TrainerTabs } from '@/components/shared/TrainerTabs'
 
-export default function CoachingPage() {
+export default async function CoachingPage() {
+  const t = await getTranslations('Coaching')
   return (
     <div>
-      <SectionLabel>Coaching Center</SectionLabel>
+      <SectionLabel>{t('label')}</SectionLabel>
       <p className="text-sm mb-6" style={{ color: 'var(--am-muted)' }}>
-        Best calls of the week — use these as reference material in team training sessions.
+        {t('subtitle')}
       </p>
       <TrainerTabs />
     </div>

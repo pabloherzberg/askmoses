@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -15,6 +16,8 @@ import {
 } from "lucide-react"
 
 export default function DashboardPage() {
+  const t = useTranslations("Dashboard.home")
+  const locale = useLocale()
   const [stats, setStats] = useState({
     totalCalls: 0,
     passRate: "-",
@@ -75,15 +78,15 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("welcomeBack")}</h2>
           <p className="text-muted-foreground">
-            Upload a call to get AI coaching feedback
+            {t("subtitle")}
           </p>
         </div>
         <Button asChild>
-          <Link href="/dashboard/upload">
+          <Link href={`/${locale}/dashboard/upload`}>
             <Upload className="mr-2 h-4 w-4" />
-            Upload Call
+            {t("uploadCall")}
           </Link>
         </Button>
       </div>
@@ -93,52 +96,52 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Calls
+              {t("totalCalls")}
             </CardTitle>
             <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCalls}</div>
-            <p className="text-xs text-muted-foreground">Calls analyzed</p>
+            <p className="text-xs text-muted-foreground">{t("callsAnalyzed")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pass Rate
+              {t("passRate")}
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.passRate}</div>
-            <p className="text-xs text-muted-foreground">Score ≥ 75</p>
+            <p className="text-xs text-muted-foreground">{t("passRateHint")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Avg. Score
+              {t("avgScore")}
             </CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgScore}</div>
-            <p className="text-xs text-muted-foreground">Per call</p>
+            <p className="text-xs text-muted-foreground">{t("perCall")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              This Week
+              {t("thisWeek")}
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.thisWeekCalls}</div>
-            <p className="text-xs text-muted-foreground">Calls processed</p>
+            <p className="text-xs text-muted-foreground">{t("callsProcessed")}</p>
           </CardContent>
         </Card>
       </div>
@@ -146,20 +149,20 @@ export default function DashboardPage() {
       {/* Quick Links */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
+          <CardTitle>{t("quickLinks")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2">
           <Button variant="outline" asChild className="w-full bg-transparent">
-            <Link href="/dashboard/upload">Upload New Call</Link>
+            <Link href={`/${locale}/dashboard/upload`}>{t("uploadNewCall")}</Link>
           </Button>
           <Button variant="outline" asChild className="w-full bg-transparent">
-            <Link href="/dashboard/history">View Full History</Link>
+            <Link href={`/${locale}/dashboard/history`}>{t("viewFullHistory")}</Link>
           </Button>
           <Button variant="outline" asChild className="w-full bg-transparent">
-            <Link href="/dashboard/settings">Configure Rubric</Link>
+            <Link href={`/${locale}/dashboard/settings`}>{t("configureRubric")}</Link>
           </Button>
           <Button variant="outline" asChild className="w-full bg-transparent">
-            <Link href="/dashboard/settings">Customize System Prompt</Link>
+            <Link href={`/${locale}/dashboard/settings`}>{t("customizeSystemPrompt")}</Link>
           </Button>
         </CardContent>
       </Card>

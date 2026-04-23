@@ -38,7 +38,8 @@
       "Bash(mv app/page.tsx \"app/[locale]/page.tsx\")",
       "Bash(mv app/layout.tsx \"app/[locale]/layout.tsx\")",
       "Bash(mv \"app/\\(admin\\)\" \"app/[locale]/\\(admin\\)\")",
-      "Bash(mv \"app/\\(auth\\)\" \"app/[locale]/\\(auth\\)\")"
+      "Bash(mv \"app/\\(auth\\)\" \"app/[locale]/\\(auth\\)\")",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

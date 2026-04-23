@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   LineChart,
   Line,
@@ -18,6 +19,8 @@ interface TrendChartProps {
 
 export function TrendChart({ data }: TrendChartProps) {
   const { theme } = useTheme()
+  const tTrend = useTranslations('Shared.performanceTrend')
+  const tDashboard = useTranslations('Dashboard.trendChart')
   const isDark = theme === 'dark'
 
   const colors = useMemo(() => ({
@@ -34,8 +37,8 @@ export function TrendChart({ data }: TrendChartProps) {
       {/* Legenda */}
       <div className="flex gap-4 mb-3">
         {[
-          { color: colors.green, label: 'Close rate %' },
-          { color: colors.purple, label: 'Score' },
+          { color: colors.green, label: tTrend('closeRate') },
+          { color: colors.purple, label: tDashboard('scoreLabel') },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
             <span className="inline-block w-5 h-0.5 rounded" style={{ background: color }} />

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import type { Call } from "@/lib/types"
 import {
   Card,
@@ -30,16 +31,15 @@ import {
 import { Search, CheckCircle, XCircle, Eye, Loader2 } from "lucide-react"
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
 
-const RUBRIC_LABELS: Record<string, string> = {
-  discovery: "Discovery",
-  problemAgitation: "Problem Agitation",
-  offerPresentation: "Offer Presentation",
-  objectionHandling: "Objection Handling",
-  closeAndNextSteps: "Close & Next Steps",
-}
+const RUBRIC_KEYS = ['discovery', 'problemAgitation', 'offerPresentation', 'objectionHandling', 'closeAndNextSteps'] as const
 
 
 export default function HistoryPage() {
+  const t = useTranslations("Dashboard.history")
+  const tTh = useTranslations("Dashboard.history.th")
+  const tRubric = useTranslations("Shared.rubric")
+  const tOutcomes = useTranslations("Shared.outcomes")
+  const locale = useLocale()
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -72,6 +72,10 @@ export default function HistoryPage() {
   )
   const totalPages = Math.ceil(filteredCalls.length / ITEMS_PER_PAGE)
 
+  function outcomeLabel(result: string) {
+    return result in RESULT_STYLES ? tOutcomes(`short.${result}`) : tOutcomes('unknown')
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -80,23 +84,27 @@ export default function HistoryPage() {
     )
   }
 
+  const countLabel = filteredCalls.length === 1
+    ? t('callsFoundOne', { count: filteredCalls.length })
+    : t('callsFoundOther', { count: filteredCalls.length })
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Call History</h1>
-        <p className="text-muted-foreground">Review all processed sales calls and coaching feedback</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Search Calls
+            {t('searchCalls')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Input
-            placeholder="Search by trainer name or prospect..."
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -105,15 +113,15 @@ export default function HistoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Calls</CardTitle>
+          <CardTitle>{t('allCalls')}</CardTitle>
           <CardDescription>
-            {filteredCalls.length} call{filteredCalls.length !== 1 ? "s" : ""} found
+            {countLabel}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredCalls.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground">No calls found</p>
+              <p className="text-muted-foreground">{t('noCallsFound')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -121,12 +129,12 @@ export default function HistoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Sales Person</TableHead>
-                      <TableHead>Prospect</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Outcome</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{tTh('salesPerson')}</TableHead>
+                      <TableHead>{tTh('prospect')}</TableHead>
+                      <TableHead>{tTh('date')}</TableHead>
+                      <TableHead>{tTh('outcome')}</TableHead>
+                      <TableHead>{tTh('score')}</TableHead>
+                      <TableHead className="text-right">{tTh('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -139,11 +147,11 @@ export default function HistoryPage() {
                           <span className="font-medium">{call.prospect}</span>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {new Date(call.date).toLocaleDateString()}
+                          {new Date(call.date).toLocaleDateString(locale)}
                         </TableCell>
                         <TableCell>
                           <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
-                            {(RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).label}
+                            {outcomeLabel(call.result)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -159,7 +167,7 @@ export default function HistoryPage() {
                             onClick={() => setSelectedCall(call)}
                           >
                             <Eye className="mr-2 h-4 w-4" />
-                            View
+                            {t('view')}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -171,9 +179,11 @@ export default function HistoryPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredCalls.length)} of{" "}
-                    {filteredCalls.length}
+                    {t('showingRange', {
+                      from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                      to: Math.min(currentPage * ITEMS_PER_PAGE, filteredCalls.length),
+                      total: filteredCalls.length,
+                    })}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -182,7 +192,7 @@ export default function HistoryPage() {
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                     >
-                      Previous
+                      {t('previous')}
                     </Button>
                     <div className="flex items-center gap-1">
                       {Array.from({ length: totalPages }).map((_, i) => (
@@ -203,7 +213,7 @@ export default function HistoryPage() {
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                     >
-                      Next
+                      {t('next')}
                     </Button>
                   </div>
                 </div>
@@ -222,11 +232,11 @@ export default function HistoryPage() {
                 <DialogTitle className="flex items-center gap-2">
                   {selectedCall.trainerName}
                   <span className="text-muted-foreground font-normal text-base">
-                    with {selectedCall.prospect}
+                    {t('with', { prospect: selectedCall.prospect })}
                   </span>
                 </DialogTitle>
                 <DialogDescription>
-                  {new Date(selectedCall.date).toLocaleDateString()} · {selectedCall.duration}
+                  {new Date(selectedCall.date).toLocaleDateString(locale)} · {selectedCall.duration}
                 </DialogDescription>
               </DialogHeader>
 
@@ -237,27 +247,27 @@ export default function HistoryPage() {
                     {selectedCall.score}
                     <span className="text-2xl font-normal opacity-80">/100</span>
                   </div>
-                  <p className="text-sm opacity-90 mt-1">Overall Score</p>
+                  <p className="text-sm opacity-90 mt-1">{t('overallScore')}</p>
                 </div>
 
                 {/* Outcome */}
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Outcome</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('outcome')}</p>
                   <Badge style={{ background: (RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).color }}>
-                    {(RESULT_STYLES[selectedCall.result] ?? DEFAULT_RESULT_STYLE).label}
+                    {outcomeLabel(selectedCall.result)}
                   </Badge>
                 </div>
 
                 {/* Summary */}
                 <div>
-                  <h3 className="font-semibold mb-2">Summary</h3>
+                  <h3 className="font-semibold mb-2">{t('summary')}</h3>
                   <p className="text-sm text-muted-foreground">{selectedCall.feedback}</p>
                 </div>
 
                 {/* Strengths */}
                 {selectedCall.strengths?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2 text-green-600">Strengths</h3>
+                    <h3 className="font-semibold mb-2 text-green-600">{t('strengths')}</h3>
                     <ul className="space-y-1 text-sm">
                       {selectedCall.strengths.map((s, i) => (
                         <li key={i} className="flex gap-2">
@@ -272,7 +282,7 @@ export default function HistoryPage() {
                 {/* Improvements */}
                 {selectedCall.improvements?.length > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2 text-amber-600">Areas to Improve</h3>
+                    <h3 className="font-semibold mb-2 text-amber-600">{t('areasToImprove')}</h3>
                     <ul className="space-y-1 text-sm">
                       {selectedCall.improvements.map((item, idx) => (
                         <li key={idx} className="flex gap-2">
@@ -286,7 +296,7 @@ export default function HistoryPage() {
 
                 {/* Section Scores */}
                 <div>
-                  <h3 className="font-semibold mb-3">Section Breakdown</h3>
+                  <h3 className="font-semibold mb-3">{t('sectionBreakdown')}</h3>
                   <div className="space-y-3">
                     {Object.entries(selectedCall.rubricScores).map(([key, score]) => {
                       const pct = score
@@ -298,11 +308,12 @@ export default function HistoryPage() {
                           : score >= 75
                             ? "bg-amber-100 border-amber-200 text-amber-700"
                             : "bg-red-100 border-red-200 text-red-700"
+                      const label = (RUBRIC_KEYS as readonly string[]).includes(key) ? tRubric(key) : key
                       return (
                         <div key={key} className={`rounded-lg border p-3 ${textColor}`}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium text-sm">
-                              {RUBRIC_LABELS[key] ?? key}
+                              {label}
                             </span>
                             <Badge variant="outline" className={`font-semibold ${textColor}`}>
                               {score}/100
