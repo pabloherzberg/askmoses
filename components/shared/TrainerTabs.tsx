@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import type { Trainer, CallsByTrainerMap } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
@@ -17,6 +18,9 @@ const trainerKeyMap: Record<string, string> = {
 }
 
 export function TrainerTabs() {
+  const t = useTranslations('Coaching')
+  const tStats = useTranslations('Coaching.stats')
+  const locale = useLocale()
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [bestCalls, setBestCalls] = useState<CallsByTrainerMap>({})
   const [worstCalls, setWorstCalls] = useState<CallsByTrainerMap>({})
@@ -25,7 +29,7 @@ export function TrainerTabs() {
   const [activeId, setActiveId] = useState<string>('')
 
   useEffect(() => {
-    fetch('/api/coaching')
+    fetch('/api/coaching', { headers: { 'x-locale': locale } })
       .then((r) => r.json())
       .then(({ data }) => {
         if (!data) return
@@ -34,16 +38,20 @@ export function TrainerTabs() {
         setWorstCalls(data.worstCalls)
         setBehavioral(data.trainerBehavioral)
         setRecs(data.coachingRecs)
-        setActiveId(data.trainers[0]?.id ?? '')
+        setActiveId((prev) => prev || data.trainers[0]?.id || '')
       })
-  }, [])
+  }, [locale])
 
   if (!activeId || trainers.length === 0) return null
 
-  const trainer = trainers.find((t) => t.id === activeId)!
+  const trainer = trainers.find((tr) => tr.id === activeId)!
   const trainerKey = trainerKeyMap[trainer.id]
   const calls = bestCalls[trainerKey] ?? []
   const worst = worstCalls[trainerKey] ?? []
+
+  const callsLabel = trainer.totalCalls === 1
+    ? t('callsLabelOne', { count: trainer.totalCalls })
+    : t('callsLabelOther', { count: trainer.totalCalls })
 
   return (
     <div>
@@ -52,20 +60,20 @@ export function TrainerTabs() {
         className="flex gap-1 mb-6 p-1 rounded-xl w-fit"
         style={{ background: 'var(--am-bg3)' }}
       >
-        {trainers.map((t) => {
-          const isActive = t.id === activeId
+        {trainers.map((tr) => {
+          const isActive = tr.id === activeId
           return (
             <button
-              key={t.id}
+              key={tr.id}
               type="button"
-              onClick={() => setActiveId(t.id)}
+              onClick={() => setActiveId(tr.id)}
               className="px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150"
               style={{
                 background: isActive ? 'var(--am-accent)' : 'transparent',
                 color: isActive ? '#fff' : 'var(--am-muted)',
               }}
             >
-              {t.name.split(' ')[0]}
+              {tr.name.split(' ')[0]}
             </button>
           )
         })}
@@ -79,7 +87,7 @@ export function TrainerTabs() {
             {trainer.name}
           </p>
           <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-            {trainer.totalCalls} calls · last active {trainer.lastActive}
+            {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
           </p>
         </div>
         <span
@@ -90,16 +98,16 @@ export function TrainerTabs() {
             background: 'rgba(34,217,160,0.10)',
           }}
         >
-          {trainer.closeRate}% close rate
+          {t('closeRateSuffix', { value: trainer.closeRate })}
         </span>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <ScoreCard label="Avg Score"   value={trainer.score}           valueColor="var(--am-accent2)" deltaLabel="this week" />
-        <ScoreCard label="Close Rate"  value={`${trainer.closeRate}%`} valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel="delta" />
-        <ScoreCard label="Total Calls" value={trainer.totalCalls}      deltaLabel="all time" />
-        <ScoreCard label="This Week"   value={trainer.callsThisWeek ?? 0}            deltaLabel="calls processed" />
+        <ScoreCard label={tStats('avgScore')}   value={trainer.score}           valueColor="var(--am-accent2)" deltaLabel={tStats('thisWeek')} />
+        <ScoreCard label={tStats('closeRate')}  value={`${trainer.closeRate}%`} valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel={tStats('delta')} />
+        <ScoreCard label={tStats('totalCalls')} value={trainer.totalCalls}      deltaLabel={tStats('allTime')} />
+        <ScoreCard label={tStats('thisWeekCard')}   value={trainer.callsThisWeek ?? 0}            deltaLabel={tStats('callsProcessed')} />
       </div>
 
       {/* Behavioral Correlation Profile */}
@@ -119,7 +127,7 @@ export function TrainerTabs() {
       >
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-            Best Call This Week
+            {t('bestCall')}
           </p>
           <span
             className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
@@ -129,7 +137,7 @@ export function TrainerTabs() {
               background: 'rgba(255,171,46,0.08)',
             }}
           >
-            mock data only
+            {t('mockBadge')}
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -138,7 +146,7 @@ export function TrainerTabs() {
           ))}
         </div>
         <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-          † all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo
+          {t('mockFooterBest')}
         </p>
       </div>
 
@@ -149,7 +157,7 @@ export function TrainerTabs() {
       >
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-            Worst Call This Week
+            {t('worstCall')}
           </p>
           <span
             className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
@@ -159,7 +167,7 @@ export function TrainerTabs() {
               background: 'rgba(255,171,46,0.08)',
             }}
           >
-            mock data only
+            {t('mockBadge')}
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -168,7 +176,7 @@ export function TrainerTabs() {
           ))}
         </div>
         <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-          † all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo
+          {t('mockFooterWorst')}
         </p>
       </div>
     </div>

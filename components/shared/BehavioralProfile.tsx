@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { BehavioralDimension } from '@/lib/mock-data'
 
 interface BehavioralProfileProps {
@@ -5,6 +8,7 @@ interface BehavioralProfileProps {
 }
 
 export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
+  const t = useTranslations('Shared.behavioralProfile')
 
   return (
     <div
@@ -14,7 +18,7 @@ export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          Behavioral Correlation Profile
+          {t('title')}
         </p>
         <span
           className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
@@ -24,7 +28,7 @@ export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
             background: 'rgba(255,171,46,0.08)',
           }}
         >
-          mock data only
+          {t('mockBadge')}
         </span>
       </div>
 
@@ -32,24 +36,24 @@ export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
       <div className="flex items-center gap-4 mb-4 flex-wrap">
         <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
           <span className="inline-block w-3 h-2 rounded-sm" style={{ background: 'var(--am-green)' }} />
-          Trainer score (above avg)
+          {t('legend.aboveAvg')}
         </span>
         <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
           <span className="inline-block w-3 h-2 rounded-sm" style={{ background: 'var(--am-amber)' }} />
-          Trainer score (below avg)
+          {t('legend.belowAvg')}
         </span>
         <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
           <span className="inline-block w-0.5 h-3" style={{ background: 'var(--am-muted)' }} />
-          Team avg marker
+          {t('legend.teamAvgMarker')}
         </span>
       </div>
 
       {/* Column headers */}
       <div className="grid items-center mb-2" style={{ gridTemplateColumns: '1fr 3.5rem 3.5rem 3.5rem' }}>
-        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>Score vs team avg</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>Score</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>Delta</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>Team avg</span>
+        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('th.scoreVsTeam')}</span>
+        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.score')}</span>
+        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.delta')}</span>
+        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.teamAvg')}</span>
       </div>
 
       {/* Rows */}
@@ -126,7 +130,7 @@ export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
 
       {/* Footer note */}
       <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation
+        {t('mockFooter')}
       </p>
     </div>
   )

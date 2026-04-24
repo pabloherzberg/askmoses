@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { BestCall } from '@/lib/types'
 
 interface Props {
@@ -19,8 +20,6 @@ const palette = {
     ctaFg:      'var(--am-accent2)',
     ctaBorder:  'rgba(155,135,255,0.35)',
     ctaBg:      'rgba(110,86,255,0.08)',
-    analysisLabel: 'AI Analysis',
-    ctaPrefix:  'Listen at',
   },
   worst: {
     border:     'rgba(255,94,94,0.25)',
@@ -33,13 +32,14 @@ const palette = {
     ctaFg:      'var(--am-red)',
     ctaBorder:  'rgba(255,94,94,0.35)',
     ctaBg:      'rgba(255,94,94,0.08)',
-    analysisLabel: 'Error Analysis',
-    ctaPrefix:  'Review at',
   },
 } as const
 
 export function CallCard({ call, variant = 'best' }: Props) {
+  const t = useTranslations('Shared.callCard')
   const p = palette[variant]
+  const analysisLabel = t(`${variant}.analysisLabel` as 'best.analysisLabel' | 'worst.analysisLabel')
+  const ctaPrefix = t(`${variant}.ctaPrefix` as 'best.ctaPrefix' | 'worst.ctaPrefix')
 
   return (
     <div
@@ -84,7 +84,7 @@ export function CallCard({ call, variant = 'best' }: Props) {
           className="text-[10px] font-medium uppercase tracking-widest mb-1"
           style={{ color: 'var(--am-muted)' }}
         >
-          {p.analysisLabel}
+          {analysisLabel}
         </p>
         <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-text)' }}>
           {call.analysis}
@@ -97,9 +97,9 @@ export function CallCard({ call, variant = 'best' }: Props) {
         disabled
         className="self-start text-[11px] font-mono px-3 py-1.5 rounded-lg border opacity-60 cursor-not-allowed"
         style={{ color: p.ctaFg, borderColor: p.ctaBorder, background: p.ctaBg }}
-        aria-label={`${p.ctaPrefix} ${call.listenAt} — non-functional in demo`}
+        aria-label={t('ctaAria', { prefix: ctaPrefix, time: call.listenAt })}
       >
-        {p.ctaPrefix} {call.listenAt} →
+        {ctaPrefix} {call.listenAt} →
       </button>
     </div>
   )
