@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { CorrelationFactor, CorrelationLevel, CorrelationSource } from '@/lib/types'
 
 const barColor: Record<CorrelationLevel, string> = {
@@ -17,35 +20,37 @@ const sourceStyle: Record<CorrelationSource, { color: string; bg: string }> = {
   Behavioral: { color: 'var(--am-green)',   bg: 'rgba(34,217,160,0.12)' },
 }
 
-function LevelBadge({ value }: { value: CorrelationLevel }) {
-  const s = levelStyle[value]
-  return (
-    <span
-      className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
-      style={{ color: s.color, background: s.bg }}
-    >
-      {value}
-    </span>
-  )
-}
-
-function SourceBadge({ value }: { value: CorrelationSource }) {
-  const s = sourceStyle[value]
-  return (
-    <span
-      className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
-      style={{ color: s.color, background: s.bg }}
-    >
-      {value}
-    </span>
-  )
-}
-
 interface Props {
   factors: CorrelationFactor[]
 }
 
 export function CorrelationEngine({ factors }: Props) {
+  const t = useTranslations('Shared.correlationEngine')
+
+  function LevelBadge({ value }: { value: CorrelationLevel }) {
+    const s = levelStyle[value]
+    return (
+      <span
+        className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
+        style={{ color: s.color, background: s.bg }}
+      >
+        {t(`levels.${value}`)}
+      </span>
+    )
+  }
+
+  function SourceBadge({ value }: { value: CorrelationSource }) {
+    const s = sourceStyle[value]
+    return (
+      <span
+        className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
+        style={{ color: s.color, background: s.bg }}
+      >
+        {t(`sources.${value}`)}
+      </span>
+    )
+  }
+
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -54,44 +59,48 @@ export function CorrelationEngine({ factors }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          Correlation Engine — What Drives Closes
+          {t('title')}
         </p>
         <span
           className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
           style={{ color: 'var(--am-amber)', borderColor: 'rgba(255,171,46,0.35)', background: 'rgba(255,171,46,0.08)' }}
         >
-          mock data only
+          {t('mockBadge')}
         </span>
       </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 mb-4">
-        {(['High', 'Med', 'Low'] as CorrelationLevel[]).map((level) => (
+        {([
+          { level: 'High'  as CorrelationLevel, key: 'highCorrelation' },
+          { level: 'Med'   as CorrelationLevel, key: 'medCorrelation'  },
+          { level: 'Low'   as CorrelationLevel, key: 'lowCorrelation'  },
+        ]).map(({ level, key }) => (
           <div key={level} className="flex items-center gap-1.5">
             <span
               className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0"
               style={{ background: barColor[level] }}
             />
             <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-              {level} correlation
+              {t(`legend.${key}`)}
             </span>
           </div>
         ))}
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'var(--am-accent2)' }} />
-          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>Rubric</span>
+          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('legend.rubric')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'var(--am-green)' }} />
-          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>Behavioral</span>
+          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('legend.behavioral')}</span>
         </div>
       </div>
 
       {/* Column headers */}
       <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}>
-        {['Score', '%', 'Corr.', 'Impact', 'Source'].map((h) => (
-          <span key={h} className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>
-            {h}
+        {(['score', 'percent', 'correlation', 'impact', 'source'] as const).map((k) => (
+          <span key={k} className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>
+            {t(`th.${k}`)}
           </span>
         ))}
       </div>
@@ -166,7 +175,7 @@ export function CorrelationEngine({ factors }: Props) {
 
       {/* Footer note */}
       <p className="mt-4 text-[10px]" style={{ color: 'var(--am-red)' }}>
-        † all values sourced from mock-data.ts — no real calculation on the frontend
+        {t('mockFooter')}
       </p>
     </div>
   )

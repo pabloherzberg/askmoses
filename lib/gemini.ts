@@ -13,6 +13,7 @@ export function getGeminiClient(): GoogleGenerativeAI {
 
 const VALID_MODELS = new Set([
   'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
   'gemini-2.5-pro',
   'gemini-2.0-flash',
   'gemini-2.0-flash-001',
@@ -20,7 +21,10 @@ const VALID_MODELS = new Set([
   'gemini-2.0-flash-lite-001',
 ])
 
-const DEFAULT_MODEL = 'gemini-2.5-flash'
+// Default to flash-lite — free tier allows ~1,000 req/day vs. 20 req/day on
+// the regular `gemini-2.5-flash`. Callers that need higher quality can pass an
+// explicit model name (e.g. from the UI's model picker).
+const DEFAULT_MODEL = 'gemini-2.5-flash-lite'
 
 export function getGeminiModel(modelName?: string | null) {
   // Strip any "google/" or "models/" prefix that might come from the DB

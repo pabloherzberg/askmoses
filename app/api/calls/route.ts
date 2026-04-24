@@ -2,6 +2,12 @@ import { type NextRequest } from 'next/server'
 import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId } from '@/lib/auth'
 import { getCalls, createCall } from '@/lib/services/calls'
 import type { CreateCallInput } from '@/lib/services/calls'
+import { routing, type Locale } from '@/i18n/routing'
+
+function resolveLocale(raw: string | null): Locale {
+  if (raw && (routing.locales as readonly string[]).includes(raw)) return raw as Locale
+  return routing.defaultLocale
+}
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -13,6 +19,12 @@ export async function GET(request: NextRequest) {
   const rubricId = searchParams.get('rubricId') ?? undefined
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined
   const offset = searchParams.get('offset') ? Number(searchParams.get('offset')) : undefined
+  // Translation is opt-in: listings typically don't need the coaching text
+  // (feedback/strengths/improvements only surface on detail). Callers that
+  // DO show that text from the list response pass `?translate=true` to avoid
+  // silently paying LLM cost for columns they never render.
+  const wantsTranslation = searchParams.get('translate') === 'true'
+  const locale = wantsTranslation ? resolveLocale(request.headers.get('x-locale')) : undefined
 
   // Trainer vê somente as próprias calls
   let trainerId: string | undefined
@@ -22,7 +34,7 @@ export async function GET(request: NextRequest) {
     trainerId = searchParams.get('trainerId') ?? undefined
   }
 
-  const data = await getCalls({ trainerId, callOutcome, rubricId, limit, offset })
+  const data = await getCalls({ trainerId, callOutcome, rubricId, limit, offset, locale })
   return ok(data)
 }
 

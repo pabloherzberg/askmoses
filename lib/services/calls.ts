@@ -7,6 +7,8 @@ import {
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
+import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
+import type { Locale } from "@/i18n/routing";
 import type { Call, RubricScores } from "@/lib/types";
 import type {
   DbCall,
@@ -99,7 +101,9 @@ export function avgRubricScores(calls: Call[]): RubricScores {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export async function getCalls(filters?: GetCallsFilters): Promise<Call[]> {
+export async function getCalls(
+  filters?: GetCallsFilters & { locale?: Locale },
+): Promise<Call[]> {
   const orgId = filters?.orgId ?? (await getOrgId());
   if (!orgId) return [];
 
@@ -112,12 +116,18 @@ export async function getCalls(filters?: GetCallsFilters): Promise<Call[]> {
     limit: filters?.limit,
     offset: filters?.offset,
   });
-  return rows.map(toCall);
+  const calls = rows.map(toCall);
+  return filters?.locale ? translateCalls(calls, filters.locale) : calls;
 }
 
-export async function getCallById(id: string): Promise<Call | null> {
+export async function getCallById(
+  id: string,
+  opts?: { locale?: Locale },
+): Promise<Call | null> {
   const row = await dbGetCallById(id);
-  return row ? toCall(row) : null;
+  if (!row) return null;
+  const call = toCall(row);
+  return opts?.locale ? translateCall(call, opts.locale) : call;
 }
 
 export async function createCall(input: CreateCallInput): Promise<DbCall> {

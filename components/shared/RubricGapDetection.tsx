@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { RubricGap } from '@/lib/types'
 
 function FreqBadge({ value }: { value: number }) {
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export function RubricGapDetection({ gaps }: Props) {
+  const t = useTranslations('Shared.rubricGapDetection')
+
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -35,7 +38,7 @@ export function RubricGapDetection({ gaps }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          Rubric Gap Detection
+          {t('title')}
         </p>
         <span
           className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
@@ -45,7 +48,7 @@ export function RubricGapDetection({ gaps }: Props) {
             background: 'rgba(255,171,46,0.08)',
           }}
         >
-          mock data only
+          {t('mockBadge')}
         </span>
       </div>
 
@@ -54,14 +57,14 @@ export function RubricGapDetection({ gaps }: Props) {
         className="grid gap-x-3 px-1"
         style={{ gridTemplateColumns: '3.5rem 1fr' }}
       >
-        {/* Column headers — mobile: 2 cols; sm+: 4 cols via extra hidden spans */}
-        {['Freq.', 'Gap detected'].map((h) => (
+        {/* Column headers */}
+        {(['frequency', 'gapDetected'] as const).map((k) => (
           <span
-            key={h}
+            key={k}
             className="text-[10px] font-medium mb-2"
             style={{ color: 'var(--am-muted)' }}
           >
-            {h}
+            {t(`th.${k}`)}
           </span>
         ))}
 
@@ -92,7 +95,7 @@ export function RubricGapDetection({ gaps }: Props) {
                     background: 'rgba(110,86,255,0.08)',
                   }}
                 >
-                  Add to rubric →
+                  {t('addToRubric')}
                 </button>
                 <span
                   className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full border"
@@ -102,7 +105,7 @@ export function RubricGapDetection({ gaps }: Props) {
                     background: 'rgba(255,94,94,0.08)',
                   }}
                 >
-                  Not covered
+                  {t('notCovered')}
                 </span>
               </div>
             </div>
@@ -112,7 +115,7 @@ export function RubricGapDetection({ gaps }: Props) {
 
       {/* Footer note */}
       <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † all values sourced from mock-data.ts — Add to rubric → is non-functional in demo
+        {t('mockFooter')}
       </p>
     </div>
   )
