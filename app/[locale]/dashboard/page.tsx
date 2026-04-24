@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { getTranslations } from "next-intl/server";
 import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
@@ -12,7 +13,7 @@ import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
-import { DashboardStats, QuickLinks } from "./_components/DashboardStats";
+
 
 export default async function DashboardPage() {
   const [
@@ -21,12 +22,20 @@ export default async function DashboardPage() {
     { sections: rubric, trainerSectionScores },
     revenueData,
     teamHealth,
+    t,
+    tMetrics,
+    tHealth,
+    tAlerts,
   ] = await Promise.all([
     getTrainers(),
     getInsights(),
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),
+    getTranslations("Owner"),
+    getTranslations("Owner.metrics"),
+    getTranslations("Owner.teamHealth"),
+    getTranslations("Owner.activeAlerts"),
   ]);
 
   const performanceTrends = await getPerformanceTrends(trainers);
@@ -45,45 +54,50 @@ export default async function DashboardPage() {
       : 0;
   const topTrainer = sorted[0] ?? null;
 
-  return (
-    <div className="space-y-6 pb-16 lg:pb-0">
-      {/* ── Dashboard operacional (calls reais) ───────────────── */}
-      <DashboardStats />
+  const activeSalesPeopleLabel = trainers.length === 1
+    ? tMetrics("activeSalesPeopleOne", { count: trainers.length })
+    : tMetrics("activeSalesPeopleOther", { count: trainers.length });
 
+  const alertsCountLabel = activeAlerts.length === 1
+    ? tAlerts("itemsCountOne", { count: activeAlerts.length })
+    : tAlerts("itemsCountOther", { count: activeAlerts.length });
+
+  return (
+    <div>
       {/* ── Team overview ─────────────────────────────────────── */}
-      <SectionLabel>Team Overview</SectionLabel>
+      <SectionLabel>{t("teamOverview")}</SectionLabel>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <ScoreCard
-          label="Est. Monthly Revenue"
+          label={tMetrics("monthlyRevenue")}
           value="$18,200"
           valueColor="var(--am-green)"
           delta={12}
-          deltaLabel="% vs baseline"
+          deltaLabel={tMetrics("vsBaseline")}
         />
         <ScoreCard
-          label="Avg Close Rate"
+          label={tMetrics("avgCloseRate")}
           value={`${avgClose}%`}
           valueColor="var(--am-green)"
           delta={7}
-          deltaLabel="pts since week 1"
+          deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label="Avg Score"
+          label={tMetrics("avgScore")}
           value={avgScore}
           valueColor="var(--am-accent2)"
           delta={11}
-          deltaLabel="pts since week 1"
+          deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label="Total Calls"
+          label={tMetrics("totalCalls")}
           value={totalCalls}
-          deltaLabel={`${trainers.length} active sales people`}
+          deltaLabel={activeSalesPeopleLabel}
         />
         <ScoreCard
-          label="Best Close Rate"
+          label={tMetrics("bestCloseRate")}
           value={`${topTrainer?.closeRate ?? 0}%`}
           delta={topTrainer?.closeDelta ?? 0}
-          deltaLabel={topTrainer?.name ?? "No trainers"}
+          deltaLabel={topTrainer?.name ?? tMetrics("noTrainers")}
         />
       </div>
 
@@ -104,32 +118,35 @@ export default async function DashboardPage() {
           className="rounded-2xl p-5 border shadow-md"
           style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
+          {/* Header */}
           <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
-              Team Health
+              {tHealth("title")}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
-              mock data only
+              {tHealth("mockBadge")}
             </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            Who&apos;s improving · who needs attention this week
+            {tHealth("subtitle")}
           </p>
 
+          {/* Column headers */}
           <div
             className="grid mb-2"
             style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
           >
-            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>TRAINER</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>STATUS</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>CLOSE %</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>DELTA</span>
+            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>{tHealth("th.trainer")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.status")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.closeRate")}</span>
+            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.delta")}</span>
             <span className="text-[10px] font-medium text-right" style={{ color: "var(--am-muted)" }}>↑↓</span>
           </div>
 
+          {/* Rows */}
           {teamHealth.map((entry, i) => {
             const ringColor = entry.trend === 'up' ? 'var(--am-green)' : 'var(--am-red)'
             const dotColor =
@@ -137,9 +154,13 @@ export default async function DashboardPage() {
               : entry.statusType === 'away'   ? 'var(--am-red)'
               : 'var(--am-muted)'
             const deltaColor = entry.delta >= 0 ? 'var(--am-green)' : 'var(--am-red)'
+            const ptsLabel = Math.abs(entry.delta) === 1 ? tHealth('ptsOne') : tHealth('ptsOther')
             const deltaLabel = entry.delta > 0
-              ? `+${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
-              : `${entry.delta} pt${Math.abs(entry.delta) !== 1 ? 's' : ''}`
+              ? `+${entry.delta} ${ptsLabel}`
+              : `${entry.delta} ${ptsLabel}`
+            const callsLabel = entry.calls === 1
+              ? tHealth('callsLabelOne', { count: entry.calls })
+              : tHealth('callsLabelOther', { count: entry.calls })
 
             const avatarBg: Record<string, string> = {
               blue: 'var(--am-blue-bg)', purple: 'rgba(110,86,255,0.15)',
@@ -159,6 +180,7 @@ export default async function DashboardPage() {
                   borderTop: i > 0 ? "1px solid var(--am-border)" : "none",
                 }}
               >
+                {/* Avatar + name + calls */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative flex-shrink-0">
                     <div
@@ -177,11 +199,12 @@ export default async function DashboardPage() {
                       {entry.name}
                     </p>
                     <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
-                      {entry.calls} calls
+                      {callsLabel}
                     </p>
                   </div>
                 </div>
 
+                {/* Status */}
                 <div className="pr-4 hidden sm:flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
                   <span className="text-[12px] whitespace-nowrap" style={{ color: dotColor }}>
@@ -189,14 +212,17 @@ export default async function DashboardPage() {
                   </span>
                 </div>
 
+                {/* Close rate */}
                 <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: "var(--am-text)" }}>
                   {entry.closeRate}%
                 </span>
 
+                {/* Delta */}
                 <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: deltaColor }}>
                   {deltaLabel}
                 </span>
 
+                {/* Trend arrow */}
                 <span className="text-[16px] font-bold text-right" style={{ color: deltaColor }}>
                   {entry.trend === 'up' ? '↑' : '↓'}
                 </span>
@@ -205,7 +231,7 @@ export default async function DashboardPage() {
           })}
 
           <p className="mt-3 text-[10px]" style={{ color: "var(--am-amber)" }}>
-            † green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation
+            {tHealth("mockFooter")}
           </p>
         </div>
 
@@ -214,21 +240,23 @@ export default async function DashboardPage() {
           className="rounded-2xl p-5 border shadow-md flex flex-col"
           style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
         >
+          {/* Header */}
           <div className="flex items-center justify-between mb-1">
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
-              Active Alerts
+              {tAlerts("title")}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
             >
-              mock data only
+              {tAlerts("mockBadge")}
             </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            {activeAlerts.length} items requiring attention
+            {alertsCountLabel}
           </p>
 
+          {/* Alert items */}
           <div className="flex flex-col gap-0 flex-1">
             {activeAlerts.map((alert, i) => {
               const dotColor =
@@ -287,14 +315,16 @@ export default async function DashboardPage() {
             })}
           </div>
 
+          {/* Footer note */}
           <p className="text-[10px] mt-4 leading-relaxed" style={{ color: "var(--am-amber)" }}>
-            ↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts
+            {tAlerts("mockFooter")}
           </p>
         </div>
       </div>
 
       {/* ── Charts: rubric + performance trend ───────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Rubric bars */}
         <div
           className="rounded-2xl p-5 border shadow-md"
           style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
@@ -303,7 +333,7 @@ export default async function DashboardPage() {
             className="text-[13px] font-medium mb-4"
             style={{ color: "var(--am-text)" }}
           >
-            Rubric by Section — Team Average
+            {t("rubricBySection")}
           </p>
           <div className="flex flex-col gap-2.5">
             {rubric.map((section) => (
@@ -317,6 +347,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Performance trend */}
         <PerformanceTrend
           trends={performanceTrends}
           salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
@@ -327,7 +358,7 @@ export default async function DashboardPage() {
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>Score by Sales Person — Detailed Rubric</SectionLabel>
+      <SectionLabel>{t("detailedRubricLabel")}</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
@@ -337,23 +368,32 @@ export default async function DashboardPage() {
             <tr>
               <th
                 className="text-[11px] font-medium text-left pb-2.5 pr-2"
-                style={{ color: "var(--am-muted)", borderBottom: "1px solid var(--am-border)" }}
+                style={{
+                  color: "var(--am-muted)",
+                  borderBottom: "1px solid var(--am-border)",
+                }}
               >
-                Section
+                {t("detailedRubricTh.section")}
               </th>
               <th
                 className="text-[11px] font-medium text-right pb-2.5 px-2"
-                style={{ color: "var(--am-muted)", borderBottom: "1px solid var(--am-border)" }}
+                style={{
+                  color: "var(--am-muted)",
+                  borderBottom: "1px solid var(--am-border)",
+                }}
               >
-                Team
+                {t("detailedRubricTh.team")}
               </th>
-              {trainerSectionScores.map((t) => (
+              {trainerSectionScores.map((tr) => (
                 <th
-                  key={t.trainerId}
+                  key={tr.trainerId}
                   className="text-[11px] font-medium text-right pb-2.5 px-2"
-                  style={{ color: "var(--am-muted)", borderBottom: "1px solid var(--am-border)" }}
+                  style={{
+                    color: "var(--am-muted)",
+                    borderBottom: "1px solid var(--am-border)",
+                  }}
                 >
-                  {t.trainerName}
+                  {tr.trainerName}
                 </th>
               ))}
             </tr>
@@ -361,7 +401,7 @@ export default async function DashboardPage() {
           <tbody>
             {rubric.map((section) => {
               const trainerScores = trainerSectionScores.map(
-                (t) => t.scores[section.name] ?? 0,
+                (tr) => tr.scores[section.name] ?? 0,
               );
               const maxScore =
                 trainerScores.length > 0 ? Math.max(...trainerScores) : 0;
@@ -370,14 +410,20 @@ export default async function DashboardPage() {
                 <tr key={section.id}>
                   <td
                     className="text-xs py-2.5 pr-2"
-                    style={{ color: "var(--am-muted)", borderBottom: "1px solid var(--am-border)" }}
+                    style={{
+                      color: "var(--am-muted)",
+                      borderBottom: "1px solid var(--am-border)",
+                    }}
                   >
                     {section.name}
                   </td>
                   <td
                     className="text-xs text-right font-mono px-2 py-2.5"
                     style={{
-                      color: section.teamAvg < 3.25 ? "var(--am-red)" : "var(--am-text)",
+                      color:
+                        section.teamAvg < 3.25
+                          ? "var(--am-red)"
+                          : "var(--am-text)",
                       borderBottom: "1px solid var(--am-border)",
                     }}
                   >
@@ -409,15 +455,12 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── AI Insights ───────────────────────────────────────── */}
-      <SectionLabel>AI Insights</SectionLabel>
+      <SectionLabel>{t("aiInsights")}</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         {insights.map((insight) => (
           <InsightCard key={insight.id} insight={insight} />
         ))}
       </div>
-
-      {/* ── Quick Links ───────────────────────────────────────── */}
-      <QuickLinks />
     </div>
   );
 }

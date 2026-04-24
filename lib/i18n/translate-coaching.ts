@@ -140,7 +140,7 @@ export async function translateInsights(
   }
 }
 
-/** Translate a single BestCall (coaching center: best/worst call cards). */
+/** Translate a single BestCall (Team Command Center: best/worst call cards). */
 export async function translateBestCalls(
   calls: BestCall[],
   locale: Locale,

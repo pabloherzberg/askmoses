@@ -39,7 +39,7 @@
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
-      "teamOverview": "Team Overview",
+      "teamCommandCenter": "Team Command Center",
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
@@ -47,8 +47,6 @@
       "history": "History",
       "analytics": "Analytics",
       "insights": "Insights",
-      "coachingCenter": "Coaching Center",
-      "teamCommandCenter": "Team Command Center",
       "scriptBuilder": "Script Builder",
       "rubric": "Rubric",
       "howToUse": "How to Use",
@@ -373,7 +371,7 @@
     }
   },
   "Coaching": {
-    "label": "Coaching Center",
+    "label": "Team Command Center",
     "subtitle": "Best calls of the week — use these as reference material in team training sessions.",
     "callsLabelOne": "{count} call",
     "callsLabelOther": "{count} calls",
