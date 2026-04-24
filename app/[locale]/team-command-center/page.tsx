@@ -12,9 +12,9 @@ export default async function TeamCommandCenterPage() {
       <p className="text-sm mb-6" style={{ color: 'var(--am-muted)' }}>
         {t('subtitle')}
       </p>
+      <TrainerTabs />
       <BestCallsTeamWeekly />
       <WorstCallsTeamWeekly />
-      <TrainerTabs />
     </div>
   )
 }
