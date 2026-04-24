@@ -9,10 +9,10 @@ export default async function TeamCommandCenterPage() {
   return (
     <div>
       <SectionLabel>{t('label')}</SectionLabel>
-      <p className="text-sm mb-6" style={{ color: 'var(--am-muted)' }}>
+      <TrainerTabs />
+      <p className="text-sm mt-8 mb-6 text-center" style={{ color: 'var(--am-muted)' }}>
         {t('subtitle')}
       </p>
-      <TrainerTabs />
       <BestCallsTeamWeekly />
       <WorstCallsTeamWeekly />
     </div>
