@@ -125,6 +125,9 @@ export interface BestCall {
   result: string
   analysis: string
   listenAt: string
+  trainerInitials?: string
+  trainerName?: string
+  trainerColor?: string
 }
 
 export type CallsByTrainerMap = Record<string, BestCall[]>

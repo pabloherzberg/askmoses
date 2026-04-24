@@ -50,6 +50,24 @@ export function CallCard({ call, variant = 'best' }: Props) {
         borderLeftColor: p.borderLeft,
       }}
     >
+      {/* Trainer identifier — only shown in team context */}
+      {call.trainerInitials && (
+        <div className="flex items-center gap-2">
+          <span
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono font-semibold flex-shrink-0"
+            style={{ background: call.trainerColor ?? 'var(--am-bg4)', color: '#fff' }}
+          >
+            {call.trainerInitials}
+          </span>
+          <span
+            className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+            style={{ background: 'var(--am-bg3)', color: 'var(--am-muted)' }}
+          >
+            {call.trainerName}
+          </span>
+        </div>
+      )}
+
       {/* Top row: prospect + score */}
       <div className="flex items-start justify-between gap-3">
         <div>

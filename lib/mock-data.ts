@@ -918,6 +918,30 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       listenAt: '5:10',
     },
   ],
+  teamWeekly: [
+    {
+      trainerInitials: 'MR',
+      trainerName:     'Marcus R.',
+      trainerColor:    '#E87722',
+      prospect:        'Bob W.',
+      date:            '3/21/2026',
+      score:           94,
+      result:          'Closed',
+      analysis:        'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      listenAt:        '2:14',
+    },
+    {
+      trainerInitials: 'JL',
+      trainerName:     'Jamie L.',
+      trainerColor:    '#3B82F6',
+      prospect:        'Sarah K.',
+      date:            '3/19/2026',
+      score:           91,
+      result:          'Closed',
+      analysis:        'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this pattern.',
+      listenAt:        '1:48',
+    },
+  ],
 }
 
 // ─── Worst Call This Week ─────────────────────────────────────────────────────
@@ -993,6 +1017,30 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       result:   'No Close',
       analysis: 'Problem agitation phase was skipped entirely — moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
       listenAt: '1:28',
+    },
+  ],
+  teamWeekly: [
+    {
+      trainerInitials: 'TM',
+      trainerName:     'Taylor M.',
+      trainerColor:    '#A855F7',
+      prospect:        'Owen M.',
+      date:            '3/18/2026',
+      score:           55,
+      result:          'No Close',
+      analysis:        'At 3:00 Taylor filled every silence with filler words instead of letting the prospect process. Nervous energy was audible and undermined trust.',
+      listenAt:        '3:00',
+    },
+    {
+      trainerInitials: 'JK',
+      trainerName:     'Jordan K.',
+      trainerColor:    '#22D9A0',
+      prospect:        'Fred L.',
+      date:            '3/17/2026',
+      score:           58,
+      result:          'No Close',
+      analysis:        'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      listenAt:        '0:55',
     },
   ],
 }
