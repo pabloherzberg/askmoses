@@ -84,7 +84,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
         )}
 
         {/* Logo — always visible */}
-        <LogoSVG className="h-14 w-auto" />
+        <LogoSVG className="h-9 w-auto md:h-14" />
 
         {/* Page title — shown alongside logo when in dashboard mode */}
         {resolvedTitle && (
