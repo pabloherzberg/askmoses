@@ -39,7 +39,7 @@
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
-      "teamOverview": "Vue d'équipe",
+      "teamCommandCenter": "Centre de Commandement",
       "calls": "Appels",
       "myDashboard": "Mon tableau de bord",
       "myCalls": "Mes appels",
@@ -47,8 +47,6 @@
       "history": "Historique",
       "analytics": "Analytics",
       "insights": "Insights",
-      "coachingCenter": "Centre de coaching",
-      "teamCommandCenter": "Team Command Center",
       "scriptBuilder": "Constructeur de scripts",
       "rubric": "Grille",
       "howToUse": "Mode d'emploi",

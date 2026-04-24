@@ -89,8 +89,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
   }
 
+  // Redirect legacy routes
+  if (rawPath === '/overview' || rawPath.startsWith('/overview/')) {
+    return NextResponse.redirect(localized('/dashboard', locale, request.url))
+  }
+  if (rawPath === '/coaching' || rawPath.startsWith('/coaching/')) {
+    return NextResponse.redirect(localized('/team-command-center', locale, request.url))
+  }
+
   // Trainer: allow /me, /calls (filtered server-side), /dashboard/upload
-  const trainerBlocked = ['/overview']
+  const trainerBlocked = ['/team-command-center']
   const trainerDashboardBlocked =
     rawPath.startsWith('/dashboard') && !rawPath.startsWith('/dashboard/upload')
   if (

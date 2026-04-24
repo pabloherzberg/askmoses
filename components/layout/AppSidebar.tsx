@@ -13,12 +13,13 @@ import type { Role } from '@/lib/types'
 
 // Parent routes that should only match on exact path equality — otherwise they
 // would also match every nested child (e.g. /me would also highlight on /me/calls).
-const EXACT_ONLY = new Set(['/overview', '/dashboard', '/me', '/admin'])
+const EXACT_ONLY = new Set(['/dashboard', '/team-command-center', '/me', '/admin'])
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
   const pathname = usePathname()
   const locale = useLocale()
   const localizedHref = `/${locale}${href}`
+  // Strip locale prefix when comparing against pathname so "active" still works
   const bareHref = href
   const barePath = pathname.replace(`/${locale}`, '') || '/'
   const active =
@@ -47,9 +48,9 @@ export function NavItem({ label, href, icon: Icon }: { label: string; href: stri
 export function TrainerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const trainerNav = [
-    { label: t('myDashboard'), href: '/me',               icon: LayoutDashboard },
-    { label: t('myCalls'),     href: '/me/calls',          icon: Phone },
-    { label: t('uploadCall'),  href: '/dashboard/upload',  icon: Upload },
+    { label: t('myDashboard'), href: '/me', icon: LayoutDashboard },
+    { label: t('myCalls'),     href: '/me/calls', icon: Phone },
+    { label: t('uploadCall'),  href: '/dashboard/upload', icon: Upload },
   ]
   return (
     <nav className="flex flex-col gap-1">
@@ -61,16 +62,16 @@ export function TrainerNavItems() {
 export function OwnerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const mainNav = [
-    { label: t('dashboard'),          href: '/dashboard', icon: Home },
-    { label: t('teamCommandCenter'),  href: '/coaching',  icon: GraduationCap },
-    { label: t('calls'),              href: '/calls',     icon: Phone },
+    { label: t('dashboard'),          href: '/dashboard',           icon: Home },
+    { label: t('teamCommandCenter'),  href: '/team-command-center', icon: GraduationCap },
+    { label: t('calls'),              href: '/calls',               icon: Phone },
   ]
   const toolsNav = [
     { label: t('uploadCall'),    href: '/dashboard/upload',        icon: Upload },
     { label: t('history'),       href: '/dashboard/history',       icon: History },
     { label: t('analytics'),     href: '/dashboard/analytics',     icon: BarChart3 },
     { label: t('insights'),      href: '/dashboard/insights',      icon: Brain },
-    { label: t('scriptBuilder'), href: '/dashboard/script-builder',icon: Wand2 },
+    { label: t('scriptBuilder'), href: '/dashboard/script-builder', icon: Wand2 },
     { label: t('rubric'),        href: '/dashboard/settings',      icon: Settings },
     { label: t('howToUse'),      href: '/dashboard/guide',         icon: HelpCircle },
   ]
