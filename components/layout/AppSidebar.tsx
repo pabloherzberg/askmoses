@@ -18,7 +18,8 @@ const trainerNav = [
 
 const mainNav = [
   { label: 'Dashboard',     href: '/dashboard', icon: Home },
-  { label: 'Team Overview', href: '/overview',  icon: LayoutDashboard },
+  { label: 'Team Command Center', href: '/coaching',                icon: GraduationCap },
+  // { label: 'Team Overview', href: '/overview',  icon: LayoutDashboard },
   { label: 'Calls',         href: '/calls',     icon: Phone },
 ]
 
@@ -27,7 +28,6 @@ const toolsNav = [
   { label: 'History',        href: '/dashboard/history',        icon: History },
   { label: 'Analytics',      href: '/dashboard/analytics',      icon: BarChart3 },
   { label: 'Insights',       href: '/dashboard/insights',       icon: Brain },
-  { label: 'Coaching Center', href: '/coaching',                icon: GraduationCap },
   { label: 'Script Builder', href: '/dashboard/script-builder', icon: Wand2 },
   { label: 'Rubric',         href: '/dashboard/settings',       icon: Settings },
   { label: 'How to Use',     href: '/dashboard/guide',          icon: HelpCircle },
