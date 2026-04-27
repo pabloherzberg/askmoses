@@ -7,6 +7,7 @@ import {
   supabaseCalls,
   demoCredentials,
 } from '@/lib/mock-data'
+import { buildScriptIntelligence } from '@/lib/mocks/data/script-intelligence'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
@@ -77,6 +78,11 @@ const apiHandlers = [
   // GET /api/insights
   http.get('/api/insights', () => {
     return ok(insights)
+  }),
+
+  // POST /api/script-intelligence — returns Script Intelligence analysis
+  http.post('/api/script-intelligence', () => {
+    return ok(buildScriptIntelligence())
   }),
 
   // POST /api/insights — passthrough to real API route (Gemini)

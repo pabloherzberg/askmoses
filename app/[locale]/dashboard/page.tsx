@@ -15,6 +15,7 @@ import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 
 
+
 export default async function DashboardPage() {
   const [
     trainers,
@@ -66,20 +67,29 @@ export default async function DashboardPage() {
     <div>
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-        <ScoreCard
-          label={tMetrics("monthlyRevenue")}
-          value="$18,200"
-          valueColor="var(--am-green)"
-          delta={12}
-          deltaLabel={tMetrics("vsBaseline")}
-        />
+
+      {/* Hero KPI row: Close Rate em destaque + 3 secundários */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+        {/* Hero — Avg Close Rate */}
         <ScoreCard
           label={tMetrics("avgCloseRate")}
           value={`${avgClose}%`}
           valueColor="var(--am-green)"
           delta={7}
           deltaLabel={tMetrics("ptsSinceWeek1")}
+          className="col-span-2 md:col-span-1"
+          style={{
+            background: "linear-gradient(135deg, rgba(34,217,160,0.10) 0%, var(--card) 60%)",
+            borderColor: "rgba(34,217,160,0.30)",
+            boxShadow: "0 0 0 1px rgba(34,217,160,0.10), 0 4px 24px rgba(34,217,160,0.08)",
+          }}
+        />
+        <ScoreCard
+          label={tMetrics("monthlyRevenue")}
+          value="$18,200"
+          valueColor="var(--am-green)"
+          delta={12}
+          deltaLabel={tMetrics("vsBaseline")}
         />
         <ScoreCard
           label={tMetrics("avgScore")}
@@ -93,13 +103,14 @@ export default async function DashboardPage() {
           value={totalCalls}
           deltaLabel={activeSalesPeopleLabel}
         />
-        <ScoreCard
-          label={tMetrics("bestCloseRate")}
-          value={`${topTrainer?.closeRate ?? 0}%`}
-          delta={topTrainer?.closeDelta ?? 0}
-          deltaLabel={topTrainer?.name ?? tMetrics("noTrainers")}
-        />
       </div>
+
+      {/* ── Conversion Rate Trend — destaque máximo ───────────── */}
+      <PerformanceTrend
+        trends={performanceTrends}
+        salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
+        chartHeight={280}
+      />
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
@@ -322,36 +333,27 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Charts: rubric + performance trend ───────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {/* Rubric bars */}
-        <div
-          className="rounded-2xl p-5 border shadow-md"
-          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
+      {/* ── Rubric by section ─────────────────────────────────── */}
+      <div
+        className="rounded-2xl p-5 border shadow-md mb-4"
+        style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
+      >
+        <p
+          className="text-[13px] font-medium mb-4"
+          style={{ color: "var(--am-text)" }}
         >
-          <p
-            className="text-[13px] font-medium mb-4"
-            style={{ color: "var(--am-text)" }}
-          >
-            {t("rubricBySection")}
-          </p>
-          <div className="flex flex-col gap-2.5">
-            {rubric.map((section) => (
-              <RubricBar
-                key={section.id}
-                label={section.name}
-                value={section.teamAvg}
-                color={section.color}
-              />
-            ))}
-          </div>
+          {t("rubricBySection")}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
+          {rubric.map((section) => (
+            <RubricBar
+              key={section.id}
+              label={section.name}
+              value={section.teamAvg}
+              color={section.color}
+            />
+          ))}
         </div>
-
-        {/* Performance trend */}
-        <PerformanceTrend
-          trends={performanceTrends}
-          salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
-        />
       </div>
 
       {/* ── Revenue Impact Estimator ──────────────────────────── */}
