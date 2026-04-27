@@ -38,6 +38,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import type { CallResult as CallOutcome, Trainer } from "@/lib/types"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 type UploadStep = "input" | "processing" | "results" | "sending" | "complete"
 
@@ -101,6 +103,8 @@ export default function UploadPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [loading, setLoading] = useState(true)
   const [isTrainer, setIsTrainer] = useState(false)
+  const { client: currentClient } = useCurrentClient()
+  const showTwilioUpsell = currentClient ? !currentClient.plan.hasTwilio : false
 
   useEffect(() => {
     async function init() {
@@ -632,6 +636,15 @@ export default function UploadPage() {
           {t("subtitle")}
         </p>
       </div>
+
+      {showTwilioUpsell && (
+        <UpsellCard
+          requires="pro"
+          title="Skip the manual upload — go automatic"
+          description="Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
+          ctaLabel="Compare plans"
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Trainer Info */}

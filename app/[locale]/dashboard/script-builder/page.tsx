@@ -30,6 +30,9 @@ import {
   Save,
   Lightbulb,
 } from "lucide-react"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { UpsellBadge } from "@/components/shared/UpsellBadge"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 interface AudioFile {
   file: File
@@ -259,20 +262,38 @@ export default function ScriptBuilderPage() {
     setSaving(false)
   }
 
+  const { client: currentClient } = useCurrentClient()
+  // Auto-script generation lives behind Pro: Starter only ships "Script &
+  // Rubric Manager" (CRUD), while AI-driven generation from real calls is a
+  // Pro/Pro+RAG capability that pairs with auto-ingestion.
+  const isLockedByPlan = currentClient ? !currentClient.plan.hasTwilio : false
+
   const canGenerate =
-    audioFiles.length > 0 || textInput.trim().length > 50
+    !isLockedByPlan && (audioFiles.length > 0 || textInput.trim().length > 50)
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {t("title")}
+          {isLockedByPlan && <UpsellBadge requires="pro" compact />}
+        </h1>
         <p className="text-muted-foreground">
           {t("subtitle")}
         </p>
       </div>
 
+      {isLockedByPlan && (
+        <UpsellCard
+          requires="pro"
+          title="Auto-build scripts from real calls"
+          description="Script Builder turns your top sales calls into a reusable script + rubric in minutes — Pro and Pro + RAG plans only. Starter includes the manual Script Manager."
+          ctaLabel="Compare plans"
+        />
+      )}
+
       {step === "input" && (
-        <Card>
+        <Card aria-disabled={isLockedByPlan} className={isLockedByPlan ? "opacity-60 pointer-events-none select-none" : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5" />

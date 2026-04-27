@@ -42,7 +42,7 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
     ? new Date(calls[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : '—'
 
-  // Rubric section averages (criteria scores are 0–5, convert to 0–100)
+  // Rubric section averages — AI returns 0–5, seeded calls store 0–100.
   const sectionSums: Record<string, { sum: number; count: number }> = {}
   for (const call of calls) {
     const items = Array.isArray(call.criteria) ? call.criteria as CriterionScore[] : []
@@ -51,7 +51,8 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
       const col = CRITERIA_COLUMN_MAP[rawName]
       if (!col) continue
       if (!sectionSums[col]) sectionSums[col] = { sum: 0, count: 0 }
-      sectionSums[col].sum += (item.score ?? 0) * 20
+      const raw = item.score ?? 0
+      sectionSums[col].sum += raw > 5 ? raw : raw * 20
       sectionSums[col].count += 1
     }
   }

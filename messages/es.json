@@ -23,9 +23,11 @@
     "invalidCredentials": "Correo o contraseña incorrectos",
     "profileNotFound": "Perfil de usuario no encontrado. Ejecuta el script de seed en Supabase.",
     "demoAccess": "Acceso demo",
+    "demoAccountSubtitle": "Elige el cliente y el usuario",
     "roleSalesPerson": "Vendedor",
     "roleSalesPersonN": "Vendedor {n}",
     "roleManager": "Gerente",
+    "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "backToHome": "Volver al inicio"
   },

@@ -24,6 +24,9 @@ import {
   MessageSquareWarning,
   Save,
 } from "lucide-react"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { UpsellBadge } from "@/components/shared/UpsellBadge"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 interface Script {
   id: string
@@ -74,6 +77,11 @@ export default function InsightsPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [savingScript, setSavingScript] = useState(false)
+  const { client: currentClient } = useCurrentClient()
+  const showRagUpsell = currentClient ? !currentClient.plan.hasRag : false
+  // Save-as-script generates a new script via IA → Pro+ feature (Starter
+  // ships only the manual Script Manager).
+  const canBuildScripts = currentClient ? currentClient.plan.hasTwilio : true
   const [savedScript, setSavedScript] = useState(false)
   const [insights, setInsights] = useState<InsightsResult | null>(null)
   const [error, setError] = useState("")
@@ -236,6 +244,15 @@ export default function InsightsPage() {
           {t('subtitle')}
         </p>
       </div>
+
+      {showRagUpsell && (
+        <UpsellCard
+          requires="pro_rag"
+          title="Coach with your own training material"
+          description="Pro + RAG indexes your scripts, methodology PDFs and best-call transcripts so insights cite the exact playbook your team should be following."
+          ctaLabel="Compare plans"
+        />
+      )}
 
       {/* Script Selector */}
       <Card>
@@ -592,25 +609,34 @@ export default function InsightsPage() {
                   <p className="text-sm text-green-700 dark:text-green-300">{tSuggested('savedMessage')}</p>
                 </div>
               ) : (
-                <Button
-                  onClick={handleSaveAsNewScript}
-                  disabled={savingScript}
-                  variant="outline"
-                  size="lg"
-                  className="w-full bg-transparent"
-                >
-                  {savingScript ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {tSuggested('saving')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-5 w-5" />
-                      {tSuggested('saveButton')}
-                    </>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleSaveAsNewScript}
+                    disabled={savingScript || !canBuildScripts}
+                    variant="outline"
+                    size="lg"
+                    className="w-full bg-transparent"
+                    title={!canBuildScripts ? 'Available on Pro and Pro + RAG' : undefined}
+                  >
+                    {savingScript ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {tSuggested('saving')}
+                      </>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2 w-full">
+                        <Save className="h-5 w-5" />
+                        {tSuggested('saveButton')}
+                        {!canBuildScripts && <UpsellBadge requires="pro" compact />}
+                      </span>
+                    )}
+                  </Button>
+                  {!canBuildScripts && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-script generation is part of Pro and Pro + RAG. Starter still lets you create scripts manually in <span className="font-medium">Settings → Rubric</span>.
+                    </p>
                   )}
-                </Button>
+                </div>
               )}
             </CardContent>
           </Card>

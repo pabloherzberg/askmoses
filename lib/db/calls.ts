@@ -93,21 +93,30 @@ export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
   return (data ?? []) as DbCall[]
 }
 
-export async function dbGetCallById(id: string): Promise<DbCall | null> {
+export interface GetCallByIdScope {
+  orgId?: string
+  trainerId?: string
+}
+
+export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promise<DbCall | null> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('calls')
     .select('*')
     .eq('id', id)
-    .single()
+
+  if (scope?.orgId) query = query.eq('org_id', scope.orgId)
+  if (scope?.trainerId) query = query.eq('trainer_id', scope.trainerId)
+
+  const { data, error } = await query.maybeSingle()
 
   if (error) {
     if (error.code === 'PGRST116') return null
     throw new Error(`dbGetCallById: ${error.message}`)
   }
 
-  return data as DbCall
+  return (data ?? null) as DbCall | null
 }
 
 export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {

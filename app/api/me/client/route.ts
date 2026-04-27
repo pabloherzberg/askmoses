@@ -1,5 +1,6 @@
+import { getOrgId, ok, unauthorized, notFound } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Client, GlobalMetrics, HealthStatus, Plan, PlanCode } from '@/lib/types'
+import type { Client, HealthStatus, Plan, PlanCode } from '@/lib/types'
 
 interface DbPlanNested {
   id: string
@@ -61,40 +62,23 @@ function toClient(row: DbClientRow): Client {
 }
 
 /**
- * Lista clientes (organizações) do banco com plano embutido.
+ * GET /api/me/client
+ * Returns the Client (with embedded Plan) tied to the caller's org_id.
+ * Any authenticated user with an org_id in their JWT can call this — used
+ * by dashboard chrome to show the active plan and gate premium features.
  */
-export async function dbGetClients(): Promise<Client[]> {
-  const supabase = createAdminClient()
+export async function GET() {
+  const orgId = await getOrgId()
+  if (!orgId) return unauthorized()
 
-  const { data, error } = await supabase
+  const admin = createAdminClient()
+  const { data, error } = await admin
     .from('clients')
     .select('*, plans(*)')
-    .order('name', { ascending: true })
+    .eq('org_id', orgId)
+    .single()
 
-  if (error) throw new Error(`dbGetClients: ${error.message}`)
+  if (error || !data) return notFound('Client')
 
-  return (data ?? []).map((row) => toClient(row as DbClientRow))
-}
-
-/**
- * Calcula métricas globais (MRR, total calls, avg score).
- */
-export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
-  const supabase = createAdminClient()
-
-  const { data, error } = await supabase
-    .from('clients')
-    .select('mrr, calls_this_month, avg_score')
-
-  if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`)
-
-  const rows = (data ?? []) as Array<{ mrr: number; calls_this_month: number; avg_score: number }>
-  return {
-    totalClients: rows.length,
-    totalCallsThisMonth: rows.reduce((s, r) => s + (r.calls_this_month ?? 0), 0),
-    totalMRR: rows.reduce((s, r) => s + Number(r.mrr ?? 0), 0),
-    avgScore: rows.length
-      ? Math.round(rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length)
-      : 0,
-  }
+  return ok(toClient(data as DbClientRow))
 }
