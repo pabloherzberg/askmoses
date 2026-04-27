@@ -69,6 +69,7 @@ export default function InsightsPage() {
   const tSuggested = useTranslations("Dashboard.insights.suggestedScript")
   const tShare = useTranslations("Dashboard.insights.shareWithTeam")
   const tFreq = useTranslations("Dashboard.insights.objections.frequency")
+  const tUpsell = useTranslations("Shared.upsell.insightsRag")
   const locale = useLocale()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
@@ -254,8 +255,8 @@ export default function InsightsPage() {
       {showRagUpsell && (
         <UpsellCard
           requires="pro_rag"
-          title="Coach with your own training material"
-          description="Pro + RAG indexes your scripts, methodology PDFs and best-call transcripts so insights cite the exact playbook your team should be following."
+          title={tUpsell("title")}
+          description={tUpsell("description")}
         />
       )}
 

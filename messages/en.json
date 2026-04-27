@@ -126,7 +126,19 @@
     },
     "upsell": {
       "defaultCta": "Compare plans",
-      "upgradeTo": "Upgrade to {plan}"
+      "upgradeTo": "Upgrade to {plan}",
+      "uploadTwilio": {
+        "title": "Skip the manual upload — go automatic",
+        "description": "Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Auto-build scripts from real calls",
+        "description": "Script Builder turns your top sales calls into a reusable script + rubric in minutes — Pro and Pro + RAG plans only. Starter includes the manual Script Manager."
+      },
+      "insightsRag": {
+        "title": "Coach with your own training material",
+        "description": "Pro + RAG indexes your scripts, methodology PDFs and best-call transcripts so insights cite the exact playbook your team should be following."
+      }
     },
     "correlationEngine": {
       "title": "Correlation Engine — What Drives Closes",

@@ -16,9 +16,16 @@ import type {
   UpdateCallInput,
   GetCallsFilters,
   GetCallByIdScope,
+  CallMutationScope,
 } from "@/lib/db/calls";
 
-export type { CreateCallInput, UpdateCallInput, GetCallsFilters, GetCallByIdScope };
+export type {
+  CreateCallInput,
+  UpdateCallInput,
+  GetCallsFilters,
+  GetCallByIdScope,
+  CallMutationScope,
+};
 
 // ─── Criteria parser: JSONB array → RubricScores (0–100) ─────────────────────
 
@@ -145,10 +152,11 @@ export async function createCall(input: CreateCallInput): Promise<DbCall> {
 export async function updateCall(
   id: string,
   input: UpdateCallInput,
-): Promise<DbCall> {
-  return dbUpdateCall(id, input);
+  scope?: CallMutationScope,
+): Promise<DbCall | null> {
+  return dbUpdateCall(id, input, scope);
 }
 
-export async function deleteCall(id: string): Promise<void> {
-  return dbDeleteCall(id);
+export async function deleteCall(id: string, scope?: CallMutationScope): Promise<boolean> {
+  return dbDeleteCall(id, scope);
 }

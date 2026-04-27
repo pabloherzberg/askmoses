@@ -63,6 +63,7 @@ type BuilderStep = "input" | "processing" | "preview" | "confirm"
 export default function ScriptBuilderPage() {
   const router = useRouter()
   const t = useTranslations("Dashboard.scriptBuilder")
+  const tUpsell = useTranslations("Shared.upsell.scriptBuilderAuto")
   const locale = useLocale()
 
   const LLM_MODELS = [
@@ -291,8 +292,8 @@ export default function ScriptBuilderPage() {
       {showLockedUpsell && (
         <UpsellCard
           requires="pro"
-          title="Auto-build scripts from real calls"
-          description="Script Builder turns your top sales calls into a reusable script + rubric in minutes — Pro and Pro + RAG plans only. Starter includes the manual Script Manager."
+          title={tUpsell("title")}
+          description={tUpsell("description")}
         />
       )}
 

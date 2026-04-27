@@ -81,6 +81,7 @@ const analysisMode = "scripts"; // Declare the analysisMode variable
 
 export default function UploadPage() {
   const t = useTranslations("Dashboard.upload")
+  const tUpsell = useTranslations("Shared.upsell.uploadTwilio")
   const locale = useLocale()
   const [step, setStep] = useState<UploadStep>("input")
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
@@ -642,8 +643,8 @@ export default function UploadPage() {
       {showTwilioUpsell && (
         <UpsellCard
           requires="pro"
-          title="Skip the manual upload — go automatic"
-          description="Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
+          title={tUpsell("title")}
+          description={tUpsell("description")}
         />
       )}
 

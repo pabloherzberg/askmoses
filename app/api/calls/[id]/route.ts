@@ -41,11 +41,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
   if (!orgId) return notFound('Call')
 
   const { id } = await params
-  const existing = await getCallById(id, { orgId })
-  if (!existing) return notFound('Call')
-
   const body = await request.json() as UpdateCallInput
-  const call = await updateCall(id, body)
+  // `updateCall` re-applies the orgId filter at the DB level (defense in depth)
+  // so a stray future caller can't escape the tenant just by knowing the id.
+  const call = await updateCall(id, body, { orgId })
   if (!call) return notFound('Call')
 
   return ok(call)
@@ -62,9 +61,10 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   if (!orgId) return notFound('Call')
 
   const { id } = await params
-  const existing = await getCallById(id, { orgId })
-  if (!existing) return notFound('Call')
+  // Same defense-in-depth: the DELETE itself filters on org_id, so a missing
+  // scope at the route level can't cascade into a cross-tenant delete.
+  const deleted = await deleteCall(id, { orgId })
+  if (!deleted) return notFound('Call')
 
-  await deleteCall(id)
   return ok({ deleted: true })
 }

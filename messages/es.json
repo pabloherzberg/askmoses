@@ -126,7 +126,19 @@
     },
     "upsell": {
       "defaultCta": "Comparar planes",
-      "upgradeTo": "Mejora a {plan}"
+      "upgradeTo": "Mejora a {plan}",
+      "uploadTwilio": {
+        "title": "Sáltate la carga manual — pásate al automático",
+        "description": "Conecta Twilio o GHL una vez y cada llamada se ingesta, transcribe y analiza sin que nadie tenga que clicar en 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Genera scripts automáticamente desde llamadas reales",
+        "description": "El Script Builder convierte tus mejores llamadas en un script + rúbrica reutilizables en minutos — disponible solo en los planes Pro y Pro + RAG. El plan Starter solo incluye el Script Manager manual."
+      },
+      "insightsRag": {
+        "title": "Entrena con tu propio material de coaching",
+        "description": "Pro + RAG indexa tus scripts, PDFs de metodología y transcripciones de las mejores llamadas, así los insights citan exactamente el playbook que tu equipo debería seguir."
+      }
     },
     "correlationEngine": {
       "title": "Correlation Engine — Qué impulsa los cierres",

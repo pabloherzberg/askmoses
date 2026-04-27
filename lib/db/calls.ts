@@ -150,7 +150,22 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
   return data as DbCall
 }
 
-export async function dbUpdateCall(id: string, input: UpdateCallInput): Promise<DbCall> {
+/**
+ * Scope filter applied to mutating queries. Both `dbUpdateCall` and
+ * `dbDeleteCall` use the admin client (RLS-bypassing) so we apply
+ * `org_id` / `trainer_id` here as defense in depth — a missing scope at
+ * the route level still won't update/delete cross-tenant rows.
+ */
+export interface CallMutationScope {
+  orgId?: string
+  trainerId?: string
+}
+
+export async function dbUpdateCall(
+  id: string,
+  input: UpdateCallInput,
+  scope?: CallMutationScope,
+): Promise<DbCall | null> {
   const supabase = createAdminClient()
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -170,25 +185,29 @@ export async function dbUpdateCall(id: string, input: UpdateCallInput): Promise<
   if (input.clientName !== undefined) patch.client_name = input.clientName
   if (input.detectedOutcome !== undefined) patch.detected_outcome = input.detectedOutcome
 
-  const { data, error } = await supabase
-    .from('calls')
-    .update(patch)
-    .eq('id', id)
-    .select()
-    .single()
+  let query = supabase.from('calls').update(patch).eq('id', id)
+  if (scope?.orgId) query = query.eq('org_id', scope.orgId)
+  if (scope?.trainerId) query = query.eq('trainer_id', scope.trainerId)
 
-  if (error) throw new Error(`dbUpdateCall: ${error.message}`)
+  const { data, error } = await query.select().maybeSingle()
 
-  return data as DbCall
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbUpdateCall: ${error.message}`)
+  }
+
+  return (data ?? null) as DbCall | null
 }
 
-export async function dbDeleteCall(id: string): Promise<void> {
+export async function dbDeleteCall(id: string, scope?: CallMutationScope): Promise<boolean> {
   const supabase = createAdminClient()
 
-  const { error } = await supabase
-    .from('calls')
-    .delete()
-    .eq('id', id)
+  let query = supabase.from('calls').delete({ count: 'exact' }).eq('id', id)
+  if (scope?.orgId) query = query.eq('org_id', scope.orgId)
+  if (scope?.trainerId) query = query.eq('trainer_id', scope.trainerId)
+
+  const { error, count } = await query
 
   if (error) throw new Error(`dbDeleteCall: ${error.message}`)
+  return (count ?? 0) > 0
 }
