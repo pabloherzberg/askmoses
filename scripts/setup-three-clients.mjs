@@ -256,18 +256,31 @@ async function ensureRubric(orgId) {
     { name: 'Close & Next Steps', description: 'Clear commitment or next step before hanging up.',             sort_order: 5 },
   ]
   for (const c of criteria) {
-    const { error } = await supabase
+    const { error: upsertErr } = await supabase
       .from('criteria')
       .upsert(
         { rubric_id: cfg.id, org_id: orgId, ...c },
         { onConflict: 'rubric_id,name' }
       )
-    if (error && !error.message?.includes('duplicate')) {
-      // Some schemas don't have a uniqueness constraint — fall back to checking existence first
-      const { data: existing } = await supabase.from('criteria').select('id').eq('rubric_id', cfg.id).eq('name', c.name).maybeSingle()
-      if (!existing) {
-        await supabase.from('criteria').insert({ rubric_id: cfg.id, org_id: orgId, ...c })
-      }
+    if (!upsertErr || upsertErr.message?.includes('duplicate')) continue
+
+    // Some schemas don't have a uniqueness constraint — fall back to checking existence first
+    const { data: existing, error: selectErr } = await supabase
+      .from('criteria')
+      .select('id')
+      .eq('rubric_id', cfg.id)
+      .eq('name', c.name)
+      .maybeSingle()
+    if (selectErr) {
+      throw new Error(`ensureRubric(${orgId}): criteria lookup failed for "${c.name}": ${selectErr.message} (upsert: ${upsertErr.message})`)
+    }
+    if (existing) continue
+
+    const { error: insertErr } = await supabase
+      .from('criteria')
+      .insert({ rubric_id: cfg.id, org_id: orgId, ...c })
+    if (insertErr) {
+      throw new Error(`ensureRubric(${orgId}): criteria insert failed for "${c.name}": ${insertErr.message} (upsert: ${upsertErr.message})`)
     }
   }
 

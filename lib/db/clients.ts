@@ -77,6 +77,27 @@ export async function dbGetClients(): Promise<Client[]> {
 }
 
 /**
+ * Retorna o client (com plano embutido) vinculado a um org_id.
+ * Usado por rotas autenticadas para resolver o plano do tenant atual.
+ */
+export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*, plans(*)')
+    .eq('org_id', orgId)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbGetClientByOrgId: ${error.message}`)
+  }
+
+  return data ? toClient(data as DbClientRow) : null
+}
+
+/**
  * Calcula métricas globais (MRR, total calls, avg score).
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
