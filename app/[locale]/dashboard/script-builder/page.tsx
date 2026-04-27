@@ -262,11 +262,16 @@ export default function ScriptBuilderPage() {
     setSaving(false)
   }
 
-  const { client: currentClient } = useCurrentClient()
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
   // Auto-script generation lives behind Pro: Starter only ships "Script &
   // Rubric Manager" (CRUD), while AI-driven generation from real calls is a
   // Pro/Pro+RAG capability that pairs with auto-ingestion.
-  const isLockedByPlan = currentClient ? !currentClient.plan.hasTwilio : false
+  // Fail closed: while plan is unknown (loading or fetch failure) treat it as
+  // locked so the premium action never briefly enables.
+  const isLockedByPlan = !currentClient?.plan.hasTwilio
+  // Show the upsell card only once we've confirmed the plan lacks the feature
+  // — don't flicker it during the initial fetch.
+  const showLockedUpsell = !clientLoading && isLockedByPlan
 
   const canGenerate =
     !isLockedByPlan && (audioFiles.length > 0 || textInput.trim().length > 50)
@@ -276,14 +281,14 @@ export default function ScriptBuilderPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           {t("title")}
-          {isLockedByPlan && <UpsellBadge requires="pro" compact />}
+          {showLockedUpsell && <UpsellBadge requires="pro" compact />}
         </h1>
         <p className="text-muted-foreground">
           {t("subtitle")}
         </p>
       </div>
 
-      {isLockedByPlan && (
+      {showLockedUpsell && (
         <UpsellCard
           requires="pro"
           title="Auto-build scripts from real calls"

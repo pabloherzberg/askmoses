@@ -77,11 +77,17 @@ export default function InsightsPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [savingScript, setSavingScript] = useState(false)
-  const { client: currentClient } = useCurrentClient()
-  const showRagUpsell = currentClient ? !currentClient.plan.hasRag : false
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
+  // Hide upsell while plan is unknown / on fetch failure — only show once the
+  // plan is confirmed to lack the feature, so we don't flicker the card.
+  const showRagUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasRag
   // Save-as-script generates a new script via IA → Pro+ feature (Starter
-  // ships only the manual Script Manager).
-  const canBuildScripts = currentClient ? currentClient.plan.hasTwilio : true
+  // ships only the manual Script Manager). Fail closed: treat the action as
+  // locked while the plan is unknown so we never briefly allow it.
+  const canBuildScripts = !!currentClient?.plan.hasTwilio
+  // Render the badge/upsell hint only after we've confirmed the lock — same
+  // anti-flicker rule as the cards above.
+  const showSaveScriptUpsell = !clientLoading && !canBuildScripts
   const [savedScript, setSavedScript] = useState(false)
   const [insights, setInsights] = useState<InsightsResult | null>(null)
   const [error, setError] = useState("")
@@ -627,7 +633,7 @@ export default function InsightsPage() {
                       <span className="flex items-center justify-center gap-2 w-full">
                         <Save className="h-5 w-5" />
                         {tSuggested('saveButton')}
-                        {!canBuildScripts && <UpsellBadge requires="pro" compact />}
+                        {showSaveScriptUpsell && <UpsellBadge requires="pro" compact />}
                       </span>
                     )}
                   </Button>

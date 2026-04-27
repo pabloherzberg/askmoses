@@ -103,8 +103,10 @@ export default function UploadPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [loading, setLoading] = useState(true)
   const [isTrainer, setIsTrainer] = useState(false)
-  const { client: currentClient } = useCurrentClient()
-  const showTwilioUpsell = currentClient ? !currentClient.plan.hasTwilio : false
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
+  // Hide upsell while plan is unknown (avoid flicker) and on fetch failure;
+  // only render once the plan is confirmed to lack the feature.
+  const showTwilioUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasTwilio
 
   useEffect(() => {
     async function init() {
