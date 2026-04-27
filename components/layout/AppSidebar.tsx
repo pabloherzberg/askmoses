@@ -4,8 +4,8 @@ import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, Phone, Upload, History,
-  BarChart3, Brain, Wand2, Settings, HelpCircle, Home, GraduationCap
+  LayoutDashboard, Phone, Upload,
+  Brain, Wand2, Settings, HelpCircle, Home, GraduationCap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -68,8 +68,6 @@ export function OwnerNavItems() {
   ]
   const toolsNav = [
     { label: t('uploadCall'),    href: '/dashboard/upload',        icon: Upload },
-    { label: t('history'),       href: '/dashboard/history',       icon: History },
-    { label: t('analytics'),     href: '/dashboard/analytics',     icon: BarChart3 },
     { label: t('insights'),      href: '/dashboard/insights',      icon: Brain },
     { label: t('scriptBuilder'), href: '/dashboard/script-builder', icon: Wand2 },
     { label: t('rubric'),        href: '/dashboard/settings',      icon: Settings },

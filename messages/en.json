@@ -48,7 +48,7 @@
       "uploadCall": "Upload Call",
       "history": "History",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
       "scriptBuilder": "Script Builder",
       "rubric": "Rubric",
       "howToUse": "How to Use",
@@ -405,8 +405,13 @@
       "thisWeekCard": "This Week",
       "callsProcessed": "calls processed"
     },
-    "bestCall": "Best Call This Week",
-    "worstCall": "Worst Call This Week",
+    "conversionRate": "Conversion rate",
+    "sinceWeek1": "since week 1",
+    "avgScore": "Avg score",
+    "totalCallsWeek": "Total calls this week",
+    "submissionRate": "Submission rate",
+    "bestCall": "Best Calls This Week",
+    "worstCall": "Needs Improvement",
     "mockBadge": "mock data only",
     "mockFooterBest": "† all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo",
     "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo"
@@ -635,17 +640,50 @@
         }
       },
       "faqs": [
-        { "q": "What audio formats are supported?", "a": "We support MP3, WAV, M4A, and most common audio formats. Files must be under 25MB. For larger files, consider compressing or splitting the recording." },
-        { "q": "How accurate is the AI transcription?", "a": "Our AI transcription uses OpenAI Whisper, which is highly accurate for clear audio. For best results, ensure good audio quality with minimal background noise." },
-        { "q": "Can I edit the generated criteria?", "a": "Currently, criteria are auto-generated based on your script sections. You can modify the script and sections to adjust what gets evaluated." },
-        { "q": "How does the AI scoring work?", "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the trainer addressed the key points." },
-        { "q": "Can I use different AI models?", "a": "Yes! In the Rubric settings, you can choose between OpenAI GPT-4o Mini (fast and economical) or Google Gemini 2.5 (more powerful analysis)." },
-        { "q": "Why can't I send emails to other addresses?", "a": "For MVP/testing, emails are restricted to the registered account. To send to any email, a custom domain needs to be verified in Resend settings." },
-        { "q": "How do I create multiple scripts?", "a": "Go to Rubric, click 'Create Script', and define a new script with its own sections. When uploading calls, select which script to evaluate against." },
-        { "q": "What is the Insights feature?", "a": "Insights uses pattern recognition to analyze all your calls grouped by outcome (Closed, Not Closed, Partial). It identifies what successful closers have in common, what non-closers do wrong, common objections, and generates a suggested optimized script. This is different from reinforcement learning - it's data-driven pattern matching based on your actual call data." },
-        { "q": "How is Insights different from Reinforcement Learning?", "a": "True reinforcement learning would automatically iterate on scripts based on continuous feedback loops with reward signals. Insights is one level simpler: it's pattern recognition + script generation. You upload calls, we analyze patterns and suggest improvements. You then decide whether to test the new script. Future versions could automate the iteration loop." },
-        { "q": "How many calls do I need to generate insights?", "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse trainer outcomes, patterns become more statistically significant." },
-        { "q": "Can I customize the insights analysis?", "a": "Currently, the AI analyzes based on call outcomes and transcripts against your script. The analysis includes DO's, DON'Ts, common objections, and a suggested script. Future versions could allow custom analysis parameters." }
+        {
+          "q": "What audio formats are supported?",
+          "a": "We support MP3, WAV, M4A, and most common audio formats. Files must be under 25MB. For larger files, consider compressing or splitting the recording."
+        },
+        {
+          "q": "How accurate is the AI transcription?",
+          "a": "Our AI transcription uses OpenAI Whisper, which is highly accurate for clear audio. For best results, ensure good audio quality with minimal background noise."
+        },
+        {
+          "q": "Can I edit the generated criteria?",
+          "a": "Currently, criteria are auto-generated based on your script sections. You can modify the script and sections to adjust what gets evaluated."
+        },
+        {
+          "q": "How does the AI scoring work?",
+          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the trainer addressed the key points."
+        },
+        {
+          "q": "Can I use different AI models?",
+          "a": "Yes! In the Rubric settings, you can choose between OpenAI GPT-4o Mini (fast and economical) or Google Gemini 2.5 (more powerful analysis)."
+        },
+        {
+          "q": "Why can't I send emails to other addresses?",
+          "a": "For MVP/testing, emails are restricted to the registered account. To send to any email, a custom domain needs to be verified in Resend settings."
+        },
+        {
+          "q": "How do I create multiple scripts?",
+          "a": "Go to Rubric, click 'Create Script', and define a new script with its own sections. When uploading calls, select which script to evaluate against."
+        },
+        {
+          "q": "What is the Insights feature?",
+          "a": "Insights uses pattern recognition to analyze all your calls grouped by outcome (Closed, Not Closed, Partial). It identifies what successful closers have in common, what non-closers do wrong, common objections, and generates a suggested optimized script. This is different from reinforcement learning - it's data-driven pattern matching based on your actual call data."
+        },
+        {
+          "q": "How is Insights different from Reinforcement Learning?",
+          "a": "True reinforcement learning would automatically iterate on scripts based on continuous feedback loops with reward signals. Insights is one level simpler: it's pattern recognition + script generation. You upload calls, we analyze patterns and suggest improvements. You then decide whether to test the new script. Future versions could automate the iteration loop."
+        },
+        {
+          "q": "How many calls do I need to generate insights?",
+          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse trainer outcomes, patterns become more statistically significant."
+        },
+        {
+          "q": "Can I customize the insights analysis?",
+          "a": "Currently, the AI analyzes based on call outcomes and transcripts against your script. The analysis includes DO's, DON'Ts, common objections, and a suggested script. Future versions could allow custom analysis parameters."
+        }
       ]
     },
     "settings": {
@@ -690,82 +728,47 @@
       "emptyScripts": "No scripts created yet. Create your first sales script to get started."
     },
     "insights": {
-      "title": "Team Insights",
-      "subtitle": "AI-powered analysis of what works and what doesn't across your team's calls",
-      "generateCardTitle": "Generate Insights",
-      "generateCardDescription": "Select a script to analyze all associated calls. The AI will find patterns in successful vs unsuccessful calls and generate actionable recommendations.",
+      "title": "Script Intelligence",
+      "subtitle": "AI-powered script health analysis based on {count} calls · Dog training vertical",
       "selectScriptLabel": "Select Script",
       "chooseScriptPlaceholder": "Choose a script to analyze...",
       "analyzing": "Analyzing calls... This may take a moment",
-      "generateButton": "Generate Insights",
+      "generateButton": "Analyze Script",
       "errors": {
-        "generateFailed": "Failed to generate insights",
-        "sendFailed": "Failed to send insights",
-        "saveFailed": "Failed to save script",
+        "generateFailed": "Failed to analyze script",
         "unknown": "Unknown error"
       },
-      "metrics": {
-        "totalCalls": "Total Calls",
-        "closed": "Closed",
-        "notClosed": "Not Closed",
-        "partial": "Partial",
-        "teamCloseRate": "Team Close Rate"
+      "playbook": {
+        "title": "Playbook",
+        "dogTrainingVertical": "Dog training vertical",
+        "basedOnCalls": "Based on {count} calls",
+        "healthScore": "Script health score",
+        "effectiveness": {
+          "good": "Overall effectiveness — strong script",
+          "roomToImprove": "Overall effectiveness — room to improve",
+          "poor": "Overall effectiveness — needs significant work"
+        },
+        "revenueLeak": "{sections} are your biggest revenue leak. Fixing these two sections could add +${revenue}/mo."
       },
-      "whatClosersDo": {
-        "title": "What Closers Do",
-        "subtitleOne": "Common patterns found in {count} successful call",
-        "subtitleOther": "Common patterns found in {count} successful calls"
+      "sectionAnalysis": {
+        "title": "Current Script — Section Analysis",
+        "strong": "Strong",
+        "weak": "Weak",
+        "missing": "Missing",
+        "usageCorrelation": "Used in {pct}% of calls · correlates with +{pts}pts close rate",
+        "usageTopClosers": "Used in {pct}% of calls · top closers ask {n}+ questions here",
+        "priceEarly": "Price mentioned too early in {pct}% of calls · leads to objections",
+        "inconsistent": "{issue1} · {issue2} unaddressed in {pct}% of calls"
       },
-      "whatLosesDeals": {
-        "title": "What Loses Deals",
-        "subtitleOne": "Common patterns found in {count} unsuccessful call",
-        "subtitleOther": "Common patterns found in {count} unsuccessful calls"
-      },
-      "dos": {
-        "title": "DO's",
-        "subtitle": "Best practices from top closers"
-      },
-      "donts": {
-        "title": "DON'Ts",
-        "subtitle": "Behaviors that lose deals"
-      },
-      "objections": {
-        "title": "Common Objections & How to Handle Them",
-        "subtitle": "Objections found across all calls with best vs worst responses",
-        "bestResponse": "Best Response (Closers)",
-        "worstResponse": "Worst Response (Non-Closers)",
-        "frequency": {
-          "veryCommon": "Very Common",
-          "common": "Common",
-          "rare": "Rare"
-        }
-      },
-      "keyDifferences": {
-        "title": "Key Differences Between Closers and Non-Closers"
-      },
-      "preCallChecklist": {
-        "title": "Pre-Call Checklist",
-        "subtitle": "Based on successful calls, every trainer should follow these steps before and during a call"
-      },
-      "suggestedScript": {
-        "title": "AI-Suggested Optimized Script",
-        "subtitle": "Based on what works in successful calls, here is a suggested improved script",
-        "savedMessage": "Script saved! Check your Rubric settings to view it.",
-        "saving": "Saving as new script...",
-        "saveButton": "Save as New Script",
-        "aiOptimizedSuffix": "(AI Optimized)",
-        "defaultScriptName": "Script",
-        "aiOptimizedSectionName": "AI Optimized Script",
-        "descriptionTemplate": "AI-generated optimized script based on analysis of {total} calls ({closeRate}% close rate)"
-      },
-      "shareWithTeam": {
-        "title": "Share with Team",
-        "subtitleOne": "Send this insights report as a weekly digest to {count} trainer who has calls for this script",
-        "subtitleOther": "Send this insights report as a weekly digest to all {count} trainers who have calls for this script",
-        "sentMessage": "Insights sent to all team members!",
-        "sending": "Sending to team...",
-        "sendButton": "Send Insights to Team",
-        "defaultScriptName": "Sales Script"
+      "aiSuggestions": {
+        "title": "AI Improvement Suggestions",
+        "rewrite": "Rewrite",
+        "addToScript": "Add to script",
+        "suggestedRewrite": "→ Suggested rewrite",
+        "callsClose": "Calls using this pattern close at {high}% vs {low}%.",
+        "objectionFrequency": "This objection comes up in {pct}% of calls and is currently unhandled. Adding this line estimated to recover {min}–{max} bookings/month.",
+        "lostCallsClose": "{pct}% of lost calls have no direct booking ask. Adding an explicit close could be the single highest impact change in the entire script.",
+        "anchorValue": "Anchor value before price. Top closers who use this phrasing convert at {high}% vs {low}% on price-first approaches."
       }
     },
     "scriptBuilder": {
@@ -1013,12 +1016,30 @@
       "badge": "Core Workflow",
       "title": "How Ask Moses Works",
       "steps": {
-        "upload":        { "title": "Upload Call",        "description": "Admin uploads audio file or pastes transcript directly" },
-        "transcription": { "title": "Transcription",      "description": "If audio, Whisper AI transcribes automatically" },
-        "analysis":      { "title": "AI Analysis",        "description": "LLM evaluates transcript against the sales rubric" },
-        "email":         { "title": "Coaching Email",     "description": "Personalized feedback sent to the dog trainer" },
-        "summary":       { "title": "Aggregate Summary",  "description": "Ariel receives daily/weekly coaching digest" },
-        "history":       { "title": "History Log",        "description": "All analyses stored and searchable" }
+        "upload": {
+          "title": "Upload Call",
+          "description": "Admin uploads audio file or pastes transcript directly"
+        },
+        "transcription": {
+          "title": "Transcription",
+          "description": "If audio, Whisper AI transcribes automatically"
+        },
+        "analysis": {
+          "title": "AI Analysis",
+          "description": "LLM evaluates transcript against the sales rubric"
+        },
+        "email": {
+          "title": "Coaching Email",
+          "description": "Personalized feedback sent to the dog trainer"
+        },
+        "summary": {
+          "title": "Aggregate Summary",
+          "description": "Ariel receives daily/weekly coaching digest"
+        },
+        "history": {
+          "title": "History Log",
+          "description": "All analyses stored and searchable"
+        }
       }
     },
     "Features": {
@@ -1028,32 +1049,62 @@
         "rubricManager": {
           "title": "Script / Rubric Manager",
           "description": "Admin interface for Ariel to create, edit, and version sales scripts and evaluation rubrics.",
-          "details": ["Multi-script support", "Version history", "Markdown editor", "Rubric sections with weights"]
+          "details": [
+            "Multi-script support",
+            "Version history",
+            "Markdown editor",
+            "Rubric sections with weights"
+          ]
         },
         "manualUpload": {
           "title": "Manual Call Upload",
           "description": "Simple interface to upload call recordings or paste transcripts for analysis.",
-          "details": ["Audio upload (.mp3, .wav, .m4a)", "Direct transcript paste", "Whisper AI transcription", "Trainer selection"]
+          "details": [
+            "Audio upload (.mp3, .wav, .m4a)",
+            "Direct transcript paste",
+            "Whisper AI transcription",
+            "Trainer selection"
+          ]
         },
         "aiAnalysis": {
           "title": "AI Call Analysis",
           "description": "LLM-powered evaluation of each call against the active rubric.",
-          "details": ["Per-section scoring", "Specific quote citations", "Improvement suggestions", "Overall rating"]
+          "details": [
+            "Per-section scoring",
+            "Specific quote citations",
+            "Improvement suggestions",
+            "Overall rating"
+          ]
         },
         "coachingEmail": {
           "title": "Post-Call Coaching Email",
           "description": "Automated email delivery of personalized coaching feedback to the trainer.",
-          "details": ["Branded HTML template", "Score breakdown", "Actionable tips", "Encouragement tone"]
+          "details": [
+            "Branded HTML template",
+            "Score breakdown",
+            "Actionable tips",
+            "Encouragement tone"
+          ]
         },
         "aggregateSummary": {
           "title": "Aggregate Summary",
           "description": "Daily or weekly digest for Ariel with team-wide coaching insights.",
-          "details": ["Average scores", "Top performers", "Common gaps", "Trend indicators"]
+          "details": [
+            "Average scores",
+            "Top performers",
+            "Common gaps",
+            "Trend indicators"
+          ]
         },
         "history": {
           "title": "Simple History Page",
           "description": "Searchable log of all past call analyses for reference and debugging.",
-          "details": ["Filter by trainer", "Filter by date", "View full analysis", "Basic search"]
+          "details": [
+            "Filter by trainer",
+            "Filter by date",
+            "View full analysis",
+            "Basic search"
+          ]
         }
       }
     },
@@ -1064,19 +1115,39 @@
       "groups": {
         "crm": {
           "category": "CRM Integration",
-          "items": ["GoHighLevel (Pepper) sync", "Auto-pull trainer contacts", "Sync results to CRM", "CRM workflow triggers"]
+          "items": [
+            "GoHighLevel (Pepper) sync",
+            "Auto-pull trainer contacts",
+            "Sync results to CRM",
+            "CRM workflow triggers"
+          ]
         },
         "realtime": {
           "category": "Real-Time Features",
-          "items": ["Live call coaching", "Real-time voice analysis", "Instant feedback during calls", "Tone detection"]
+          "items": [
+            "Live call coaching",
+            "Real-time voice analysis",
+            "Instant feedback during calls",
+            "Tone detection"
+          ]
         },
         "platform": {
           "category": "Platform Scale",
-          "items": ["Multi-tenant architecture", "White-label solution", "Mobile app", "SSO / SAML authentication"]
+          "items": [
+            "Multi-tenant architecture",
+            "White-label solution",
+            "Mobile app",
+            "SSO / SAML authentication"
+          ]
         },
         "analytics": {
           "category": "Advanced Analytics",
-          "items": ["Predictive close-rate modeling", "A/B testing of scripts", "Performance correlation dashboards", "Team leaderboards"]
+          "items": [
+            "Predictive close-rate modeling",
+            "A/B testing of scripts",
+            "Performance correlation dashboards",
+            "Team leaderboards"
+          ]
         }
       }
     },
@@ -1087,22 +1158,38 @@
         "usage": {
           "category": "Usage",
           "title": "Do trainers engage?",
-          "items": ["Email open rate > 60%", "Trainers reference feedback in calls", "Ariel uses aggregate summaries weekly"]
+          "items": [
+            "Email open rate > 60%",
+            "Trainers reference feedback in calls",
+            "Ariel uses aggregate summaries weekly"
+          ]
         },
         "value": {
           "category": "Value",
           "title": "Is feedback helpful?",
-          "items": ["Qualitative survey: 4+ out of 5", "Trainers request more detail (good sign)", "Ariel saves 5+ hrs/week on manual review"]
+          "items": [
+            "Qualitative survey: 4+ out of 5",
+            "Trainers request more detail (good sign)",
+            "Ariel saves 5+ hrs/week on manual review"
+          ]
         },
         "quality": {
           "category": "Quality",
           "title": "Is AI accurate?",
-          "items": ["Rubric scores align with Ariel's judgment 80%+", "No hallucinated quotes", "Actionable suggestions (not generic)"]
+          "items": [
+            "Rubric scores align with Ariel's judgment 80%+",
+            "No hallucinated quotes",
+            "Actionable suggestions (not generic)"
+          ]
         },
         "business": {
           "category": "Business",
           "title": "Does it impact outcomes?",
-          "items": ["Close rate improvement tracked", "Time-to-close reduction", "Trainer confidence increases"]
+          "items": [
+            "Close rate improvement tracked",
+            "Time-to-close reduction",
+            "Trainer confidence increases"
+          ]
         }
       }
     },
@@ -1125,25 +1212,45 @@
           "phase": "Phase 2",
           "title": "CRM Integration",
           "timeline": "Post-MVP",
-          "items": ["GoHighLevel (Pepper) sync", "Auto-pull trainer contacts", "Sync coaching results to CRM", "Workflow triggers"]
+          "items": [
+            "GoHighLevel (Pepper) sync",
+            "Auto-pull trainer contacts",
+            "Sync coaching results to CRM",
+            "Workflow triggers"
+          ]
         },
         "coaching": {
           "phase": "Phase 3",
           "title": "Enhanced Coaching",
           "timeline": "Future",
-          "items": ["Interactive coach dashboard", "Trainer response tracking", "Script A/B testing", "Detailed analytics"]
+          "items": [
+            "Interactive coach dashboard",
+            "Trainer response tracking",
+            "Script A/B testing",
+            "Detailed analytics"
+          ]
         },
         "realtime": {
           "phase": "Phase 4",
           "title": "Real-Time Features",
           "timeline": "Long-term",
-          "items": ["Live call guidance", "Voice tone analysis", "Real-time objection handling", "Instant coaching nudges"]
+          "items": [
+            "Live call guidance",
+            "Voice tone analysis",
+            "Real-time objection handling",
+            "Instant coaching nudges"
+          ]
         },
         "platform": {
           "phase": "Phase 5",
           "title": "Platform Scale",
           "timeline": "Long-term",
-          "items": ["Multi-tenant SaaS", "White-label offering", "Enterprise SSO", "Public API"]
+          "items": [
+            "Multi-tenant SaaS",
+            "White-label offering",
+            "Enterprise SSO",
+            "Public API"
+          ]
         }
       }
     },
@@ -1216,9 +1323,21 @@
       "codeVsNoCode": {
         "title": "Code vs No-Code Platforms",
         "noCodeTitle": "No-Code (Bubble, Glide)",
-        "noCodeItems": ["Platform lock-in", "Limited AI customization", "Needs specialized \"no-code dev\"", "Rewrite needed to scale", "Monthly platform fees forever"],
+        "noCodeItems": [
+          "Platform lock-in",
+          "Limited AI customization",
+          "Needs specialized \"no-code dev\"",
+          "Rewrite needed to scale",
+          "Monthly platform fees forever"
+        ],
         "codeTitle": "This MVP (Next.js + Vercel)",
-        "codeItems": ["You own the code 100%", "Full AI SDK access", "Any React/Next.js dev can maintain", "Scale without rewriting", "Deploy anywhere (Vercel, AWS, etc.)"]
+        "codeItems": [
+          "You own the code 100%",
+          "Full AI SDK access",
+          "Any React/Next.js dev can maintain",
+          "Scale without rewriting",
+          "Deploy anywhere (Vercel, AWS, etc.)"
+        ]
       }
     },
     "Pricing": {
@@ -1233,23 +1352,48 @@
           "price": "$4,050",
           "timeline": "2 weeks",
           "description": "Week 1-2: Validate the core AI coaching value with manual workflow",
-          "features": ["Script/Rubric Manager", "Manual Call Upload (audio or transcript)", "AI Call Analysis (Whisper + GPT-4o)", "Post-Call Coaching Email", "Aggregate Summary", "Simple History Page"],
-          "notIncluded": ["Twilio Integration", "RAG System"]
+          "features": [
+            "Script/Rubric Manager",
+            "Manual Call Upload (audio or transcript)",
+            "AI Call Analysis (Whisper + GPT-4o)",
+            "Post-Call Coaching Email",
+            "Aggregate Summary",
+            "Simple History Page"
+          ],
+          "notIncluded": [
+            "Twilio Integration",
+            "RAG System"
+          ]
         },
         "pro": {
           "name": "Pro",
           "price": "$8,100",
           "timeline": "3 weeks",
           "description": "Week 3: Automated call ingestion for hands-off operation",
-          "features": ["Everything in Starter", "Twilio/GHL Webhook Integration", "Automatic call ingestion", "Contact metadata sync", "Zero manual upload needed"],
-          "notIncluded": ["RAG System"]
+          "features": [
+            "Everything in Starter",
+            "Twilio/GHL Webhook Integration",
+            "Automatic call ingestion",
+            "Contact metadata sync",
+            "Zero manual upload needed"
+          ],
+          "notIncluded": [
+            "RAG System"
+          ]
         },
         "proRag": {
           "name": "Pro + RAG",
           "price": "$11,407",
           "timeline": "4 weeks",
           "description": "Week 4: Context-aware coaching powered by your training materials",
-          "features": ["Everything in Pro", "RAG System (vector search)", "Multi-document knowledge base", "Context-aware AI coaching", "Training materials integration", "Dynamic reference lookup"],
+          "features": [
+            "Everything in Pro",
+            "RAG System (vector search)",
+            "Multi-document knowledge base",
+            "Context-aware AI coaching",
+            "Training materials integration",
+            "Dynamic reference lookup"
+          ],
           "notIncluded": []
         }
       },
@@ -1271,19 +1415,55 @@
           "costCall": "Cost/Call"
         },
         "rows": {
-          "premium": { "stack": "Premium", "transcription": "Whisper ($0.075)", "analysis": "GPT-4o ($0.10)", "cost": "~$0.18" },
-          "recommended": { "stack": "Recommended", "transcription": "Whisper ($0.075)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.09" },
-          "budget": { "stack": "Budget", "transcription": "Deepgram ($0.054)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.07" },
-          "ultraBudget": { "stack": "Ultra Budget", "transcription": "Groq Whisper ($0.023)", "analysis": "Gemini 1.5 Flash ($0.01)", "cost": "~$0.03" }
+          "premium": {
+            "stack": "Premium",
+            "transcription": "Whisper ($0.075)",
+            "analysis": "GPT-4o ($0.10)",
+            "cost": "~$0.18"
+          },
+          "recommended": {
+            "stack": "Recommended",
+            "transcription": "Whisper ($0.075)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.09"
+          },
+          "budget": {
+            "stack": "Budget",
+            "transcription": "Deepgram ($0.054)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.07"
+          },
+          "ultraBudget": {
+            "stack": "Ultra Budget",
+            "transcription": "Groq Whisper ($0.023)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.03"
+          }
         },
         "perCallFootnote": "*Based on 12.5-minute average call. Includes email delivery (~$0.001).",
         "ragTitle": "RAG Knowledge Base Costs (Pro + RAG tier)",
         "ragNote": "Audio files require transcription before indexing",
-        "ragTh": { "operation": "Operation", "model": "Model", "cost": "Cost" },
+        "ragTh": {
+          "operation": "Operation",
+          "model": "Model",
+          "cost": "Cost"
+        },
         "ragRows": {
-          "audio": { "operation": "Audio transcription (12.5 min)", "model": "Whisper", "cost": "~$0.075" },
-          "embedding": { "operation": "Text embedding", "model": "OpenAI ada-002", "cost": "~$0.0001" },
-          "total": { "operation": "Total per audio file indexed", "model": "", "cost": "~$0.08" }
+          "audio": {
+            "operation": "Audio transcription (12.5 min)",
+            "model": "Whisper",
+            "cost": "~$0.075"
+          },
+          "embedding": {
+            "operation": "Text embedding",
+            "model": "OpenAI ada-002",
+            "cost": "~$0.0001"
+          },
+          "total": {
+            "operation": "Total per audio file indexed",
+            "model": "",
+            "cost": "~$0.08"
+          }
         },
         "index50": "Index 50 calls",
         "index50Value": "~$4.00",
@@ -1340,61 +1520,122 @@
             "rubric": {
               "category": "Script & Rubric Manager",
               "items": [
-                { "text": "Create/edit scoring rubric with criteria", "note": "Persisted in Supabase" },
-                { "text": "Define pass/fail thresholds per criterion" },
-                { "text": "Single active script at a time" },
-                { "text": "Customize system prompt for AI analysis" }
+                {
+                  "text": "Create/edit scoring rubric with criteria",
+                  "note": "Persisted in Supabase"
+                },
+                {
+                  "text": "Define pass/fail thresholds per criterion"
+                },
+                {
+                  "text": "Single active script at a time"
+                },
+                {
+                  "text": "Customize system prompt for AI analysis"
+                }
               ]
             },
             "upload": {
               "category": "Manual Call Upload",
               "items": [
-                { "text": "Upload audio files (.mp3, .wav, .m4a)" },
-                { "text": "Paste transcript text directly" },
-                { "text": "Input trainer name and email manually" },
-                { "text": "Upload progress indicator" }
+                {
+                  "text": "Upload audio files (.mp3, .wav, .m4a)"
+                },
+                {
+                  "text": "Paste transcript text directly"
+                },
+                {
+                  "text": "Input trainer name and email manually"
+                },
+                {
+                  "text": "Upload progress indicator"
+                }
               ]
             },
             "analysis": {
               "category": "AI Call Analysis",
               "items": [
-                { "text": "Whisper transcription (if audio)" },
-                { "text": "GPT-4o analysis against rubric" },
-                { "text": "Fetches criteria + system prompt from Supabase" },
-                { "text": "Score per criterion (pass/fail)" },
-                { "text": "Overall call score" },
-                { "text": "Specific feedback per criterion" },
-                { "text": "Full transcript display for admin review" }
+                {
+                  "text": "Whisper transcription (if audio)"
+                },
+                {
+                  "text": "GPT-4o analysis against rubric"
+                },
+                {
+                  "text": "Fetches criteria + system prompt from Supabase"
+                },
+                {
+                  "text": "Score per criterion (pass/fail)"
+                },
+                {
+                  "text": "Overall call score"
+                },
+                {
+                  "text": "Specific feedback per criterion"
+                },
+                {
+                  "text": "Full transcript display for admin review"
+                }
               ]
             },
             "email": {
               "category": "Post-Call Coaching Email",
               "items": [
-                { "text": "Manual send coaching email via Resend" },
-                { "text": "Personalized coaching feedback" },
-                { "text": "Actionable improvement tips" },
-                { "text": "Score summary included" },
-                { "text": "Auto-save call to database after email send" }
+                {
+                  "text": "Manual send coaching email via Resend"
+                },
+                {
+                  "text": "Personalized coaching feedback"
+                },
+                {
+                  "text": "Actionable improvement tips"
+                },
+                {
+                  "text": "Score summary included"
+                },
+                {
+                  "text": "Auto-save call to database after email send"
+                }
               ]
             },
             "history": {
               "category": "Simple History Page",
               "items": [
-                { "text": "List of all processed calls" },
-                { "text": "Search by trainer name or email" },
-                { "text": "View individual call details with full analysis" },
-                { "text": "Display transcript and scores" }
+                {
+                  "text": "List of all processed calls"
+                },
+                {
+                  "text": "Search by trainer name or email"
+                },
+                {
+                  "text": "View individual call details with full analysis"
+                },
+                {
+                  "text": "Display transcript and scores"
+                }
               ]
             },
             "summary": {
               "category": "Aggregate Summary",
               "items": [
-                { "text": "Total calls processed dashboard" },
-                { "text": "Average score trend visualization (line chart)" },
-                { "text": "Top improvement areas aggregated (bar chart)" },
-                { "text": "Smart insights & performance summaries" },
-                { "text": "Achievement badges & trainer recognition" },
-                { "text": "Real-time analytics dashboard" }
+                {
+                  "text": "Total calls processed dashboard"
+                },
+                {
+                  "text": "Average score trend visualization (line chart)"
+                },
+                {
+                  "text": "Top improvement areas aggregated (bar chart)"
+                },
+                {
+                  "text": "Smart insights & performance summaries"
+                },
+                {
+                  "text": "Achievement badges & trainer recognition"
+                },
+                {
+                  "text": "Real-time analytics dashboard"
+                }
               ]
             }
           }
@@ -1406,15 +1647,30 @@
           "deliverables": {
             "twilio": {
               "category": "Twilio Webhook Integration",
-              "items": ["Webhook endpoint for call events", "Automatic call ingestion when call ends", "Twilio signature validation (security)", "Recording URL extraction", "Contact metadata parsing"]
+              "items": [
+                "Webhook endpoint for call events",
+                "Automatic call ingestion when call ends",
+                "Twilio signature validation (security)",
+                "Recording URL extraction",
+                "Contact metadata parsing"
+              ]
             },
             "db": {
               "category": "Database Enhancements",
-              "items": ["Call queue for processing", "Retry logic for failed processing", "Webhook event logging", "Idempotency handling (no duplicates)"]
+              "items": [
+                "Call queue for processing",
+                "Retry logic for failed processing",
+                "Webhook event logging",
+                "Idempotency handling (no duplicates)"
+              ]
             },
             "admin": {
               "category": "Admin Notifications",
-              "items": ["Error alerts for failed processing", "Daily summary email (optional)", "Processing status dashboard"]
+              "items": [
+                "Error alerts for failed processing",
+                "Daily summary email (optional)",
+                "Processing status dashboard"
+              ]
             }
           }
         },
@@ -1425,15 +1681,30 @@
           "deliverables": {
             "rag": {
               "category": "RAG Knowledge Base",
-              "items": ["Vector database setup (pgvector)", "Document upload interface", "Automatic chunking & embedding", "Support for PDFs, docs, text files"]
+              "items": [
+                "Vector database setup (pgvector)",
+                "Document upload interface",
+                "Automatic chunking & embedding",
+                "Support for PDFs, docs, text files"
+              ]
             },
             "contextual": {
               "category": "Contextual AI Analysis",
-              "items": ["Semantic search across knowledge base", "Context-aware coaching feedback", "Reference specific training materials", "Quote relevant best practices"]
+              "items": [
+                "Semantic search across knowledge base",
+                "Context-aware coaching feedback",
+                "Reference specific training materials",
+                "Quote relevant best practices"
+              ]
             },
             "management": {
               "category": "Knowledge Management",
-              "items": ["View/delete uploaded documents", "Re-index documents on demand", "Document usage analytics", "Version tracking for updates"]
+              "items": [
+                "View/delete uploaded documents",
+                "Re-index documents on demand",
+                "Document usage analytics",
+                "Version tracking for updates"
+              ]
             }
           }
         }

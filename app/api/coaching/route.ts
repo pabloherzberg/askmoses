@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
 import { getSession } from '@/lib/auth'
-import { trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs } from '@/lib/mock-data'
+import { trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs, performanceTrends, trainerTrends } from '@/lib/mock-data'
 import { translateCoachingBundle } from '@/lib/i18n/translate-coaching'
 import { routing, type Locale } from '@/i18n/routing'
 
@@ -16,12 +16,12 @@ export async function GET(request: NextRequest) {
 
   const locale = resolveLocale(request.headers.get('x-locale'))
   if (locale === 'en') {
-    return ok({ trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs })
+    return ok({ trainers, bestCalls, worstCalls, trainerBehavioral, coachingRecs, performanceTrends, trainerTrends })
   }
 
   const translated = await translateCoachingBundle(
     { bestCalls, worstCalls, trainerBehavioral, coachingRecs },
     locale,
   )
-  return ok({ trainers, ...translated })
+  return ok({ trainers, ...translated, performanceTrends, trainerTrends })
 }

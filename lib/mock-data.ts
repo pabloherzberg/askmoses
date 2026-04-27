@@ -1237,40 +1237,41 @@ export type BehavioralDimension = {
   score: number
   delta: number
   teamAvg: number
+  source: 'Rubric' | 'Behavioral'
 }
 
 export const trainerBehavioral: Record<string, BehavioralDimension[]> = {
   marcus: [
-    { dimension: 'Objection Handling', score: 94, delta: 23,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 91, delta: 26,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 90, delta: 15,  teamAvg: 75 },
-    { dimension: 'Discovery',          score: 94, delta: 12,  teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 78, delta: 6,   teamAvg: 72 },
-    { dimension: 'Empathy',            score: 65, delta: -5,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 94, delta: 23,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 91, delta: 26,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 90, delta: 15,  teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 94, delta: 12,  teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 78, delta: 6,   teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 65, delta: -5,  teamAvg: 70, source: 'Behavioral' },
   ],
   jamie: [
-    { dimension: 'Objection Handling', score: 81, delta: 10,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 79, delta: 14,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 82, delta: 7,   teamAvg: 75 },
-    { dimension: 'Discovery',          score: 88, delta: 6,   teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 74, delta: 2,   teamAvg: 72 },
-    { dimension: 'Empathy',            score: 80, delta: 10,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 81, delta: 10,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 79, delta: 14,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 82, delta: 7,   teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 88, delta: 6,   teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 74, delta: 2,   teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 80, delta: 10,  teamAvg: 70, source: 'Behavioral' },
   ],
   jordan: [
-    { dimension: 'Objection Handling', score: 65, delta: -6,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 60, delta: -5,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 65, delta: -10, teamAvg: 75 },
-    { dimension: 'Discovery',          score: 79, delta: -3,  teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 68, delta: -4,  teamAvg: 72 },
-    { dimension: 'Empathy',            score: 72, delta: 2,   teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 65, delta: -6,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 60, delta: -5,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 65, delta: -10, teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 79, delta: -3,  teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 68, delta: -4,  teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 72, delta: 2,   teamAvg: 70, source: 'Behavioral' },
   ],
   taylor: [
-    { dimension: 'Objection Handling', score: 55, delta: -16, teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 52, delta: -13, teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 63, delta: -12, teamAvg: 75 },
-    { dimension: 'Discovery',          score: 67, delta: -15, teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 61, delta: -11, teamAvg: 72 },
-    { dimension: 'Empathy',            score: 66, delta: -4,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 55, delta: -16, teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 52, delta: -13, teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 63, delta: -12, teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 67, delta: -15, teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 61, delta: -11, teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 66, delta: -4,  teamAvg: 70, source: 'Behavioral' },
   ],
 }
 

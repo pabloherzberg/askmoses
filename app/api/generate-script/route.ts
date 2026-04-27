@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { getOpenAIModel } from '@/lib/openai'
 import { getSession, unauthorized } from '@/lib/auth'
 import { getRubricConfig } from '@/lib/services/rubric'
 
@@ -51,11 +51,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Provide at least one transcript or text input.' }, { status: 400 })
   }
 
-  const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-
   const { text } = await generateText({
-    // gemini-2.5-flash free tier is 20 req/day; flash-lite is 1,000.
-    model: google('gemini-2.5-flash-lite'),
+    model: getOpenAIModel('gpt-4o-mini'),
     system: SYSTEM_PROMPT,
     prompt: buildUserPrompt(transcripts, textInput),
   })

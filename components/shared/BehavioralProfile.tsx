@@ -1,137 +1,127 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import type { BehavioralDimension } from '@/lib/mock-data'
+
+const levelStyle = {
+  High: { color: '#16a34a', bg: 'rgba(34,197,94,0.12)' },
+  Med:  { color: '#d97706', bg: 'rgba(251,191,36,0.14)' },
+  Low:  { color: 'var(--am-muted)', bg: 'rgba(122,132,154,0.12)' },
+} as const
+
+const sourceStyle = {
+  Rubric:     { color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+  Behavioral: { color: '#059669', bg: 'rgba(5,150,105,0.12)' },
+} as const
+
+function levelFromScore(score: number): 'High' | 'Med' | 'Low' {
+  if (score >= 85) return 'High'
+  if (score >= 70) return 'Med'
+  return 'Low'
+}
 
 interface BehavioralProfileProps {
   dimensions: BehavioralDimension[]
+  trainerName?: string
 }
 
-export function BehavioralProfile({ dimensions }: BehavioralProfileProps) {
-  const t = useTranslations('Shared.behavioralProfile')
-
+export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: BehavioralProfileProps) {
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
       style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          {t('title')}
-        </p>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-          style={{
-            color: 'var(--am-amber)',
-            borderColor: 'rgba(255,171,46,0.35)',
-            background: 'rgba(255,171,46,0.08)',
-          }}
-        >
-          {t('mockBadge')}
-        </span>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
-          <span className="inline-block w-3 h-2 rounded-sm" style={{ background: 'var(--am-green)' }} />
-          {t('legend.aboveAvg')}
-        </span>
-        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
-          <span className="inline-block w-3 h-2 rounded-sm" style={{ background: 'var(--am-amber)' }} />
-          {t('legend.belowAvg')}
-        </span>
-        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
-          <span className="inline-block w-0.5 h-3" style={{ background: 'var(--am-muted)' }} />
-          {t('legend.teamAvgMarker')}
-        </span>
-      </div>
-
-      {/* Column headers */}
-      <div className="grid items-center mb-2" style={{ gridTemplateColumns: '1fr 3.5rem 3.5rem 3.5rem' }}>
-        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('th.scoreVsTeam')}</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.score')}</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.delta')}</span>
-        <span className="text-[11px] text-right" style={{ color: 'var(--am-muted)' }}>{t('th.teamAvg')}</span>
-      </div>
+      <p
+        className="text-[11px] font-semibold tracking-widest uppercase mb-5"
+        style={{ color: 'var(--am-muted)' }}
+      >
+        Behavioral Correlation Profile
+      </p>
 
       {/* Rows */}
-      <div className="flex flex-col gap-2.5">
-        {dimensions.map((dim) => {
+      <div className="flex flex-col gap-0">
+        {dimensions.map((dim, i) => {
           const isAbove = dim.delta >= 0
           const barColor = isAbove ? 'var(--am-green)' : 'var(--am-amber)'
-          // marker position = teamAvg / 100 * 100% of bar width
           const markerPct = `${dim.teamAvg}%`
-          const barWidth = `${dim.score}%`
+          const level = levelFromScore(dim.score)
+          const source = dim.source
+          const lvlStyle = levelStyle[level]
+          const srcStyle = sourceStyle[source]
 
           return (
-            <div key={dim.dimension}>
-              {/* Dimension name — full width on mobile only */}
-              <span
-                className="block sm:hidden text-[11px] font-medium mb-1"
-                style={{ color: 'var(--am-text)' }}
-              >
-                {dim.dimension}
-              </span>
-
+            <div
+              key={dim.dimension}
+              className="py-2.5"
+              style={{ borderBottom: i < dimensions.length - 1 ? '1px solid var(--am-border)' : 'none' }}
+            >
               <div
-                className="grid items-center"
-                style={{ gridTemplateColumns: '1fr 3.5rem 3.5rem 3.5rem' }}
+                className="grid items-center gap-2"
+                style={{ gridTemplateColumns: '140px 1fr 2.5rem 3.5rem 4rem' }}
               >
-                {/* Bar track (with label on sm+) */}
-                <div className="flex flex-col gap-1 min-w-0 mr-3">
-                  <span
-                    className="hidden sm:block text-[12px] font-medium truncate"
-                    style={{ color: 'var(--am-text)' }}
-                  >
-                    {dim.dimension}
-                  </span>
-                  <div className="relative h-3 rounded-full" style={{ background: 'var(--am-bg4)' }}>
-                    <div
-                      className="absolute left-0 top-0 h-full rounded-full transition-all"
-                      style={{ width: barWidth, background: barColor, opacity: 0.85 }}
-                    />
-                    <div
-                      className="absolute top-0 h-full w-px"
-                      style={{ left: markerPct, background: 'var(--am-muted)', zIndex: 1 }}
-                    />
-                  </div>
+                {/* Dimension name */}
+                <span className="text-[12px] font-medium truncate" style={{ color: 'var(--am-text)' }}>
+                  {dim.dimension}
+                </span>
+
+                {/* Bar track */}
+                <div className="relative h-[10px] rounded-full" style={{ background: 'var(--am-bg4)' }}>
+                  <div
+                    className="absolute left-0 top-0 h-full rounded-full"
+                    style={{ width: `${dim.score}%`, background: barColor }}
+                  />
+                  {/* Team avg marker */}
+                  <div
+                    className="absolute top-0 h-full w-[2px] rounded-full"
+                    style={{ left: markerPct, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
+                  />
                 </div>
 
                 {/* Score */}
-                <span
-                  className="text-[12px] font-mono font-semibold text-right"
-                  style={{ color: 'var(--am-text)' }}
-                >
+                <span className="text-[12px] font-mono font-semibold text-right" style={{ color: 'var(--am-text)' }}>
                   {dim.score}
                 </span>
 
                 {/* Delta */}
                 <span
-                  className="text-[12px] font-mono font-semibold text-right"
-                  style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-amber)' }}
+                  className="text-[11px] font-mono font-semibold text-right"
+                  style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-red)' }}
                 >
                   {isAbove ? `+${dim.delta}` : dim.delta}
                 </span>
 
-                {/* Team avg */}
-                <span
-                  className="text-[12px] font-mono text-right"
-                  style={{ color: 'var(--am-muted)' }}
-                >
-                  {dim.teamAvg}
-                </span>
+                {/* Level + Source badges side by side */}
+                <div className="flex gap-1 justify-end flex-wrap">
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
+                    style={{ color: lvlStyle.color, background: lvlStyle.bg }}
+                  >
+                    {level}
+                  </span>
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
+                    style={{ color: srcStyle.color, background: srcStyle.bg }}
+                  >
+                    {source === 'Behavioral' ? 'Behav.' : source}
+                  </span>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Footer note */}
-      <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        {t('mockFooter')}
-      </p>
+      {/* Legend below */}
+      <div className="flex items-center gap-5 mt-4 flex-wrap">
+        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
+          <span className="inline-block w-3 h-2.5 rounded-sm" style={{ background: 'var(--am-green)' }} />
+          {trainerName}
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
+          <span className="inline-block w-3 h-2.5 rounded-sm" style={{ background: 'var(--am-muted)', opacity: 0.5 }} />
+          Team avg
+        </span>
+      </div>
     </div>
   )
 }
