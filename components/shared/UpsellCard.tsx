@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import type { PlanCode } from '@/lib/types'
 
@@ -17,6 +20,7 @@ export interface UpsellCardProps {
   requires: PlanCode
   title: string
   description: string
+  /** CTA label. Defaults to the localized "Compare plans" string. */
   ctaLabel?: string
   ctaHref?: string
   className?: string
@@ -27,16 +31,21 @@ export interface UpsellCardProps {
  * upgrade. Use as a section wrapper or below a feature heading when the
  * feature itself is gated (vs. just decorating an item — for that use
  * `UpsellBadge`).
+ *
+ * `title` and `description` are rendered as-is — translate them in the
+ * caller. `ctaLabel` falls back to a localized default.
  */
 export function UpsellCard({
   requires,
   title,
   description,
-  ctaLabel = 'See plans',
+  ctaLabel,
   ctaHref = '/#pricing',
   className = '',
 }: UpsellCardProps) {
+  const t = useTranslations('Shared.upsell')
   const meta = PLAN_META[requires]
+  const cta = ctaLabel ?? t('defaultCta')
 
   return (
     <div
@@ -79,7 +88,7 @@ export function UpsellCard({
             className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap"
             style={{ background: meta.accent, color: 'var(--am-bg)' }}
           >
-            {ctaLabel}
+            {cta}
           </a>
         ) : (
           <Link
@@ -87,7 +96,7 @@ export function UpsellCard({
             className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap"
             style={{ background: meta.accent, color: 'var(--am-bg)' }}
           >
-            {ctaLabel}
+            {cta}
           </Link>
         )}
       </div>

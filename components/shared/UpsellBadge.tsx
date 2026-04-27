@@ -1,4 +1,7 @@
+'use client'
+
 import { Sparkles, Lock } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import type { PlanCode } from '@/lib/types'
 
@@ -11,7 +14,7 @@ const PLAN_BADGE: Record<PlanCode, { label: string; bg: string; color: string }>
 export interface UpsellBadgeProps {
   /** Plan that unlocks this feature. */
   requires: PlanCode
-  /** Optional override of the badge label (defaults to "Upgrade to <Plan>"). */
+  /** Override the badge text (otherwise: localized "Upgrade to <Plan>"). */
   label?: string
   /** Compact rendering (no icon, just text). */
   compact?: boolean
@@ -25,8 +28,9 @@ export interface UpsellBadgeProps {
  * cannot access. For full-feature gating, prefer `UpsellCard`.
  */
 export function UpsellBadge({ requires, label, compact = false, className = '' }: UpsellBadgeProps) {
+  const t = useTranslations('Shared.upsell')
   const tier = PLAN_BADGE[requires]
-  const text = label ?? `Upgrade to ${tier.label}`
+  const text = label ?? t('upgradeTo', { plan: tier.label })
 
   return (
     <span

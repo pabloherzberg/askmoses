@@ -50,13 +50,20 @@ loadEnvLocal()
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  'https://ahusozxvfdbapnyztmva.supabase.co'
+  process.env.NEXT_PUBLIC_SUPABASE_URL
 
 const SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  process.env.SERVICE_ROLE_KEY ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXNvenh2ZmRiYXBueXp0bXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mjk2OTcxNCwiZXhwIjoyMDg4NTQ1NzE0fQ.iD2xV7N-1h2a92DoLzYONgRyqXKojIQDunvSH-s65Lk'
+  process.env.SERVICE_ROLE_KEY
+
+if (!SUPABASE_URL) {
+  console.error('✗ Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL). Set it in .env.local before running this seed.')
+  process.exit(1)
+}
+if (!SERVICE_ROLE_KEY) {
+  console.error('✗ Missing SUPABASE_SERVICE_ROLE_KEY. This script needs the service-role key (admin) — never commit it. Set SUPABASE_SERVICE_ROLE_KEY in .env.local before running.')
+  process.exit(1)
+}
 
 console.log(`Supabase target: ${SUPABASE_URL}\n`)
 
@@ -137,10 +144,14 @@ async function createAuthUser({ email, role, orgId }) {
       if (listErr) throw listErr
       const existing = list.users.find((u) => u.email === email)
       if (!existing) throw new Error(`User ${email} not found after conflict`)
-      // Update app_metadata in case org changed
-      await supabase.auth.admin.updateUserById(existing.id, {
+      // Update app_metadata in case org changed — must succeed, otherwise the
+      // existing user keeps stale role/org_id claims and downstream auth breaks.
+      const { error: updateErr } = await supabase.auth.admin.updateUserById(existing.id, {
         app_metadata: { ...(existing.app_metadata ?? {}), role, org_id: orgId },
       })
+      if (updateErr) {
+        throw new Error(`createAuthUser(${email}): updateUserById failed: ${updateErr.message}`)
+      }
       return existing.id
     }
     throw error

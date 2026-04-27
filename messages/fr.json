@@ -124,6 +124,10 @@
       "tooltipAvgScore": "Score moyen",
       "mockFooter": "↑ valeurs issues de mock-data.ts · Recharts LineChart · pas de calcul réel"
     },
+    "upsell": {
+      "defaultCta": "Comparer les forfaits",
+      "upgradeTo": "Passez à {plan}"
+    },
     "correlationEngine": {
       "title": "Correlation Engine — Ce qui mène aux closes",
       "mockBadge": "données mock uniquement",

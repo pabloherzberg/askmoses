@@ -644,7 +644,6 @@ export default function UploadPage() {
           requires="pro"
           title="Skip the manual upload — go automatic"
           description="Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
-          ctaLabel="Compare plans"
         />
       )}
 

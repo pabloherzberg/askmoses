@@ -256,7 +256,6 @@ export default function InsightsPage() {
           requires="pro_rag"
           title="Coach with your own training material"
           description="Pro + RAG indexes your scripts, methodology PDFs and best-call transcripts so insights cite the exact playbook your team should be following."
-          ctaLabel="Compare plans"
         />
       )}
 

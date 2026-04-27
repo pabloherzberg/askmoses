@@ -124,6 +124,10 @@
       "tooltipAvgScore": "Nota média",
       "mockFooter": "↑ valores vindos de mock-data.ts · Recharts LineChart · sem cálculo real"
     },
+    "upsell": {
+      "defaultCta": "Comparar planos",
+      "upgradeTo": "Atualize para {plan}"
+    },
     "correlationEngine": {
       "title": "Correlation Engine — O que leva ao fechamento",
       "mockBadge": "apenas dados mock",

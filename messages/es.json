@@ -124,6 +124,10 @@
       "tooltipAvgScore": "Puntuación media",
       "mockFooter": "↑ valores desde mock-data.ts · Recharts LineChart · sin cálculo real"
     },
+    "upsell": {
+      "defaultCta": "Comparar planes",
+      "upgradeTo": "Mejora a {plan}"
+    },
     "correlationEngine": {
       "title": "Correlation Engine — Qué impulsa los cierres",
       "mockBadge": "solo datos mock",

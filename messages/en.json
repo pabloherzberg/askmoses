@@ -124,6 +124,10 @@
       "tooltipAvgScore": "Avg Score",
       "mockFooter": "↑ values sourced from mock-data.ts · Recharts LineChart · no real calculation"
     },
+    "upsell": {
+      "defaultCta": "Compare plans",
+      "upgradeTo": "Upgrade to {plan}"
+    },
     "correlationEngine": {
       "title": "Correlation Engine — What Drives Closes",
       "mockBadge": "mock data only",

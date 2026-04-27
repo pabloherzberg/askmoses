@@ -293,7 +293,6 @@ export default function ScriptBuilderPage() {
           requires="pro"
           title="Auto-build scripts from real calls"
           description="Script Builder turns your top sales calls into a reusable script + rubric in minutes — Pro and Pro + RAG plans only. Starter includes the manual Script Manager."
-          ctaLabel="Compare plans"
         />
       )}
 
