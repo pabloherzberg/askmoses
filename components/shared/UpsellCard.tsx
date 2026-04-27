@@ -1,6 +1,11 @@
+import Link from 'next/link'
 import { Sparkles } from 'lucide-react'
 
 import type { PlanCode } from '@/lib/types'
+
+function isExternalHref(href: string): boolean {
+  return /^(?:https?:)?\/\//i.test(href) || /^(?:mailto:|tel:)/i.test(href)
+}
 
 const PLAN_META: Record<PlanCode, { label: string; accent: string; bg: string }> = {
   starter: { label: 'Starter',   accent: 'var(--am-blue)',    bg: 'var(--am-blue-bg)'  },
@@ -66,13 +71,25 @@ export function UpsellCard({
             {description}
           </p>
         </div>
-        <a
-          href={ctaHref}
-          className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap"
-          style={{ background: meta.accent, color: 'var(--am-bg)' }}
-        >
-          {ctaLabel}
-        </a>
+        {isExternalHref(ctaHref) ? (
+          <a
+            href={ctaHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap"
+            style={{ background: meta.accent, color: 'var(--am-bg)' }}
+          >
+            {ctaLabel}
+          </a>
+        ) : (
+          <Link
+            href={ctaHref}
+            className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap"
+            style={{ background: meta.accent, color: 'var(--am-bg)' }}
+          >
+            {ctaLabel}
+          </Link>
+        )}
       </div>
     </div>
   )
