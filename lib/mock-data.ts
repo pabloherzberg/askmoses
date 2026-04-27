@@ -4,6 +4,7 @@ import type {
   RubricSection,
   Insight,
   Client,
+  Plan,
   TrendPoint,
   GlobalMetrics,
   Role,
@@ -612,38 +613,113 @@ export const insights: Insight[] = [
   },
 ]
 
+// ─── Plans ───────────────────────────────────────────────────────────────────
+
+export const plans: Plan[] = [
+  {
+    id: '00000000-0000-0000-0000-0000000000a1',
+    code: 'starter',
+    name: 'Starter',
+    priceCents: 405000,
+    timelineWeeks: 2,
+    hasRag: false,
+    hasTwilio: false,
+    hasManualUpload: true,
+    maxSalesPeople: 4,
+    features: [
+      'Script & Rubric Manager',
+      'Manual call upload (audio or transcript)',
+      'AI analysis (Whisper + GPT-4o)',
+      'Post-call coaching email',
+      'Aggregated summary',
+      'History page',
+    ],
+  },
+  {
+    id: '00000000-0000-0000-0000-0000000000a2',
+    code: 'pro',
+    name: 'Pro',
+    priceCents: 810000,
+    timelineWeeks: 3,
+    hasRag: false,
+    hasTwilio: true,
+    hasManualUpload: true,
+    maxSalesPeople: null,
+    features: [
+      'Everything in Starter',
+      'Twilio/GHL webhook integration',
+      'Automated call ingestion',
+      'Contact metadata sync',
+      'Zero manual upload',
+    ],
+  },
+  {
+    id: '00000000-0000-0000-0000-0000000000a3',
+    code: 'pro_rag',
+    name: 'Pro + RAG',
+    priceCents: 1140700,
+    timelineWeeks: 4,
+    hasRag: true,
+    hasTwilio: true,
+    hasManualUpload: true,
+    maxSalesPeople: null,
+    features: [
+      'Everything in Pro',
+      'RAG system (vector search)',
+      'Multi-document knowledge base',
+      'Context-aware coaching',
+      'Training material integration',
+      'Dynamic reference lookup',
+    ],
+  },
+]
+
+const STARTER = plans[0]
+const PRO     = plans[1]
+const PRO_RAG = plans[2]
+
 // ─── Clients (admin view) ────────────────────────────────────────────────────
+// Mirrors the real Supabase rows (clients_rows.json):
+//   801 → Dog Wizard HQ      (Pro,     org 100)
+//   803 → K9 Elite Training  (Pro+RAG, org 200)
+//   802 → Paw Academy        (Starter, org 300)
 
 export const clients: Client[] = [
   {
-    id: 'client-1',
-    name: 'Paw Masters Academy',
-    plan: 'Pro',
-    callsThisMonth: 83,
+    id: '00000000-0000-0000-0000-000000000801',
+    name: 'Dog Wizard HQ',
+    planId: PRO.id,
+    plan: PRO,
+    orgId: '00000000-0000-0000-0000-000000000100',
+    callsThisMonth: 20,
     avgScore: 83,
-    mrr: 497,
+    mrr: 1500,
     health: 'healthy',
     trainersCount: 4,
   },
   {
-    id: 'client-2',
-    name: 'Elite K9 Training',
-    plan: 'Starter',
-    callsThisMonth: 94,
-    avgScore: 76,
-    mrr: 297,
-    health: 'at-risk',
-    trainersCount: 6,
+    id: '00000000-0000-0000-0000-000000000803',
+    name: 'K9 Elite Training',
+    planId: PRO_RAG.id,
+    plan: PRO_RAG,
+    orgId: '00000000-0000-0000-0000-000000000200',
+    callsThisMonth: 35,
+    avgScore: 88,
+    mrr: 2500,
+    health: 'healthy',
+    trainersCount: 4,
   },
   {
-    id: 'client-3',
-    name: 'Dog Whisperers Co.',
-    plan: 'Pro+RAG',
-    callsThisMonth: 70,
-    avgScore: 88,
-    mrr: 697,
-    health: 'healthy',
-    trainersCount: 3,
+    id: '00000000-0000-0000-0000-000000000802',
+    name: 'Paw Academy',
+    planId: STARTER.id,
+    plan: STARTER,
+    orgId: '00000000-0000-0000-0000-000000000300',
+    callsThisMonth: 8,
+    avgScore: 71,
+    mrr: 500,
+    health: 'at-risk',
+    trainersCount: 4,
   },
 ]
 

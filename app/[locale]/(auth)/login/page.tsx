@@ -5,32 +5,33 @@ import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Role } from '@/lib/types'
+import type { Role, PlanCode } from '@/lib/types'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
+import { DEMO_CLIENTS } from '@/lib/demo-clients'
 
 function redirectByRole(role: Role): string {
   return role === 'trainer' ? '/me' : role === 'owner' ? '/dashboard' : '/admin'
+}
+
+const PLAN_BADGE_STYLE: Record<PlanCode, { bg: string; color: string }> = {
+  starter: { bg: 'var(--am-blue-bg)',                                  color: 'var(--am-blue)'    },
+  pro:     { bg: 'var(--am-accent2-bg, rgba(155,135,255,0.12))',       color: 'var(--am-accent2)' },
+  pro_rag: { bg: 'var(--am-green-bg)',                                 color: 'var(--am-green)'   },
 }
 
 export default function LoginPage() {
   const t = useTranslations('Login')
   const locale = useLocale()
 
-  const DEMO_USERS = [
-    { label: t('roleSalesPerson'),             email: 'trainer@demo.askmoses.ai',  password: 'demo123', hint: 'Marcus R.' },
-    { label: t('roleSalesPersonN', { n: 2 }),  email: 'trainer2@demo.askmoses.ai', password: 'demo123', hint: 'Jamie L.' },
-    { label: t('roleSalesPersonN', { n: 3 }),  email: 'trainer3@demo.askmoses.ai', password: 'demo123', hint: 'Jordan K.' },
-    { label: t('roleSalesPersonN', { n: 4 }),  email: 'trainer4@demo.askmoses.ai', password: 'demo123', hint: 'Taylor M.' },
-    { label: t('roleManager'),                 email: 'owner@demo.askmoses.ai',    password: 'demo123', hint: 'Owner' },
-    { label: t('roleAdmin'),                   email: 'admin@askmoses.ai',         password: 'demo123', hint: 'AskMoses Team' },
-  ]
-
+  const [activeClientId, setActiveClientId] = useState<string>(DEMO_CLIENTS[0].id)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const activeClient = DEMO_CLIENTS.find((c) => c.id === activeClientId) ?? DEMO_CLIENTS[0]
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +50,10 @@ export default function LoginPage() {
       const meRes = await fetch('/api/me', {
         headers: { Authorization: `Bearer ${data.session.access_token}` },
       })
-      const { data: meData } = await meRes.json() as { data: { role: string; name: string; trainerId: string | null } | null; error: unknown }
+      const { data: meData } = (await meRes.json()) as {
+        data: { role: string; name: string; trainerId: string | null } | null
+        error: unknown
+      }
 
       if (!meData) {
         setError(t('profileNotFound'))
@@ -136,16 +140,59 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Demo shortcuts */}
+      {/* Demo shortcuts — Client tabs + per-client users */}
       <div
         className="mt-8 mb-8 p-4 rounded-xl border"
         style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border)' }}
       >
-        <p className="text-[11px] font-medium tracking-widest uppercase mb-3" style={{ color: 'var(--am-muted)' }}>
-          {t('demoAccess')}
-        </p>
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="text-[11px] font-medium tracking-widest uppercase" style={{ color: 'var(--am-muted)' }}>
+            {t('demoAccess')}
+          </p>
+          <p className="text-[10px]" style={{ color: 'var(--am-muted)' }}>
+            {t('demoAccountSubtitle')}
+          </p>
+        </div>
+
+        {/* Client tabs */}
+        <div
+          className="flex gap-1 p-1 rounded-lg mb-3"
+          style={{ background: 'var(--am-bg4)', border: '1px solid var(--am-border)' }}
+          role="tablist"
+          aria-label={t('demoAccess')}
+        >
+          {DEMO_CLIENTS.map((client) => {
+            const isActive = client.id === activeClientId
+            const badge = PLAN_BADGE_STYLE[client.planCode]
+            return (
+              <button
+                key={client.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveClientId(client.id)}
+                className="flex-1 px-2 py-1.5 rounded-md text-[11px] font-medium transition-colors flex flex-col items-center gap-1"
+                style={{
+                  background: isActive ? 'var(--am-bg2)' : 'transparent',
+                  color: isActive ? 'var(--am-text)' : 'var(--am-muted)',
+                  border: isActive ? '1px solid var(--am-border)' : '1px solid transparent',
+                }}
+              >
+                <span className="leading-tight text-center">{client.name}</span>
+                <span
+                  className="text-[9px] font-mono px-1.5 py-0.5 rounded-full"
+                  style={{ background: badge.bg, color: badge.color }}
+                >
+                  {client.planName}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Active client users */}
         <div className="flex flex-col gap-2">
-          {DEMO_USERS.map((u) => (
+          {activeClient.users.map((u) => (
             <button
               key={u.email}
               type="button"
@@ -153,8 +200,8 @@ export default function LoginPage() {
               className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-left transition-colors"
               style={{ background: 'var(--am-bg4)', border: '1px solid var(--am-border)', color: 'var(--am-text)' }}
             >
-              <span className="text-xs font-medium">{u.label}</span>
-              <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{u.hint}</span>
+              <span className="text-xs font-medium">{u.roleLabel}</span>
+              <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{u.name}</span>
             </button>
           ))}
         </div>

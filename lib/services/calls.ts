@@ -15,9 +15,17 @@ import type {
   CreateCallInput,
   UpdateCallInput,
   GetCallsFilters,
+  GetCallByIdScope,
+  CallMutationScope,
 } from "@/lib/db/calls";
 
-export type { CreateCallInput, UpdateCallInput, GetCallsFilters };
+export type {
+  CreateCallInput,
+  UpdateCallInput,
+  GetCallsFilters,
+  GetCallByIdScope,
+  CallMutationScope,
+};
 
 // ─── Criteria parser: JSONB array → RubricScores (0–100) ─────────────────────
 
@@ -47,7 +55,11 @@ function parseCriteria(criteria: unknown): RubricScores {
       .toLowerCase()
       .trim();
     const key = CRITERIA_NAME_MAP[rawName];
-    if (key) result[key] = Math.round((item.score ?? 0) * 20); // normalise 0–5 → 0–100
+    if (key) {
+      const raw = item.score ?? 0;
+      // AI returns 0–5, but seeded calls store 0–100. Normalise both to 0–100.
+      result[key] = raw > 5 ? Math.round(raw) : Math.round(raw * 20);
+    }
   }
   return result;
 }
@@ -122,9 +134,12 @@ export async function getCalls(
 
 export async function getCallById(
   id: string,
-  opts?: { locale?: Locale },
+  opts?: { locale?: Locale; orgId?: string; trainerId?: string },
 ): Promise<Call | null> {
-  const row = await dbGetCallById(id);
+  const row = await dbGetCallById(id, {
+    orgId: opts?.orgId,
+    trainerId: opts?.trainerId,
+  });
   if (!row) return null;
   const call = toCall(row);
   return opts?.locale ? translateCall(call, opts.locale) : call;
@@ -137,10 +152,11 @@ export async function createCall(input: CreateCallInput): Promise<DbCall> {
 export async function updateCall(
   id: string,
   input: UpdateCallInput,
-): Promise<DbCall> {
-  return dbUpdateCall(id, input);
+  scope?: CallMutationScope,
+): Promise<DbCall | null> {
+  return dbUpdateCall(id, input, scope);
 }
 
-export async function deleteCall(id: string): Promise<void> {
-  return dbDeleteCall(id);
+export async function deleteCall(id: string, scope?: CallMutationScope): Promise<boolean> {
+  return dbDeleteCall(id, scope);
 }

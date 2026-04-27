@@ -24,6 +24,9 @@ import {
   MessageSquareWarning,
   Save,
 } from "lucide-react"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { UpsellBadge } from "@/components/shared/UpsellBadge"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 interface Script {
   id: string
@@ -66,6 +69,7 @@ export default function InsightsPage() {
   const tSuggested = useTranslations("Dashboard.insights.suggestedScript")
   const tShare = useTranslations("Dashboard.insights.shareWithTeam")
   const tFreq = useTranslations("Dashboard.insights.objections.frequency")
+  const tUpsell = useTranslations("Shared.upsell.insightsRag")
   const locale = useLocale()
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScript, setSelectedScript] = useState("")
@@ -74,6 +78,17 @@ export default function InsightsPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [savingScript, setSavingScript] = useState(false)
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
+  // Hide upsell while plan is unknown / on fetch failure — only show once the
+  // plan is confirmed to lack the feature, so we don't flicker the card.
+  const showRagUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasRag
+  // Save-as-script generates a new script via IA → Pro+ feature (Starter
+  // ships only the manual Script Manager). Fail closed: treat the action as
+  // locked while the plan is unknown so we never briefly allow it.
+  const canBuildScripts = !!currentClient?.plan.hasTwilio
+  // Render the badge/upsell hint only after we've confirmed the lock — same
+  // anti-flicker rule as the cards above.
+  const showSaveScriptUpsell = !clientLoading && !canBuildScripts
   const [savedScript, setSavedScript] = useState(false)
   const [insights, setInsights] = useState<InsightsResult | null>(null)
   const [error, setError] = useState("")
@@ -236,6 +251,14 @@ export default function InsightsPage() {
           {t('subtitle')}
         </p>
       </div>
+
+      {showRagUpsell && (
+        <UpsellCard
+          requires="pro_rag"
+          title={tUpsell("title")}
+          description={tUpsell("description")}
+        />
+      )}
 
       {/* Script Selector */}
       <Card>
@@ -592,25 +615,34 @@ export default function InsightsPage() {
                   <p className="text-sm text-green-700 dark:text-green-300">{tSuggested('savedMessage')}</p>
                 </div>
               ) : (
-                <Button
-                  onClick={handleSaveAsNewScript}
-                  disabled={savingScript}
-                  variant="outline"
-                  size="lg"
-                  className="w-full bg-transparent"
-                >
-                  {savingScript ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {tSuggested('saving')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-5 w-5" />
-                      {tSuggested('saveButton')}
-                    </>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleSaveAsNewScript}
+                    disabled={savingScript || !canBuildScripts}
+                    variant="outline"
+                    size="lg"
+                    className="w-full bg-transparent"
+                    title={!canBuildScripts ? 'Available on Pro and Pro + RAG' : undefined}
+                  >
+                    {savingScript ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {tSuggested('saving')}
+                      </>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2 w-full">
+                        <Save className="h-5 w-5" />
+                        {tSuggested('saveButton')}
+                        {showSaveScriptUpsell && <UpsellBadge requires="pro" compact />}
+                      </span>
+                    )}
+                  </Button>
+                  {!canBuildScripts && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-script generation is part of Pro and Pro + RAG. Starter still lets you create scripts manually in <span className="font-medium">Settings → Rubric</span>.
+                    </p>
                   )}
-                </Button>
+                </div>
               )}
             </CardContent>
           </Card>

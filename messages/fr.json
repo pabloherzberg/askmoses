@@ -23,9 +23,11 @@
     "invalidCredentials": "E-mail ou mot de passe incorrect",
     "profileNotFound": "Profil utilisateur introuvable. Exécutez le script seed dans Supabase.",
     "demoAccess": "Accès démo",
+    "demoAccountSubtitle": "Choisissez le client et l'utilisateur",
     "roleSalesPerson": "Commercial",
     "roleSalesPersonN": "Commercial {n}",
     "roleManager": "Manager",
+    "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "backToHome": "Retour à l'accueil"
   },
@@ -121,6 +123,22 @@
       "tooltipCloseRate": "Taux de closing",
       "tooltipAvgScore": "Score moyen",
       "mockFooter": "↑ valeurs issues de mock-data.ts · Recharts LineChart · pas de calcul réel"
+    },
+    "upsell": {
+      "defaultCta": "Comparer les forfaits",
+      "upgradeTo": "Passez à {plan}",
+      "uploadTwilio": {
+        "title": "Plus d'upload manuel — passez à l'automatique",
+        "description": "Connectez Twilio ou GHL une seule fois et chaque appel est ingéré, transcrit et analysé sans que personne ait à cliquer sur 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Générez des scripts automatiquement à partir d'appels réels",
+        "description": "Le Script Builder transforme vos meilleurs appels en un script + une rubrique réutilisables en quelques minutes — réservé aux forfaits Pro et Pro + RAG. Le forfait Starter n'inclut que le Script Manager manuel."
+      },
+      "insightsRag": {
+        "title": "Coachez avec votre propre matériel pédagogique",
+        "description": "Pro + RAG indexe vos scripts, PDFs de méthodologie et transcriptions des meilleurs appels, pour que les insights citent exactement le playbook que votre équipe devrait suivre."
+      }
     },
     "correlationEngine": {
       "title": "Correlation Engine — Ce qui mène aux closes",
