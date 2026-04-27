@@ -78,10 +78,27 @@ export interface Insight {
   action: string
 }
 
+export type PlanCode = 'starter' | 'pro' | 'pro_rag'
+
+export interface Plan {
+  id: string
+  code: PlanCode
+  name: string
+  priceCents: number
+  timelineWeeks: number
+  hasRag: boolean
+  hasTwilio: boolean
+  hasManualUpload: boolean
+  maxSalesPeople: number | null
+  features: string[]
+}
+
 export interface Client {
   id: string
   name: string
-  plan: 'Starter' | 'Pro' | 'Pro+RAG'
+  planId: string
+  plan: Plan
+  orgId: string
   callsThisMonth: number
   avgScore: number
   mrr: number
@@ -125,6 +142,9 @@ export interface BestCall {
   result: string
   analysis: string
   listenAt: string
+  trainerInitials?: string
+  trainerName?: string
+  trainerColor?: string
 }
 
 export type CallsByTrainerMap = Record<string, BestCall[]>

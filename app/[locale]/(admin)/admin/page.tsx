@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
-import type { HealthStatus } from '@/lib/types'
+import type { HealthStatus, PlanCode } from '@/lib/types'
 
 const healthStyles: Record<HealthStatus, { bg: string; color: string; key: 'healthy' | 'atRisk' | 'churning' }> = {
   healthy:  { bg: 'var(--am-green-bg)', color: 'var(--am-green)', key: 'healthy' },
@@ -12,10 +12,10 @@ const healthStyles: Record<HealthStatus, { bg: string; color: string; key: 'heal
   churning: { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   key: 'churning' },
 }
 
-const planStyles: Record<string, { bg: string; color: string }> = {
-  'Starter':  { bg: 'var(--am-blue-bg)',  color: 'var(--am-blue)'  },
-  'Pro':      { bg: 'var(--am-accent2-bg, rgba(155,135,255,0.12))', color: 'var(--am-accent2)' },
-  'Pro+RAG':  { bg: 'var(--am-green-bg)', color: 'var(--am-green)' },
+const planStyles: Record<PlanCode, { bg: string; color: string }> = {
+  starter: { bg: 'var(--am-blue-bg)',                            color: 'var(--am-blue)'    },
+  pro:     { bg: 'var(--am-accent2-bg, rgba(155,135,255,0.12))', color: 'var(--am-accent2)' },
+  pro_rag: { bg: 'var(--am-green-bg)',                           color: 'var(--am-green)'   },
 }
 
 export default async function AdminPage() {
@@ -93,7 +93,7 @@ export default async function AdminPage() {
             <tbody>
               {clients.map((client, i) => {
                 const health = healthStyles[client.health]
-                const plan   = planStyles[client.plan] ?? planStyles['Starter']
+                const plan   = planStyles[client.plan.code] ?? planStyles.starter
                 return (
                   <tr
                     key={client.id}
@@ -114,7 +114,7 @@ export default async function AdminPage() {
                         className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono"
                         style={{ background: plan.bg, color: plan.color }}
                       >
-                        {client.plan}
+                        {client.plan.name}
                       </span>
                     </td>
 

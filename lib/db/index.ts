@@ -9,6 +9,7 @@
  *   lib/db/calls.ts     → dbGetCalls, dbGetCallById
  *   lib/db/trainers.ts  → dbGetTrainers, dbGetTrainerById
  *   lib/db/clients.ts   → dbGetClients, dbGetGlobalMetrics
+ *   lib/db/plans.ts     → dbGetPlans, dbGetPlanById, dbGetPlanByCode
  *   lib/db/rubric.ts    → dbGetRubricSections, dbGetTrendData, dbGetRubricConfig
  *   lib/db/insights.ts  → dbGetInsights, dbSaveInsights
  *   lib/db/scripts.ts   → dbGetScripts, dbCreateScript, dbUpdateScript, dbDeleteScript
@@ -17,6 +18,7 @@
 export * from './calls'
 export * from './trainers'
 export * from './clients'
+export * from './plans'
 export * from './rubric'
 export * from './insights'
 export * from './scripts'

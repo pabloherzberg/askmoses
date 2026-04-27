@@ -1,5 +1,5 @@
-import type { Trainer, PerformanceTrendPoint } from "@/lib/types";
-import type { CallsByTrainerMap, BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
+import type { Trainer, PerformanceTrendPoint, CallsByTrainerMap } from "@/lib/types";
+import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
 
 const USE_MOCK = process.env.USE_MOCK_DATA !== "false";
 import { getOrgId } from "@/lib/auth";
@@ -15,13 +15,25 @@ export async function getTrainerById(id: string): Promise<Trainer | null> {
   return dbGetTrainerById(id);
 }
 
-// Maps mock trend data to real trainer IDs using demo email convention.
-// trainer@demo → Marcus, trainer2@demo → Jamie, trainer3@demo → Jordan, trainer4@demo → Taylor
+// Maps mock trend curves to real trainer IDs by demo email.
+// 4 curves exist: 301 (top, climbing), 302 (mid-high), 303 (mid), 304 (declining).
+// Reused across the 3 demo orgs to match each trainer's seeded skill level.
 const EMAIL_TO_MOCK_KEY: Record<string, string> = {
+  // Org 100 — Dog Wizard HQ
   "trainer@demo.askmoses.ai":  "00000000-0000-0000-0000-000000000301",
   "trainer2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
   "trainer3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
   "trainer4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
+  // Org 200 — K9 Elite Training (high performers)
+  "trainer-k9elite-1@demo.askmoses.ai": "00000000-0000-0000-0000-000000000301",
+  "trainer-k9elite-2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
+  "trainer-k9elite-3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
+  "trainer-k9elite-4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
+  // Org 300 — Paw Academy (mid → declining)
+  "trainer-pawacademy-1@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
+  "trainer-pawacademy-2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
+  "trainer-pawacademy-3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
+  "trainer-pawacademy-4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
 }
 
 export async function getTrainersWithMockData(): Promise<Trainer[]> {

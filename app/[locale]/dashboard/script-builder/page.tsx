@@ -30,6 +30,9 @@ import {
   Save,
   Lightbulb,
 } from "lucide-react"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { UpsellBadge } from "@/components/shared/UpsellBadge"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 interface AudioFile {
   file: File
@@ -60,6 +63,7 @@ type BuilderStep = "input" | "processing" | "preview" | "confirm"
 export default function ScriptBuilderPage() {
   const router = useRouter()
   const t = useTranslations("Dashboard.scriptBuilder")
+  const tUpsell = useTranslations("Shared.upsell.scriptBuilderAuto")
   const locale = useLocale()
 
   const LLM_MODELS = [
@@ -259,20 +263,42 @@ export default function ScriptBuilderPage() {
     setSaving(false)
   }
 
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
+  // Auto-script generation lives behind Pro: Starter only ships "Script &
+  // Rubric Manager" (CRUD), while AI-driven generation from real calls is a
+  // Pro/Pro+RAG capability that pairs with auto-ingestion.
+  // Fail closed: while plan is unknown (loading or fetch failure) treat it as
+  // locked so the premium action never briefly enables.
+  const isLockedByPlan = !currentClient?.plan.hasTwilio
+  // Show the upsell card only once we've confirmed the plan lacks the feature
+  // — don't flicker it during the initial fetch.
+  const showLockedUpsell = !clientLoading && isLockedByPlan
+
   const canGenerate =
-    audioFiles.length > 0 || textInput.trim().length > 50
+    !isLockedByPlan && (audioFiles.length > 0 || textInput.trim().length > 50)
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {t("title")}
+          {showLockedUpsell && <UpsellBadge requires="pro" compact />}
+        </h1>
         <p className="text-muted-foreground">
           {t("subtitle")}
         </p>
       </div>
 
+      {showLockedUpsell && (
+        <UpsellCard
+          requires="pro"
+          title={tUpsell("title")}
+          description={tUpsell("description")}
+        />
+      )}
+
       {step === "input" && (
-        <Card>
+        <Card aria-disabled={isLockedByPlan} className={isLockedByPlan ? "opacity-60 pointer-events-none select-none" : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5" />

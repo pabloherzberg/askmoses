@@ -13,6 +13,8 @@ import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
+import { BestCallsTeamWeekly } from "@/components/shared/BestCallsTeamWeekly";
+import { WorstCallsTeamWeekly } from "@/components/shared/WorstCallsTeamWeekly";
 
 
 export default async function OverviewPage() {
@@ -356,6 +358,10 @@ export default async function OverviewPage() {
 
       {/* ── Revenue Impact Estimator ──────────────────────────── */}
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
+
+      {/* ── Best / Worst Call This Week ──────────────────────── */}
+      <BestCallsTeamWeekly />
+      <WorstCallsTeamWeekly />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
       <SectionLabel>{t("detailedRubricLabel")}</SectionLabel>

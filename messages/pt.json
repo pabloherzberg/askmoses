@@ -23,9 +23,11 @@
     "invalidCredentials": "E-mail ou senha incorretos",
     "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
     "demoAccess": "Acesso demo",
+    "demoAccountSubtitle": "Escolha o cliente e o usuário",
     "roleSalesPerson": "Vendedor",
     "roleSalesPersonN": "Vendedor {n}",
     "roleManager": "Gestor",
+    "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "backToHome": "Voltar para o início"
   },
@@ -121,6 +123,22 @@
       "tooltipCloseRate": "Taxa de fechamento",
       "tooltipAvgScore": "Nota média",
       "mockFooter": "↑ valores vindos de mock-data.ts · Recharts LineChart · sem cálculo real"
+    },
+    "upsell": {
+      "defaultCta": "Comparar planos",
+      "upgradeTo": "Atualize para {plan}",
+      "uploadTwilio": {
+        "title": "Pule o upload manual — vá para o automático",
+        "description": "Conecte Twilio ou GHL uma vez e cada call é ingerida, transcrita e analisada sem ninguém clicar em 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Gere scripts automaticamente a partir das suas calls",
+        "description": "O Script Builder transforma suas melhores calls em um script + rubrica reutilizáveis em minutos — exclusivo dos planos Pro e Pro + RAG. O Starter inclui apenas o Script Manager manual."
+      },
+      "insightsRag": {
+        "title": "Treine com o seu próprio material de coaching",
+        "description": "O Pro + RAG indexa seus scripts, PDFs de metodologia e transcrições das melhores calls, então os insights citam exatamente o playbook que o seu time deveria estar seguindo."
+      }
     },
     "correlationEngine": {
       "title": "Correlation Engine — O que leva ao fechamento",

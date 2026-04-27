@@ -22,8 +22,6 @@ export function TrainerTabs() {
   const t = useTranslations('Coaching')
   const locale = useLocale()
   const [trainers, setTrainers] = useState<Trainer[]>([])
-  const [bestCalls, setBestCalls] = useState<CallsByTrainerMap>({})
-  const [worstCalls, setWorstCalls] = useState<CallsByTrainerMap>({})
   const [behavioral, setBehavioral] = useState<Record<string, BehavioralDimension[]>>({})
   const [behavioralTrends, setBehavioralTrends] = useState<Record<string, BehavioralTrendDimension[]>>({})
   const [recs, setRecs] = useState<Record<string, CoachingRec[]>>({})
@@ -36,8 +34,6 @@ export function TrainerTabs() {
       .then(({ data }) => {
         if (!data) return
         setTrainers(data.trainers)
-        setBestCalls(data.bestCalls)
-        setWorstCalls(data.worstCalls)
         setBehavioral(data.trainerBehavioral)
         setBehavioralTrends(data.trainerTrends ?? {})
         setRecs(data.coachingRecs)
@@ -50,8 +46,6 @@ export function TrainerTabs() {
 
   const trainer = trainers.find((tr) => tr.id === activeId)!
   const trainerKey = trainerKeyMap[trainer.id]
-  const calls = bestCalls[trainerKey] ?? []
-  const worst = worstCalls[trainerKey] ?? []
 
   // Submission rate: callsThisWeek / (callsThisWeek + 3) as a rough denominator for demo
   const submitted = trainer.callsThisWeek ?? 0
