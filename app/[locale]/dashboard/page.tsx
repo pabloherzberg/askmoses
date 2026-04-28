@@ -77,7 +77,7 @@ export default async function DashboardPage() {
           valueColor="var(--am-green)"
           delta={7}
           deltaLabel={tMetrics("ptsSinceWeek1")}
-          className="col-span-2 md:col-span-1"
+          className="col-span-1"
           style={{
             background: "linear-gradient(135deg, rgba(34,217,160,0.10) 0%, var(--card) 60%)",
             borderColor: "rgba(34,217,160,0.30)",

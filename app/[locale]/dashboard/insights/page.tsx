@@ -350,32 +350,6 @@ export default function InsightsPage() {
             </Card>
           </div>
 
-          {/* Top closer phrases */}
-          <Card style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
-                {t("topClosers.title")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {scriptResult.topCloserPhrases.map((phrase, i) => (
-                  <div key={i} className="rounded-lg p-4 space-y-2" style={{ background: "var(--am-bg3)", border: "1px solid var(--am-bg4)" }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium" style={{ color: "var(--am-muted)" }}>{phrase.section}</span>
-                      <span className="text-xs font-semibold" style={{ color: "var(--am-green)" }}>
-                        {phrase.uplift} {phrase.upliftType === "close" ? t("topClosers.closeRate") : t("topClosers.showRate")}
-                      </span>
-                    </div>
-                    <p className="text-sm italic" style={{ color: "var(--am-text)" }}>{phrase.quote}</p>
-                    <button className="text-xs font-medium hover:underline" style={{ color: "var(--am-accent2)" }}>
-                      {t("topClosers.addToScript")}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>
