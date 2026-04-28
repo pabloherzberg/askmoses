@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { Trainer, CallsByTrainerMap, PerformanceTrendPoint } from '@/lib/types'
+import type { Trainer, BestCall, CallsByTrainerMap, PerformanceTrendPoint } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
@@ -26,6 +26,8 @@ export function TrainerTabs() {
   const [behavioralTrends, setBehavioralTrends] = useState<Record<string, BehavioralTrendDimension[]>>({})
   const [recs, setRecs] = useState<Record<string, CoachingRec[]>>({})
   const [perfTrends, setPerfTrends] = useState<Record<string, PerformanceTrendPoint[]>>({})
+  const [bestCallsMap, setBestCallsMap] = useState<CallsByTrainerMap>({})
+  const [worstCallsMap, setWorstCallsMap] = useState<CallsByTrainerMap>({})
   const [activeId, setActiveId] = useState<string>('')
 
   useEffect(() => {
@@ -38,6 +40,8 @@ export function TrainerTabs() {
         setBehavioralTrends(data.trainerTrends ?? {})
         setRecs(data.coachingRecs)
         setPerfTrends(data.performanceTrends ?? {})
+        setBestCallsMap(data.bestCalls ?? {})
+        setWorstCallsMap(data.worstCalls ?? {})
         setActiveId((prev) => prev || data.trainers[0]?.id || '')
       })
   }, [locale])
@@ -47,7 +51,6 @@ export function TrainerTabs() {
   const trainer = trainers.find((tr) => tr.id === activeId)!
   const trainerKey = trainerKeyMap[trainer.id]
 
-  // Submission rate: callsThisWeek / (callsThisWeek + 3) as a rough denominator for demo
   const submitted = trainer.callsThisWeek ?? 0
   const total = submitted > 0 ? submitted + Math.round(submitted * 0.1) + 2 : 0
   const submissionRate = total > 0 ? Math.round((submitted / total) * 100) : 0
@@ -55,6 +58,9 @@ export function TrainerTabs() {
   const callsLabel = trainer.totalCalls === 1
     ? t('callsLabelOne', { count: trainer.totalCalls })
     : t('callsLabelOther', { count: trainer.totalCalls })
+
+  const bestCalls: BestCall[] = (bestCallsMap[trainerKey] ?? []).slice(0, 2)
+  const worstCalls: BestCall[] = (worstCallsMap[trainerKey] ?? []).slice(0, 2)
 
   return (
     <div>
@@ -88,7 +94,6 @@ export function TrainerTabs() {
         style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         <div className="flex flex-wrap items-center gap-5">
-          {/* Avatar + name */}
           <div className="flex items-center gap-3 min-w-0">
             <TrainerAvatar initials={trainer.avatar} color={trainer.avatarColor} size="md" />
             <div className="min-w-0">
@@ -102,10 +107,8 @@ export function TrainerTabs() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
 
-          {/* Conversion rate — big stat */}
           <div className="flex flex-col min-w-[100px]">
             <span className="text-3xl font-bold font-mono" style={{ color: 'var(--am-green)' }}>
               {trainer.closeRate}%
@@ -120,10 +123,8 @@ export function TrainerTabs() {
             )}
           </div>
 
-          {/* Divider */}
           <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
 
-          {/* Avg score */}
           <div className="flex flex-col min-w-[72px]">
             <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
               {trainer.score}
@@ -138,10 +139,8 @@ export function TrainerTabs() {
             )}
           </div>
 
-          {/* Divider */}
           <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
 
-          {/* Total calls this week */}
           <div className="flex flex-col min-w-[72px]">
             <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
               {submitted}
@@ -151,10 +150,8 @@ export function TrainerTabs() {
             </span>
           </div>
 
-          {/* Divider */}
           <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
 
-          {/* Submission rate */}
           {total > 0 && (
             <div className="flex flex-col min-w-[72px]">
               <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
@@ -171,7 +168,7 @@ export function TrainerTabs() {
         </div>
       </div>
 
-      {/* ── Conversion Rate Trend ─────────────────────────────── */}
+      {/* ── Conversion Rate Trend (topo, destaque) ─────────────── */}
       {Object.keys(perfTrends).length > 0 && (
         <PerformanceTrend
           trends={perfTrends}
@@ -180,21 +177,20 @@ export function TrainerTabs() {
         />
       )}
 
-      {/* ── Behavioral Profile (left) + Trends & Recs (right) ── */}
+      {/* ── Profile (esq, altura total) + Trends & Recs (dir, empilhados) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Left: Behavioral Correlation Profile */}
+        {/* Coluna esquerda: Profile ocupa toda a altura */}
         <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} trainerName={trainer.name.split(' ')[0]} />
 
-        {/* Right: Behavioral Trends stacked above AI Coaching Recs */}
+        {/* Coluna direita: Trends em cima, Recs embaixo */}
         <div className="flex flex-col gap-4">
           <BehavioralTrends dimensions={behavioralTrends[trainerKey] ?? []} />
           <CoachingRecommendations recs={recs[trainerKey] ?? []} />
         </div>
       </div>
 
-      {/* ── Best Calls (left) + Needs Improvement (right) ────── */}
+      {/* ── Best (esq) + Needs Improvement (dir) ─────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Best calls */}
         <div
           className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
@@ -215,7 +211,7 @@ export function TrainerTabs() {
             </span>
           </div>
           <div className="flex flex-col gap-3">
-            {calls.map((call) => (
+            {bestCalls.map((call) => (
               <CallCard key={call.prospect + call.date} call={call} variant="best" />
             ))}
           </div>
@@ -224,7 +220,6 @@ export function TrainerTabs() {
           </p>
         </div>
 
-        {/* Needs improvement */}
         <div
           className="rounded-2xl p-5 border shadow-md"
           style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
@@ -245,7 +240,7 @@ export function TrainerTabs() {
             </span>
           </div>
           <div className="flex flex-col gap-3">
-            {worst.map((call) => (
+            {worstCalls.map((call) => (
               <CallCard key={call.prospect + call.date} call={call} variant="worst" />
             ))}
           </div>

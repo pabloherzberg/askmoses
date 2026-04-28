@@ -49,6 +49,7 @@
       "history": "History",
       "analytics": "Analytics",
       "insights": "Script Intelligence",
+      "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Script Builder",
       "rubric": "Rubric",
       "howToUse": "How to Use",
@@ -72,7 +73,7 @@
       "upload": "Upload Call",
       "history": "Call History",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
       "scriptBuilder": "Script Builder",
       "settings": "Rubric Settings",
       "guide": "How to Use"
@@ -769,6 +770,12 @@
         "objectionFrequency": "This objection comes up in {pct}% of calls and is currently unhandled. Adding this line estimated to recover {min}–{max} bookings/month.",
         "lostCallsClose": "{pct}% of lost calls have no direct booking ask. Adding an explicit close could be the single highest impact change in the entire script.",
         "anchorValue": "Anchor value before price. Top closers who use this phrasing convert at {high}% vs {low}% on price-first approaches."
+      },
+      "topClosers": {
+        "title": "What top closers say differently — phrases that predict closes",
+        "closeRate": "close rate",
+        "showRate": "show rate",
+        "addToScript": "Add to script →"
       }
     },
     "scriptBuilder": {

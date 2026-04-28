@@ -65,10 +65,10 @@ export function OwnerNavItems() {
     { label: t('dashboard'),          href: '/dashboard',           icon: Home },
     { label: t('teamCommandCenter'),  href: '/team-command-center', icon: GraduationCap },
     { label: t('calls'),              href: '/calls',               icon: Phone },
+    { label: t('scriptIntelligence'), href: '/dashboard/insights', icon: Brain },
   ]
   const toolsNav = [
     { label: t('uploadCall'),    href: '/dashboard/upload',        icon: Upload },
-    { label: t('insights'),      href: '/dashboard/insights',      icon: Brain },
     { label: t('scriptBuilder'), href: '/dashboard/script-builder', icon: Wand2 },
     { label: t('rubric'),        href: '/dashboard/settings',      icon: Settings },
     { label: t('howToUse'),      href: '/dashboard/guide',         icon: HelpCircle },

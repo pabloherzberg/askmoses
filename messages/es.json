@@ -49,6 +49,7 @@
       "history": "Historial",
       "analytics": "Analytics",
       "insights": "Script Intelligence",
+      "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Constructor de scripts",
       "rubric": "Rúbrica",
       "howToUse": "Cómo usar",
@@ -72,7 +73,7 @@
       "upload": "Subir llamada",
       "history": "Historial de llamadas",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
       "scriptBuilder": "Constructor de scripts",
       "settings": "Configuración de rúbrica",
       "guide": "Cómo usar"
@@ -769,6 +770,12 @@
         "objectionFrequency": "Esta objeción aparece en {pct}% de llamadas y no está cubierta. Añadir esta línea podría recuperar {min}–{max} reservas/mes.",
         "lostCallsClose": "{pct}% de las llamadas perdidas no tienen una solicitud de cierre directa. Añadir un cierre explícito podría ser el cambio de mayor impacto.",
         "anchorValue": "Ancla el valor antes del precio. Los top closers con esta frase convierten al {high}% vs {low}% con enfoque precio primero."
+      },
+      "topClosers": {
+        "title": "Lo que dicen diferente los top closers — frases que predicen cierres",
+        "closeRate": "close rate",
+        "showRate": "show rate",
+        "addToScript": "Añadir al script →"
       }
     },
     "scriptBuilder": {

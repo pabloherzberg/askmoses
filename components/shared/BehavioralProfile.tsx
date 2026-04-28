@@ -57,7 +57,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
             >
               <div
                 className="grid items-center gap-2"
-                style={{ gridTemplateColumns: '140px 1fr 2.5rem 3.5rem 4rem' }}
+                style={{ gridTemplateColumns: '140px 1fr 2.5rem 3.5rem 5.5rem' }}
               >
                 {/* Dimension name */}
                 <span className="text-[12px] font-medium truncate" style={{ color: 'var(--am-text)' }}>
@@ -91,7 +91,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
                 </span>
 
                 {/* Level + Source badges side by side */}
-                <div className="flex gap-1 justify-end flex-wrap">
+                <div className="flex gap-1 justify-end flex-nowrap">
                   <span
                     className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
                     style={{ color: lvlStyle.color, background: lvlStyle.bg }}

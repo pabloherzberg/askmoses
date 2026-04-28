@@ -49,6 +49,7 @@
       "history": "Historique",
       "analytics": "Analytics",
       "insights": "Script Intelligence",
+      "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Constructeur de scripts",
       "rubric": "Grille",
       "howToUse": "Mode d'emploi",
@@ -72,7 +73,7 @@
       "upload": "Charger un appel",
       "history": "Historique des appels",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
       "scriptBuilder": "Constructeur de scripts",
       "settings": "Config de la grille",
       "guide": "Mode d'emploi"
@@ -769,6 +770,12 @@
         "objectionFrequency": "Cette objection apparaît dans {pct}% des appels et n'est pas couverte. Ajouter cette ligne pourrait récupérer {min}–{max} réservations/mois.",
         "lostCallsClose": "{pct}% des appels perdus n'ont pas de demande de closing directe. Ajouter un close explicite pourrait être le changement le plus impactant.",
         "anchorValue": "Ancrez la valeur avant le prix. Les top closers avec cette formule convertissent à {high}% vs {low}% avec l'approche prix d'abord."
+      },
+      "topClosers": {
+        "title": "Ce que les top closers disent différemment — phrases qui prédisent les closes",
+        "closeRate": "taux de close",
+        "showRate": "taux de show",
+        "addToScript": "Ajouter au script →"
       }
     },
     "scriptBuilder": {
