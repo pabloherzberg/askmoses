@@ -127,14 +127,6 @@ const dashboardApiHandlers = [
     })
   }),
 
-  // POST /api/send-coaching — mock envio de email de coaching
-  http.post('/api/send-coaching', async () => {
-    return HttpResponse.json({
-      success: true,
-      emailId: `mock-email-${Date.now()}`,
-    })
-  }),
-
   // POST /api/send-insights — mock envio de email de insights
   http.post('/api/send-insights', async () => {
     return HttpResponse.json({
