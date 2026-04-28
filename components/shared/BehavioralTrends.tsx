@@ -1,46 +1,41 @@
 import type { BehavioralTrendDimension } from '@/lib/mock-data'
 
-function scoreColor(score: number) {
+function barColor(score: number) {
   if (score >= 75) return 'var(--am-green)'
   if (score >= 60) return 'var(--am-amber)'
   return 'var(--am-red)'
 }
 
-function Sparkline({ trend }: { trend: number[] }) {
-  const W = 200
-  const H = 28
-  const min = Math.min(...trend) - 4
+function BarSparkline({ trend }: { trend: number[] }) {
   const max = Math.max(...trend) + 4
+  const min = Math.min(...trend) - 4
   const range = max - min || 1
-
-  const points = trend
-    .map((v, i) => {
-      const x = (i / (trend.length - 1)) * W
-      const y = H - ((v - min) / range) * H
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-
-  const last = trend[trend.length - 1]
-  const color = scoreColor(last)
+  const barWidth = 8
+  const gap = 3
+  const H = 28
 
   return (
     <svg
-      width="100%"
+      width={trend.length * (barWidth + gap) - gap}
       height={H}
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      style={{ overflow: 'visible', display: 'block' }}
+      style={{ display: 'block', overflow: 'visible' }}
     >
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        opacity={0.85}
-      />
+      {trend.map((v, i) => {
+        const barH = Math.max(2, ((v - min) / range) * H)
+        const color = barColor(v)
+        return (
+          <rect
+            key={i}
+            x={i * (barWidth + gap)}
+            y={H - barH}
+            width={barWidth}
+            height={barH}
+            rx={2}
+            fill={color}
+            opacity={i === trend.length - 1 ? 1 : 0.45 + (i / trend.length) * 0.4}
+          />
+        )
+      })}
     </svg>
   )
 }
@@ -50,7 +45,6 @@ interface Props {
 }
 
 export function BehavioralTrends({ dimensions }: Props) {
-
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -73,58 +67,41 @@ export function BehavioralTrends({ dimensions }: Props) {
         </span>
       </div>
 
-      {/* Column headers */}
-      <div
-        className="grid items-center mb-2 gap-3"
-        style={{ gridTemplateColumns: '1fr 3rem' }}
-      >
-        <span className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>6-week trend</span>
-        <span className="text-[10px] font-medium text-right" style={{ color: 'var(--am-muted)' }}>Now</span>
-      </div>
-
       {/* Rows */}
       <div className="flex flex-col">
         {dimensions.map((dim, i) => (
           <div
             key={dim.dimension}
-            className="py-2.5"
+            className="flex items-center justify-between gap-3 py-2.5"
             style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
           >
-            {/* Dimension name — full width on mobile */}
+            {/* Dimension name */}
             <span
-              className="block sm:hidden text-[11px] font-medium mb-1"
+              className="text-[12px] font-medium w-36 flex-shrink-0 truncate"
               style={{ color: 'var(--am-text)' }}
             >
               {dim.dimension}
             </span>
 
-            <div className="grid items-center gap-3" style={{ gridTemplateColumns: '1fr 3rem' }}>
-              {/* Sparkline (with label on sm+) */}
-              <div className="flex flex-col gap-1 min-w-0">
-                <span
-                  className="hidden sm:block text-[12px] font-medium truncate"
-                  style={{ color: 'var(--am-text)' }}
-                >
-                  {dim.dimension}
-                </span>
-                <Sparkline trend={dim.trend} />
-              </div>
-
-              {/* Current score */}
-              <span
-                className="text-[13px] font-mono font-semibold text-right"
-                style={{ color: scoreColor(dim.currentScore) }}
-              >
-                {dim.currentScore}
-              </span>
+            {/* Bar sparkline */}
+            <div className="flex-1 flex justify-center">
+              <BarSparkline trend={dim.trend} />
             </div>
+
+            {/* Current score */}
+            <span
+              className="text-[13px] font-mono font-semibold w-8 text-right flex-shrink-0"
+              style={{ color: barColor(dim.currentScore) }}
+            >
+              {dim.currentScore}
+            </span>
           </div>
         ))}
       </div>
 
       {/* Footer */}
       <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † all values from mock-data.ts · green ≥ 75 · amber ≥ 60 · red &lt; 60 · no real calculation
+        † mock data · green ≥ 75 · amber ≥ 60 · red &lt; 60
       </p>
     </div>
   )

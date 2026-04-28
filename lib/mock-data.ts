@@ -4,6 +4,7 @@ import type {
   RubricSection,
   Insight,
   Client,
+  Plan,
   TrendPoint,
   GlobalMetrics,
   Role,
@@ -612,38 +613,113 @@ export const insights: Insight[] = [
   },
 ]
 
+// ─── Plans ───────────────────────────────────────────────────────────────────
+
+export const plans: Plan[] = [
+  {
+    id: '00000000-0000-0000-0000-0000000000a1',
+    code: 'starter',
+    name: 'Starter',
+    priceCents: 405000,
+    timelineWeeks: 2,
+    hasRag: false,
+    hasTwilio: false,
+    hasManualUpload: true,
+    maxSalesPeople: 4,
+    features: [
+      'Script & Rubric Manager',
+      'Manual call upload (audio or transcript)',
+      'AI analysis (Whisper + GPT-4o)',
+      'Post-call coaching email',
+      'Aggregated summary',
+      'History page',
+    ],
+  },
+  {
+    id: '00000000-0000-0000-0000-0000000000a2',
+    code: 'pro',
+    name: 'Pro',
+    priceCents: 810000,
+    timelineWeeks: 3,
+    hasRag: false,
+    hasTwilio: true,
+    hasManualUpload: true,
+    maxSalesPeople: null,
+    features: [
+      'Everything in Starter',
+      'Twilio/GHL webhook integration',
+      'Automated call ingestion',
+      'Contact metadata sync',
+      'Zero manual upload',
+    ],
+  },
+  {
+    id: '00000000-0000-0000-0000-0000000000a3',
+    code: 'pro_rag',
+    name: 'Pro + RAG',
+    priceCents: 1140700,
+    timelineWeeks: 4,
+    hasRag: true,
+    hasTwilio: true,
+    hasManualUpload: true,
+    maxSalesPeople: null,
+    features: [
+      'Everything in Pro',
+      'RAG system (vector search)',
+      'Multi-document knowledge base',
+      'Context-aware coaching',
+      'Training material integration',
+      'Dynamic reference lookup',
+    ],
+  },
+]
+
+const STARTER = plans[0]
+const PRO     = plans[1]
+const PRO_RAG = plans[2]
+
 // ─── Clients (admin view) ────────────────────────────────────────────────────
+// Mirrors the real Supabase rows (clients_rows.json):
+//   801 → Dog Wizard HQ      (Pro,     org 100)
+//   803 → K9 Elite Training  (Pro+RAG, org 200)
+//   802 → Paw Academy        (Starter, org 300)
 
 export const clients: Client[] = [
   {
-    id: 'client-1',
-    name: 'Paw Masters Academy',
-    plan: 'Pro',
-    callsThisMonth: 83,
+    id: '00000000-0000-0000-0000-000000000801',
+    name: 'Dog Wizard HQ',
+    planId: PRO.id,
+    plan: PRO,
+    orgId: '00000000-0000-0000-0000-000000000100',
+    callsThisMonth: 20,
     avgScore: 83,
-    mrr: 497,
+    mrr: 1500,
     health: 'healthy',
     trainersCount: 4,
   },
   {
-    id: 'client-2',
-    name: 'Elite K9 Training',
-    plan: 'Starter',
-    callsThisMonth: 94,
-    avgScore: 76,
-    mrr: 297,
-    health: 'at-risk',
-    trainersCount: 6,
+    id: '00000000-0000-0000-0000-000000000803',
+    name: 'K9 Elite Training',
+    planId: PRO_RAG.id,
+    plan: PRO_RAG,
+    orgId: '00000000-0000-0000-0000-000000000200',
+    callsThisMonth: 35,
+    avgScore: 88,
+    mrr: 2500,
+    health: 'healthy',
+    trainersCount: 4,
   },
   {
-    id: 'client-3',
-    name: 'Dog Whisperers Co.',
-    plan: 'Pro+RAG',
-    callsThisMonth: 70,
-    avgScore: 88,
-    mrr: 697,
-    health: 'healthy',
-    trainersCount: 3,
+    id: '00000000-0000-0000-0000-000000000802',
+    name: 'Paw Academy',
+    planId: STARTER.id,
+    plan: STARTER,
+    orgId: '00000000-0000-0000-0000-000000000300',
+    callsThisMonth: 8,
+    avgScore: 71,
+    mrr: 500,
+    health: 'at-risk',
+    trainersCount: 4,
   },
 ]
 
@@ -918,6 +994,30 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       listenAt: '5:10',
     },
   ],
+  teamWeekly: [
+    {
+      trainerInitials: 'MR',
+      trainerName:     'Marcus R.',
+      trainerColor:    '#E87722',
+      prospect:        'Bob W.',
+      date:            '3/21/2026',
+      score:           94,
+      result:          'Closed',
+      analysis:        'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      listenAt:        '2:14',
+    },
+    {
+      trainerInitials: 'JL',
+      trainerName:     'Jamie L.',
+      trainerColor:    '#3B82F6',
+      prospect:        'Sarah K.',
+      date:            '3/19/2026',
+      score:           91,
+      result:          'Closed',
+      analysis:        'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this pattern.',
+      listenAt:        '1:48',
+    },
+  ],
 }
 
 // ─── Worst Call This Week ─────────────────────────────────────────────────────
@@ -993,6 +1093,30 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       result:   'No Close',
       analysis: 'Problem agitation phase was skipped entirely — moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
       listenAt: '1:28',
+    },
+  ],
+  teamWeekly: [
+    {
+      trainerInitials: 'TM',
+      trainerName:     'Taylor M.',
+      trainerColor:    '#A855F7',
+      prospect:        'Owen M.',
+      date:            '3/18/2026',
+      score:           55,
+      result:          'No Close',
+      analysis:        'At 3:00 Taylor filled every silence with filler words instead of letting the prospect process. Nervous energy was audible and undermined trust.',
+      listenAt:        '3:00',
+    },
+    {
+      trainerInitials: 'JK',
+      trainerName:     'Jordan K.',
+      trainerColor:    '#22D9A0',
+      prospect:        'Fred L.',
+      date:            '3/17/2026',
+      score:           58,
+      result:          'No Close',
+      analysis:        'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      listenAt:        '0:55',
     },
   ],
 }
@@ -1113,40 +1237,41 @@ export type BehavioralDimension = {
   score: number
   delta: number
   teamAvg: number
+  source: 'Rubric' | 'Behavioral'
 }
 
 export const trainerBehavioral: Record<string, BehavioralDimension[]> = {
   marcus: [
-    { dimension: 'Objection Handling', score: 94, delta: 23,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 91, delta: 26,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 90, delta: 15,  teamAvg: 75 },
-    { dimension: 'Discovery',          score: 94, delta: 12,  teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 78, delta: 6,   teamAvg: 72 },
-    { dimension: 'Empathy',            score: 65, delta: -5,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 94, delta: 23,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 91, delta: 26,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 90, delta: 15,  teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 94, delta: 12,  teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 78, delta: 6,   teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 65, delta: -5,  teamAvg: 70, source: 'Behavioral' },
   ],
   jamie: [
-    { dimension: 'Objection Handling', score: 81, delta: 10,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 79, delta: 14,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 82, delta: 7,   teamAvg: 75 },
-    { dimension: 'Discovery',          score: 88, delta: 6,   teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 74, delta: 2,   teamAvg: 72 },
-    { dimension: 'Empathy',            score: 80, delta: 10,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 81, delta: 10,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 79, delta: 14,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 82, delta: 7,   teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 88, delta: 6,   teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 74, delta: 2,   teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 80, delta: 10,  teamAvg: 70, source: 'Behavioral' },
   ],
   jordan: [
-    { dimension: 'Objection Handling', score: 65, delta: -6,  teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 60, delta: -5,  teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 65, delta: -10, teamAvg: 75 },
-    { dimension: 'Discovery',          score: 79, delta: -3,  teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 68, delta: -4,  teamAvg: 72 },
-    { dimension: 'Empathy',            score: 72, delta: 2,   teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 65, delta: -6,  teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 60, delta: -5,  teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 65, delta: -10, teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 79, delta: -3,  teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 68, delta: -4,  teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 72, delta: 2,   teamAvg: 70, source: 'Behavioral' },
   ],
   taylor: [
-    { dimension: 'Objection Handling', score: 55, delta: -16, teamAvg: 71 },
-    { dimension: 'Assertiveness',      score: 52, delta: -13, teamAvg: 65 },
-    { dimension: 'Close & Next Steps', score: 63, delta: -12, teamAvg: 75 },
-    { dimension: 'Discovery',          score: 67, delta: -15, teamAvg: 82 },
-    { dimension: 'Tone & Energy',      score: 61, delta: -11, teamAvg: 72 },
-    { dimension: 'Empathy',            score: 66, delta: -4,  teamAvg: 70 },
+    { dimension: 'Objection Handling', score: 55, delta: -16, teamAvg: 71, source: 'Rubric'     },
+    { dimension: 'Assertiveness',      score: 52, delta: -13, teamAvg: 65, source: 'Behavioral' },
+    { dimension: 'Close & Next Steps', score: 63, delta: -12, teamAvg: 75, source: 'Rubric'     },
+    { dimension: 'Discovery',          score: 67, delta: -15, teamAvg: 82, source: 'Rubric'     },
+    { dimension: 'Tone & Energy',      score: 61, delta: -11, teamAvg: 72, source: 'Behavioral' },
+    { dimension: 'Empathy',            score: 66, delta: -4,  teamAvg: 70, source: 'Behavioral' },
   ],
 }
 

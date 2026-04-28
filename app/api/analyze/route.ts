@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
-import { getGeminiModel } from "@/lib/gemini";
+import { generateText } from "ai";
+import { getOpenAIModel } from "@/lib/openai";
 import {
   dbGetDefaultRubricWithCriteria,
   dbGetRubricById,
@@ -190,9 +191,11 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
 }
 `.trim();
 
-    const model = getGeminiModel(llmModel);
-    const result = await model.generateContent(userPrompt);
-    const text = result.response.text().trim();
+    const { text: rawText } = await generateText({
+      model: getOpenAIModel(llmModel),
+      prompt: userPrompt,
+    });
+    const text = rawText.trim();
 
     // Strip markdown code fences and find the JSON object
     const cleaned = text

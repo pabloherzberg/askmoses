@@ -38,6 +38,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import type { CallResult as CallOutcome, Trainer } from "@/lib/types"
+import { UpsellCard } from "@/components/shared/UpsellCard"
+import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 type UploadStep = "input" | "processing" | "results" | "sending" | "complete"
 
@@ -79,6 +81,7 @@ const analysisMode = "scripts"; // Declare the analysisMode variable
 
 export default function UploadPage() {
   const t = useTranslations("Dashboard.upload")
+  const tUpsell = useTranslations("Shared.upsell.uploadTwilio")
   const locale = useLocale()
   const [step, setStep] = useState<UploadStep>("input")
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio")
@@ -101,6 +104,10 @@ export default function UploadPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [loading, setLoading] = useState(true)
   const [isTrainer, setIsTrainer] = useState(false)
+  const { client: currentClient, loading: clientLoading } = useCurrentClient()
+  // Hide upsell while plan is unknown (avoid flicker) and on fetch failure;
+  // only render once the plan is confirmed to lack the feature.
+  const showTwilioUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasTwilio
 
   useEffect(() => {
     async function init() {
@@ -632,6 +639,14 @@ export default function UploadPage() {
           {t("subtitle")}
         </p>
       </div>
+
+      {showTwilioUpsell && (
+        <UpsellCard
+          requires="pro"
+          title={tUpsell("title")}
+          description={tUpsell("description")}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Trainer Info */}

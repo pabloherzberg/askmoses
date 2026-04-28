@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import type { Trainer, CallsByTrainerMap } from '@/lib/types'
-import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
+import type { Trainer, BestCall, CallsByTrainerMap, PerformanceTrendPoint } from '@/lib/types'
+import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
+import { BehavioralTrends } from '@/components/shared/BehavioralTrends'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallCard } from '@/components/shared/CallCard'
-import { ScoreCard } from '@/components/shared/ScoreCard'
+import { PerformanceTrend } from '@/components/shared/PerformanceTrend'
 
 const trainerKeyMap: Record<string, string> = {
   '00000000-0000-0000-0000-000000000301': 'marcus',
@@ -19,13 +20,14 @@ const trainerKeyMap: Record<string, string> = {
 
 export function TrainerTabs() {
   const t = useTranslations('Coaching')
-  const tStats = useTranslations('Coaching.stats')
   const locale = useLocale()
   const [trainers, setTrainers] = useState<Trainer[]>([])
-  const [bestCalls, setBestCalls] = useState<CallsByTrainerMap>({})
-  const [worstCalls, setWorstCalls] = useState<CallsByTrainerMap>({})
   const [behavioral, setBehavioral] = useState<Record<string, BehavioralDimension[]>>({})
+  const [behavioralTrends, setBehavioralTrends] = useState<Record<string, BehavioralTrendDimension[]>>({})
   const [recs, setRecs] = useState<Record<string, CoachingRec[]>>({})
+  const [perfTrends, setPerfTrends] = useState<Record<string, PerformanceTrendPoint[]>>({})
+  const [bestCallsMap, setBestCallsMap] = useState<CallsByTrainerMap>({})
+  const [worstCallsMap, setWorstCallsMap] = useState<CallsByTrainerMap>({})
   const [activeId, setActiveId] = useState<string>('')
 
   useEffect(() => {
@@ -34,10 +36,12 @@ export function TrainerTabs() {
       .then(({ data }) => {
         if (!data) return
         setTrainers(data.trainers)
-        setBestCalls(data.bestCalls)
-        setWorstCalls(data.worstCalls)
         setBehavioral(data.trainerBehavioral)
+        setBehavioralTrends(data.trainerTrends ?? {})
         setRecs(data.coachingRecs)
+        setPerfTrends(data.performanceTrends ?? {})
+        setBestCallsMap(data.bestCalls ?? {})
+        setWorstCallsMap(data.worstCalls ?? {})
         setActiveId((prev) => prev || data.trainers[0]?.id || '')
       })
   }, [locale])
@@ -46,16 +50,21 @@ export function TrainerTabs() {
 
   const trainer = trainers.find((tr) => tr.id === activeId)!
   const trainerKey = trainerKeyMap[trainer.id]
-  const calls = bestCalls[trainerKey] ?? []
-  const worst = worstCalls[trainerKey] ?? []
+
+  const submitted = trainer.callsThisWeek ?? 0
+  const total = submitted > 0 ? submitted + Math.round(submitted * 0.1) + 2 : 0
+  const submissionRate = total > 0 ? Math.round((submitted / total) * 100) : 0
 
   const callsLabel = trainer.totalCalls === 1
     ? t('callsLabelOne', { count: trainer.totalCalls })
     : t('callsLabelOther', { count: trainer.totalCalls })
 
+  const bestCalls: BestCall[] = (bestCallsMap[trainerKey] ?? []).slice(0, 2)
+  const worstCalls: BestCall[] = (worstCallsMap[trainerKey] ?? []).slice(0, 2)
+
   return (
     <div>
-      {/* Tabs */}
+      {/* ── Trainer selector tabs ─────────────────────────────── */}
       <div
         className="flex gap-1 mb-6 p-1 rounded-xl w-fit"
         style={{ background: 'var(--am-bg3)' }}
@@ -79,105 +88,165 @@ export function TrainerTabs() {
         })}
       </div>
 
-      {/* Trainer header */}
-      <div className="flex items-center gap-3 mb-4">
-        <TrainerAvatar initials={trainer.avatar} color={trainer.avatarColor} size="md" />
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold" style={{ color: 'var(--am-text)' }}>
-            {trainer.name}
-          </p>
-          <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-            {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
-          </p>
+      {/* ── Trainer hero card ─────────────────────────────────── */}
+      <div
+        className="rounded-2xl p-5 border shadow-md mb-4"
+        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+      >
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="flex items-center gap-3 min-w-0">
+            <TrainerAvatar initials={trainer.avatar} color={trainer.avatarColor} size="md" />
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold" style={{ color: 'var(--am-text)' }}>
+                {trainer.name}
+              </p>
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
+                {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
+                {trainer.score >= 85 && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
+              </p>
+            </div>
+          </div>
+
+          <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
+
+          <div className="flex flex-col min-w-[100px]">
+            <span className="text-3xl font-bold font-mono" style={{ color: 'var(--am-green)' }}>
+              {trainer.closeRate}%
+            </span>
+            <span className="text-[11px] mt-0.5" style={{ color: 'var(--am-muted)' }}>
+              {t('conversionRate')}
+            </span>
+            {trainer.closeDelta !== 0 && (
+              <span className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--am-green)' }}>
+                {trainer.closeDelta > 0 ? '+' : ''}{trainer.closeDelta}pts {t('sinceWeek1')}
+              </span>
+            )}
+          </div>
+
+          <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
+
+          <div className="flex flex-col min-w-[72px]">
+            <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
+              {trainer.score}
+            </span>
+            <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+              {t('avgScore')}
+            </span>
+            {trainer.scoreDelta !== 0 && (
+              <span className="text-[11px] font-mono" style={{ color: 'var(--am-green)' }}>
+                {trainer.scoreDelta > 0 ? '+' : ''}{trainer.scoreDelta}pts
+              </span>
+            )}
+          </div>
+
+          <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
+
+          <div className="flex flex-col min-w-[72px]">
+            <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
+              {submitted}
+            </span>
+            <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+              {t('totalCallsWeek')}
+            </span>
+          </div>
+
+          <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
+
+          {total > 0 && (
+            <div className="flex flex-col min-w-[72px]">
+              <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
+                {submissionRate}%
+              </span>
+              <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                {t('submissionRate')}
+              </span>
+              <span className="text-[11px] font-mono" style={{ color: 'var(--am-muted)' }}>
+                {submitted}/{total} calls
+              </span>
+            </div>
+          )}
         </div>
-        <span
-          className="text-[12px] font-mono font-semibold px-2.5 py-0.5 rounded-full border flex-shrink-0"
-          style={{
-            color: 'var(--am-green)',
-            borderColor: 'rgba(34,217,160,0.4)',
-            background: 'rgba(34,217,160,0.10)',
-          }}
-        >
-          {t('closeRateSuffix', { value: trainer.closeRate })}
-        </span>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <ScoreCard label={tStats('avgScore')}   value={trainer.score}           valueColor="var(--am-accent2)" deltaLabel={tStats('thisWeek')} />
-        <ScoreCard label={tStats('closeRate')}  value={`${trainer.closeRate}%`} valueColor="var(--am-green)"   delta={trainer.closeDelta} deltaLabel={tStats('delta')} />
-        <ScoreCard label={tStats('totalCalls')} value={trainer.totalCalls}      deltaLabel={tStats('allTime')} />
-        <ScoreCard label={tStats('thisWeekCard')}   value={trainer.callsThisWeek ?? 0}            deltaLabel={tStats('callsProcessed')} />
+      {/* ── Conversion Rate Trend (topo, destaque) ─────────────── */}
+      {Object.keys(perfTrends).length > 0 && (
+        <PerformanceTrend
+          trends={perfTrends}
+          fixedId={activeId}
+          salesPeople={trainers.map((tr) => ({ id: tr.id, name: tr.name }))}
+        />
+      )}
+
+      {/* ── Profile (esq) + Trends (dir) lado a lado ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} trainerName={trainer.name.split(' ')[0]} />
+        <BehavioralTrends dimensions={behavioralTrends[trainerKey] ?? []} />
       </div>
 
-      {/* Behavioral Correlation Profile */}
-      <div className="mb-4">
-        <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} />
-      </div>
-
-      {/* AI Coaching Recommendations */}
+      {/* ── Coaching Recs (largura total) ── */}
       <div className="mb-4">
         <CoachingRecommendations recs={recs[trainerKey] ?? []} />
       </div>
 
-      {/* Best Call This Week */}
-      <div
-        className="rounded-2xl p-5 border shadow-md"
-        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
-      >
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-            {t('bestCall')}
+      {/* ── Best (esq) + Needs Improvement (dir) ─────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div
+          className="rounded-2xl p-5 border shadow-md"
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+        >
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+              {t('bestCall')}
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+              style={{
+                color: 'var(--am-amber)',
+                borderColor: 'rgba(255,171,46,0.35)',
+                background: 'rgba(255,171,46,0.08)',
+              }}
+            >
+              {t('mockBadge')}
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {bestCalls.map((call) => (
+              <CallCard key={call.prospect + call.date} call={call} variant="best" />
+            ))}
+          </div>
+          <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
+            {t('mockFooterBest')}
           </p>
-          <span
-            className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-            style={{
-              color: 'var(--am-amber)',
-              borderColor: 'rgba(255,171,46,0.35)',
-              background: 'rgba(255,171,46,0.08)',
-            }}
-          >
-            {t('mockBadge')}
-          </span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {calls.map((call) => (
-            <CallCard key={call.prospect + call.date} call={call} variant="best" />
-          ))}
-        </div>
-        <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-          {t('mockFooterBest')}
-        </p>
-      </div>
 
-      {/* Worst Call This Week */}
-      <div
-        className="rounded-2xl p-5 border shadow-md mt-4"
-        style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
-      >
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-            {t('worstCall')}
+        <div
+          className="rounded-2xl p-5 border shadow-md"
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+        >
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+              {t('worstCall')}
+            </p>
+            <span
+              className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+              style={{
+                color: 'var(--am-amber)',
+                borderColor: 'rgba(255,171,46,0.35)',
+                background: 'rgba(255,171,46,0.08)',
+              }}
+            >
+              {t('mockBadge')}
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {worstCalls.map((call) => (
+              <CallCard key={call.prospect + call.date} call={call} variant="worst" />
+            ))}
+          </div>
+          <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
+            {t('mockFooterWorst')}
           </p>
-          <span
-            className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-            style={{
-              color: 'var(--am-amber)',
-              borderColor: 'rgba(255,171,46,0.35)',
-              background: 'rgba(255,171,46,0.08)',
-            }}
-          >
-            {t('mockBadge')}
-          </span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {worst.map((call) => (
-            <CallCard key={call.prospect + call.date} call={call} variant="worst" />
-          ))}
-        </div>
-        <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-          {t('mockFooterWorst')}
-        </p>
       </div>
     </div>
   )

@@ -23,9 +23,11 @@
     "invalidCredentials": "E-mail ou senha incorretos",
     "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
     "demoAccess": "Acesso demo",
+    "demoAccountSubtitle": "Escolha o cliente e o usuário",
     "roleSalesPerson": "Vendedor",
     "roleSalesPersonN": "Vendedor {n}",
     "roleManager": "Gestor",
+    "roleOwner": "Owner",
     "roleAdmin": "Admin",
     "backToHome": "Voltar para o início"
   },
@@ -46,7 +48,8 @@
       "uploadCall": "Enviar chamada",
       "history": "Histórico",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
+      "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Construtor de scripts",
       "rubric": "Rubrica",
       "howToUse": "Como usar",
@@ -70,7 +73,7 @@
       "upload": "Enviar chamada",
       "history": "Histórico de chamadas",
       "analytics": "Analytics",
-      "insights": "Insights",
+      "insights": "Script Intelligence",
       "scriptBuilder": "Construtor de scripts",
       "settings": "Configuração da rubrica",
       "guide": "Como usar"
@@ -121,6 +124,22 @@
       "tooltipCloseRate": "Taxa de fechamento",
       "tooltipAvgScore": "Nota média",
       "mockFooter": "↑ valores vindos de mock-data.ts · Recharts LineChart · sem cálculo real"
+    },
+    "upsell": {
+      "defaultCta": "Comparar planos",
+      "upgradeTo": "Atualize para {plan}",
+      "uploadTwilio": {
+        "title": "Pule o upload manual — vá para o automático",
+        "description": "Conecte Twilio ou GHL uma vez e cada call é ingerida, transcrita e analisada sem ninguém clicar em 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Gere scripts automaticamente a partir das suas calls",
+        "description": "O Script Builder transforma suas melhores calls em um script + rubrica reutilizáveis em minutos — exclusivo dos planos Pro e Pro + RAG. O Starter inclui apenas o Script Manager manual."
+      },
+      "insightsRag": {
+        "title": "Treine com o seu próprio material de coaching",
+        "description": "O Pro + RAG indexa seus scripts, PDFs de metodologia e transcrições das melhores calls, então os insights citam exatamente o playbook que o seu time deveria estar seguindo."
+      }
     },
     "correlationEngine": {
       "title": "Correlation Engine — O que leva ao fechamento",
@@ -387,8 +406,13 @@
       "thisWeekCard": "Esta semana",
       "callsProcessed": "chamadas processadas"
     },
-    "bestCall": "Melhor chamada da semana",
-    "worstCall": "Pior chamada da semana",
+    "conversionRate": "Taxa de conversão",
+    "sinceWeek1": "desde a semana 1",
+    "avgScore": "Pontuação média",
+    "totalCallsWeek": "Total de chamadas esta semana",
+    "submissionRate": "Taxa de envio",
+    "bestCall": "Melhores Chamadas da Semana",
+    "worstCall": "Precisa Melhorar",
     "mockBadge": "apenas dados mock",
     "mockFooterBest": "† todos os valores vêm de mock-data.ts — Ouvir em X:XX → não funciona nesta demo",
     "mockFooterWorst": "† todos os valores vêm de mock-data.ts — Revisar em X:XX → não funciona nesta demo"
@@ -617,17 +641,50 @@
         }
       },
       "faqs": [
-        { "q": "Quais formatos de áudio são suportados?", "a": "Suportamos MP3, WAV, M4A e formatos comuns. Arquivos devem ter menos de 25MB. Para maiores, considere comprimir ou dividir." },
-        { "q": "Qual a precisão da transcrição da IA?", "a": "Usamos OpenAI Whisper, altamente preciso para áudio claro. Para melhores resultados, garanta qualidade de áudio com pouco ruído de fundo." },
-        { "q": "Posso editar os critérios gerados?", "a": "Hoje, os critérios são gerados automaticamente das seções do script. Você pode modificar o script e as seções para ajustar o que é avaliado." },
-        { "q": "Como funciona a nota da IA?", "a": "A IA lê a transcrição e compara com as seções definidas. Cada seção é marcada como 'coberta' ou 'não coberta' conforme o vendedor abordou os pontos-chave." },
-        { "q": "Posso usar modelos de IA diferentes?", "a": "Sim! Nas configurações de Rubrica, escolha entre OpenAI GPT-4o Mini (rápido e econômico) ou Google Gemini 2.5 (análise mais profunda)." },
-        { "q": "Por que não consigo enviar e-mail para outros endereços?", "a": "No MVP/testes, e-mails são restritos à conta registrada. Para enviar a qualquer endereço, é preciso verificar um domínio próprio no Resend." },
-        { "q": "Como crio vários scripts?", "a": "Vá para Rubrica, clique em 'Criar script' e defina um novo script com seções próprias. Ao enviar chamadas, selecione qual script avaliar." },
-        { "q": "O que é a feature de Insights?", "a": "Insights usa reconhecimento de padrões nas chamadas agrupadas por resultado (Fechada, Não fechada, Parcial). Identifica o que closers bem-sucedidos têm em comum, erros recorrentes, objeções comuns e sugere um script otimizado. Diferente de reinforcement learning — é pattern matching baseado em dados reais." },
-        { "q": "Qual a diferença entre Insights e Reinforcement Learning?", "a": "Reinforcement learning de verdade iteraria o script automaticamente via ciclos de feedback com sinais de recompensa. Insights é um nível mais simples: reconhecimento de padrões + geração de script. Você envia chamadas, analisamos padrões e sugerimos melhorias. Você decide se testa o novo script. Versões futuras podem automatizar o loop." },
-        { "q": "Quantas chamadas são necessárias para gerar insights?", "a": "É possível gerar com menos, mas 5-10 chamadas por script já fornecem padrões significativos. Com mais chamadas e mais diversidade, os padrões ficam estatisticamente mais significativos." },
-        { "q": "Posso customizar a análise de insights?", "a": "Atualmente a IA analisa com base em resultados e transcrições comparados ao script. A análise inclui DO's, DON'Ts, objeções comuns e script sugerido. Versões futuras podem permitir parâmetros customizados." }
+        {
+          "q": "Quais formatos de áudio são suportados?",
+          "a": "Suportamos MP3, WAV, M4A e formatos comuns. Arquivos devem ter menos de 25MB. Para maiores, considere comprimir ou dividir."
+        },
+        {
+          "q": "Qual a precisão da transcrição da IA?",
+          "a": "Usamos OpenAI Whisper, altamente preciso para áudio claro. Para melhores resultados, garanta qualidade de áudio com pouco ruído de fundo."
+        },
+        {
+          "q": "Posso editar os critérios gerados?",
+          "a": "Hoje, os critérios são gerados automaticamente das seções do script. Você pode modificar o script e as seções para ajustar o que é avaliado."
+        },
+        {
+          "q": "Como funciona a nota da IA?",
+          "a": "A IA lê a transcrição e compara com as seções definidas. Cada seção é marcada como 'coberta' ou 'não coberta' conforme o vendedor abordou os pontos-chave."
+        },
+        {
+          "q": "Posso usar modelos de IA diferentes?",
+          "a": "Sim! Nas configurações de Rubrica, escolha entre OpenAI GPT-4o Mini (rápido e econômico) ou Google Gemini 2.5 (análise mais profunda)."
+        },
+        {
+          "q": "Por que não consigo enviar e-mail para outros endereços?",
+          "a": "No MVP/testes, e-mails são restritos à conta registrada. Para enviar a qualquer endereço, é preciso verificar um domínio próprio no Resend."
+        },
+        {
+          "q": "Como crio vários scripts?",
+          "a": "Vá para Rubrica, clique em 'Criar script' e defina um novo script com seções próprias. Ao enviar chamadas, selecione qual script avaliar."
+        },
+        {
+          "q": "O que é a feature de Insights?",
+          "a": "Insights usa reconhecimento de padrões nas chamadas agrupadas por resultado (Fechada, Não fechada, Parcial). Identifica o que closers bem-sucedidos têm em comum, erros recorrentes, objeções comuns e sugere um script otimizado. Diferente de reinforcement learning — é pattern matching baseado em dados reais."
+        },
+        {
+          "q": "Qual a diferença entre Insights e Reinforcement Learning?",
+          "a": "Reinforcement learning de verdade iteraria o script automaticamente via ciclos de feedback com sinais de recompensa. Insights é um nível mais simples: reconhecimento de padrões + geração de script. Você envia chamadas, analisamos padrões e sugerimos melhorias. Você decide se testa o novo script. Versões futuras podem automatizar o loop."
+        },
+        {
+          "q": "Quantas chamadas são necessárias para gerar insights?",
+          "a": "É possível gerar com menos, mas 5-10 chamadas por script já fornecem padrões significativos. Com mais chamadas e mais diversidade, os padrões ficam estatisticamente mais significativos."
+        },
+        {
+          "q": "Posso customizar a análise de insights?",
+          "a": "Atualmente a IA analisa com base em resultados e transcrições comparados ao script. A análise inclui DO's, DON'Ts, objeções comuns e script sugerido. Versões futuras podem permitir parâmetros customizados."
+        }
       ]
     },
     "settings": {
@@ -672,82 +729,53 @@
       "emptyScripts": "Nenhum script criado ainda. Crie seu primeiro script de vendas para começar."
     },
     "insights": {
-      "title": "Insights do Time",
-      "subtitle": "Análise com IA do que funciona e do que não funciona nas calls do seu time",
-      "generateCardTitle": "Gerar Insights",
-      "generateCardDescription": "Selecione um script para analisar todas as calls associadas. A IA encontrará padrões em calls bem e mal-sucedidas e gerará recomendações acionáveis.",
+      "title": "Script Intelligence",
+      "subtitle": "Análise de saúde do script com IA baseada em {count} calls · Vertical de adestramento",
       "selectScriptLabel": "Selecionar Script",
       "chooseScriptPlaceholder": "Escolha um script para analisar...",
-      "analyzing": "Analisando calls... Isso pode levar um momento",
-      "generateButton": "Gerar Insights",
+      "analyzing": "Analisando calls... Aguarde um momento",
+      "generateButton": "Analisar Script",
       "errors": {
-        "generateFailed": "Falha ao gerar insights",
-        "sendFailed": "Falha ao enviar insights",
-        "saveFailed": "Falha ao salvar script",
+        "generateFailed": "Falha ao analisar script",
         "unknown": "Erro desconhecido"
       },
-      "metrics": {
-        "totalCalls": "Total de Calls",
-        "closed": "Fechadas",
-        "notClosed": "Não Fechadas",
-        "partial": "Parciais",
-        "teamCloseRate": "Taxa de Fechamento do Time"
+      "playbook": {
+        "title": "Playbook",
+        "dogTrainingVertical": "Vertical adestramento",
+        "basedOnCalls": "Baseado em {count} calls",
+        "healthScore": "Saúde do script",
+        "effectiveness": {
+          "good": "Eficácia geral — script forte",
+          "roomToImprove": "Eficácia geral — espaço para melhorar",
+          "poor": "Eficácia geral — necessita trabalho"
+        },
+        "revenueLeak": "{sections} são seu maior vazamento de receita. Corrigir essas duas seções pode adicionar +R${revenue}/mês."
       },
-      "whatClosersDo": {
-        "title": "O Que Os Closers Fazem",
-        "subtitleOne": "Padrões comuns encontrados em {count} call bem-sucedida",
-        "subtitleOther": "Padrões comuns encontrados em {count} calls bem-sucedidas"
+      "sectionAnalysis": {
+        "title": "Script Atual — Análise por Seção",
+        "strong": "Forte",
+        "weak": "Fraco",
+        "missing": "Ausente",
+        "usageCorrelation": "Usado em {pct}% das calls · correlaciona com +{pts}pts de close rate",
+        "usageTopClosers": "Usado em {pct}% das calls · top closers fazem {n}+ perguntas aqui",
+        "priceEarly": "Preço mencionado cedo demais em {pct}% das calls · gera objeções",
+        "inconsistent": "{issue1} · {issue2} sem resposta em {pct}% das calls"
       },
-      "whatLosesDeals": {
-        "title": "O Que Perde Negócios",
-        "subtitleOne": "Padrões comuns encontrados em {count} call mal-sucedida",
-        "subtitleOther": "Padrões comuns encontrados em {count} calls mal-sucedidas"
+      "aiSuggestions": {
+        "title": "Sugestões de Melhoria com IA",
+        "rewrite": "Reescrever",
+        "addToScript": "Adicionar ao script",
+        "suggestedRewrite": "→ Reescrita sugerida",
+        "callsClose": "Calls usando esse padrão fecham em {high}% vs {low}%.",
+        "objectionFrequency": "Essa objeção aparece em {pct}% das calls e não está coberta. Adicionar essa linha pode recuperar {min}–{max} agendamentos/mês.",
+        "lostCallsClose": "{pct}% das calls perdidas não têm pedido de fechamento direto. Adicionar um close explícito pode ser a mudança de maior impacto.",
+        "anchorValue": "Ancore o valor antes do preço. Top closers com essa abordagem convertem em {high}% vs {low}% na abordagem preço-primeiro."
       },
-      "dos": {
-        "title": "FAÇA",
-        "subtitle": "Melhores práticas dos top closers"
-      },
-      "donts": {
-        "title": "NÃO FAÇA",
-        "subtitle": "Comportamentos que perdem negócios"
-      },
-      "objections": {
-        "title": "Objeções Comuns e Como Lidar com Elas",
-        "subtitle": "Objeções encontradas em todas as calls com as melhores vs piores respostas",
-        "bestResponse": "Melhor Resposta (Closers)",
-        "worstResponse": "Pior Resposta (Não-Closers)",
-        "frequency": {
-          "veryCommon": "Muito Comum",
-          "common": "Comum",
-          "rare": "Rara"
-        }
-      },
-      "keyDifferences": {
-        "title": "Diferenças-Chave Entre Closers e Não-Closers"
-      },
-      "preCallChecklist": {
-        "title": "Checklist Pré-Call",
-        "subtitle": "Com base nas calls bem-sucedidas, todo trainer deve seguir estas etapas antes e durante uma call"
-      },
-      "suggestedScript": {
-        "title": "Script Otimizado Sugerido pela IA",
-        "subtitle": "Com base no que funciona em calls bem-sucedidas, aqui está um script melhorado sugerido",
-        "savedMessage": "Script salvo! Confira suas configurações de Rubrica para visualizá-lo.",
-        "saving": "Salvando como novo script...",
-        "saveButton": "Salvar como Novo Script",
-        "aiOptimizedSuffix": "(Otimizado por IA)",
-        "defaultScriptName": "Script",
-        "aiOptimizedSectionName": "Script Otimizado por IA",
-        "descriptionTemplate": "Script otimizado gerado por IA com base na análise de {total} calls ({closeRate}% de taxa de fechamento)"
-      },
-      "shareWithTeam": {
-        "title": "Compartilhar com o Time",
-        "subtitleOne": "Envie este relatório de insights como um resumo semanal para {count} trainer que tem calls para este script",
-        "subtitleOther": "Envie este relatório de insights como um resumo semanal para todos os {count} trainers que têm calls para este script",
-        "sentMessage": "Insights enviados a todos os membros do time!",
-        "sending": "Enviando ao time...",
-        "sendButton": "Enviar Insights ao Time",
-        "defaultScriptName": "Script de Vendas"
+      "topClosers": {
+        "title": "O que os top closers dizem diferente — frases que predizem fechamentos",
+        "closeRate": "close rate",
+        "showRate": "show rate",
+        "addToScript": "Adicionar ao script →"
       }
     },
     "scriptBuilder": {
@@ -995,12 +1023,30 @@
       "badge": "Fluxo principal",
       "title": "Como o Ask Moses funciona",
       "steps": {
-        "upload":        { "title": "Upload da ligação",      "description": "Admin envia o áudio ou cola a transcrição diretamente" },
-        "transcription": { "title": "Transcrição",            "description": "Se for áudio, o Whisper AI transcreve automaticamente" },
-        "analysis":      { "title": "Análise por IA",         "description": "O LLM avalia a transcrição contra a rubrica de vendas" },
-        "email":         { "title": "E-mail de coaching",     "description": "Feedback personalizado enviado ao adestrador" },
-        "summary":       { "title": "Resumo agregado",        "description": "Ariel recebe um digest diário/semanal de coaching" },
-        "history":       { "title": "Histórico",              "description": "Todas as análises ficam armazenadas e pesquisáveis" }
+        "upload": {
+          "title": "Upload da ligação",
+          "description": "Admin envia o áudio ou cola a transcrição diretamente"
+        },
+        "transcription": {
+          "title": "Transcrição",
+          "description": "Se for áudio, o Whisper AI transcreve automaticamente"
+        },
+        "analysis": {
+          "title": "Análise por IA",
+          "description": "O LLM avalia a transcrição contra a rubrica de vendas"
+        },
+        "email": {
+          "title": "E-mail de coaching",
+          "description": "Feedback personalizado enviado ao adestrador"
+        },
+        "summary": {
+          "title": "Resumo agregado",
+          "description": "Ariel recebe um digest diário/semanal de coaching"
+        },
+        "history": {
+          "title": "Histórico",
+          "description": "Todas as análises ficam armazenadas e pesquisáveis"
+        }
       }
     },
     "Features": {
@@ -1010,32 +1056,62 @@
         "rubricManager": {
           "title": "Gestor de Script / Rubrica",
           "description": "Interface de admin para a Ariel criar, editar e versionar scripts de vendas e rubricas de avaliação.",
-          "details": ["Suporte a múltiplos scripts", "Histórico de versões", "Editor Markdown", "Seções da rubrica com pesos"]
+          "details": [
+            "Suporte a múltiplos scripts",
+            "Histórico de versões",
+            "Editor Markdown",
+            "Seções da rubrica com pesos"
+          ]
         },
         "manualUpload": {
           "title": "Upload manual de ligação",
           "description": "Interface simples para enviar gravações ou colar transcrições para análise.",
-          "details": ["Upload de áudio (.mp3, .wav, .m4a)", "Colagem direta de transcrição", "Transcrição via Whisper AI", "Seleção de adestrador"]
+          "details": [
+            "Upload de áudio (.mp3, .wav, .m4a)",
+            "Colagem direta de transcrição",
+            "Transcrição via Whisper AI",
+            "Seleção de adestrador"
+          ]
         },
         "aiAnalysis": {
           "title": "Análise de ligação com IA",
           "description": "Avaliação por LLM de cada ligação contra a rubrica ativa.",
-          "details": ["Pontuação por seção", "Citações de trechos específicos", "Sugestões de melhoria", "Nota geral"]
+          "details": [
+            "Pontuação por seção",
+            "Citações de trechos específicos",
+            "Sugestões de melhoria",
+            "Nota geral"
+          ]
         },
         "coachingEmail": {
           "title": "E-mail de coaching pós-ligação",
           "description": "Entrega automática de feedback personalizado por e-mail ao adestrador.",
-          "details": ["Template HTML com marca", "Detalhamento de notas", "Dicas acionáveis", "Tom encorajador"]
+          "details": [
+            "Template HTML com marca",
+            "Detalhamento de notas",
+            "Dicas acionáveis",
+            "Tom encorajador"
+          ]
         },
         "aggregateSummary": {
           "title": "Resumo agregado",
           "description": "Digest diário ou semanal para a Ariel com insights de coaching do time todo.",
-          "details": ["Notas médias", "Top performers", "Gaps comuns", "Indicadores de tendência"]
+          "details": [
+            "Notas médias",
+            "Top performers",
+            "Gaps comuns",
+            "Indicadores de tendência"
+          ]
         },
         "history": {
           "title": "Página de histórico",
           "description": "Registro pesquisável de todas as análises passadas para referência e debug.",
-          "details": ["Filtro por adestrador", "Filtro por data", "Ver análise completa", "Busca básica"]
+          "details": [
+            "Filtro por adestrador",
+            "Filtro por data",
+            "Ver análise completa",
+            "Busca básica"
+          ]
         }
       }
     },
@@ -1046,19 +1122,39 @@
       "groups": {
         "crm": {
           "category": "Integração com CRM",
-          "items": ["Sync com GoHighLevel (Pepper)", "Pull automático de contatos", "Sincronizar resultados no CRM", "Triggers de workflow do CRM"]
+          "items": [
+            "Sync com GoHighLevel (Pepper)",
+            "Pull automático de contatos",
+            "Sincronizar resultados no CRM",
+            "Triggers de workflow do CRM"
+          ]
         },
         "realtime": {
           "category": "Recursos em tempo real",
-          "items": ["Coaching ao vivo", "Análise de voz em tempo real", "Feedback instantâneo durante a ligação", "Detecção de tom"]
+          "items": [
+            "Coaching ao vivo",
+            "Análise de voz em tempo real",
+            "Feedback instantâneo durante a ligação",
+            "Detecção de tom"
+          ]
         },
         "platform": {
           "category": "Escala de plataforma",
-          "items": ["Arquitetura multi-tenant", "Solução white-label", "App mobile", "Autenticação SSO / SAML"]
+          "items": [
+            "Arquitetura multi-tenant",
+            "Solução white-label",
+            "App mobile",
+            "Autenticação SSO / SAML"
+          ]
         },
         "analytics": {
           "category": "Analytics avançados",
-          "items": ["Modelagem preditiva de close rate", "Teste A/B de scripts", "Dashboards de correlação de performance", "Rankings do time"]
+          "items": [
+            "Modelagem preditiva de close rate",
+            "Teste A/B de scripts",
+            "Dashboards de correlação de performance",
+            "Rankings do time"
+          ]
         }
       }
     },
@@ -1069,22 +1165,38 @@
         "usage": {
           "category": "Uso",
           "title": "Os adestradores engajam?",
-          "items": ["Taxa de abertura de e-mail > 60%", "Adestradores referenciam o feedback nas ligações", "Ariel usa o resumo agregado semanalmente"]
+          "items": [
+            "Taxa de abertura de e-mail > 60%",
+            "Adestradores referenciam o feedback nas ligações",
+            "Ariel usa o resumo agregado semanalmente"
+          ]
         },
         "value": {
           "category": "Valor",
           "title": "O feedback ajuda?",
-          "items": ["Pesquisa qualitativa: 4+ em 5", "Adestradores pedem mais detalhes (bom sinal)", "Ariel economiza 5+ h/semana de revisão manual"]
+          "items": [
+            "Pesquisa qualitativa: 4+ em 5",
+            "Adestradores pedem mais detalhes (bom sinal)",
+            "Ariel economiza 5+ h/semana de revisão manual"
+          ]
         },
         "quality": {
           "category": "Qualidade",
           "title": "A IA é precisa?",
-          "items": ["Notas da rubrica concordam com o julgamento da Ariel em 80%+", "Zero citações alucinadas", "Sugestões acionáveis (não genéricas)"]
+          "items": [
+            "Notas da rubrica concordam com o julgamento da Ariel em 80%+",
+            "Zero citações alucinadas",
+            "Sugestões acionáveis (não genéricas)"
+          ]
         },
         "business": {
           "category": "Negócio",
           "title": "Impacta os resultados?",
-          "items": ["Melhoria da taxa de fechamento rastreada", "Redução do tempo até o fechamento", "Aumento de confiança dos adestradores"]
+          "items": [
+            "Melhoria da taxa de fechamento rastreada",
+            "Redução do tempo até o fechamento",
+            "Aumento de confiança dos adestradores"
+          ]
         }
       }
     },
@@ -1107,25 +1219,45 @@
           "phase": "Fase 2",
           "title": "Integração com CRM",
           "timeline": "Pós-MVP",
-          "items": ["Sync com GoHighLevel (Pepper)", "Pull automático de contatos", "Sincronizar coaching com CRM", "Triggers de workflow"]
+          "items": [
+            "Sync com GoHighLevel (Pepper)",
+            "Pull automático de contatos",
+            "Sincronizar coaching com CRM",
+            "Triggers de workflow"
+          ]
         },
         "coaching": {
           "phase": "Fase 3",
           "title": "Coaching aprimorado",
           "timeline": "Futuro",
-          "items": ["Dashboard interativo de coach", "Rastreio de resposta dos adestradores", "Teste A/B de scripts", "Analytics detalhados"]
+          "items": [
+            "Dashboard interativo de coach",
+            "Rastreio de resposta dos adestradores",
+            "Teste A/B de scripts",
+            "Analytics detalhados"
+          ]
         },
         "realtime": {
           "phase": "Fase 4",
           "title": "Recursos em tempo real",
           "timeline": "Longo prazo",
-          "items": ["Orientação ao vivo na ligação", "Análise de tom de voz", "Objection handling em tempo real", "Nudges instantâneos de coaching"]
+          "items": [
+            "Orientação ao vivo na ligação",
+            "Análise de tom de voz",
+            "Objection handling em tempo real",
+            "Nudges instantâneos de coaching"
+          ]
         },
         "platform": {
           "phase": "Fase 5",
           "title": "Escala de plataforma",
           "timeline": "Longo prazo",
-          "items": ["SaaS multi-tenant", "Oferta white-label", "SSO Enterprise", "API pública"]
+          "items": [
+            "SaaS multi-tenant",
+            "Oferta white-label",
+            "SSO Enterprise",
+            "API pública"
+          ]
         }
       }
     },
@@ -1198,9 +1330,21 @@
       "codeVsNoCode": {
         "title": "Code vs plataformas No-Code",
         "noCodeTitle": "No-Code (Bubble, Glide)",
-        "noCodeItems": ["Lock-in de plataforma", "Customização de IA limitada", "Precisa de \"dev no-code\" especializado", "Reescrita necessária para escalar", "Mensalidades de plataforma para sempre"],
+        "noCodeItems": [
+          "Lock-in de plataforma",
+          "Customização de IA limitada",
+          "Precisa de \"dev no-code\" especializado",
+          "Reescrita necessária para escalar",
+          "Mensalidades de plataforma para sempre"
+        ],
         "codeTitle": "Este MVP (Next.js + Vercel)",
-        "codeItems": ["Você é dono de 100% do código", "Acesso total ao AI SDK", "Qualquer dev React/Next.js mantém", "Escala sem reescrever", "Deploy em qualquer lugar (Vercel, AWS, etc.)"]
+        "codeItems": [
+          "Você é dono de 100% do código",
+          "Acesso total ao AI SDK",
+          "Qualquer dev React/Next.js mantém",
+          "Escala sem reescrever",
+          "Deploy em qualquer lugar (Vercel, AWS, etc.)"
+        ]
       }
     },
     "Pricing": {
@@ -1215,23 +1359,48 @@
           "price": "$4.050",
           "timeline": "2 semanas",
           "description": "Semana 1-2: Valide o núcleo do coaching com IA via fluxo manual",
-          "features": ["Gestor de Script/Rubrica", "Upload manual de ligação (áudio ou transcrição)", "Análise com IA (Whisper + GPT-4o)", "E-mail de coaching pós-ligação", "Resumo agregado", "Página de histórico"],
-          "notIncluded": ["Integração Twilio", "Sistema RAG"]
+          "features": [
+            "Gestor de Script/Rubrica",
+            "Upload manual de ligação (áudio ou transcrição)",
+            "Análise com IA (Whisper + GPT-4o)",
+            "E-mail de coaching pós-ligação",
+            "Resumo agregado",
+            "Página de histórico"
+          ],
+          "notIncluded": [
+            "Integração Twilio",
+            "Sistema RAG"
+          ]
         },
         "pro": {
           "name": "Pro",
           "price": "$8.100",
           "timeline": "3 semanas",
           "description": "Semana 3: Ingestão automatizada de ligações para operação hands-off",
-          "features": ["Tudo do Starter", "Integração via Webhook Twilio/GHL", "Ingestão automática de ligações", "Sync de metadados de contato", "Zero upload manual"],
-          "notIncluded": ["Sistema RAG"]
+          "features": [
+            "Tudo do Starter",
+            "Integração via Webhook Twilio/GHL",
+            "Ingestão automática de ligações",
+            "Sync de metadados de contato",
+            "Zero upload manual"
+          ],
+          "notIncluded": [
+            "Sistema RAG"
+          ]
         },
         "proRag": {
           "name": "Pro + RAG",
           "price": "$11.407",
           "timeline": "4 semanas",
           "description": "Semana 4: Coaching com contexto usando seu material de treinamento",
-          "features": ["Tudo do Pro", "Sistema RAG (busca vetorial)", "Base de conhecimento multi-documento", "Coaching com contexto", "Integração de materiais de treinamento", "Lookup dinâmico de referências"],
+          "features": [
+            "Tudo do Pro",
+            "Sistema RAG (busca vetorial)",
+            "Base de conhecimento multi-documento",
+            "Coaching com contexto",
+            "Integração de materiais de treinamento",
+            "Lookup dinâmico de referências"
+          ],
           "notIncluded": []
         }
       },
@@ -1253,19 +1422,55 @@
           "costCall": "Custo/ligação"
         },
         "rows": {
-          "premium":    { "stack": "Premium",      "transcription": "Whisper ($0,075)",     "analysis": "GPT-4o ($0,10)",          "cost": "~$0,18" },
-          "recommended":{ "stack": "Recomendado",  "transcription": "Whisper ($0,075)",     "analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,09" },
-          "budget":     { "stack": "Budget",       "transcription": "Deepgram ($0,054)",    "analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,07" },
-          "ultraBudget":{ "stack": "Ultra Budget", "transcription": "Groq Whisper ($0,023)","analysis": "Gemini 1.5 Flash ($0,01)","cost": "~$0,03" }
+          "premium": {
+            "stack": "Premium",
+            "transcription": "Whisper ($0,075)",
+            "analysis": "GPT-4o ($0,10)",
+            "cost": "~$0,18"
+          },
+          "recommended": {
+            "stack": "Recomendado",
+            "transcription": "Whisper ($0,075)",
+            "analysis": "Gemini 1.5 Flash ($0,01)",
+            "cost": "~$0,09"
+          },
+          "budget": {
+            "stack": "Budget",
+            "transcription": "Deepgram ($0,054)",
+            "analysis": "Gemini 1.5 Flash ($0,01)",
+            "cost": "~$0,07"
+          },
+          "ultraBudget": {
+            "stack": "Ultra Budget",
+            "transcription": "Groq Whisper ($0,023)",
+            "analysis": "Gemini 1.5 Flash ($0,01)",
+            "cost": "~$0,03"
+          }
         },
         "perCallFootnote": "*Baseado em ligação média de 12,5 min. Inclui envio de e-mail (~$0,001).",
         "ragTitle": "Custos da Base RAG (plano Pro + RAG)",
         "ragNote": "Arquivos de áudio precisam de transcrição antes da indexação",
-        "ragTh": { "operation": "Operação", "model": "Modelo", "cost": "Custo" },
+        "ragTh": {
+          "operation": "Operação",
+          "model": "Modelo",
+          "cost": "Custo"
+        },
         "ragRows": {
-          "audio":     { "operation": "Transcrição de áudio (12,5 min)", "model": "Whisper",        "cost": "~$0,075" },
-          "embedding": { "operation": "Embedding de texto",              "model": "OpenAI ada-002", "cost": "~$0,0001" },
-          "total":     { "operation": "Total por áudio indexado",        "model": "",               "cost": "~$0,08" }
+          "audio": {
+            "operation": "Transcrição de áudio (12,5 min)",
+            "model": "Whisper",
+            "cost": "~$0,075"
+          },
+          "embedding": {
+            "operation": "Embedding de texto",
+            "model": "OpenAI ada-002",
+            "cost": "~$0,0001"
+          },
+          "total": {
+            "operation": "Total por áudio indexado",
+            "model": "",
+            "cost": "~$0,08"
+          }
         },
         "index50": "Indexar 50 ligações",
         "index50Value": "~$4,00",
@@ -1322,61 +1527,122 @@
             "rubric": {
               "category": "Gestor de Script e Rubrica",
               "items": [
-                { "text": "Criar/editar rubrica de avaliação com critérios", "note": "Persistido no Supabase" },
-                { "text": "Definir limiares de aprovação/reprovação por critério" },
-                { "text": "Um script ativo por vez" },
-                { "text": "Customizar system prompt da análise de IA" }
+                {
+                  "text": "Criar/editar rubrica de avaliação com critérios",
+                  "note": "Persistido no Supabase"
+                },
+                {
+                  "text": "Definir limiares de aprovação/reprovação por critério"
+                },
+                {
+                  "text": "Um script ativo por vez"
+                },
+                {
+                  "text": "Customizar system prompt da análise de IA"
+                }
               ]
             },
             "upload": {
               "category": "Upload manual de ligação",
               "items": [
-                { "text": "Upload de áudio (.mp3, .wav, .m4a)" },
-                { "text": "Colagem direta de transcrição" },
-                { "text": "Informar nome e e-mail do adestrador manualmente" },
-                { "text": "Indicador de progresso do upload" }
+                {
+                  "text": "Upload de áudio (.mp3, .wav, .m4a)"
+                },
+                {
+                  "text": "Colagem direta de transcrição"
+                },
+                {
+                  "text": "Informar nome e e-mail do adestrador manualmente"
+                },
+                {
+                  "text": "Indicador de progresso do upload"
+                }
               ]
             },
             "analysis": {
               "category": "Análise de ligação com IA",
               "items": [
-                { "text": "Transcrição via Whisper (se áudio)" },
-                { "text": "Análise GPT-4o contra a rubrica" },
-                { "text": "Busca critérios + system prompt no Supabase" },
-                { "text": "Nota por critério (aprovado/reprovado)" },
-                { "text": "Nota geral da ligação" },
-                { "text": "Feedback específico por critério" },
-                { "text": "Exibição completa da transcrição para review do admin" }
+                {
+                  "text": "Transcrição via Whisper (se áudio)"
+                },
+                {
+                  "text": "Análise GPT-4o contra a rubrica"
+                },
+                {
+                  "text": "Busca critérios + system prompt no Supabase"
+                },
+                {
+                  "text": "Nota por critério (aprovado/reprovado)"
+                },
+                {
+                  "text": "Nota geral da ligação"
+                },
+                {
+                  "text": "Feedback específico por critério"
+                },
+                {
+                  "text": "Exibição completa da transcrição para review do admin"
+                }
               ]
             },
             "email": {
               "category": "E-mail de coaching pós-ligação",
               "items": [
-                { "text": "Envio manual de e-mail via Resend" },
-                { "text": "Feedback de coaching personalizado" },
-                { "text": "Dicas de melhoria acionáveis" },
-                { "text": "Resumo de notas incluído" },
-                { "text": "Auto-salvar ligação no banco após envio" }
+                {
+                  "text": "Envio manual de e-mail via Resend"
+                },
+                {
+                  "text": "Feedback de coaching personalizado"
+                },
+                {
+                  "text": "Dicas de melhoria acionáveis"
+                },
+                {
+                  "text": "Resumo de notas incluído"
+                },
+                {
+                  "text": "Auto-salvar ligação no banco após envio"
+                }
               ]
             },
             "history": {
               "category": "Página de histórico",
               "items": [
-                { "text": "Lista de todas as ligações processadas" },
-                { "text": "Busca por nome ou e-mail do adestrador" },
-                { "text": "Ver detalhes individuais da ligação com análise completa" },
-                { "text": "Exibir transcrição e notas" }
+                {
+                  "text": "Lista de todas as ligações processadas"
+                },
+                {
+                  "text": "Busca por nome ou e-mail do adestrador"
+                },
+                {
+                  "text": "Ver detalhes individuais da ligação com análise completa"
+                },
+                {
+                  "text": "Exibir transcrição e notas"
+                }
               ]
             },
             "summary": {
               "category": "Resumo agregado",
               "items": [
-                { "text": "Dashboard de total de ligações processadas" },
-                { "text": "Visualização de tendência da nota média (linha)" },
-                { "text": "Top áreas de melhoria agregadas (barras)" },
-                { "text": "Insights inteligentes e resumos de performance" },
-                { "text": "Badges de conquista e reconhecimento de adestradores" },
-                { "text": "Dashboard de analytics em tempo real" }
+                {
+                  "text": "Dashboard de total de ligações processadas"
+                },
+                {
+                  "text": "Visualização de tendência da nota média (linha)"
+                },
+                {
+                  "text": "Top áreas de melhoria agregadas (barras)"
+                },
+                {
+                  "text": "Insights inteligentes e resumos de performance"
+                },
+                {
+                  "text": "Badges de conquista e reconhecimento de adestradores"
+                },
+                {
+                  "text": "Dashboard de analytics em tempo real"
+                }
               ]
             }
           }
@@ -1388,15 +1654,30 @@
           "deliverables": {
             "twilio": {
               "category": "Integração via Webhook Twilio",
-              "items": ["Endpoint de webhook para eventos de ligação", "Ingestão automática ao fim da ligação", "Validação de assinatura Twilio (segurança)", "Extração de URL da gravação", "Parsing de metadados de contato"]
+              "items": [
+                "Endpoint de webhook para eventos de ligação",
+                "Ingestão automática ao fim da ligação",
+                "Validação de assinatura Twilio (segurança)",
+                "Extração de URL da gravação",
+                "Parsing de metadados de contato"
+              ]
             },
             "db": {
               "category": "Melhorias no banco",
-              "items": ["Fila de processamento de ligações", "Lógica de retry para falhas", "Logging de eventos de webhook", "Tratamento de idempotência (sem duplicatas)"]
+              "items": [
+                "Fila de processamento de ligações",
+                "Lógica de retry para falhas",
+                "Logging de eventos de webhook",
+                "Tratamento de idempotência (sem duplicatas)"
+              ]
             },
             "admin": {
               "category": "Notificações de admin",
-              "items": ["Alertas de erro para falhas de processamento", "E-mail diário de resumo (opcional)", "Dashboard de status de processamento"]
+              "items": [
+                "Alertas de erro para falhas de processamento",
+                "E-mail diário de resumo (opcional)",
+                "Dashboard de status de processamento"
+              ]
             }
           }
         },
@@ -1407,15 +1688,30 @@
           "deliverables": {
             "rag": {
               "category": "Base de conhecimento RAG",
-              "items": ["Setup de banco vetorial (pgvector)", "Interface de upload de documentos", "Chunking e embedding automáticos", "Suporte a PDFs, docs, arquivos de texto"]
+              "items": [
+                "Setup de banco vetorial (pgvector)",
+                "Interface de upload de documentos",
+                "Chunking e embedding automáticos",
+                "Suporte a PDFs, docs, arquivos de texto"
+              ]
             },
             "contextual": {
               "category": "Análise de IA contextual",
-              "items": ["Busca semântica na base de conhecimento", "Feedback de coaching com contexto", "Referência a materiais de treinamento específicos", "Citação de best practices relevantes"]
+              "items": [
+                "Busca semântica na base de conhecimento",
+                "Feedback de coaching com contexto",
+                "Referência a materiais de treinamento específicos",
+                "Citação de best practices relevantes"
+              ]
             },
             "management": {
               "category": "Gestão de conhecimento",
-              "items": ["Ver/excluir documentos carregados", "Re-indexar documentos sob demanda", "Analytics de uso de documentos", "Rastreio de versão para updates"]
+              "items": [
+                "Ver/excluir documentos carregados",
+                "Re-indexar documentos sob demanda",
+                "Analytics de uso de documentos",
+                "Rastreio de versão para updates"
+              ]
             }
           }
         }
