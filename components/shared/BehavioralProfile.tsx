@@ -55,22 +55,21 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
               className="py-2.5"
               style={{ borderBottom: i < dimensions.length - 1 ? '1px solid var(--am-border)' : 'none' }}
             >
-              <div
-                className="grid items-center gap-2"
-                style={{ gridTemplateColumns: '140px 1fr 2.5rem 3.5rem 5.5rem' }}
-              >
-                {/* Dimension name */}
-                <span className="text-[12px] font-medium truncate" style={{ color: 'var(--am-text)' }}>
+              {/* Mobile: label full width, then bar + meta below */}
+              {/* Desktop: single row grid */}
+              <div className="grid items-center gap-x-2 gap-y-1.5 grid-cols-2 sm:grid-cols-[140px_1fr_2.5rem_3.5rem_5.5rem]">
+
+                {/* Dimension name — full width on mobile */}
+                <span className="text-[12px] font-medium col-span-2 sm:col-span-1" style={{ color: 'var(--am-text)' }}>
                   {dim.dimension}
                 </span>
 
-                {/* Bar track */}
-                <div className="relative h-[10px] rounded-full" style={{ background: 'var(--am-bg4)' }}>
+                {/* Bar track — full width on mobile */}
+                <div className="relative h-[10px] rounded-full col-span-2 sm:col-span-1" style={{ background: 'var(--am-bg4)' }}>
                   <div
                     className="absolute left-0 top-0 h-full rounded-full"
                     style={{ width: `${dim.score}%`, background: barColor }}
                   />
-                  {/* Team avg marker */}
                   <div
                     className="absolute top-0 h-full w-[2px] rounded-full"
                     style={{ left: markerPct, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
@@ -78,20 +77,20 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
                 </div>
 
                 {/* Score */}
-                <span className="text-[12px] font-mono font-semibold text-right" style={{ color: 'var(--am-text)' }}>
+                <span className="text-[12px] font-mono font-semibold" style={{ color: 'var(--am-text)' }}>
                   {dim.score}
                 </span>
 
                 {/* Delta */}
                 <span
-                  className="text-[11px] font-mono font-semibold text-right"
+                  className="text-[11px] font-mono font-semibold text-right sm:text-right"
                   style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-red)' }}
                 >
                   {isAbove ? `+${dim.delta}` : dim.delta}
                 </span>
 
-                {/* Level + Source badges side by side */}
-                <div className="flex gap-1 justify-end flex-nowrap">
+                {/* Level + Source badges */}
+                <div className="flex gap-1 col-span-2 sm:col-span-1 justify-start sm:justify-end flex-nowrap">
                   <span
                     className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
                     style={{ color: lvlStyle.color, background: lvlStyle.bg }}

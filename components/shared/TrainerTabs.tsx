@@ -177,16 +177,15 @@ export function TrainerTabs() {
         />
       )}
 
-      {/* ── Profile (esq, altura total) + Trends & Recs (dir, empilhados) ── */}
+      {/* ── Profile (esq) + Trends (dir) lado a lado ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Coluna esquerda: Profile ocupa toda a altura */}
         <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} trainerName={trainer.name.split(' ')[0]} />
+        <BehavioralTrends dimensions={behavioralTrends[trainerKey] ?? []} />
+      </div>
 
-        {/* Coluna direita: Trends em cima, Recs embaixo */}
-        <div className="flex flex-col gap-4">
-          <BehavioralTrends dimensions={behavioralTrends[trainerKey] ?? []} />
-          <CoachingRecommendations recs={recs[trainerKey] ?? []} />
-        </div>
+      {/* ── Coaching Recs (largura total) ── */}
+      <div className="mb-4">
+        <CoachingRecommendations recs={recs[trainerKey] ?? []} />
       </div>
 
       {/* ── Best (esq) + Needs Improvement (dir) ─────────────── */}
