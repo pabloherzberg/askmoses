@@ -60,12 +60,17 @@ export async function POST(request: NextRequest) {
 
     // ── 1. Fetch default rubric + criteria for the org ───────────────────────
     const orgId = await getOrgId();
-    const rubricData =
-      orgId && body.rubricId
-        ? await resolveRubricForOrg(orgId, body.rubricId)
-        : orgId
-          ? await dbGetDefaultRubricWithCriteria(orgId)
-          : null;
+    let rubricData = null
+    try {
+      rubricData =
+        orgId && body.rubricId
+          ? await resolveRubricForOrg(orgId, body.rubricId)
+          : orgId
+            ? await dbGetDefaultRubricWithCriteria(orgId)
+            : null
+    } catch (e) {
+      console.warn('[analyze] Could not fetch rubric, using defaults:', e instanceof Error ? e.message : e)
+    }
 
     const criteria = rubricData?.criteria ?? [];
     const rubricId = rubricData?.rubric.id ?? null;
@@ -300,23 +305,28 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       : (outcomeAliases[rawOutcome] ?? "no_decision");
 
     // ── 5. Save call to Supabase ────────────────────────────────────────────
-    const savedCall = await dbCreateCall({
-      orgId: orgId ?? undefined,
-      rubricId: rubricId ?? undefined,
-      trainerId: sessionTrainerId ?? undefined,
-      trainerName: trainerName ?? "Unknown",
-      trainerEmail: trainerEmail ?? undefined,
-      transcript,
-      overallScore,
-      totalCriteria: parsed.criteriaScores.length,
-      criteria: parsed.criteriaScores as unknown as Record<string, unknown>,
-      summary: parsed.summary,
-      strengths: parsed.strengths,
-      improvements: parsed.improvements,
-      callOutcome: body.callOutcome ?? detectedOutcome,
-      clientName: clientName ?? undefined,
-      detectedOutcome,
-    });
+    let savedCall: { id?: string } = {}
+    try {
+      savedCall = await dbCreateCall({
+        orgId: orgId ?? undefined,
+        rubricId: rubricId ?? undefined,
+        trainerId: sessionTrainerId ?? undefined,
+        trainerName: trainerName ?? "Unknown",
+        trainerEmail: trainerEmail ?? undefined,
+        transcript,
+        overallScore,
+        totalCriteria: parsed.criteriaScores.length,
+        criteria: parsed.criteriaScores as unknown as Record<string, unknown>,
+        summary: parsed.summary,
+        strengths: parsed.strengths,
+        improvements: parsed.improvements,
+        callOutcome: body.callOutcome ?? detectedOutcome,
+        clientName: clientName ?? undefined,
+        detectedOutcome,
+      })
+    } catch (e) {
+      console.warn('[analyze] Could not save call to DB, continuing:', e instanceof Error ? e.message : e)
+    }
 
     // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────
     if (sessionTrainerId) {
