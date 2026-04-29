@@ -1,6 +1,7 @@
 import type {
   Trainer,
   Call,
+  CallSection,
   RubricSection,
   Insight,
   Client,
@@ -119,6 +120,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Bob W.',
     rubricScores: { discovery: 96, problemAgitation: 91, offerPresentation: 97, objectionHandling: 84, closeAndNextSteps: 92 },
+    sections: [
+      { name: 'Discovery',           score: 4.8, feedback: 'Asked 4 open-ended questions before any presentation. Identified the escape problem and emotional stakes within 5 minutes.', critical: true },
+      { name: 'Problem Agitation',   score: 4.5, feedback: 'Reflected the family tension back to Bob, deepening urgency. Connected the problem to real cost (lost dog, restricted life).', critical: true },
+      { name: 'Offer Presentation',  score: 4.8, feedback: 'Offer framed as the exact solution to Bob\'s stated pain. Transformation described before price.', critical: false },
+      { name: 'Objection Handling',  score: 4.2, feedback: 'Price objection handled with a concrete ROI reframe. Could have been slightly quicker.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.6, feedback: 'Natural close without pressure. Next step was clear and concrete.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Excellent performance. Marcus demonstrated complete mastery of the discovery process, asking 4 open-ended questions before any presentation. The close was natural and pressure-free.',
     strengths: [
       'Asked 4 open-ended questions before presenting any offer',
@@ -140,6 +148,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Sarah K.',
     rubricScores: { discovery: 95, problemAgitation: 88, offerPresentation: 94, objectionHandling: 80, closeAndNextSteps: 90 },
+    sections: [
+      { name: 'Discovery',           score: 4.8, feedback: 'Discovered the root cause (separation anxiety) in 3 questions. Solid use of follow-up questions to validate.', critical: true },
+      { name: 'Problem Agitation',   score: 4.4, feedback: 'Connected the behavior to financial damage (furniture). Could have added more emotional depth.', critical: true },
+      { name: 'Offer Presentation',  score: 4.7, feedback: 'Offer presented as the specific fix for identified pain. Price held without discount.', critical: false },
+      { name: 'Objection Handling',  score: 4.0, feedback: 'Redirected to value effectively. Could improve speed of initial response.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.5, feedback: 'Closed at full price. Concrete next step defined.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Great call. Marcus used the open-ended questioning method masterfully. The objection moment was handled well by redirecting focus to the value of the transformation.',
     strengths: [
       'Discovered in 3 questions that the dog was destroying furniture due to separation anxiety',
@@ -161,6 +176,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Mike D.',
     rubricScores: { discovery: 93, problemAgitation: 87, offerPresentation: 92, objectionHandling: 80, closeAndNextSteps: 88 },
+    sections: [
+      { name: 'Discovery',           score: 4.6, feedback: 'Uncovered the social embarrassment angle — a pain point the prospect hadn\'t explicitly stated.', critical: true },
+      { name: 'Problem Agitation',   score: 4.3, feedback: 'Used social proof to anchor the agitation. Time in the agitation phase was slightly short.', critical: true },
+      { name: 'Offer Presentation',  score: 4.6, feedback: 'Specific social proof example matched the prospect\'s breed. Clear transformation framing.', critical: false },
+      { name: 'Objection Handling',  score: 4.0, feedback: 'Minor hesitation on the time objection before recovering. Good final resolution.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.4, feedback: 'Clean close. Next steps confirmed before ending the call.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Solid call. Discovery well executed, offer presented at the right time. Minor hesitation on the time objection, but handled well.',
     strengths: [
       'Discovered the real issue was embarrassment on the street, not just behavior at home',
@@ -181,6 +203,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Linda P.',
     rubricScores: { discovery: 92, problemAgitation: 86, offerPresentation: 91, objectionHandling: 79, closeAndNextSteps: 88 },
+    sections: [
+      { name: 'Discovery',           score: 4.6, feedback: 'Kept prospect engaged with strategic questions across a longer call. Strong active listening.', critical: true },
+      { name: 'Problem Agitation',   score: 4.3, feedback: 'Urgency created naturally via limited spots. Emotional connection was present.', critical: true },
+      { name: 'Offer Presentation',  score: 4.5, feedback: 'Offer well-positioned after the agitation. Price context was strong.', critical: false },
+      { name: 'Objection Handling',  score: 4.0, feedback: 'Some resistance required extra effort to navigate. Final resolution was effective.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.4, feedback: 'Closed successfully. Next step lacked a specific time — ended somewhat open.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Good performance. Longer call than usual, but Marcus maintained control of the conversation throughout.',
     strengths: [
       'Kept the prospect engaged for 45 minutes with strategic questions',
@@ -199,6 +228,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Tom R.',
     rubricScores: { discovery: 91, problemAgitation: 84, offerPresentation: 89, objectionHandling: 78, closeAndNextSteps: 86 },
+    sections: [
+      { name: 'Discovery',           score: 4.5, feedback: 'Correctly read that the prospect was pre-qualified and calibrated the depth accordingly.', critical: true },
+      { name: 'Problem Agitation',   score: 4.2, feedback: 'Lighter agitation appropriate for a warm prospect. Slightly short for a cold lead.', critical: true },
+      { name: 'Offer Presentation',  score: 4.4, feedback: 'Plans presented in ascending value order. Prospect engaged quickly.', critical: false },
+      { name: 'Objection Handling',  score: 3.9, feedback: 'No major objections arose. Baseline handling readiness was demonstrated.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.3, feedback: 'Efficient close. Could have been even cleaner with a harder ask.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Efficient and quick call. Marcus correctly identified that Tom was ready to buy from the start and adjusted the pace accordingly.',
     strengths: [
       'Correctly read that the prospect was qualified and accelerated the call',
@@ -217,6 +253,13 @@ export const calls: Call[] = [
     result: 'follow_up',
     prospect: 'Amy C.',
     rubricScores: { discovery: 93, problemAgitation: 88, offerPresentation: 90, objectionHandling: 76, closeAndNextSteps: 83 },
+    sections: [
+      { name: 'Discovery',           score: 4.6, feedback: 'Identified the co-decision maker before attempting a close. Strong situational awareness.', critical: true },
+      { name: 'Problem Agitation',   score: 4.4, feedback: 'Future pacing used well. Prospect was emotionally engaged throughout.', critical: true },
+      { name: 'Offer Presentation',  score: 4.5, feedback: 'Offer positioned against the emotional stakes. Value clearly communicated.', critical: false },
+      { name: 'Objection Handling',  score: 3.8, feedback: 'Handled the husband situation gracefully but missed the opportunity to include him live.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.1, feedback: 'Follow-up booked with a specific date. Good discipline in not leaving it open-ended.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Excellent discovery and presentation. The call didn\'t close because Amy needed to confirm schedule availability with her husband — follow-up booked for 2 days out.',
     strengths: [
       'Identified the co-decision maker (husband) before attempting to close',
@@ -235,6 +278,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Chris B.',
     rubricScores: { discovery: 90, problemAgitation: 85, offerPresentation: 88, objectionHandling: 72, closeAndNextSteps: 82 },
+    sections: [
+      { name: 'Discovery',           score: 4.5, feedback: 'Established cost-of-inaction framing early. Used the "what is this costing you?" question effectively.', critical: true },
+      { name: 'Problem Agitation',   score: 4.2, feedback: 'Multiple cost dimensions surfaced (furniture, vet, travel). Solid emotional connection.', critical: true },
+      { name: 'Offer Presentation',  score: 4.4, feedback: 'Presentation was clear. Slight delay in recovering after the price objection.', critical: false },
+      { name: 'Objection Handling',  score: 3.6, feedback: 'Price objection response was a bit defensive. Used strategic silence but could have reframed more quickly.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.1, feedback: 'Closed despite stronger-than-usual resistance. Tone stayed calm throughout.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Good call with consistent close. The price objection came in stronger than usual and Marcus took a moment to regain control.',
     strengths: [
       'Kept a calm tone during the more resistant price objection',
@@ -255,6 +305,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Diana M.',
     rubricScores: { discovery: 91, problemAgitation: 90, offerPresentation: 88, objectionHandling: 84, closeAndNextSteps: 87 },
+    sections: [
+      { name: 'Discovery',           score: 4.5, feedback: 'Good situational questions. Identified that the dog was restricting the prospect\'s social life.', critical: true },
+      { name: 'Problem Agitation',   score: 4.5, feedback: 'Empathetic delivery made agitation feel genuine. Prospect became emotionally engaged without feeling manipulated.', critical: true },
+      { name: 'Offer Presentation',  score: 4.4, feedback: 'Offer framed as a lifestyle restoration, not just a training service. Strong value communication.', critical: false },
+      { name: 'Objection Handling',  score: 4.2, feedback: 'Close made before resistance surfaced — good timing read.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.3, feedback: 'Closed with confidence. Concrete follow-up step defined.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Excellent call from Jamie. The problem agitation was particularly strong — Diana became visibly emotional talking about how much stress the dog was causing.',
     strengths: [
       'Problem agitation delivered with genuine empathy — didn\'t come across as manipulative',
@@ -273,6 +330,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Robert L.',
     rubricScores: { discovery: 88, problemAgitation: 86, offerPresentation: 84, objectionHandling: 80, closeAndNextSteps: 82 },
+    sections: [
+      { name: 'Discovery',           score: 4.4, feedback: 'Specific situational question surfaced a concrete recent example. Good depth.', critical: true },
+      { name: 'Problem Agitation',   score: 4.3, feedback: 'Calibrated agitation for a prospect already aware of the problem. Appropriately restrained.', critical: true },
+      { name: 'Offer Presentation',  score: 4.2, feedback: 'Breed-specific social proof was a strong touch. Offer felt personalized.', critical: false },
+      { name: 'Objection Handling',  score: 4.0, feedback: 'No major objections. Handled minor hesitation smoothly.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.1, feedback: 'Close felt slightly hesitant. Could have been more directive.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Well-conducted and efficient call. Robert was already aware of the problem and Jamie correctly calibrated the intensity of the agitation.',
     strengths: [
       'Correctly calibrated agitation level for a prospect already aware of the problem',
@@ -291,6 +355,13 @@ export const calls: Call[] = [
     result: 'follow_up',
     prospect: 'Karen H.',
     rubricScores: { discovery: 87, problemAgitation: 85, offerPresentation: 82, objectionHandling: 78, closeAndNextSteps: 80 },
+    sections: [
+      { name: 'Discovery',           score: 4.3, feedback: 'Found the co-decision maker mid-call. Would have been stronger if surfaced in opening questions.', critical: true },
+      { name: 'Problem Agitation',   score: 4.2, feedback: 'Connected the dog scratching to child safety — high emotional stakes leveraged well.', critical: true },
+      { name: 'Offer Presentation',  score: 4.1, feedback: 'Offer presentation was solid. Slightly cut short given the co-decision constraint.', critical: false },
+      { name: 'Objection Handling',  score: 3.9, feedback: 'Didn\'t push for a close knowing a second decision-maker was needed. Appropriate restraint.', critical: false },
+      { name: 'Close & Next Steps',  score: 4.0, feedback: 'Follow-up scheduled. Maintained Karen\'s engagement for the next call.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Good call. Karen is a shared decision-maker with her husband and Jamie identified this halfway through — follow-up to include him.',
     strengths: [
       'Didn\'t try to close knowing there was another decision-maker in the equation',
@@ -309,6 +380,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Steve N.',
     rubricScores: { discovery: 84, problemAgitation: 82, offerPresentation: 80, objectionHandling: 74, closeAndNextSteps: 78 },
+    sections: [
+      { name: 'Discovery',           score: 4.2, feedback: 'Used a future-pacing question to open. Solid but brief.', critical: true },
+      { name: 'Problem Agitation',   score: 4.1, feedback: 'Agitation moved too fast. Emotional cost of the problem was not fully developed.', critical: true },
+      { name: 'Offer Presentation',  score: 4.0, feedback: 'Direct no-nonsense presentation matched the prospect\'s profile. Left upsell potential untouched.', critical: false },
+      { name: 'Objection Handling',  score: 3.7, feedback: 'Minor handling of slight hesitation. Could have probed deeper.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.9, feedback: 'Consistent close in a short call. Could have pushed for a higher-tier plan.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Shorter call than ideal. Jamie closed but left money on the table — Steve could have bought a more complete plan with more agitation.',
     strengths: ['Consistent close even in a shorter call', 'Direct and no-nonsense tone, appropriate for the prospect\'s profile'],
     improvements: ['Problem agitation too fast — didn\'t explore the emotional costs of the problem'],
@@ -324,6 +402,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'Nancy W.',
     rubricScores: { discovery: 85, problemAgitation: 80, offerPresentation: 78, objectionHandling: 62, closeAndNextSteps: 70 },
+    sections: [
+      { name: 'Discovery',           score: 4.2, feedback: 'Good rapport. Real pain correctly identified. Opening was strong.', critical: true },
+      { name: 'Problem Agitation',   score: 4.0, feedback: 'Pain was established but emotional intensity faded before the close attempt.', critical: true },
+      { name: 'Offer Presentation',  score: 3.9, feedback: 'Offer presentation was adequate but not compelling enough to neutralize the price concern.', critical: false },
+      { name: 'Objection Handling',  score: 3.1, feedback: 'Went into justification mode immediately. Failed to probe the real objection or reframe value. Call ended with no commitment.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.5, feedback: 'No next step defined. Call ended open-ended — prospect left without any commitment.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Discovery and agitation well done, but Jamie couldn\'t overcome the price objection effectively. Nancy left without buying and without a clear next step.',
     strengths: ['Good rapport built in the opening phase', 'Discovery correctly identified the real pain'],
     improvements: [
@@ -344,6 +429,13 @@ export const calls: Call[] = [
     result: 'follow_up',
     prospect: 'Peter G.',
     rubricScores: { discovery: 82, problemAgitation: 65, offerPresentation: 83, objectionHandling: 70, closeAndNextSteps: 68 },
+    sections: [
+      { name: 'Discovery',           score: 4.1, feedback: 'Problem identified early. Questions were surface-level — no follow-up depth.', critical: true },
+      { name: 'Problem Agitation',   score: 3.2, feedback: 'Jumped from discovery directly to the offer. The prospect\'s pain was not sufficiently deepened.', critical: true },
+      { name: 'Offer Presentation',  score: 4.1, feedback: 'Clear and well-structured program explanation. Confident delivery.', critical: false },
+      { name: 'Objection Handling',  score: 3.5, feedback: 'Some hesitation managed. Could have been more proactive in surfacing concerns.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.4, feedback: 'Follow-up vague — "I\'ll send you the material" with no date. Low commitment signal.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Reasonable discovery. Jordan identified the problem but moved too quickly to the offer presentation. Problem agitation was superficial.',
     strengths: ['Offer presentation clear and well-structured', 'Confident tone throughout the call'],
     improvements: [
@@ -362,6 +454,13 @@ export const calls: Call[] = [
     result: 'closed',
     prospect: 'Donna F.',
     rubricScores: { discovery: 80, problemAgitation: 62, offerPresentation: 81, objectionHandling: 66, closeAndNextSteps: 65 },
+    sections: [
+      { name: 'Discovery',           score: 4.0, feedback: 'Functional discovery. Problems identified but not probed deeply.', critical: true },
+      { name: 'Problem Agitation',   score: 3.1, feedback: 'Weak agitation — Donna wasn\'t sufficiently committed to value before price was discussed.', critical: true },
+      { name: 'Offer Presentation',  score: 4.0, feedback: 'Product knowledge evident. Presentation was clear but not emotionally anchored.', critical: false },
+      { name: 'Objection Handling',  score: 3.3, feedback: 'Gave a discount without exploring other resolution paths. Price objection not genuinely handled.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.2, feedback: 'Closed with a discount — value was not sufficiently established. Leaves precedent for future negotiations.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Closed but with an unnecessary discount. Jordan didn\'t create enough value in the agitation phase and caved on price before exploring other objections.',
     strengths: ['Persisted through to close despite objection', 'Knows the product well and presented it clearly'],
     improvements: [
@@ -380,6 +479,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'Mark T.',
     rubricScores: { discovery: 78, problemAgitation: 60, offerPresentation: 79, objectionHandling: 63, closeAndNextSteps: 62 },
+    sections: [
+      { name: 'Discovery',           score: 3.9, feedback: 'Good opening atmosphere. Only surface-level questions before pivoting to the pitch.', critical: true },
+      { name: 'Problem Agitation',   score: 3.0, feedback: 'Offer presented at minute 10 — problem was barely established. Prospect disengaged shortly after.', critical: true },
+      { name: 'Offer Presentation',  score: 3.9, feedback: 'Presentation was structured but lost impact because the problem frame wasn\'t set.', critical: false },
+      { name: 'Objection Handling',  score: 3.1, feedback: 'Didn\'t attempt recovery when disengagement was visible. Opportunity missed.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.1, feedback: 'No real close attempt. Call ended without a commitment or a defined next step.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Call with a good start but lost the thread halfway. Jordan moved to the offer too early and couldn\'t regain the prospect\'s engagement.',
     strengths: ['Good call opening, created a positive initial atmosphere'],
     improvements: [
@@ -398,6 +504,13 @@ export const calls: Call[] = [
     result: 'follow_up',
     prospect: 'Susan B.',
     rubricScores: { discovery: 76, problemAgitation: 58, offerPresentation: 78, objectionHandling: 62, closeAndNextSteps: 60 },
+    sections: [
+      { name: 'Discovery',           score: 3.8, feedback: 'Only 2 questions before moving to the offer. Prospect\'s situation barely explored.', critical: true },
+      { name: 'Problem Agitation',   score: 2.9, feedback: 'Practically non-existent. Jumped from a vague problem description directly to "want me to send info?"', critical: true },
+      { name: 'Offer Presentation',  score: 3.9, feedback: 'Product knowledge is solid. Delivery lacks urgency or emotional hook.', critical: false },
+      { name: 'Objection Handling',  score: 3.1, feedback: 'No real objections surfaced — likely because the conversation never went deep enough.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.0, feedback: 'Follow-up scheduled but without qualifying interest. Low commitment from prospect.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Weak call. Jordan managed to present the product but without creating the urgency context needed for the close.',
     strengths: ['Solid product knowledge'],
     improvements: [
@@ -417,6 +530,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'James R.',
     rubricScores: { discovery: 68, problemAgitation: 55, offerPresentation: 72, objectionHandling: 60, closeAndNextSteps: 58 },
+    sections: [
+      { name: 'Discovery',           score: 3.4, feedback: 'Single question about the dog before pivoting to price. No situational context built.', critical: true },
+      { name: 'Problem Agitation',   score: 2.7, feedback: 'No agitation attempt. Went from problem mention to price quote in under 2 minutes.', critical: true },
+      { name: 'Offer Presentation',  score: 3.6, feedback: 'Price and program mentioned clearly. Zero framing or value setup before the number.', critical: false },
+      { name: 'Objection Handling',  score: 3.0, feedback: 'Prospect said "let me think" and Jordan accepted without any probe or push.', critical: false },
+      { name: 'Close & Next Steps',  score: 2.9, feedback: 'Premature close with no foundation. Ended without a defined next step.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Very short and shallow call. Jordan couldn\'t deepen the conversation enough to create value.',
     strengths: ['At least the call happened — Jordan needed more discovery practice'],
     improvements: [
@@ -438,6 +558,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'Helen K.',
     rubricScores: { discovery: 70, problemAgitation: 60, offerPresentation: 74, objectionHandling: 58, closeAndNextSteps: 65 },
+    sections: [
+      { name: 'Discovery',           score: 3.5, feedback: 'Discovery was technical (behavior-focused) rather than impact-focused. Did not explore how the problem affects the owner\'s life.', critical: true },
+      { name: 'Problem Agitation',   score: 3.0, feedback: 'Surface-level agitation. No emotional cost or life impact established. Prospect stayed detached.', critical: true },
+      { name: 'Offer Presentation',  score: 3.7, feedback: 'Program presented accurately. Specialization in reactivity mentioned. Not emotionally connected to the stated pain.', critical: false },
+      { name: 'Objection Handling',  score: 2.9, feedback: 'Pulled back when Helen hesitated instead of advancing with empathy. Lost momentum at a critical moment.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.2, feedback: 'No close attempted. Call ended without a commitment or next step.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Taylor showed product knowledge but struggled to connect the product to Helen\'s real pain. The call was too technical and not emotional enough.',
     strengths: ['Knows the program specs and differentiators well'],
     improvements: [
@@ -456,6 +583,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'Paul M.',
     rubricScores: { discovery: 68, problemAgitation: 58, offerPresentation: 72, objectionHandling: 55, closeAndNextSteps: 62 },
+    sections: [
+      { name: 'Discovery',           score: 3.4, feedback: 'Functional but shallow. Prospect\'s urgency and emotional stakes not explored.', critical: true },
+      { name: 'Problem Agitation',   score: 2.9, feedback: 'Moved to the offer before Paul felt real urgency. Agitation phase was too brief.', critical: true },
+      { name: 'Offer Presentation',  score: 3.6, feedback: 'Structured and complete presentation. Good product knowledge. No emotional hook.', critical: false },
+      { name: 'Objection Handling',  score: 2.7, feedback: 'Immediately justified price when objection arose. Failed to probe root cause or reframe value. Went defensive.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.1, feedback: 'No close attempt after objection. Call ended without Paul committing to anything.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Second consecutive call without closing. Taylor is clearly struggling in the objection stage — goes defensive instead of keeping focus on value.',
     strengths: ['Structured and complete program presentation'],
     improvements: [
@@ -475,6 +609,13 @@ export const calls: Call[] = [
     result: 'follow_up',
     prospect: 'Alice N.',
     rubricScores: { discovery: 65, problemAgitation: 57, offerPresentation: 71, objectionHandling: 53, closeAndNextSteps: 61 },
+    sections: [
+      { name: 'Discovery',           score: 3.2, feedback: 'Only 2 timid questions before moving to the offer. Alice\'s real situation never explored.', critical: true },
+      { name: 'Problem Agitation',   score: 2.8, feedback: 'No real agitation. Moved from a vague problem description to "I\'ll send you info on WhatsApp."', critical: true },
+      { name: 'Offer Presentation',  score: 3.5, feedback: 'Rushed and lacking confidence. Alice likely didn\'t perceive the real value.', critical: false },
+      { name: 'Objection Handling',  score: 2.6, feedback: 'Call ended without Taylor knowing Alice\'s real reason for hesitation. No probe attempted.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.0, feedback: 'Follow-up scheduled via WhatsApp — low-commitment format. Better than nothing.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Very short call. Taylor seems to be feeling insecure — discovery questions were timid and the offer presentation was too rushed.',
     strengths: ['Scheduled a follow-up — at least didn\'t leave without a next step'],
     improvements: [
@@ -494,6 +635,13 @@ export const calls: Call[] = [
     result: 'no_decision',
     prospect: 'George T.',
     rubricScores: { discovery: 63, problemAgitation: 55, offerPresentation: 70, objectionHandling: 52, closeAndNextSteps: 60 },
+    sections: [
+      { name: 'Discovery',           score: 3.1, feedback: 'Prospect led the conversation from the start. Taylor failed to take control and direct the discovery.', critical: true },
+      { name: 'Problem Agitation',   score: 2.7, feedback: 'No agitation attempt. The conversation stayed surface-level throughout.', critical: true },
+      { name: 'Offer Presentation',  score: 3.5, feedback: 'Presentation was reactive — responding to George\'s questions rather than leading a structured pitch.', critical: false },
+      { name: 'Objection Handling',  score: 2.6, feedback: '"Let me think" accepted without any probe or push. Call ended in a passive position.', critical: false },
+      { name: 'Close & Next Steps',  score: 3.0, feedback: 'No close attempt. Ended with "let me think about what you said" — fully passive.', critical: false },
+    ] satisfies CallSection[],
     feedback: 'Concerning call. Taylor is showing clear signs of low confidence. Voice was hesitant and he let the prospect lead the entire conversation.',
     strengths: ['Managed to keep George on the call for 25 minutes'],
     improvements: [

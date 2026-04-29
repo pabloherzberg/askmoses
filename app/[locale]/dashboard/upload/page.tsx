@@ -58,6 +58,7 @@ interface SectionResult {
   name: string
   score: number
   feedback: string
+  critical?: boolean
 }
 
 interface AnalysisResult {
@@ -490,8 +491,15 @@ export default function UploadPage() {
                 score >= 3.5 ? t("results.sectionLabels.strong") :
                 score >= 2.5 ? t("results.sectionLabels.adequate") :
                 score >= 1.5 ? t("results.sectionLabels.needsWork") : t("results.sectionLabels.notAttempted")
+              const isCriticalAlert = section.critical && score <= 2
               return (
                 <div key={index} className={`rounded-lg border p-4 ${color}`}>
+                  {isCriticalAlert && (
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded px-2 py-1 mb-3">
+                      <span>⚠</span>
+                      <span>{t("results.criticalSectionAlert")}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-base">{section.name}</span>
                     <Badge variant="outline" className="font-bold text-sm shrink-0 ml-2">
