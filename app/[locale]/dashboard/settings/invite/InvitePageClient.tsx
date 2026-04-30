@@ -8,6 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -94,6 +102,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
   const [loadingActive, setLoadingActive] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [revokeTarget, setRevokeTarget] = useState<InviteUser | null>(null)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
 
@@ -185,7 +194,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
       return
     }
 
-    const body: Record<string, string> = { name, email, role: form.role }
+    const body: Record<string, string> = { name, email, role: form.role, locale }
     if (isAdmin) {
       if (!form.orgId.trim()) {
         setFeedback({ kind: 'error', message: t('feedback.orgRequired') })
@@ -213,7 +222,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
       if (!res.ok || json.error) {
         setFeedback({
           kind: 'error',
-          message: json.error?.message ?? t('feedback.inviteError'),
+          message: t('feedback.inviteError'),
         })
         return
       }
@@ -227,8 +236,9 @@ export function InvitePageClient({ role: callerRole }: Props) {
     }
   }
 
-  const handleRevoke = async (id: string) => {
-    if (!confirm(t('confirmRevoke'))) return
+  const confirmRevoke = async () => {
+    if (!revokeTarget) return
+    const id = revokeTarget.id
 
     setRevokingId(id)
     setFeedback(null)
@@ -239,7 +249,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
       if (!res.ok || json.error) {
         setFeedback({
           kind: 'error',
-          message: json.error?.message ?? t('feedback.revokeError'),
+          message: t('feedback.revokeError'),
         })
         return
       }
@@ -249,6 +259,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
       void fetchActive(activePage)
     } finally {
       setRevokingId(null)
+      setRevokeTarget(null)
     }
   }
 
@@ -432,7 +443,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium truncate">{u.name}</p>
-                      <Badge variant="secondary">{u.role}</Badge>
+                      <Badge variant="secondary" className="capitalize">{u.role}</Badge>
                       <Badge variant="outline" style={{ color: 'var(--am-amber)', borderColor: 'var(--am-amber)' }}>
                         {t('pendingBadge')}
                       </Badge>
@@ -467,7 +478,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRevoke(u.id)}
+                    onClick={() => setRevokeTarget(u)}
                     disabled={revokingId === u.id}
                   >
                     {revokingId === u.id ? (
@@ -497,7 +508,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                 {isAdmin && orgFilter ? t('emptyActiveFiltered') : t('emptyActive')}
               </div>
             ) : (
-              <Table>
+              <Table className="[&_tr>*:first-child]:pl-6 [&_tr>*:last-child]:pr-6">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('form.nameLabel')}</TableHead>
@@ -512,7 +523,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{u.role}</Badge>
+                        <Badge variant="secondary" className="capitalize">{u.role}</Badge>
                       </TableCell>
                       {isAdmin && (
                         <TableCell className="text-muted-foreground">
@@ -558,6 +569,48 @@ export function InvitePageClient({ role: callerRole }: Props) {
           </div>
         )}
       </div>
+
+      {/* ─── Modal de confirmação de revoke ──────────────────────────── */}
+      <Dialog
+        open={revokeTarget !== null}
+        onOpenChange={(open) => {
+          // Não permite fechar enquanto a request está rodando
+          if (!open && revokingId === null) setRevokeTarget(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('revokeDialog.title')}</DialogTitle>
+            <DialogDescription>{t('revokeDialog.description')}</DialogDescription>
+          </DialogHeader>
+          {revokeTarget && (
+            <div className="rounded-md border border-border bg-secondary/30 p-3 text-sm">
+              <p className="font-medium">{revokeTarget.name}</p>
+              <p className="text-muted-foreground">{revokeTarget.email}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRevokeTarget(null)}
+              disabled={revokingId !== null}
+            >
+              {t('revokeDialog.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmRevoke}
+              disabled={revokingId !== null}
+            >
+              {revokingId !== null ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t('revokeDialog.confirm')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

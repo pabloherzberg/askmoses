@@ -13,7 +13,14 @@ import type { Role } from '@/lib/types'
 
 // Parent routes that should only match on exact path equality — otherwise they
 // would also match every nested child (e.g. /me would also highlight on /me/calls).
-const EXACT_ONLY = new Set(['/dashboard', '/team-command-center', '/me', '/admin'])
+const EXACT_ONLY = new Set([
+  '/dashboard',
+  '/team-command-center',
+  '/me',
+  '/admin',
+  // /dashboard/settings é a página da Rubric; não pode "ativar" em /dashboard/settings/invite (Members)
+  '/dashboard/settings',
+])
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
   const pathname = usePathname()

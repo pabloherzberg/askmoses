@@ -50,7 +50,7 @@
     "title": "Invitaciones",
     "subtitle": "Invita nuevos miembros a tu organización. El invitado recibe un enlace mágico por correo.",
     "card": {
-      "title": "Agregar miembro",
+      "title": "Agregar Miembro",
       "descriptionOwner": "Puedes invitar trainers a tu organización.",
       "descriptionAdmin": "Como admin, puedes invitar owners y trainers a cualquier organización."
     },
@@ -71,18 +71,24 @@
       "submit": "Enviar invitación",
       "submitting": "Enviando..."
     },
-    "pendingTitle": "Invitaciones pendientes",
-    "pendingBadge": "pendiente",
+    "pendingTitle": "Invitaciones Pendientes",
+    "pendingBadge": "Pendiente",
     "sentAt": "Enviado el {date}",
     "invitedByLabel": "Invitado por",
     "orgLabel": "Org",
     "filterOrgLabel": "Organización",
     "filterAllOrgs": "Todas las organizaciones",
-    "activeTitle": "Miembros activos",
+    "activeTitle": "Miembros Activos",
     "emptyActive": "Aún no hay miembros activos.",
     "emptyActiveFiltered": "No hay miembros activos en esta organización.",
     "emptyPendingFiltered": "No hay invitaciones pendientes en esta organización.",
     "confirmRevoke": "¿Revocar esta invitación? El destinatario ya no podrá usar el enlace.",
+    "revokeDialog": {
+      "title": "¿Revocar invitación?",
+      "description": "El destinatario ya no podrá usar el enlace enviado.",
+      "cancel": "Cancelar",
+      "confirm": "Revocar"
+    },
     "pagination": {
       "page": "Página {page} de {total}",
       "previous": "Anterior",

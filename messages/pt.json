@@ -50,7 +50,7 @@
     "title": "Convites",
     "subtitle": "Convide novos membros para a sua organização. O convidado recebe um link mágico por e-mail.",
     "card": {
-      "title": "Adicionar membro",
+      "title": "Adicionar Membro",
       "descriptionOwner": "Você pode convidar trainers para a sua organização.",
       "descriptionAdmin": "Como admin, você pode convidar owners e trainers para qualquer organização."
     },
@@ -71,18 +71,24 @@
       "submit": "Enviar convite",
       "submitting": "Enviando..."
     },
-    "pendingTitle": "Convites pendentes",
-    "pendingBadge": "pendente",
+    "pendingTitle": "Convites Pendentes",
+    "pendingBadge": "Pendente",
     "sentAt": "Enviado em {date}",
     "invitedByLabel": "Convidado por",
     "orgLabel": "Org",
     "filterOrgLabel": "Organização",
     "filterAllOrgs": "Todas as organizações",
-    "activeTitle": "Membros ativos",
+    "activeTitle": "Membros Ativos",
     "emptyActive": "Nenhum membro ativo ainda.",
     "emptyActiveFiltered": "Nenhum membro ativo nesta organização.",
     "emptyPendingFiltered": "Nenhum convite pendente nesta organização.",
     "confirmRevoke": "Revogar este convite? O destinatário não poderá mais usar o link.",
+    "revokeDialog": {
+      "title": "Revogar convite?",
+      "description": "O destinatário não poderá mais usar o link enviado.",
+      "cancel": "Cancelar",
+      "confirm": "Revogar"
+    },
     "pagination": {
       "page": "Página {page} de {total}",
       "previous": "Anterior",

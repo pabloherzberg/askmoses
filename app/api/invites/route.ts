@@ -1,6 +1,8 @@
 import { type NextRequest } from 'next/server'
+import { Resend } from 'resend'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildInviteEmail } from '@/lib/email/invite-template'
 import type { Role } from '@/lib/types'
 
 interface InviteBody {
@@ -9,6 +11,7 @@ interface InviteBody {
   role?: 'trainer' | 'owner'
   orgId?: string  // required when caller is admin
   ownerId?: string // required when admin invites a trainer
+  locale?: string  // locale do convidante; usado pra escolher o idioma do email
 }
 
 interface AppMetadata { role?: Role; org_id?: string }
@@ -150,17 +153,39 @@ export async function POST(request: NextRequest) {
   if (orgErr) return serverError('Não foi possível validar a organização', orgErr)
   if (!org) return badRequest('org inválida')
 
-  // ─── 1. inviteUserByEmail (Supabase manda o email com magic link) ────────
+  // ─── 1. generateLink — cria auth.user + retorna action_link sem enviar ────
+  // Trocamos inviteUserByEmail (que disparava email pelo Supabase) por
+  // generateLink, que cria a credencial e devolve o link. O email vai pelo
+  // Resend nas próximas etapas — mesmo padrão de app/api/send-coaching.
   const origin = request.headers.get('origin') ?? request.nextUrl.origin
   const homePath = targetRole === 'trainer' ? '/me' : '/dashboard'
-  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${origin}/api/auth/callback?next=${homePath}`,
-    data: { name, role: targetRole },
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: {
+      redirectTo: `${origin}/api/auth/callback?next=${homePath}`,
+      data: { name, role: targetRole },
+    },
   })
-  if (inviteErr || !invited?.user) {
-    return serverError('Não foi possível enviar o convite', inviteErr)
+  if (linkErr || !linkData?.user || !linkData.properties?.action_link) {
+    return serverError('Não foi possível gerar o convite', linkErr)
   }
-  const newUserId = invited.user.id
+  const newUserId = linkData.user.id
+  const actionLink = linkData.properties.action_link
+
+  // Helper de rollback — usado quando algum passo posterior falha. Garante
+  // que não deixamos auth.user/public.users/trainers/owners órfãos. As
+  // chamadas .from(...).delete() não fazem throw (erro vai em .error);
+  // para deleteUser usamos .catch porque ele realmente lança Promise rejeitada.
+  const rollback = async () => {
+    if (targetRole === 'trainer') {
+      await admin.from('trainers').delete().eq('user_id', newUserId)
+    } else {
+      await admin.from('owners').delete().eq('user_id', newUserId)
+    }
+    await admin.from('users').delete().eq('id', newUserId)
+    await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+  }
 
   // ─── 2. app_metadata para o JWT (role + org_id) ──────────────────────────
   const appMetadata: AppMetadata = { role: targetRole, org_id: targetOrgId }
@@ -186,7 +211,6 @@ export async function POST(request: NextRequest) {
     invite_status: 'pending',
   })
   if (usersErr) {
-    // rollback do auth.user para não deixar órfão
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
     return serverError('Não foi possível criar o convite', usersErr)
   }
@@ -217,6 +241,58 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ─── 5. Resolve nome do convidante (pra personalizar o email) ────────────
+  const { data: inviterRow } = await admin
+    .from('users')
+    .select('name')
+    .eq('id', callerId)
+    .maybeSingle()
+  const inviterName = inviterRow?.name ?? null
+
+  // ─── 6. Envia o email via Resend ─────────────────────────────────────────
+  const { subject, html } = buildInviteEmail({
+    inviteeName: name,
+    role: targetRole,
+    orgName: org.name,
+    inviterName,
+    actionLink,
+    locale: body.locale,
+  })
+
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    // Sem Resend configurado (típico em dev): logamos o link pra desenvolvedor
+    // copiar e prosseguimos. O usuário fica em pending — admin pode revogar
+    // e reconvidar quando o key for configurado.
+    console.warn(`[invites] RESEND_API_KEY ausente — convite criado em modo mock. action_link=${actionLink}`)
+    return ok({
+      id: newUserId,
+      email,
+      name,
+      role: targetRole,
+      orgId: targetOrgId,
+      inviteStatus: 'pending',
+      emailDelivery: 'mocked',
+    })
+  }
+
+  const resend = new Resend(apiKey)
+  const devOverride = process.env.DEV_EMAIL_OVERRIDE
+  const toAddress = devOverride ?? email
+
+  const { data: emailResult, error: sendErr } = await resend.emails.send({
+    from: 'AskMoses.AI <noreply@askmoses.ai>',
+    to: toAddress,
+    subject,
+    html,
+  })
+
+  if (sendErr) {
+    console.error('[invites] Resend falhou — desfazendo o convite', sendErr)
+    await rollback()
+    return serverError('Não foi possível enviar o email do convite', sendErr)
+  }
+
   return ok({
     id: newUserId,
     email,
@@ -224,6 +300,8 @@ export async function POST(request: NextRequest) {
     role: targetRole,
     orgId: targetOrgId,
     inviteStatus: 'pending',
+    emailDelivery: 'sent',
+    emailId: emailResult?.id ?? null,
   })
 }
 
