@@ -154,17 +154,19 @@ export async function POST(request: NextRequest) {
   if (!org) return badRequest('org inválida')
 
   // ─── 1. generateLink — cria auth.user + retorna o token_hash do convite ──
+  // Origin é derivado de request.nextUrl (validado pelo Next/host header
+  // canonicalizado), nunca do header `Origin` (cliente-controlado).
   // O `action_link` retornado pelo Supabase aponta pro endpoint /auth/v1/verify
-  // do Supabase, que redireciona com os tokens no HASH fragment — não chega no
-  // servidor. Como nosso callback é server-side, usamos o `hashed_token` direto
-  // numa rota nossa (/api/auth/accept-invite) que faz verifyOtp via SDK.
-  const origin = request.headers.get('origin') ?? request.nextUrl.origin
+  // do Supabase, que redireciona com tokens no HASH fragment — não chega no
+  // servidor. Usamos o `hashed_token` direto numa rota nossa (/api/auth/verify-otp)
+  // que faz verifyOtp via SDK.
+  const origin = request.nextUrl.origin
   const homePath = targetRole === 'trainer' ? '/me' : '/dashboard'
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
     options: {
-      redirectTo: `${origin}/api/auth/accept-invite?next=${homePath}`,
+      redirectTo: `${origin}/api/auth/verify-otp?next=${homePath}`,
       data: { name, role: targetRole },
     },
   })
@@ -173,7 +175,7 @@ export async function POST(request: NextRequest) {
   }
   const newUserId = linkData.user.id
   const tokenHash = linkData.properties.hashed_token
-  const actionLink = `${origin}/api/auth/accept-invite?token_hash=${encodeURIComponent(tokenHash)}&type=invite&next=${encodeURIComponent(homePath)}`
+  const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&next=${encodeURIComponent(homePath)}`
 
   // Helper de rollback — usado quando algum passo posterior falha. Garante
   // que não deixamos auth.user/public.users/trainers/owners órfãos. As

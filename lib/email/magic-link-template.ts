@@ -1,5 +1,5 @@
 export interface MagicLinkEmailData {
-  inviteeName?: string | null
+  recipientName?: string | null
   actionLink: string
   locale?: string
 }
@@ -75,7 +75,7 @@ function escapeHtml(value: string): string {
 
 export function buildMagicLinkEmail(data: MagicLinkEmailData): { subject: string; html: string } {
   const lang = pickLang(data.locale)
-  const safeName = data.inviteeName ? escapeHtml(data.inviteeName) : null
+  const safeName = data.recipientName ? escapeHtml(data.recipientName) : null
   const safeLink = data.actionLink
 
   const subject = lang.subject
