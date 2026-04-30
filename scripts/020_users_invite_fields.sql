@@ -13,6 +13,34 @@
 -- 'pending' para forçar o fluxo correto em novos convites.
 -- ============================================================
 
+-- ─── 0. Tabela owners (faltou numa migration anterior) ──────────────────────
+-- Necessária para o backfill abaixo (2b) e para o /api/invites + setup-three-clients.
+-- trainers.owner_id referencia owners.id (não users.id direto).
+CREATE TABLE IF NOT EXISTS public.owners (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+  company    TEXT,
+  plan       TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS owners_user_id_idx ON public.owners(user_id);
+
+ALTER TABLE public.owners ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'owners_service_role_all' AND tablename = 'owners') THEN
+    CREATE POLICY owners_service_role_all ON public.owners
+      USING (auth.role() = 'service_role')
+      WITH CHECK (auth.role() = 'service_role');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'owners_select_own' AND tablename = 'owners') THEN
+    CREATE POLICY owners_select_own ON public.owners
+      FOR SELECT USING (user_id = auth.uid());
+  END IF;
+END $$;
+
 -- ─── 1. Novas colunas ────────────────────────────────────────────────────────
 
 ALTER TABLE public.users

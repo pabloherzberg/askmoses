@@ -180,7 +180,10 @@ async function upsertPublicUser(userId, { name, email, avatar, avatarColor, role
   const { error } = await supabase
     .from('users')
     .upsert(
-      { id: userId, name, email, avatar, avatar_color: avatarColor, role },
+      // Seed users já são "aceitos" — eles têm credenciais via createUser e
+      // podem logar imediatamente. Sem isso, o default 'pending' do 020 faria
+      // eles serem ocultados em dbGetTrainers (filtra por invite_status='accepted').
+      { id: userId, name, email, avatar, avatar_color: avatarColor, role, invite_status: 'accepted' },
       { onConflict: 'id' }
     )
   if (error) throw error

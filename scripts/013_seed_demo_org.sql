@@ -93,7 +93,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 CREATE TABLE IF NOT EXISTS public.trainers (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id                   UUID REFERENCES public.users(id) ON DELETE CASCADE,
+  user_id                   UUID UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
   owner_id                  UUID,
   org_id                    UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
   total_calls               INT DEFAULT 0,
@@ -109,6 +109,16 @@ CREATE TABLE IF NOT EXISTS public.trainers (
   score_close_next_steps    INT DEFAULT 0,
   updated_at                TIMESTAMPTZ DEFAULT now()
 );
+
+-- Caso a tabela já existisse de uma run anterior sem o UNIQUE, garante a constraint
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'trainers_user_id_key'
+  ) THEN
+    ALTER TABLE public.trainers ADD CONSTRAINT trainers_user_id_key UNIQUE (user_id);
+  END IF;
+END $$;
 
 INSERT INTO public.trainers (
   id, user_id, org_id,
@@ -160,16 +170,50 @@ ON CONFLICT (id) DO UPDATE SET
   score_close_next_steps   = EXCLUDED.score_close_next_steps,
   updated_at               = now();
 
--- ─── 4. Vincular org_id à rubric existente (criada em 001) ───────────────────
+-- ─── 4. Rubric "Dog Training Sales Rubric" + 5 criteria ──────────────────────
+-- (o comentário antigo dizia "já existe em 001" — falso. 001 cria outro UUID.)
 
-UPDATE public.rubrics
-SET org_id = '00000000-0000-0000-0000-000000000100'
-WHERE id = 'b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d';
+INSERT INTO public.rubrics (id, name, description, is_active, org_id)
+VALUES (
+  'b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d',
+  'Dog Training Sales Rubric',
+  'Rubric for evaluating dog trainer sales calls — Dog Wizard HQ',
+  true,
+  '00000000-0000-0000-0000-000000000100'
+)
+ON CONFLICT (id) DO UPDATE SET
+  name   = EXCLUDED.name,
+  org_id = EXCLUDED.org_id;
 
--- Vincular criteria ao org_id
+-- Criteria — só insere se ainda não existirem (a tabela criteria não tem
+-- UNIQUE em (rubric_id, name), então não dá pra usar ON CONFLICT direto).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.criteria
+    WHERE rubric_id = 'b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d'
+  ) THEN
+    INSERT INTO public.criteria (rubric_id, name, description, sort_order, org_id) VALUES
+      ('b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d', 'Discovery',          'Open-ended questions and active listening before any pitch.', 1, '00000000-0000-0000-0000-000000000100'),
+      ('b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d', 'Problem Agitation',  'Deepen the prospect pain — emotional and financial impact.',  2, '00000000-0000-0000-0000-000000000100'),
+      ('b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d', 'Offer Presentation', 'Connect the offer to the identified pain.',                  3, '00000000-0000-0000-0000-000000000100'),
+      ('b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d', 'Objection Handling', 'Reframe objections without defensive posture.',              4, '00000000-0000-0000-0000-000000000100'),
+      ('b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d', 'Close & Next Steps', 'Clear commitment or next step before hanging up.',            5, '00000000-0000-0000-0000-000000000100');
+  END IF;
+END $$;
+
+-- Garante org_id em criteria existentes (caso já tivessem sido criadas sem org)
 UPDATE public.criteria
 SET org_id = '00000000-0000-0000-0000-000000000100'
-WHERE rubric_id = 'b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d';
+WHERE rubric_id = 'b4e99b19-b2f7-4ab3-b48e-bbe134c6d91d'
+  AND org_id IS NULL;
+
+-- ─── 4b. trainer_id em calls (faltou numa migration anterior) ────────────────
+-- Necessário antes do INSERT abaixo, que referencia trainer_id.
+ALTER TABLE public.calls
+  ADD COLUMN IF NOT EXISTS trainer_id UUID REFERENCES public.trainers(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS calls_trainer_id_idx ON public.calls(trainer_id);
 
 -- ─── 5. Calls (21 calls do mock) ─────────────────────────────────────────────
 

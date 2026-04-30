@@ -8,10 +8,40 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { readFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 
-const SUPABASE_URL = 'https://ahusozxvfdbapnyztmva.supabase.co'
+// Carrega .env.local manualmente para usar o mesmo projeto Supabase do app
+function loadEnvLocal() {
+  const path = resolve(process.cwd(), '.env.local')
+  if (!existsSync(path)) return
+  const content = readFileSync(path, 'utf8')
+  for (const line of content.split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/)
+    if (!m) continue
+    const [, key, rawValue] = m
+    if (process.env[key]) continue
+    const value = rawValue.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
+    process.env[key] = value
+  }
+}
+loadEnvLocal()
+
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXNvenh2ZmRiYXBueXp0bXZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mjk2OTcxNCwiZXhwIjoyMDg4NTQ1NzE0fQ.iD2xV7N-1h2a92DoLzYONgRyqXKojIQDunvSH-s65Lk'
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SERVICE_ROLE_KEY
+
+if (!SUPABASE_URL) {
+  console.error('✗ Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) in .env.local')
+  process.exit(1)
+}
+if (!SERVICE_ROLE_KEY) {
+  console.error('✗ Missing SUPABASE_SERVICE_ROLE_KEY in .env.local')
+  process.exit(1)
+}
+
+console.log(`Supabase target: ${SUPABASE_URL}\n`)
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -83,8 +113,19 @@ async function upsertProfile(userId, user) {
     { onConflict: 'id' }
   )
 
-  if (error) throw error
-  console.log(`  ✓ Profile upsertado (role=${user.role})`)
+  if (!error) {
+    console.log(`  ✓ Profile upsertado (role=${user.role})`)
+    return
+  }
+  // Schema sem profiles (dev novo) — JWT já vem de auth.users.app_metadata
+  if (
+    error.message?.includes("Could not find the table 'public.profiles'") ||
+    error.code === '42P01'
+  ) {
+    console.log(`  · profiles table ausente — pulando (role já está em app_metadata)`)
+    return
+  }
+  throw error
 }
 
 async function main() {
