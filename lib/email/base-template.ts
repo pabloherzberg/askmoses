@@ -8,12 +8,16 @@
 
 export interface EmailLayoutParams {
   locale?: string
+  /** Subject em texto puro. A base escapa sozinha quando insere no HTML
+   *  (<title> e <h1>) — caller passa o valor raw porque o mesmo subject vai
+   *  pro header do email, onde escape HTML quebraria a renderização. */
   subject: string
   /** Emoji que aparece antes do subject no header */
   headerEmoji: string
   /** Texto da greeting já HTML-escapado (ex.: "Olá, Maria.") */
   greeting: string
-  /** Conteúdo do body — pode conter HTML seguro (ex.: <strong>) */
+  /** Conteúdo do body — pode conter HTML seguro (ex.: <strong>). Caller é
+   *  responsável por escapar valores user-controlled antes de interpolar. */
   body: string
   /** Texto do botão CTA */
   ctaLabel: string
@@ -40,6 +44,7 @@ export function escapeHtml(value: string): string {
 
 export function renderEmailLayout(params: EmailLayoutParams): string {
   const langAttr = (params.locale ?? 'en').slice(0, 2).toLowerCase()
+  const subjectHtml = escapeHtml(params.subject)
 
   return `<!DOCTYPE html>
 <html lang="${langAttr}">
@@ -47,7 +52,7 @@ export function renderEmailLayout(params: EmailLayoutParams): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${params.subject}</title>
+  <title>${subjectHtml}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#ECEEF4;">
   <!-- Preheader (hidden) -->
@@ -66,7 +71,7 @@ export function renderEmailLayout(params: EmailLayoutParams): string {
             <td style="background-color:#6E56FF;border-radius:12px 12px 0 0;padding:24px 28px;">
               <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#C4B8FF;letter-spacing:1px;text-transform:uppercase;">AskMoses.AI</p>
               <h1 style="margin:4px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:20px;font-weight:700;color:#FEFEFE;">
-                ${params.headerEmoji} ${params.subject}
+                ${params.headerEmoji} ${subjectHtml}
               </h1>
             </td>
           </tr>

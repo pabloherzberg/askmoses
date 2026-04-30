@@ -12,16 +12,32 @@ import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 // Carrega .env.local manualmente para usar o mesmo projeto Supabase do app
+function stripInlineComment(line) {
+  let inSingle = false
+  let inDouble = false
+  for (let i = 0; i < line.length; i += 1) {
+    const c = line[i]
+    if (c === "'" && !inDouble) { inSingle = !inSingle; continue }
+    if (c === '"' && !inSingle) { inDouble = !inDouble; continue }
+    if (c === '#' && !inSingle && !inDouble) return line.slice(0, i)
+  }
+  return line
+}
+
 function loadEnvLocal() {
   const path = resolve(process.cwd(), '.env.local')
   if (!existsSync(path)) return
   const content = readFileSync(path, 'utf8')
-  for (const line of content.split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/)
+  for (const originalLine of content.split(/\r?\n/)) {
+    const line = stripInlineComment(originalLine).trim()
+    if (!line) continue
+    const m = line.match(/^([A-Z0-9_]+)\s*=\s*(.*)$/)
     if (!m) continue
     const [, key, rawValue] = m
     if (process.env[key]) continue
-    const value = rawValue.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
+    const value = rawValue.trim()
+      .replace(/^"(.*)"$/, '$1')
+      .replace(/^'(.*)'$/, '$1')
     process.env[key] = value
   }
 }

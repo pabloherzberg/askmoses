@@ -192,13 +192,17 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── 2. app_metadata para o JWT (role + org_id) ──────────────────────────
+  // Falha aqui é bloqueante: middleware/redirects dependem de role e org_id
+  // no JWT. Sem isso, o convidado loga e cai num estado quebrado (sem home,
+  // sem RLS válido). Melhor desfazer o auth.user e devolver erro genérico.
   const appMetadata: AppMetadata = { role: targetRole, org_id: targetOrgId }
   const { error: metaErr } = await admin.auth.admin.updateUserById(newUserId, {
     app_metadata: appMetadata,
   })
   if (metaErr) {
-    // não bloqueia — log apenas (não vaza detalhes do provider)
     console.error('[invites] Não foi possível aplicar metadados do convite')
+    await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+    return serverError('Não foi possível criar o convite', metaErr)
   }
 
   // ─── 3. INSERT public.users ──────────────────────────────────────────────
