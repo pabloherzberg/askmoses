@@ -332,6 +332,7 @@ export default function UploadPage() {
           transcript: analysisResult.transcript,
           callOutcome: formData.callOutcome,
           detectedOutcome: analysisResult.detectedOutcome,
+          locale,
         }),
       })
 
