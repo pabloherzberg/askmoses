@@ -22,6 +22,14 @@
     "submitting": "Connexion...",
     "invalidCredentials": "E-mail ou mot de passe incorrect",
     "profileNotFound": "Profil utilisateur introuvable. Exécutez le script seed dans Supabase.",
+    "magicLinkSubmit": "Envoyer le lien",
+    "magicLinkSubmitting": "Envoi...",
+    "magicLinkSent": "Si cet e-mail est enregistré, vous recevrez un lien de connexion. Consultez votre boîte.",
+    "magicLinkHint": "Nous vous enverrons un lien de connexion par e-mail. Aucun mot de passe requis.",
+    "emailRequiredForMagic": "Saisissez un e-mail valide pour recevoir le lien",
+    "signInMode": "Méthode de connexion",
+    "modePassword": "Mot de passe",
+    "modeMagic": "Lien magique",
     "demoAccess": "Accès démo",
     "demoAccountSubtitle": "Choisissez le client et l'utilisateur",
     "roleSalesPerson": "Commercial",
@@ -38,6 +46,59 @@
     "es": "Español",
     "fr": "Français"
   },
+  "Invite": {
+    "title": "Invitations",
+    "subtitle": "Invitez de nouveaux membres dans votre organisation. L'invité reçoit un lien magique par e-mail.",
+    "card": {
+      "title": "Ajouter un membre",
+      "descriptionOwner": "Vous pouvez inviter des trainers dans votre organisation.",
+      "descriptionAdmin": "En tant qu'admin, vous pouvez inviter des owners et trainers dans n'importe quelle organisation."
+    },
+    "form": {
+      "nameLabel": "Nom",
+      "namePlaceholder": "Nom complet",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "email@entreprise.com",
+      "roleLabel": "Rôle",
+      "roleTrainer": "Trainer",
+      "roleOwner": "Owner",
+      "orgLabel": "Organisation",
+      "orgPlaceholder": "Sélectionnez l'organisation",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Sélectionnez l'owner",
+      "ownerSelectOrgFirst": "Sélectionnez d'abord l'organisation",
+      "ownerNoneInOrg": "Cette organisation n'a pas d'owners",
+      "submit": "Envoyer l'invitation",
+      "submitting": "Envoi..."
+    },
+    "pendingTitle": "Invitations en attente",
+    "pendingBadge": "en attente",
+    "sentAt": "Envoyé le {date}",
+    "invitedByLabel": "Invité par",
+    "orgLabel": "Org",
+    "filterOrgLabel": "Organisation",
+    "filterAllOrgs": "Toutes les organisations",
+    "activeTitle": "Membres actifs",
+    "emptyActive": "Aucun membre actif pour le moment.",
+    "emptyActiveFiltered": "Aucun membre actif dans cette organisation.",
+    "emptyPendingFiltered": "Aucune invitation en attente dans cette organisation.",
+    "confirmRevoke": "Révoquer cette invitation ? Le destinataire ne pourra plus utiliser le lien.",
+    "pagination": {
+      "page": "Page {page} sur {total}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "showing": "{from}–{to} sur {total}"
+    },
+    "feedback": {
+      "invited": "Invitation envoyée. En attente d'acceptation.",
+      "revoked": "Invitation révoquée.",
+      "inviteError": "Impossible d'envoyer l'invitation",
+      "revokeError": "Impossible de révoquer l'invitation",
+      "fillFields": "Remplissez le nom et l'e-mail",
+      "orgRequired": "Indiquez l'ID de l'organisation",
+      "ownerRequired": "Indiquez l'ID de l'owner pour le trainer"
+    }
+  },
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
@@ -52,6 +113,7 @@
       "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Constructeur de scripts",
       "rubric": "Grille",
+      "members": "Membres",
       "howToUse": "Mode d'emploi",
       "saasPanel": "Panneau SaaS",
       "rubricConfig": "Config de la grille",

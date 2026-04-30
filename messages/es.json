@@ -22,6 +22,14 @@
     "submitting": "Iniciando sesión...",
     "invalidCredentials": "Correo o contraseña incorrectos",
     "profileNotFound": "Perfil de usuario no encontrado. Ejecuta el script de seed en Supabase.",
+    "magicLinkSubmit": "Enviar enlace",
+    "magicLinkSubmitting": "Enviando...",
+    "magicLinkSent": "Si este correo está registrado, te enviaremos un enlace de acceso. Revisa tu bandeja de entrada.",
+    "magicLinkHint": "Te enviaremos un enlace de acceso por correo. No se necesita contraseña.",
+    "emailRequiredForMagic": "Ingresa un correo válido para recibir el enlace",
+    "signInMode": "Forma de iniciar sesión",
+    "modePassword": "Contraseña",
+    "modeMagic": "Enlace mágico",
     "demoAccess": "Acceso demo",
     "demoAccountSubtitle": "Elige el cliente y el usuario",
     "roleSalesPerson": "Vendedor",
@@ -38,6 +46,59 @@
     "es": "Español",
     "fr": "Français"
   },
+  "Invite": {
+    "title": "Invitaciones",
+    "subtitle": "Invita nuevos miembros a tu organización. El invitado recibe un enlace mágico por correo.",
+    "card": {
+      "title": "Agregar miembro",
+      "descriptionOwner": "Puedes invitar trainers a tu organización.",
+      "descriptionAdmin": "Como admin, puedes invitar owners y trainers a cualquier organización."
+    },
+    "form": {
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Nombre completo",
+      "emailLabel": "Correo",
+      "emailPlaceholder": "correo@empresa.com",
+      "roleLabel": "Rol",
+      "roleTrainer": "Trainer",
+      "roleOwner": "Owner",
+      "orgLabel": "Organización",
+      "orgPlaceholder": "Selecciona la organización",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Selecciona el owner",
+      "ownerSelectOrgFirst": "Selecciona la organización primero",
+      "ownerNoneInOrg": "Esta organización no tiene owners",
+      "submit": "Enviar invitación",
+      "submitting": "Enviando..."
+    },
+    "pendingTitle": "Invitaciones pendientes",
+    "pendingBadge": "pendiente",
+    "sentAt": "Enviado el {date}",
+    "invitedByLabel": "Invitado por",
+    "orgLabel": "Org",
+    "filterOrgLabel": "Organización",
+    "filterAllOrgs": "Todas las organizaciones",
+    "activeTitle": "Miembros activos",
+    "emptyActive": "Aún no hay miembros activos.",
+    "emptyActiveFiltered": "No hay miembros activos en esta organización.",
+    "emptyPendingFiltered": "No hay invitaciones pendientes en esta organización.",
+    "confirmRevoke": "¿Revocar esta invitación? El destinatario ya no podrá usar el enlace.",
+    "pagination": {
+      "page": "Página {page} de {total}",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "showing": "{from}–{to} de {total}"
+    },
+    "feedback": {
+      "invited": "Invitación enviada. A la espera de aceptación.",
+      "revoked": "Invitación revocada.",
+      "inviteError": "No se pudo enviar la invitación",
+      "revokeError": "No se pudo revocar la invitación",
+      "fillFields": "Completa nombre y correo",
+      "orgRequired": "Indica el ID de la organización",
+      "ownerRequired": "Indica el ID del owner para el trainer"
+    }
+  },
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
@@ -52,6 +113,7 @@
       "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Constructor de scripts",
       "rubric": "Rúbrica",
+      "members": "Miembros",
       "howToUse": "Cómo usar",
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
