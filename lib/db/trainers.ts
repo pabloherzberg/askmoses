@@ -157,9 +157,13 @@ function toTrainer(row: DbTrainerRow): Trainer {
 export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Trainer[]> {
   const supabase = createAdminClient()
 
+  // !inner garante que só voltam trainers com user correspondente; o
+  // .eq('users.invite_status', 'accepted') filtra fora os convidados que
+  // ainda não aceitaram (pendentes ficam visíveis só na página de Members).
   let query = supabase
     .from('trainers')
-    .select('*, users(name, email, avatar, avatar_color, role)')
+    .select('*, users!inner(name, email, avatar, avatar_color, role, invite_status)')
+    .eq('users.invite_status', 'accepted')
     .order('score', { ascending: false })
 
   if (filters?.orgId) query = query.eq('org_id', filters.orgId)

@@ -153,25 +153,27 @@ export async function POST(request: NextRequest) {
   if (orgErr) return serverError('Não foi possível validar a organização', orgErr)
   if (!org) return badRequest('org inválida')
 
-  // ─── 1. generateLink — cria auth.user + retorna action_link sem enviar ────
-  // Trocamos inviteUserByEmail (que disparava email pelo Supabase) por
-  // generateLink, que cria a credencial e devolve o link. O email vai pelo
-  // Resend nas próximas etapas — mesmo padrão de app/api/send-coaching.
+  // ─── 1. generateLink — cria auth.user + retorna o token_hash do convite ──
+  // O `action_link` retornado pelo Supabase aponta pro endpoint /auth/v1/verify
+  // do Supabase, que redireciona com os tokens no HASH fragment — não chega no
+  // servidor. Como nosso callback é server-side, usamos o `hashed_token` direto
+  // numa rota nossa (/api/auth/accept-invite) que faz verifyOtp via SDK.
   const origin = request.headers.get('origin') ?? request.nextUrl.origin
   const homePath = targetRole === 'trainer' ? '/me' : '/dashboard'
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
     options: {
-      redirectTo: `${origin}/api/auth/callback?next=${homePath}`,
+      redirectTo: `${origin}/api/auth/accept-invite?next=${homePath}`,
       data: { name, role: targetRole },
     },
   })
-  if (linkErr || !linkData?.user || !linkData.properties?.action_link) {
+  if (linkErr || !linkData?.user || !linkData.properties?.hashed_token) {
     return serverError('Não foi possível gerar o convite', linkErr)
   }
   const newUserId = linkData.user.id
-  const actionLink = linkData.properties.action_link
+  const tokenHash = linkData.properties.hashed_token
+  const actionLink = `${origin}/api/auth/accept-invite?token_hash=${encodeURIComponent(tokenHash)}&type=invite&next=${encodeURIComponent(homePath)}`
 
   // Helper de rollback — usado quando algum passo posterior falha. Garante
   // que não deixamos auth.user/public.users/trainers/owners órfãos. As
