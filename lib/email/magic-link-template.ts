@@ -1,3 +1,5 @@
+import { escapeHtml, renderEmailLayout } from './base-template'
+
 export interface MagicLinkEmailData {
   recipientName?: string | null
   actionLink: string
@@ -64,108 +66,25 @@ function pickLang(locale?: string): Lang {
   return i18n[short] ?? i18n.en
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
 export function buildMagicLinkEmail(data: MagicLinkEmailData): { subject: string; html: string } {
   const lang = pickLang(data.locale)
   const safeName = data.recipientName ? escapeHtml(data.recipientName) : null
-  const safeLink = data.actionLink
 
   const subject = lang.subject
 
-  const html = `<!DOCTYPE html>
-<html lang="${(data.locale ?? 'en').slice(0, 2)}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#ECEEF4;">
-  <div style="display:none;font-size:1px;color:#ECEEF4;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
-    ${lang.preheader}
-  </div>
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#ECEEF4;">
-    <tr>
-      <td align="center" style="padding:24px 16px;">
-
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;">
-
-          <tr>
-            <td style="background-color:#6E56FF;border-radius:12px 12px 0 0;padding:24px 28px;">
-              <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#C4B8FF;letter-spacing:1px;text-transform:uppercase;">AskMoses.AI</p>
-              <h1 style="margin:4px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:20px;font-weight:700;color:#FEFEFE;">
-                🔑 ${subject}
-              </h1>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background-color:#FFFFFF;padding:28px 28px 8px 28px;">
-              <p style="margin:0 0 12px 0;font-family:'DM Sans',Arial,sans-serif;font-size:16px;font-weight:600;color:#1A1E28;">
-                ${lang.greeting(safeName)}
-              </p>
-              <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:14px;color:#3A4255;line-height:1.6;">
-                ${lang.body}
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background-color:#FFFFFF;padding:24px 28px 8px 28px;" align="center">
-              <table border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td bgcolor="#6E56FF" style="border-radius:8px;">
-                    <a href="${safeLink}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;">
-                      ${lang.cta}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:14px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#7A849A;">
-                ${lang.ctaHint}
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background-color:#FFFFFF;padding:16px 28px 0 28px;">
-              <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr><td height="1" bgcolor="#E2E6EF" style="font-size:1px;">&nbsp;</td></tr>
-              </table>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background-color:#FFFFFF;padding:16px 28px 24px 28px;border-radius:0 0 12px 12px;">
-              <p style="margin:0 0 8px 0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#7A849A;">
-                ${lang.fallbackHint}
-              </p>
-              <p style="margin:0;font-family:'DM Mono',monospace,'Courier New';font-size:11px;color:#3A4255;word-break:break-all;line-height:1.5;">
-                <a href="${safeLink}" target="_blank" style="color:#6E56FF;text-decoration:underline;">${safeLink}</a>
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:16px 0 0 0;text-align:center;">
-              <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#7A849A;">${lang.footer}</p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  const html = renderEmailLayout({
+    locale: data.locale,
+    subject,
+    headerEmoji: '🔑',
+    greeting: lang.greeting(safeName),
+    body: lang.body,
+    ctaLabel: lang.cta,
+    ctaHint: lang.ctaHint,
+    fallbackHint: lang.fallbackHint,
+    footer: lang.footer,
+    preheader: lang.preheader,
+    actionLink: data.actionLink,
+  })
 
   return { subject, html }
 }
