@@ -22,6 +22,14 @@
     "submitting": "Entrando...",
     "invalidCredentials": "E-mail ou senha incorretos",
     "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
+    "magicLinkSubmit": "Enviar link",
+    "magicLinkSubmitting": "Enviando...",
+    "magicLinkSent": "Se este e-mail estiver cadastrado, enviaremos um link de acesso. Verifique sua caixa de entrada.",
+    "magicLinkHint": "Vamos te enviar um link de acesso por e-mail. Senha não é necessária.",
+    "emailRequiredForMagic": "Informe um e-mail válido para receber o link",
+    "signInMode": "Forma de entrar",
+    "modePassword": "Senha",
+    "modeMagic": "Link mágico",
     "demoAccess": "Acesso demo",
     "demoAccountSubtitle": "Escolha o cliente e o usuário",
     "roleSalesPerson": "Vendedor",
@@ -38,6 +46,65 @@
     "es": "Español",
     "fr": "Français"
   },
+  "Invite": {
+    "title": "Convites",
+    "subtitle": "Convide novos membros para a sua organização. O convidado recebe um link mágico por e-mail.",
+    "card": {
+      "title": "Adicionar Membro",
+      "descriptionOwner": "Você pode convidar trainers para a sua organização.",
+      "descriptionAdmin": "Como admin, você pode convidar owners e trainers para qualquer organização."
+    },
+    "form": {
+      "nameLabel": "Nome",
+      "namePlaceholder": "Nome completo",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "email@empresa.com",
+      "roleLabel": "Papel",
+      "roleTrainer": "Trainer",
+      "roleOwner": "Owner",
+      "orgLabel": "Organização",
+      "orgPlaceholder": "Selecione a organização",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Selecione o owner",
+      "ownerSelectOrgFirst": "Selecione a organização primeiro",
+      "ownerNoneInOrg": "Esta organização não tem owners",
+      "submit": "Enviar convite",
+      "submitting": "Enviando..."
+    },
+    "pendingTitle": "Convites Pendentes",
+    "pendingBadge": "Pendente",
+    "sentAt": "Enviado em {date}",
+    "invitedByLabel": "Convidado por",
+    "orgLabel": "Org",
+    "filterOrgLabel": "Organização",
+    "filterAllOrgs": "Todas as organizações",
+    "activeTitle": "Membros Ativos",
+    "emptyActive": "Nenhum membro ativo ainda.",
+    "emptyActiveFiltered": "Nenhum membro ativo nesta organização.",
+    "emptyPendingFiltered": "Nenhum convite pendente nesta organização.",
+    "confirmRevoke": "Revogar este convite? O destinatário não poderá mais usar o link.",
+    "revokeDialog": {
+      "title": "Revogar convite?",
+      "description": "O destinatário não poderá mais usar o link enviado.",
+      "cancel": "Cancelar",
+      "confirm": "Revogar"
+    },
+    "pagination": {
+      "page": "Página {page} de {total}",
+      "previous": "Anterior",
+      "next": "Próxima",
+      "showing": "{from}–{to} de {total}"
+    },
+    "feedback": {
+      "invited": "Convite enviado. Aguardando aceitação.",
+      "revoked": "Convite revogado.",
+      "inviteError": "Não foi possível enviar o convite",
+      "revokeError": "Não foi possível revogar o convite",
+      "fillFields": "Preencha nome e e-mail",
+      "orgRequired": "Informe o ID da organização",
+      "ownerRequired": "Informe o ID do owner para o trainer"
+    }
+  },
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
@@ -52,6 +119,7 @@
       "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Construtor de scripts",
       "rubric": "Rubrica",
+      "members": "Membros",
       "howToUse": "Como usar",
       "saasPanel": "Painel SaaS",
       "rubricConfig": "Configuração da rubrica",

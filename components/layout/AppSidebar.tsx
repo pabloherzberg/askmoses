@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  Brain, Wand2, Settings, HelpCircle, Home, GraduationCap
+  Brain, Wand2, Settings, HelpCircle, Home, GraduationCap, UserPlus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -13,7 +13,14 @@ import type { Role } from '@/lib/types'
 
 // Parent routes that should only match on exact path equality — otherwise they
 // would also match every nested child (e.g. /me would also highlight on /me/calls).
-const EXACT_ONLY = new Set(['/dashboard', '/team-command-center', '/me', '/admin'])
+const EXACT_ONLY = new Set([
+  '/dashboard',
+  '/team-command-center',
+  '/me',
+  '/admin',
+  // /dashboard/settings é a página da Rubric; não pode "ativar" em /dashboard/settings/invite (Members)
+  '/dashboard/settings',
+])
 
 export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
   const pathname = usePathname()
@@ -68,10 +75,11 @@ export function OwnerNavItems() {
     { label: t('scriptIntelligence'), href: '/dashboard/insights', icon: Brain },
   ]
   const toolsNav = [
-    { label: t('uploadCall'),    href: '/dashboard/upload',        icon: Upload },
+    { label: t('uploadCall'),    href: '/dashboard/upload',         icon: Upload },
     { label: t('scriptBuilder'), href: '/dashboard/script-builder', icon: Wand2 },
-    { label: t('rubric'),        href: '/dashboard/settings',      icon: Settings },
-    { label: t('howToUse'),      href: '/dashboard/guide',         icon: HelpCircle },
+    { label: t('rubric'),        href: '/dashboard/settings',       icon: Settings },
+    { label: t('members'),       href: '/dashboard/settings/invite', icon: UserPlus },
+    { label: t('howToUse'),      href: '/dashboard/guide',          icon: HelpCircle },
   ]
   return (
     <nav className="flex flex-col gap-1">

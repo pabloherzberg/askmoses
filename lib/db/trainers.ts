@@ -101,6 +101,8 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
 export interface GetTrainersFilters {
   ownerId?: string
   orgId?: string
+  /** Inclui trainers cujo user ainda está com invite_status='pending'. Default: false. */
+  includePending?: boolean
 }
 
 interface DbTrainerRow {
@@ -156,12 +158,18 @@ function toTrainer(row: DbTrainerRow): Trainer {
 
 export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Trainer[]> {
   const supabase = createAdminClient()
+  const includePending = filters?.includePending ?? false
 
+  // Por padrão filtra invite_status='accepted' (escopo de listas operacionais
+  // — overview, calls, rankings). includePending=true é necessário pra views
+  // administrativas (ex: gestão de convites) que precisam ver pendentes.
+  // !inner garante INNER JOIN — sem ele, .eq() em coluna de relação não filtra.
   let query = supabase
     .from('trainers')
-    .select('*, users(name, email, avatar, avatar_color, role)')
+    .select('*, users!inner(name, email, avatar, avatar_color, role, invite_status)')
     .order('score', { ascending: false })
 
+  if (!includePending) query = query.eq('users.invite_status', 'accepted')
   if (filters?.orgId) query = query.eq('org_id', filters.orgId)
   else if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId)
 
