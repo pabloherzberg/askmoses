@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     } = body
 
     const sections: CoachingEmailSection[] = (body.sections ?? body.criteria ?? []).map(s => ({
-      name: s.name ?? (s as Record<string, unknown>)['criterionName'] as string ?? '',
+      name: s.name ?? (s as unknown as Record<string, unknown>)['criterionName'] as string ?? '',
       score: s.score ?? 0,
       justification: s.justification,
       feedback: s.feedback,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'AskMoses.AI <onboarding@resend.dev>',
+      from: 'AskMoses.AI <noreply@askmoses.ai>',
       to: toAddress,
       subject,
       html,
