@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'AskMoses.AI <onboarding@resend.dev>',
+      from: 'AskMoses.AI <noreply@tupay.dev.br>',
       to: toAddress,
       subject,
       html,
