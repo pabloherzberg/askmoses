@@ -122,8 +122,11 @@ export default function UploadPage() {
       const { data: meData } = (await meRes.json()) as { data: { id: string; email: string | null; role: string; name: string; trainerId: string | null } | null; error: unknown }
       if (meData?.role === 'trainer') {
         setIsTrainer(true)
+        // trainerId vem direto do backend (/api/me resolve trainers.id pelo session.user.id).
+        // Setar explícito evita o fallback servidor → menos fragilidade no FK calls_trainer_id_fkey.
         setFormData((prev) => ({
           ...prev,
+          trainerId: meData.trainerId ?? '',
           trainerEmail: meData.email ?? '',
           trainerName: meData.name ?? '',
         }))
@@ -175,9 +178,9 @@ export default function UploadPage() {
   }
 
   const isFormValid = () => {
-    const hasTrainerInfo = isTrainer
-      ? !!formData.trainerName
-      : !!formData.trainerId
+    // trainerId é obrigatório nos 2 fluxos — vem do backend (/api/me pra trainer,
+    // /api/trainers pra owner). Sem ele, INSERT em calls quebra no FK trainer_id.
+    const hasTrainerInfo = !!formData.trainerId && !!formData.trainerName
     const hasContent =
       uploadType === "audio" ? formData.audioFile : formData.transcript.trim()
     return hasTrainerInfo && hasContent
@@ -285,7 +288,14 @@ export default function UploadPage() {
         if (contentType.includes("application/json")) {
           try {
             const errData = await analyzeRes.clone().json()
-            errorMsg = errData.error || errorMsg
+            // Concatena details (mensagem real do Supabase: FK/CHECK/etc.)
+            // pra debug ficar visível na UI em vez de só log do servidor.
+            errorMsg = errData.details
+              ? `${errData.error || errorMsg}: ${errData.details}`
+              : errData.error || errorMsg
+            if (errData.context) {
+              console.error("[v0] Analyze error context:", errData.context)
+            }
           } catch { /* ignore parse error */ }
         } else {
           errorMsg = analyzeRes.status === 404

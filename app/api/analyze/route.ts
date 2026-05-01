@@ -311,6 +311,9 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
     const detectedOutcome = normaliseToEnum(parsed.detectedOutcome);
 
     // ── 5. Save call to Supabase ────────────────────────────────────────────
+    // Não engolir erro de persistência: a UI precisa saber se a call foi salva
+    // ou não. Engolir mascarava bugs de FK/CHECK silenciosamente (call aparecia
+    // analisada na tela mas sumia do banco).
     let savedCall: { id?: string } = {}
     try {
       savedCall = await dbCreateCall({
@@ -331,7 +334,23 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
         detectedOutcome,
       })
     } catch (e) {
-      console.warn('[analyze] Could not save call to DB, continuing:', e instanceof Error ? e.message : e)
+      const message = e instanceof Error ? e.message : String(e)
+      console.error("[analyze] dbCreateCall failed:", message)
+      return Response.json(
+        {
+          error: "Failed to save call to database",
+          details: message,
+          // Diagnóstico pra UI / DevTools — ajuda a identificar FK/CHECK violations
+          context: {
+            orgId: orgId ?? null,
+            rubricId: rubricId ?? null,
+            trainerId: sessionTrainerId ?? null,
+            callOutcome: reportedOutcome,
+            detectedOutcome,
+          },
+        },
+        { status: 500 },
+      )
     }
 
     // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────
