@@ -1,5 +1,5 @@
 export type Role = 'trainer' | 'owner' | 'admin'
-export type CallResult = 'closed' | 'follow_up' | 'objection_unresolved' | 'no_decision'
+export type CallResult = 'closed' | 'not_closed' | 'partial' | 'no_outcome'
 export type HealthStatus = 'healthy' | 'at-risk' | 'churning'
 export type AvatarColor = 'blue' | 'purple' | 'green' | 'red' | 'amber'
 export type TagColor = 'red' | 'amber' | 'blue' | 'green'
