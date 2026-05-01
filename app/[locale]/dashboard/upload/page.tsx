@@ -94,7 +94,7 @@ export default function UploadPage() {
     audioFile: null,
     transcript: "",
     scriptId: "",
-    callOutcome: "no_decision",
+    callOutcome: "no_outcome",
   })
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [processingStatus, setProcessingStatus] = useState("")
@@ -361,7 +361,7 @@ export default function UploadPage() {
       audioFile: null,
       transcript: "",
       scriptId: "",
-      callOutcome: "no_decision",
+      callOutcome: "no_outcome",
     })
   }
 
@@ -445,14 +445,14 @@ export default function UploadPage() {
               <span>{t("results.scoreScaleHint")}</span>
               {analysisResult.detectedOutcome && (() => {
                 const outcomeMeta: Record<string, { cap: number }> = {
-                  closed:               { cap: 100 },
-                  follow_up:            { cap: 80 },
-                  objection_unresolved: { cap: 60 },
-                  no_decision:          { cap: 50 },
+                  closed:     { cap: 100 },
+                  partial:    { cap: 80 },
+                  not_closed: { cap: 60 },
+                  no_outcome: { cap: 50 },
                 }
                 const outcomeKey = analysisResult.detectedOutcome
                 const meta = outcomeMeta[outcomeKey] ?? { cap: 100 }
-                const knownOutcomes = ["closed", "follow_up", "objection_unresolved", "no_decision"] as const
+                const knownOutcomes = ["closed", "partial", "not_closed", "no_outcome"] as const
                 const isKnown = (knownOutcomes as readonly string[]).includes(outcomeKey)
                 const label = isKnown
                   ? t(`results.outcomes.${outcomeKey as typeof knownOutcomes[number]}.label`)
@@ -742,10 +742,10 @@ export default function UploadPage() {
               <Label>{t("form.callOutcomeLabel")}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { value: "closed", color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
-                  { value: "follow_up", color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
-                  { value: "objection_unresolved", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
-                  { value: "no_decision", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                  { value: "closed",     color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
+                  { value: "partial",    color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
+                  { value: "not_closed", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
+                  { value: "no_outcome", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
                 ] as const).map((option) => (
                   <button
                     key={option.value}

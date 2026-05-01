@@ -28,8 +28,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, CheckCircle, XCircle, Eye, Loader2 } from "lucide-react"
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from "@/lib/constants"
 
 const RUBRIC_KEYS = ['discovery', 'problemAgitation', 'offerPresentation', 'objectionHandling', 'closeAndNextSteps'] as const
 
@@ -43,6 +50,7 @@ export default function HistoryPage() {
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [outcomeFilter, setOutcomeFilter] = useState<string>("all")
   const [selectedCall, setSelectedCall] = useState<Call | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
@@ -66,11 +74,14 @@ export default function HistoryPage() {
     fetchCalls()
   }, [locale])
 
-  const filteredCalls = calls.filter(
-    (call) =>
+  const filteredCalls = calls.filter((call) => {
+    const matchesSearch =
       call.trainerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       call.prospect.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+    const matchesOutcome =
+      outcomeFilter === "all" || call.result === outcomeFilter
+    return matchesSearch && matchesOutcome
+  })
 
   const paginatedCalls = filteredCalls.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -109,11 +120,36 @@ export default function HistoryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder={t('searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              placeholder={t('searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="flex-1"
+            />
+            <Select
+              value={outcomeFilter}
+              onValueChange={(v) => {
+                setOutcomeFilter(v)
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="sm:w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tOutcomes('all')}</SelectItem>
+                {CALL_OUTCOMES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {tOutcomes(`short.${option.value}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
