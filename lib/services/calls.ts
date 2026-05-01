@@ -74,7 +74,7 @@ function toCall(db: DbCall): Call {
     date: db.created_at,
     duration: "—",
     score: db.overall_score ?? 0,
-    result: normaliseOutcome(db.call_outcome ?? "no_outcome"),
+    result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
     rubricScores: parseCriteria(db.criteria),
     feedback: db.summary ?? "",
@@ -123,9 +123,12 @@ export async function getCalls(
     orgId,
     trainerId: filters?.trainerId,
     trainerName: filters?.trainerName,
-    // Normalise legacy outcome strings to the canonical enum so payloads
-    // from older clients (e.g. ?callOutcome=follow_up) keep returning rows.
-    callOutcome: filters?.callOutcome ? normaliseOutcome(filters.callOutcome) : undefined,
+    // Normalise outcome filter: legacy aliases (follow_up, no_decision...) viram
+    // canônicos. Valores desconhecidos viram undefined → sem filtro (em vez de
+    // jogar lixo no Supabase e estourar 500 com erro de cast no ENUM).
+    callOutcome: filters?.callOutcome
+      ? normaliseOutcome(filters.callOutcome) ?? undefined
+      : undefined,
     rubricId: filters?.rubricId,
     limit: filters?.limit,
     offset: filters?.offset,
