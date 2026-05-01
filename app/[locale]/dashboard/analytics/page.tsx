@@ -210,8 +210,8 @@ export default function AnalyticsPage() {
       setInsights(insightsList);
 
       const closed = sorted.filter((c) => c.result === "closed").length;
-      const notClosed = sorted.filter((c) => c.result === "no_decision" || c.result === "objection_unresolved").length;
-      const partial = sorted.filter((c) => c.result === "follow_up").length;
+      const notClosed = sorted.filter((c) => c.result === "not_closed" || c.result === "no_outcome").length;
+      const partial = sorted.filter((c) => c.result === "partial").length;
       const closeRate =
         sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
       setOutcomeMetrics({ closed, notClosed, partial, closeRate });

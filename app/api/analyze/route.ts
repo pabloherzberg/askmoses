@@ -21,6 +21,32 @@ interface AnalyzeRequestBody {
   callOutcome?: string;
 }
 
+// ── Outcome enum + normaliser (single source of truth in this route) ──────
+const VALID_OUTCOMES = ["closed", "not_closed", "partial", "no_outcome"] as const;
+type ValidOutcome = (typeof VALID_OUTCOMES)[number];
+
+const OUTCOME_ALIASES: Record<string, ValidOutcome> = {
+  // Legacy values from before the 022 ENUM migration — keep accepting them
+  // so older clients/AI drift don't break ingestion.
+  follow_up: "partial",
+  "follow-up": "partial",
+  objection_unresolved: "not_closed",
+  no_decision: "no_outcome",
+  "no-close": "no_outcome",
+  no_close: "no_outcome",
+};
+
+/**
+ * Coerce any outcome string (canonical, legacy, or unknown) to a valid
+ * ENUM value. Unknown values fall back to 'no_outcome' instead of failing
+ * the DB INSERT downstream.
+ */
+function normaliseToEnum(raw: string | null | undefined): ValidOutcome {
+  const lower = (raw ?? "").toLowerCase().trim();
+  if ((VALID_OUTCOMES as readonly string[]).includes(lower)) return lower as ValidOutcome;
+  return OUTCOME_ALIASES[lower] ?? "no_outcome";
+}
+
 export interface CriterionScore {
   criterionId: string;
   criterionName: string;
@@ -30,7 +56,7 @@ export interface CriterionScore {
 
 export interface AnalyzeResult {
   overallScore: number;
-  detectedOutcome: "closed" | "no-close" | "follow-up";
+  detectedOutcome: ValidOutcome;
   summary: string;
   strengths: string[];
   improvements: string[];
@@ -92,7 +118,7 @@ export async function POST(request: NextRequest) {
     const userPrompt = `
 ${systemPrompt}
 
-You are an expert sales coach. Your job is to give honest, calibrated feedback that helps salespeople improve. Scores must reflect actual execution — not just whether the deal closed. The outcome (closed, follow_up, etc.) affects the overallScore cap, but individual criterion scores reflect the quality of execution of that specific skill.
+You are an expert sales coach. Your job is to give honest, calibrated feedback that helps salespeople improve. Scores must reflect actual execution — not just whether the deal closed. The outcome (closed, partial, not_closed, no_outcome) affects the overallScore cap, but individual criterion scores reflect the quality of execution of that specific skill.
 
 ## Scoring philosophy — calibration baseline:
 Use decimals in 0.5 increments (0, 0.5, 1.0 … 5.0).
@@ -110,20 +136,20 @@ START each criterion at 3.0 as the baseline for a real sales call that was reaso
 
 ## Outcome-adjusted scoring (overallScore caps only):
 These caps apply ONLY to the final overallScore calculation — never to individual criterion scores.
-- "closed": max 100.
-- "follow_up" with concrete date/time agreed: max 80.
-- "follow_up" vague (no specific date/time): max 70.
-- "objection_unresolved": max 60.
-- "no_decision": max 50.
+- "closed" (deal closed): max 100.
+- "partial" (proposal made, follow-up pending or partial commitment): max 80.
+- "not_closed" (call complete, did not close — objection unresolved or prospect declined): max 60.
+- "no_outcome" (call incomplete or no clear resolution — no decision reached): max 50.
 
 ## Criterion-specific adjustments (only apply when the specific behaviour is clearly present):
 
 ### Close & Next Steps:
 Evaluate whether the salesperson made a clear close attempt appropriate to the prospect's readiness, and whether a concrete next step was secured.
 - outcome = "closed": floor 3.5 (deal closed = criterion was at minimum met)
-- outcome = "follow_up" with specific date/time: floor 3.0
-- outcome = "follow_up" vague: apply -1.0 (no date/time secured)
-- outcome = "no_decision" or "objection_unresolved": cap 2.0
+- outcome = "partial" with specific date/time secured: floor 3.0
+- outcome = "partial" vague (no specific date/time): apply -1.0
+- outcome = "not_closed": cap 2.5 (closing was attempted but did not land)
+- outcome = "no_outcome": cap 2.0 (no closing attempt or definition of next step landed)
 - No attempt to close or define a next step at all: cap 1.5
 - Only passive language used ("let me know when you decide"): -1.0
 - Urgency created naturally (availability, cost of delay): +0.5
@@ -181,7 +207,7 @@ For strengths: only list genuine strengths — things that were clearly well exe
 
 Reply ONLY with valid JSON, no markdown, following this exact format:
 {
-  "detectedOutcome": "<closed|follow_up|objection_unresolved|no_decision>",
+  "detectedOutcome": "<closed|partial|not_closed|no_outcome>",
   "summary": "<honest assessment in 2-3 sentences — name the biggest reason the deal did or did not close>",
   "strengths": ["<specific strength with context>", "..."],
   "improvements": ["<single string: what went wrong → what to do instead → why it matters>", "..."],
@@ -271,40 +297,23 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
         ? scores.reduce((sum, s) => sum + s, 0) / scores.length
         : 0;
     const rawScore = Math.round(avg * 20);
-    const outcomeCap: Record<string, number> = {
+    const outcomeCap: Record<ValidOutcome, number> = {
       closed: 100,
-      follow_up: 80,
-      objection_unresolved: 60,
-      no_decision: 50,
+      partial: 80,
+      not_closed: 60,
+      no_outcome: 50,
     };
-    const reportedOutcome =
-      body.callOutcome ??
-      parsed.detectedOutcome?.toLowerCase() ??
-      "no_decision";
-    const cap = outcomeCap[reportedOutcome] ?? 75;
+    const reportedOutcome = normaliseToEnum(body.callOutcome ?? parsed.detectedOutcome);
+    const cap = outcomeCap[reportedOutcome];
     const overallScore = Math.min(rawScore, cap);
 
     // ── 4. Normalise detectedOutcome to DB-allowed values ───────────────────
-    const VALID_OUTCOMES = [
-      "closed",
-      "follow_up",
-      "objection_unresolved",
-      "no_decision",
-    ] as const;
-    type ValidOutcome = (typeof VALID_OUTCOMES)[number];
-    const outcomeAliases: Record<string, ValidOutcome> = {
-      "no-close": "no_decision",
-      no_close: "no_decision",
-      "follow-up": "follow_up",
-    };
-    const rawOutcome = parsed.detectedOutcome?.toLowerCase?.() ?? "";
-    const detectedOutcome: ValidOutcome = VALID_OUTCOMES.includes(
-      rawOutcome as ValidOutcome,
-    )
-      ? (rawOutcome as ValidOutcome)
-      : (outcomeAliases[rawOutcome] ?? "no_decision");
+    const detectedOutcome = normaliseToEnum(parsed.detectedOutcome);
 
     // ── 5. Save call to Supabase ────────────────────────────────────────────
+    // Não engolir erro de persistência: a UI precisa saber se a call foi salva
+    // ou não. Engolir mascarava bugs de FK/CHECK silenciosamente (call aparecia
+    // analisada na tela mas sumia do banco).
     let savedCall: { id?: string } = {}
     try {
       savedCall = await dbCreateCall({
@@ -320,12 +329,28 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
         summary: parsed.summary,
         strengths: parsed.strengths,
         improvements: parsed.improvements,
-        callOutcome: body.callOutcome ?? detectedOutcome,
+        callOutcome: reportedOutcome,
         clientName: clientName ?? undefined,
         detectedOutcome,
       })
     } catch (e) {
-      console.warn('[analyze] Could not save call to DB, continuing:', e instanceof Error ? e.message : e)
+      const message = e instanceof Error ? e.message : String(e)
+      console.error("[analyze] dbCreateCall failed:", message)
+      return Response.json(
+        {
+          error: "Failed to save call to database",
+          details: message,
+          // Diagnóstico pra UI / DevTools — ajuda a identificar FK/CHECK violations
+          context: {
+            orgId: orgId ?? null,
+            rubricId: rubricId ?? null,
+            trainerId: sessionTrainerId ?? null,
+            callOutcome: reportedOutcome,
+            detectedOutcome,
+          },
+        },
+        { status: 500 },
+      )
     }
 
     // ── 6. Sync trainer stats (fire-and-forget) ─────────────────────────────

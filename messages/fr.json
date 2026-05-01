@@ -148,18 +148,18 @@
     },
     "outcomes": {
       "all": "Tous les résultats",
-      "unknown": "Inconnu",
+      "unknown": "Sans résultat",
       "short": {
-        "closed": "Closé",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objection",
-        "no_decision": "Sans décision"
+        "closed": "Conclu",
+        "partial": "Partiel",
+        "not_closed": "Non conclu",
+        "no_outcome": "Sans résultat"
       },
       "full": {
-        "closed": "Closé",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objection non résolue",
-        "no_decision": "Sans décision"
+        "closed": "Conclu",
+        "partial": "Partiel — follow-up en attente",
+        "not_closed": "Non conclu",
+        "no_outcome": "Sans résultat"
       }
     },
     "rubric": {
@@ -305,10 +305,10 @@
     "deltaVsTeam": "{delta} vs équipe ({teamAvg})",
     "quickStats": "Stats rapides",
     "stats": {
-      "closed": "Closées",
-      "followUp": "Follow-up",
-      "objection": "Objection",
-      "noDecision": "Sans décision"
+      "closed": "Conclues",
+      "partial": "Partiel",
+      "notClosed": "Non conclues",
+      "noOutcome": "Sans résultat"
     },
     "recentCalls": "Appels récents",
     "noCallsYet": "Aucun appel pour le moment.",
@@ -976,17 +976,17 @@
             "label": "Conclu",
             "note": "Affaire conclue — plage complète de score disponible."
           },
-          "follow_up": {
-            "label": "Follow-up",
-            "note": "Aucune conclusion — score plafonné à 80."
+          "partial": {
+            "label": "Partiel",
+            "note": "Proposition faite, follow-up en attente — score plafonné à 80."
           },
-          "objection_unresolved": {
-            "label": "Objection non résolue",
-            "note": "L'objection n'a pas été surmontée — score plafonné à 60."
+          "not_closed": {
+            "label": "Non conclu",
+            "note": "Appel terminé, sans conclusion — score plafonné à 60."
           },
-          "no_decision": {
-            "label": "Sans décision",
-            "note": "Le prospect est parti sans décision — score plafonné à 50."
+          "no_outcome": {
+            "label": "Sans résultat",
+            "note": "Appel incomplet ou sans résolution claire — score plafonné à 50."
           }
         },
         "sectionBreakdown": "Détail par section",
@@ -1032,9 +1032,9 @@
         "callOutcomeHint": "Comment cet appel s'est-il terminé ?",
         "outcomes": {
           "closed": "Conclu",
-          "follow_up": "Follow-up planifié",
-          "objection_unresolved": "Objection non résolue",
-          "no_decision": "Sans décision"
+          "partial": "Partiel — follow-up en attente",
+          "not_closed": "Non conclu",
+          "no_outcome": "Sans résultat"
         },
         "callContentTitle": "Contenu de l'appel",
         "callContentSubtitle": "Téléversez de l'audio ou de la vidéo, ou collez la transcription directement",

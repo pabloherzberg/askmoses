@@ -74,7 +74,7 @@ function toCall(db: DbCall): Call {
     date: db.created_at,
     duration: "—",
     score: db.overall_score ?? 0,
-    result: normaliseOutcome(db.call_outcome ?? "no_decision"),
+    result: normaliseOutcome(db.call_outcome ?? "no_outcome"),
     prospect: db.client_name ?? "—",
     rubricScores: parseCriteria(db.criteria),
     feedback: db.summary ?? "",
@@ -123,7 +123,9 @@ export async function getCalls(
     orgId,
     trainerId: filters?.trainerId,
     trainerName: filters?.trainerName,
-    callOutcome: filters?.callOutcome,
+    // Normalise legacy outcome strings to the canonical enum so payloads
+    // from older clients (e.g. ?callOutcome=follow_up) keep returning rows.
+    callOutcome: filters?.callOutcome ? normaliseOutcome(filters.callOutcome) : undefined,
     rubricId: filters?.rubricId,
     limit: filters?.limit,
     offset: filters?.offset,

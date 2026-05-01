@@ -6,8 +6,8 @@ import type { Call } from '@/lib/types'
  */
 export function buildInsightsAnalysis(calls: Call[]) {
   const closedCalls = calls.filter((c) => c.result === 'closed')
-  const notClosedCalls = calls.filter((c) => c.result === 'no_decision' || c.result === 'objection_unresolved')
-  const partialCalls = calls.filter((c) => c.result === 'follow_up')
+  const notClosedCalls = calls.filter((c) => c.result === 'not_closed' || c.result === 'no_outcome')
+  const partialCalls = calls.filter((c) => c.result === 'partial')
 
   return {
     metrics: {

@@ -148,18 +148,18 @@
     },
     "outcomes": {
       "all": "Todos os resultados",
-      "unknown": "Desconhecido",
+      "unknown": "Sem outcome",
       "short": {
         "closed": "Fechada",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objeção",
-        "no_decision": "Sem decisão"
+        "partial": "Parcial",
+        "not_closed": "Não fechada",
+        "no_outcome": "Sem outcome"
       },
       "full": {
         "closed": "Fechada",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objeção não resolvida",
-        "no_decision": "Sem decisão"
+        "partial": "Parcial — follow-up pendente",
+        "not_closed": "Não fechada",
+        "no_outcome": "Sem outcome"
       }
     },
     "rubric": {
@@ -306,9 +306,9 @@
     "quickStats": "Estatísticas rápidas",
     "stats": {
       "closed": "Fechadas",
-      "followUp": "Follow-up",
-      "objection": "Objeção",
-      "noDecision": "Sem decisão"
+      "partial": "Parcial",
+      "notClosed": "Não fechadas",
+      "noOutcome": "Sem outcome"
     },
     "recentCalls": "Chamadas recentes",
     "noCallsYet": "Nenhuma chamada ainda.",
@@ -973,20 +973,20 @@
         "outcomeBadge": "Resultado: {label} · Máx {cap}/100",
         "outcomes": {
           "closed": {
-            "label": "Fechado",
+            "label": "Fechada",
             "note": "Negócio fechado — faixa total de nota disponível."
           },
-          "follow_up": {
-            "label": "Follow-up",
-            "note": "Sem fechamento — nota limitada a 80."
+          "partial": {
+            "label": "Parcial",
+            "note": "Proposta feita, follow-up pendente — nota limitada a 80."
           },
-          "objection_unresolved": {
-            "label": "Objeção não resolvida",
-            "note": "A objeção não foi superada — nota limitada a 60."
+          "not_closed": {
+            "label": "Não fechada",
+            "note": "Call completa, não fechou — nota limitada a 60."
           },
-          "no_decision": {
-            "label": "Sem decisão",
-            "note": "O prospect saiu sem decisão — nota limitada a 50."
+          "no_outcome": {
+            "label": "Sem outcome",
+            "note": "Call incompleta ou sem resolução clara — nota limitada a 50."
           }
         },
         "sectionBreakdown": "Detalhamento por seção",
@@ -1031,10 +1031,10 @@
         "callOutcomeLabel": "Resultado da chamada *",
         "callOutcomeHint": "Como esta chamada terminou?",
         "outcomes": {
-          "closed": "Fechado",
-          "follow_up": "Follow-up agendado",
-          "objection_unresolved": "Objeção não resolvida",
-          "no_decision": "Sem decisão"
+          "closed": "Fechada",
+          "partial": "Parcial — follow-up pendente",
+          "not_closed": "Não fechada",
+          "no_outcome": "Sem outcome"
         },
         "callContentTitle": "Conteúdo da chamada",
         "callContentSubtitle": "Envie áudio ou vídeo, ou cole a transcrição diretamente",

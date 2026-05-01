@@ -148,18 +148,18 @@
     },
     "outcomes": {
       "all": "All Results",
-      "unknown": "Unknown",
+      "unknown": "No Outcome",
       "short": {
         "closed": "Closed",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objection",
-        "no_decision": "No Decision"
+        "partial": "Partial",
+        "not_closed": "Not Closed",
+        "no_outcome": "No Outcome"
       },
       "full": {
         "closed": "Closed",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objection Unresolved",
-        "no_decision": "No Decision"
+        "partial": "Partial — follow-up pending",
+        "not_closed": "Not Closed",
+        "no_outcome": "No Outcome"
       }
     },
     "rubric": {
@@ -306,9 +306,9 @@
     "quickStats": "Quick Stats",
     "stats": {
       "closed": "Closed",
-      "followUp": "Follow-up",
-      "objection": "Objection",
-      "noDecision": "No Decision"
+      "partial": "Partial",
+      "notClosed": "Not Closed",
+      "noOutcome": "No Outcome"
     },
     "recentCalls": "Recent Calls",
     "noCallsYet": "No calls yet.",
@@ -976,17 +976,17 @@
             "label": "Closed",
             "note": "Deal was closed — full score range available."
           },
-          "follow_up": {
-            "label": "Follow-up",
-            "note": "No close secured — score capped at 80."
+          "partial": {
+            "label": "Partial",
+            "note": "Proposal made, follow-up pending — score capped at 80."
           },
-          "objection_unresolved": {
-            "label": "Objection Unresolved",
-            "note": "Objection was not overcome — score capped at 60."
+          "not_closed": {
+            "label": "Not Closed",
+            "note": "Call complete, did not close — score capped at 60."
           },
-          "no_decision": {
-            "label": "No Decision",
-            "note": "Prospect left without a decision — score capped at 50."
+          "no_outcome": {
+            "label": "No Outcome",
+            "note": "Call incomplete or no clear resolution — score capped at 50."
           }
         },
         "sectionBreakdown": "Section Breakdown",
@@ -1032,9 +1032,9 @@
         "callOutcomeHint": "How did this call end?",
         "outcomes": {
           "closed": "Closed",
-          "follow_up": "Follow-up Scheduled",
-          "objection_unresolved": "Objection Unresolved",
-          "no_decision": "No Decision"
+          "partial": "Partial — follow-up pending",
+          "not_closed": "Not Closed",
+          "no_outcome": "No Outcome"
         },
         "callContentTitle": "Call Content",
         "callContentSubtitle": "Upload audio or video, or paste the transcript directly",

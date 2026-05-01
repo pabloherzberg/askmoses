@@ -198,9 +198,9 @@ export async function generateInsights(scriptId?: string) {
 
   const closedCalls = calls.filter((c) => c.result === "closed");
   const notClosedCalls = calls.filter(
-    (c) => c.result === "no_decision" || c.result === "objection_unresolved",
+    (c) => c.result === "not_closed" || c.result === "no_outcome",
   );
-  const partialCalls = calls.filter((c) => c.result === "follow_up");
+  const partialCalls = calls.filter((c) => c.result === "partial");
   const closeRate =
     calls.length > 0
       ? Math.round((closedCalls.length / calls.length) * 100)
