@@ -962,15 +962,15 @@
         "subtitle": "Consultez le retour de coaching IA pour {name}",
         "startOver": "Recommencer",
         "overallScore": "Score global",
-        "scoreSuffix": "/100",
-        "scoreScaleHint": "Moyenne des scores de section (échelle 0–5) × 20",
+        "scoreSuffix": "/5",
+        "scoreScaleHint": "Moyenne des scores de section, échelle 0–5",
         "badges": {
           "strong": "Solide",
           "adequate": "Adéquat",
           "needsWork": "À améliorer",
           "critical": "Critique"
         },
-        "outcomeBadge": "Résultat : {label} · Max {cap}/100",
+        "outcomeBadge": "Résultat : {label} · Max {cap}/5",
         "outcomes": {
           "closed": {
             "label": "Conclu",

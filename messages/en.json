@@ -962,15 +962,15 @@
         "subtitle": "Review the AI coaching feedback for {name}",
         "startOver": "Start Over",
         "overallScore": "Overall Score",
-        "scoreSuffix": "/100",
-        "scoreScaleHint": "Average of section scores (0–5 scale) × 20",
+        "scoreSuffix": "/5",
+        "scoreScaleHint": "Average of section scores, scale 0–5",
         "badges": {
           "strong": "Strong",
           "adequate": "Adequate",
           "needsWork": "Needs Work",
           "critical": "Critical"
         },
-        "outcomeBadge": "Outcome: {label} · Max {cap}/100",
+        "outcomeBadge": "Outcome: {label} · Max {cap}/5",
         "outcomes": {
           "closed": {
             "label": "Closed",
