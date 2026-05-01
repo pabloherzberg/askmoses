@@ -54,9 +54,9 @@ export default async function TrainerDashboardPage() {
   // ── Métricas calculadas das calls reais ──────────────────────────────────
   const totalCalls = trainerCalls.length;
   const closedCalls    = trainerCalls.filter((c) => c.result === "closed").length;
-  const followUpCalls  = trainerCalls.filter((c) => c.result === "follow_up").length;
-  const objectionCalls = trainerCalls.filter((c) => c.result === "objection_unresolved").length;
-  const noDecisionCalls = trainerCalls.filter((c) => c.result === "no_decision").length;
+  const partialCalls   = trainerCalls.filter((c) => c.result === "partial").length;
+  const notClosedCalls = trainerCalls.filter((c) => c.result === "not_closed").length;
+  const noOutcomeCalls = trainerCalls.filter((c) => c.result === "no_outcome").length;
 
   const myScore = totalCalls > 0
     ? Math.round(trainerCalls.reduce((sum, c) => sum + c.score, 0) / totalCalls)
@@ -138,10 +138,10 @@ export default async function TrainerDashboardPage() {
             <p className="text-[13px] font-medium mb-3" style={{ color: "var(--am-text)" }}>{t("quickStats")}</p>
             <div className="grid grid-cols-2 gap-3 text-center">
               {[
-                { label: t("stats.closed"),     value: closedCalls,      color: "var(--am-green)" },
-                { label: t("stats.followUp"),   value: followUpCalls,    color: "var(--am-amber)" },
-                { label: t("stats.objection"),  value: objectionCalls,   color: "var(--am-amber)" },
-                { label: t("stats.noDecision"), value: noDecisionCalls,  color: "var(--am-red)" },
+                { label: t("stats.closed"),     value: closedCalls,    color: "var(--am-green)" },
+                { label: t("stats.partial"),    value: partialCalls,   color: "var(--am-amber)" },
+                { label: t("stats.notClosed"),  value: notClosedCalls, color: "var(--am-amber)" },
+                { label: t("stats.noOutcome"),  value: noOutcomeCalls, color: "var(--am-red)" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <p className="text-2xl font-semibold font-mono" style={{ color }}>{value}</p>
