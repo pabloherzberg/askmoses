@@ -54,6 +54,13 @@ export interface CriterionScore {
   justification: string;
 }
 
+export interface SectionScore {
+  name: string;
+  score: number; // 0–5
+  feedback: string;
+  critical: boolean;
+}
+
 export interface AnalyzeResult {
   overallScore: number;
   detectedOutcome: ValidOutcome;
@@ -61,9 +68,9 @@ export interface AnalyzeResult {
   strengths: string[];
   improvements: string[];
   criteriaScores: CriterionScore[];
-  // aliases for dashboard/upload page compatibility
-  criteria: CriterionScore[];
-  sections: CriterionScore[];
+  // structured sections for upload page UI and email
+  sections: SectionScore[];
+  criteria: SectionScore[]; // alias for backward compat
   transcript: string;
 }
 
@@ -360,19 +367,36 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       );
     }
 
-    // ── 7. Normalise criteriaScores for page compatibility ──────────────────
-    // Page expects { name, score, feedback }; AI returns { criterionName, score, justification }
-    const normalisedSections = parsed.criteriaScores.map((c) => ({
-      ...c,
-      name:
+    // ── 7. Normalise criteriaScores into SectionScore[] ─────────────────────
+    // Sections marked critical if they match the default critical section names.
+    // When Task 1.8 ships, this list will come from the rubric definition instead.
+    const criticalSectionNames = new Set(
+      (rubricData?.criteria ?? [])
+        .filter((c) => (c as unknown as Record<string, unknown>)["is_critical"])
+        .map((c) => c.name.toLowerCase())
+    );
+    // Fallback: Discovery and Problem Agitation are always critical
+    if (criticalSectionNames.size === 0) {
+      criticalSectionNames.add("discovery");
+      criticalSectionNames.add("problem agitation");
+    }
+
+    const normalisedSections: SectionScore[] = parsed.criteriaScores.map((c) => {
+      const name =
         c.criterionName ??
         (c as unknown as Record<string, unknown>)["name"] ??
-        "",
-      feedback:
+        "";
+      const feedback =
         c.justification ??
         (c as unknown as Record<string, unknown>)["feedback"] ??
-        "",
-    }));
+        "";
+      return {
+        name,
+        score: c.score,
+        feedback,
+        critical: criticalSectionNames.has(name.toLowerCase()),
+      };
+    });
 
     return Response.json({
       id: savedCall.id,
@@ -381,7 +405,7 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
       summary: parsed.summary,
       strengths: parsed.strengths,
       improvements: parsed.improvements,
-      criteriaScores: normalisedSections,
+      criteriaScores: parsed.criteriaScores,
       criteria: normalisedSections,
       sections: normalisedSections,
       transcript,

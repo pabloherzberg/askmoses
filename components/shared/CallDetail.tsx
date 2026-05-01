@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from '@/lib/constants'
 import type { Call, Role, RubricColor } from '@/lib/types'
@@ -15,6 +15,8 @@ const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: 
   { key: 'objectionHandling', labelKey: 'objectionHandling', color: 'red' },
   { key: 'closeAndNextSteps', labelKey: 'closeAndNextSteps', color: 'accent2' },
 ]
+
+const SECTION_COLORS: RubricColor[] = ['blue', 'amber', 'green', 'red', 'accent2']
 
 function scoreColor(score: number) {
   if (score >= 85) return 'var(--am-green)'
@@ -97,16 +99,46 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             {t('rubricScores')}
           </p>
-          <div className="flex flex-col gap-3">
-            {rubricFields.map(({ key, labelKey, color }) => (
-              <RubricBar
-                key={key}
-                label={tRubric(labelKey)}
-                value={call.rubricScores[key]}
-                color={color}
-              />
-            ))}
-          </div>
+          {call.sections && call.sections.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {call.sections.map((section, i) => {
+                const isCriticalAlert = section.critical && section.score <= 2
+                const color = SECTION_COLORS[i % SECTION_COLORS.length]
+                return (
+                  <div key={section.name}>
+                    {isCriticalAlert && (
+                      <div
+                        className="flex items-start gap-2 text-xs rounded-lg px-3 py-2 mb-2"
+                        style={{ background: 'rgba(255,94,94,0.1)', color: 'var(--am-red)' }}
+                      >
+                        <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+                        <span>Critical section — needs immediate attention</span>
+                      </div>
+                    )}
+                    <RubricBar
+                      label={section.name}
+                      value={section.score * 20}
+                      color={color}
+                    />
+                    <p className="text-[11px] mt-1 ml-[156px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
+                      {section.feedback}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {rubricFields.map(({ key, labelKey, color }) => (
+                <RubricBar
+                  key={key}
+                  label={tRubric(labelKey)}
+                  value={call.rubricScores[key]}
+                  color={color}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Strengths + improvements */}

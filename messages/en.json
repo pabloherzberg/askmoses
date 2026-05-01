@@ -999,6 +999,7 @@
           "notAttempted": "Not Attempted"
         },
         "sectionScore": "{score}/5 — {label}",
+        "criticalSectionAlert": "Critical section — needs immediate attention",
         "strengths": "Strengths",
         "areasForImprovement": "Areas for Improvement",
         "summary": "Summary",

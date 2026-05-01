@@ -372,8 +372,10 @@ interface CallDetailProps {
 - [x] Transcrição em fonte mono
 - [x] Notas de coaching visível apenas para owner/admin
 - [x] 403 se trainer tenta acessar call de outro trainer
+- [x] Seções agrupadas com score 0-10 e feedback por seção quando disponível
+- [x] Alerta destacado (vermelho) para seções critical com score ≤ 4
 
-> **STATUS: ✅ CONCLUÍDA** — Guard implementado em `/me/calls/[id]/page.tsx`: compara `call.trainerId` com o ID do usuário autenticado (mapeando `demo-trainer` → `trainer-marcus`). Retorna página 403 se não pertence ao trainer.
+> **STATUS: ✅ CONCLUÍDA** — Guard implementado em `/me/calls/[id]/page.tsx`: compara `call.trainerId` com o ID do usuário autenticado (mapeando `demo-trainer` → `trainer-marcus`). Retorna página 403 se não pertence ao trainer. Enhancement: `CallDetail` agora renderiza `sections[]` quando disponível (score 0-10 com feedback textual e alerta crítico), com fallback para `rubricScores` flat em calls sem sections.
 
 ---
 

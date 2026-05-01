@@ -999,6 +999,7 @@
           "notAttempted": "No intentada"
         },
         "sectionScore": "{score}/5 — {label}",
+        "criticalSectionAlert": "Sección crítica — requiere atención inmediata",
         "strengths": "Fortalezas",
         "areasForImprovement": "Áreas de mejora",
         "summary": "Resumen",
