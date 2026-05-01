@@ -409,11 +409,11 @@ export default function UploadPage() {
   }
 
   if (step === "results" && analysisResult) {
-    const overallScore = analysisResult.overallScore
+    const overallScore = Math.round((analysisResult.overallScore / 20) * 10) / 10
     const overallLabel =
-      overallScore >= 80 ? t("results.badges.strong") :
-      overallScore >= 60 ? t("results.badges.adequate") :
-      overallScore >= 40 ? t("results.badges.needsWork") : t("results.badges.critical")
+      overallScore >= 4 ? t("results.badges.strong") :
+      overallScore >= 3 ? t("results.badges.adequate") :
+      overallScore >= 2 ? t("results.badges.needsWork") : t("results.badges.critical")
 
     return (
       <div className="space-y-6 pb-16 lg:pb-0">
@@ -453,10 +453,10 @@ export default function UploadPage() {
                 <span className="text-2xl font-normal text-muted-foreground">{t("results.scoreSuffix")}</span>
               </div>
               <div className="flex-1">
-                <Progress value={overallScore} className="h-3" />
+                <Progress value={(overallScore / 5) * 100} className="h-3" />
               </div>
               <Badge
-                variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
+                variant={overallScore >= 4 ? "default" : overallScore >= 3 ? "secondary" : "destructive"}
                 className="text-sm"
               >
                 {overallLabel}
@@ -466,10 +466,10 @@ export default function UploadPage() {
               <span>{t("results.scoreScaleHint")}</span>
               {analysisResult.detectedOutcome && (() => {
                 const outcomeMeta: Record<string, { cap: number }> = {
-                  closed:     { cap: 100 },
-                  partial:    { cap: 80 },
-                  not_closed: { cap: 60 },
-                  no_outcome: { cap: 50 },
+                  closed:     { cap: 5 },
+                  partial:    { cap: 4 },
+                  not_closed: { cap: 3 },
+                  no_outcome: { cap: 2.5 },
                 }
                 const outcomeKey = analysisResult.detectedOutcome
                 const meta = outcomeMeta[outcomeKey] ?? { cap: 100 }

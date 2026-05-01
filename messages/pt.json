@@ -962,15 +962,15 @@
         "subtitle": "Revise o feedback de coaching da IA para {name}",
         "startOver": "Começar de novo",
         "overallScore": "Nota geral",
-        "scoreSuffix": "/100",
-        "scoreScaleHint": "Média das notas por seção (escala 0–5) × 20",
+        "scoreSuffix": "/5",
+        "scoreScaleHint": "Média das notas por seção, escala 0–5",
         "badges": {
           "strong": "Forte",
           "adequate": "Adequado",
           "needsWork": "Precisa melhorar",
           "critical": "Crítico"
         },
-        "outcomeBadge": "Resultado: {label} · Máx {cap}/100",
+        "outcomeBadge": "Resultado: {label} · Máx {cap}/5",
         "outcomes": {
           "closed": {
             "label": "Fechada",
