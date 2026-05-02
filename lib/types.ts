@@ -40,6 +40,13 @@ export interface Trainer {
   rubricScores: RubricScores
 }
 
+export interface CallSection {
+  name: string
+  score: number  // 0–5
+  feedback: string
+  critical: boolean
+}
+
 export interface Call {
   id: string
   trainerId: string
@@ -50,6 +57,7 @@ export interface Call {
   result: CallResult
   prospect: string
   rubricScores: RubricScores
+  sections?: CallSection[]
   feedback: string
   strengths: string[]
   improvements: string[]

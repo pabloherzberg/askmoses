@@ -36,6 +36,7 @@ import {
   Send,
   RotateCcw,
   Sparkles,
+  ChevronDown,
 } from "lucide-react"
 import type { CallResult as CallOutcome, Trainer } from "@/lib/types"
 import { UpsellCard } from "@/components/shared/UpsellCard"
@@ -58,6 +59,7 @@ interface SectionResult {
   name: string
   score: number
   feedback: string
+  critical?: boolean
 }
 
 interface AnalysisResult {
@@ -97,6 +99,7 @@ export default function UploadPage() {
     callOutcome: "no_outcome",
   })
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set())
   const [processingStatus, setProcessingStatus] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
@@ -310,6 +313,13 @@ export default function UploadPage() {
       console.log("[v0] Analysis complete:", { score: analysis.overallScore, criteria: analysis.criteria?.length })
       setProgress(100)
       setAnalysisResult(analysis)
+      const sections: SectionResult[] = analysis.sections || analysis.criteria || []
+      const initialExpanded = new Set(
+        sections
+          .map((s: SectionResult, i: number) => (s.critical && s.score <= 2 ? i : -1))
+          .filter((i: number) => i !== -1)
+      )
+      setExpandedSections(initialExpanded)
       setStep("results")
     } catch (err) {
       console.error("[v0] Full error:", err)
@@ -362,6 +372,7 @@ export default function UploadPage() {
     setStep("input")
     setProgress(0)
     setAnalysisResult(null)
+    setExpandedSections(new Set())
     setError(null)
     setFormData({
       trainerId: "",
@@ -398,11 +409,11 @@ export default function UploadPage() {
   }
 
   if (step === "results" && analysisResult) {
-    const overallScore = analysisResult.overallScore
+    const overallScore = Math.round((analysisResult.overallScore / 20) * 10) / 10
     const overallLabel =
-      overallScore >= 80 ? t("results.badges.strong") :
-      overallScore >= 60 ? t("results.badges.adequate") :
-      overallScore >= 40 ? t("results.badges.needsWork") : t("results.badges.critical")
+      overallScore >= 4 ? t("results.badges.strong") :
+      overallScore >= 3 ? t("results.badges.adequate") :
+      overallScore >= 2 ? t("results.badges.needsWork") : t("results.badges.critical")
 
     return (
       <div className="space-y-6 pb-16 lg:pb-0">
@@ -442,10 +453,10 @@ export default function UploadPage() {
                 <span className="text-2xl font-normal text-muted-foreground">{t("results.scoreSuffix")}</span>
               </div>
               <div className="flex-1">
-                <Progress value={overallScore} className="h-3" />
+                <Progress value={(overallScore / 5) * 100} className="h-3" />
               </div>
               <Badge
-                variant={overallScore >= 80 ? "default" : overallScore >= 60 ? "secondary" : "destructive"}
+                variant={overallScore >= 4 ? "default" : overallScore >= 3 ? "secondary" : "destructive"}
                 className="text-sm"
               >
                 {overallLabel}
@@ -455,10 +466,10 @@ export default function UploadPage() {
               <span>{t("results.scoreScaleHint")}</span>
               {analysisResult.detectedOutcome && (() => {
                 const outcomeMeta: Record<string, { cap: number }> = {
-                  closed:     { cap: 100 },
-                  partial:    { cap: 80 },
-                  not_closed: { cap: 60 },
-                  no_outcome: { cap: 50 },
+                  closed:     { cap: 5 },
+                  partial:    { cap: 4 },
+                  not_closed: { cap: 3 },
+                  no_outcome: { cap: 2.5 },
                 }
                 const outcomeKey = analysisResult.detectedOutcome
                 const meta = outcomeMeta[outcomeKey] ?? { cap: 100 }
@@ -485,14 +496,20 @@ export default function UploadPage() {
             <CardTitle>{t("results.sectionBreakdown")}</CardTitle>
             <CardDescription>{t("results.sectionBreakdownHint")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2">
             {(analysisResult.sections || analysisResult.criteria).map((section, index) => {
               const score = section.score ?? 0
               const pct = (score / 5) * 100
-              const color = score >= 4.5 ? "text-green-700 bg-green-50 border-green-200" :
-                            score >= 3.5 ? "text-blue-700 bg-blue-50 border-blue-200" :
-                            score >= 2.5 ? "text-amber-700 bg-amber-50 border-amber-200" :
-                            "text-red-700 bg-red-50 border-red-200"
+              const isCriticalAlert = section.critical && score <= 2
+              const isExpanded = expandedSections.has(index)
+              const borderColor = isCriticalAlert ? "border-red-400" :
+                                  score >= 4.5 ? "border-green-200" :
+                                  score >= 3.5 ? "border-blue-200" :
+                                  score >= 2.5 ? "border-amber-200" : "border-red-200"
+              const headerColor = isCriticalAlert ? "text-red-700 bg-red-50" :
+                                  score >= 4.5 ? "text-green-700 bg-green-50" :
+                                  score >= 3.5 ? "text-blue-700 bg-blue-50" :
+                                  score >= 2.5 ? "text-amber-700 bg-amber-50" : "text-red-700 bg-red-50"
               const barColor = score >= 4.5 ? "bg-green-500" :
                                score >= 3.5 ? "bg-blue-500" :
                                score >= 2.5 ? "bg-amber-500" : "bg-red-500"
@@ -501,19 +518,47 @@ export default function UploadPage() {
                 score >= 3.5 ? t("results.sectionLabels.strong") :
                 score >= 2.5 ? t("results.sectionLabels.adequate") :
                 score >= 1.5 ? t("results.sectionLabels.needsWork") : t("results.sectionLabels.notAttempted")
+
               return (
-                <div key={index} className={`rounded-lg border p-4 ${color}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-base">{section.name}</span>
-                    <Badge variant="outline" className="font-bold text-sm shrink-0 ml-2">
-                      {t("results.sectionScore", { score, label })}
-                    </Badge>
+                <div key={index} className={`rounded-lg border ${borderColor} overflow-hidden`}>
+                  {/* Accordion header */}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections(prev => {
+                      const next = new Set(prev)
+                      next.has(index) ? next.delete(index) : next.add(index)
+                      return next
+                    })}
+                    className={`w-full flex items-center justify-between px-4 py-3 ${headerColor} hover:opacity-90 transition-opacity`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {isCriticalAlert && <span className="shrink-0">⚠️</span>}
+                      <span className="font-semibold text-sm truncate">{section.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <Badge variant="outline" className="font-bold text-xs">
+                        {t("results.sectionScore", { score, label })}
+                      </Badge>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+
+                  {/* Progress bar always visible */}
+                  <div className="h-1.5 bg-black/10">
+                    <div className={`h-1.5 ${barColor} transition-all`} style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="h-2 rounded-full bg-black/10 mb-3">
-                    <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  {section.feedback && (
-                    <p className="text-sm opacity-80 leading-relaxed">{section.feedback}</p>
+
+                  {/* Accordion body */}
+                  {isExpanded && section.feedback && (
+                    <div className="px-4 py-3 bg-background text-sm text-muted-foreground leading-relaxed">
+                      {isCriticalAlert && (
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-100 border border-red-200 rounded px-2 py-1 mb-2">
+                          <span>⚠</span>
+                          <span>{t("results.criticalSectionAlert")}</span>
+                        </div>
+                      )}
+                      {section.feedback}
+                    </div>
                   )}
                 </div>
               )
