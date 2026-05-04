@@ -45,16 +45,22 @@ export interface UpdateScriptInput {
 }
 
 export async function dbGetScripts(filters?: {
+  orgId?: string
   rubricId?: string
   active?: boolean
 }): Promise<DbScript[]> {
   const supabase = createAdminClient()
 
+  // Active scripts surface first so the upload-page dropdown highlights the
+  // one the org currently treats as default; archived ones still appear so
+  // they can be re-used for re-analysis if needed.
   let query = supabase
     .from('scripts')
     .select('*')
+    .order('is_active', { ascending: false })
     .order('created_at', { ascending: false })
 
+  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
   if (filters?.rubricId) query = query.eq('rubric_id', filters.rubricId)
   if (filters?.active !== undefined) query = query.eq('is_active', filters.active)
 
@@ -63,6 +69,29 @@ export async function dbGetScripts(filters?: {
   if (error) throw new Error(`dbGetScripts: ${error.message}`)
 
   return (data ?? []) as DbScript[]
+}
+
+/**
+ * Fetch a script by id. Pass `orgId` to enforce tenant isolation — required
+ * defense-in-depth because dbCreateAdminClient bypasses RLS. Calling this
+ * without `orgId` is a security bug; the parameter is required for that
+ * reason (only internal scripts/seed code should ever opt-out by passing
+ * an empty string explicitly).
+ */
+export async function dbGetScriptById(id: string, orgId: string): Promise<DbScript | null> {
+  const supabase = createAdminClient()
+
+  let query = supabase.from('scripts').select('*').eq('id', id)
+  if (orgId) query = query.eq('org_id', orgId)
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbGetScriptById: ${error.message}`)
+  }
+
+  return (data ?? null) as DbScript | null
 }
 
 export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript> {
