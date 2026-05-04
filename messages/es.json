@@ -668,12 +668,11 @@
         "track": {
           "title": "Seguir el rendimiento",
           "description": "Monitorea tendencias e identifica oportunidades de coaching",
-          "location": "Páginas Historial y Analytics",
+          "location": "Página Calls",
           "details": [
-            "Historial: ve todas las llamadas con búsqueda y filtros",
+            "Calls: ve todas las llamadas con búsqueda y filtros",
             "Filtra por nombre, fecha o puntuación",
             "Haz clic en cualquier llamada para ver detalles y transcripción",
-            "Analytics: ve métricas agregadas de rendimiento",
             "Sigue las tasas de aprobación por criterio",
             "Identifica qué secciones necesitan más entrenamiento"
           ],
@@ -686,9 +685,9 @@
         "insights": {
           "title": "Generar insights del equipo",
           "description": "Usa reconocimiento de patrones para optimizar tu script con datos reales",
-          "location": "Página Insights",
+          "location": "Página Script Intelligence",
           "details": [
-            "Navega a Insights en el menú lateral",
+            "Navega a Script Intelligence en el menú lateral",
             "Selecciona un script en el menú desplegable",
             "Haz clic en 'Generar insights' para analizar todas las llamadas de ese script",
             "El sistema agrupa por resultado: Cerrada, No cerrada y Parcial",
