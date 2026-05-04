@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { forbidden, getOrgId, getSession, ok, unauthorized } from '@/lib/auth'
 import { getScripts } from '@/lib/services/scripts'
-import { dbCreateScript } from '@/lib/db/scripts'
+import { dbCreateScript, type ScriptSection } from '@/lib/db/scripts'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
       rubricId: body.rubric_id as string,
       name: body.name as string,
       description: body.description as string | undefined,
-      sections: (body.sections as { name: string; instructions: string; tips: string }[]) ?? [],
+      // ScriptSection includes optional weight + critical (gravados no JSONB).
+      // O cast antigo apagava esses campos do TypeScript apesar deles
+      // chegarem no body — corrige a "mentira" pra evitar perder dado em refactors futuros.
+      sections: (body.sections as ScriptSection[]) ?? [],
       full_script: body.full_script as string | undefined,
       criteria: (body.criteria as { name: string; description: string }[]) ?? [],
       isActive: body.is_active as boolean | undefined,

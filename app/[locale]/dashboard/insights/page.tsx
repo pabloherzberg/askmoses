@@ -120,7 +120,12 @@ export default function InsightsPage() {
 
   useEffect(() => {
     async function loadScripts() {
-      const res = await fetch("/api/scripts?active=true")
+      // Script Intelligence é uma tela analítica — owner deve poder auditar
+      // qualquer script da org, inclusive arquivados (`is_active=false`).
+      // Filtrar por active=true zerava o dropdown de orgs cujos scripts foram
+      // criados via Settings (que defaulta is_active=false) sem nunca ativar.
+      // O ordering org-scoped (is_active DESC) mantém o ativo no topo.
+      const res = await fetch("/api/scripts")
       const { data } = (await res.json()) as { data: Script[] | null; error: unknown }
       if (data) setScripts(data)
       setLoading(false)

@@ -80,6 +80,10 @@ function parseSections(raw: unknown): CallSection[] | undefined {
       score,
       feedback: typeof s.feedback === "string" ? s.feedback : "",
       critical: typeof s.critical === "boolean" ? s.critical : false,
+      // Weight (0–100) from rubric_criteria. Null on script flow or
+      // pre-migration calls. Forwarded as-is to downstream consumers
+      // (email template, analytics).
+      weight: typeof s.weight === "number" ? s.weight : null,
     });
   }
   return out.length > 0 ? out : undefined;

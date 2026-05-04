@@ -45,6 +45,11 @@ export interface CallSection {
   score: number  // 1–5 (Prompt v2)
   feedback: string
   critical: boolean
+  /** Section weight (0–100) from rubric_criteria.weight. Sum across the
+   *  rubric should equal 100. Null when running with a script (script
+   *  sections don't carry weight) or against a rubric without the
+   *  weight column applied. */
+  weight?: number | null
 }
 
 export interface Call {

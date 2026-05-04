@@ -58,6 +58,10 @@ export interface SectionScore {
   score: number; // 1–5
   feedback: string;
   critical: boolean;
+  /** Section weight (0–100) from rubric_criteria.weight. Null when source
+   *  is a script (no weight column) or when running against a rubric whose
+   *  criteria table lacks the weight column. */
+  weight?: number | null;
 }
 
 export interface CallCostBreakdown {
@@ -237,31 +241,27 @@ export async function POST(request: NextRequest) {
     const sessionTrainerId =
       body.trainerId ?? (await getTrainerDbId());
 
-    // ── 1. Resolve rubric for org (and script sections, if scriptId given) ─
-    // Resolution order:
-    //   1. body.scriptId  → fetch org-scoped script; use script.sections
-    //                       (Opening/Discovery/Closing with instructions+tips)
-    //                       as the rubric of evaluation. We do NOT use
-    //                       script.criteria here — that's an auto-generated
-    //                       parallel array meant for other surfaces.
-    //   2. body.rubricId  → resolve rubric directly within the org
-    //   3. fallback       → org's default rubric
+    // ── 1. Resolve rubric + script (TL decision 2026-05-04, refined) ──────
+    //
+    // The rubric is the universal evaluation FRAMEWORK ("how to evaluate" —
+    // shared across the org, drives the LLM's mental model of good selling).
+    // The script is the call-specific PLAYBOOK ("what was the salesperson
+    // following" — the items that actually get scored on this call).
+    //
+    // When a script is provided:
+    //   - Rubric criteria → injected into the prompt as context (NOT scored).
+    //   - Script sections → the items the LLM scores. Output sections[] is
+    //     exactly these, with the script's own weight + critical (sums to
+    //     100 within the script — owner-validated).
+    //
+    // When no script is provided:
+    //   - Rubric criteria are BOTH the framework and the scored items.
     let rubricData = null;
-    let scriptCriteria:
-      | Array<{ name: string; description: string | null; id?: string; is_critical?: boolean }>
-      | null = null;
+    let script: Awaited<ReturnType<typeof dbGetScriptById>> | null = null;
 
     if (body.scriptId) {
-      const script = await dbGetScriptById(body.scriptId, orgId);
-      // Cross-tenant or missing script: refuse explicitly so the UI doesn't
-      // silently fall back to a different rubric than the user picked.
+      script = await dbGetScriptById(body.scriptId, orgId);
       if (!script) return forbidden();
-      scriptCriteria = (script.sections ?? []).map((s) => {
-        const desc = [s.instructions, s.tips ? `Tip: ${s.tips}` : ""]
-          .filter(Boolean)
-          .join(" — ");
-        return { name: s.name, description: desc };
-      });
       try {
         rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
       } catch (e) {
@@ -285,50 +285,85 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // When a script was provided, its sections override the rubric's criteria
-    // for evaluation. The rubric still drives system_prompt + llm_model.
-    const criteria = scriptCriteria ?? rubricData?.criteria ?? [];
     const rubricId = rubricData?.rubric.id ?? null;
     const systemPrompt =
       rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt();
     const llmModel = rubricData?.rubric.llm_model ?? null;
 
-    const allowedSections =
-      criteria.length > 0
-        ? criteria.map((c) => c.name)
-        : DEFAULT_SECTIONS.map((s) => s.name);
-
-    // Critical-section flagging:
-    // - Rubric criteria carry an `is_critical` column (Task 1.1).
-    // - Script sections do NOT have this field — when a script is the source
-    //   of evaluation, NO section is marked critical. This is intentional
-    //   for now; if scripts need criticality, add the column to script.sections.
-    const criticalSectionNames = new Set(
-      criteria.length > 0
-        ? criteria
-            .filter(
-              (c) => (c as unknown as Record<string, unknown>)["is_critical"],
-            )
-            .map((c) => c.name.toLowerCase())
-        : DEFAULT_SECTIONS.filter((s) => s.critical).map((s) =>
-            s.name.toLowerCase(),
+    // Items to actually score → script.sections when present, else rubric.
+    // Script sections sum to 100 (validated by script-builder UI), so the
+    // call output's weights sum cleanly without renormalisation.
+    const scoredItems: ScoredItem[] = (() => {
+      if (script && script.sections.length > 0) {
+        return script.sections.map((s) => ({
+          name: s.name,
+          description: [s.instructions, s.tips ? `Tip: ${s.tips}` : ""]
+            .filter(Boolean)
+            .join(" — "),
+          weight: typeof s.weight === "number" ? s.weight : undefined,
+          critical: typeof s.critical === "boolean" ? s.critical : false,
+          source: "script",
+        }));
+      }
+      const rubricCriteria = rubricData?.criteria ?? [];
+      if (rubricCriteria.length > 0) {
+        return rubricCriteria.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description ?? "",
+          weight:
+            typeof (c as unknown as Record<string, unknown>)["weight"] === "number"
+              ? ((c as unknown as Record<string, unknown>)["weight"] as number)
+              : undefined,
+          critical: Boolean(
+            (c as unknown as Record<string, unknown>)["is_critical"],
           ),
+          source: "rubric",
+        }));
+      }
+      return DEFAULT_SECTIONS.map((s) => ({
+        name: s.name,
+        description: s.description,
+        weight: undefined,
+        critical: s.critical,
+        source: "default",
+      }));
+    })();
+
+    const allowedSections = scoredItems.map((i) => i.name);
+
+    const criticalSectionNames = new Set(
+      scoredItems.filter((i) => i.critical).map((i) => i.name.toLowerCase()),
     );
+    if (criticalSectionNames.size === 0) {
+      criticalSectionNames.add("discovery");
+      criticalSectionNames.add("problem agitation");
+    }
+
+    const weightByName = new Map<string, number>();
+    for (const i of scoredItems) {
+      if (typeof i.weight === "number") {
+        weightByName.set(i.name.toLowerCase(), i.weight);
+      }
+    }
+
+    // Framework (rubric criteria) goes to the prompt as context only —
+    // the LLM is told NOT to score these directly. Empty when there's no
+    // rubric loaded (defaults take over via DEFAULT_SECTIONS framework).
+    const evaluationFramework =
+      rubricData?.criteria.map((c) => ({
+        name: c.name,
+        description: c.description ?? "",
+      })) ?? [];
 
     // ── 2. Build CoT prompt ──────────────────────────────────────────────
     const prompt = buildCotPrompt({
       systemPrompt,
-      allowedSections,
-      sectionDescriptions:
-        criteria.length > 0
-          ? criteria.map((c) => ({
-              name: c.name,
-              description: c.description ?? "",
-            }))
-          : DEFAULT_SECTIONS.map((s) => ({
-              name: s.name,
-              description: s.description,
-            })),
+      framework: evaluationFramework,
+      scoredItems: scoredItems.map((i) => ({
+        name: i.name,
+        description: i.description,
+      })),
       transcript,
       trainerName: trainerName ?? "not provided",
       clientName: clientName ?? "not provided",
@@ -403,11 +438,11 @@ export async function POST(request: NextRequest) {
     const detectedOutcome = coerceOutcome(parsed.detectedOutcome);
 
     // ── 5. Assemble sections + criteriaScores (back-compat) ──────────────
-    // criteriaScores keys back to the rubric criterion id when possible —
-    // index lookup is safe here because reorderSectionsToRubric ensures
-    // parsed.sections[i] matches criteria[i] by name.
-    const criteriaByName = new Map(
-      criteria.map((c) => [c.name.toLowerCase(), c] as const),
+    // criteriaScores keys back to the original scored item's id when
+    // available (rubric criteria carry UUIDs; script sections fall back to
+    // the section name).
+    const itemsByName = new Map(
+      scoredItems.map((i) => [i.name.toLowerCase(), i] as const),
     );
 
     const normalisedSections: SectionScore[] = parsed.sections.map((s) => ({
@@ -415,12 +450,15 @@ export async function POST(request: NextRequest) {
       score: s.score,
       feedback: s.feedback,
       critical: criticalSectionNames.has(s.name.toLowerCase()),
+      weight: weightByName.get(s.name.toLowerCase()) ?? null,
     }));
 
     const criteriaScores: CriterionScore[] = parsed.sections.map((s) => {
-      const matched = criteriaByName.get(s.name.toLowerCase());
+      const matched = itemsByName.get(s.name.toLowerCase());
       return {
-        criterionId: (matched as unknown as { id?: string } | undefined)?.id ?? s.name,
+        // Stable rubric id when present — falls back to the name for script
+        // sections (which don't carry an id, only a name in JSONB).
+        criterionId: matched?.id ?? s.name,
         criterionName: s.name,
         score: s.score,
         justification: s.feedback,
@@ -474,45 +512,6 @@ export async function POST(request: NextRequest) {
         console.error("[analyze] syncTrainerStats failed:", e),
       );
     }
-
-    // ── 7. Normalise criteriaScores into SectionScore[] ─────────────────────
-    // Build lookup maps from rubric criteria: critical flag and weight per section name.
-    type RubricCriterion = { name: string; is_critical?: boolean; weight?: number }
-    const rubricCriteria = (rubricData?.criteria ?? []) as unknown as RubricCriterion[]
-
-    const criticalSectionNames = new Set(
-      rubricCriteria
-        .filter((c) => c.is_critical)
-        .map((c) => c.name.toLowerCase())
-    );
-    // Fallback: Discovery and Problem Agitation are always critical
-    if (criticalSectionNames.size === 0) {
-      criticalSectionNames.add("discovery");
-      criticalSectionNames.add("problem agitation");
-    }
-
-    const weightByName: Record<string, number> = {}
-    for (const c of rubricCriteria) {
-      if (c.weight != null) weightByName[c.name.toLowerCase()] = c.weight
-    }
-
-    const normalisedSections: SectionScore[] = parsed.criteriaScores.map((c) => {
-      const name =
-        c.criterionName ??
-        (c as unknown as Record<string, unknown>)["name"] ??
-        "";
-      const feedback =
-        c.justification ??
-        (c as unknown as Record<string, unknown>)["feedback"] ??
-        "";
-      return {
-        name,
-        score: c.score,
-        feedback,
-        critical: criticalSectionNames.has(name.toLowerCase()),
-        weight: weightByName[name.toLowerCase()] ?? null,
-      } as SectionScore & { weight: number | null };
-    });
 
     return Response.json({
       id: savedCall.id,
@@ -569,10 +568,25 @@ const DEFAULT_SECTIONS: Array<{
   { name: "Close & Next Steps", description: "Effectiveness of closing or defining next steps",   critical: false },
 ];
 
+/** Item that the LLM scores in the analyze output. Comes from script.sections
+ *  when a script was provided, else from rubric.criteria. */
+interface ScoredItem {
+  id?: string;
+  name: string;
+  description: string;
+  weight?: number;
+  critical: boolean;
+  source: "script" | "rubric" | "default";
+}
+
 interface CotPromptInput {
   systemPrompt: string;
-  allowedSections: string[];
-  sectionDescriptions: Array<{ name: string; description: string }>;
+  /** Universal evaluation rubric — used as MENTAL MODEL only. The LLM is
+   *  explicitly told NOT to score these. Empty when no rubric loaded. */
+  framework: Array<{ name: string; description: string }>;
+  /** The actual items the LLM scores. Output sections[] must match these
+   *  exactly (validator enforces). */
+  scoredItems: Array<{ name: string; description: string }>;
   transcript: string;
   trainerName: string;
   clientName: string;
@@ -580,22 +594,41 @@ interface CotPromptInput {
 }
 
 function buildCotPrompt(input: CotPromptInput): string {
-  const sectionList = input.sectionDescriptions
+  const scoredList = input.scoredItems
     .map((s, i) => `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`)
     .join("\n");
 
-  const allowedJson = JSON.stringify(input.allowedSections);
+  const frameworkList = input.framework
+    .map((s, i) => `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`)
+    .join("\n");
 
-  // Transcript is wrapped in delimiters and explicitly marked as data, not
-  // instructions. This is the standard mitigation for prompt injection
-  // attacks where a transcript could contain text like "## Output\n{...}"
-  // that the model might otherwise interpret as part of the prompt itself.
+  const allowedJson = JSON.stringify(input.scoredItems.map((s) => s.name));
+
+  // Two-tier evaluation: rubric is the universal mental model ("how to
+  // judge a sales call"), script sections are the actual playbook the
+  // trainer was following ("what they were supposed to do"). The LLM
+  // scores the second using the first as background.
+  //
+  // Transcript is wrapped in delimiters and marked as data — standard
+  // mitigation against prompt injection from inside the call content.
+  const frameworkBlock = input.framework.length > 0
+    ? `## Evaluation Framework (rubric — DO NOT score these directly)
+These are the universal sales-skill criteria of the org. Use them as your
+mental model for what "excellent execution" looks like, but do NOT include
+them in the JSON output.
+${frameworkList}
+
+`
+    : "";
+
   return `${input.systemPrompt}
 
 You are an expert sales coach. Score this dog-training sales call honestly. Your output drives coaching feedback the salesperson will actually read — vague scores hurt more than honest ones.
 
-## Rubric — these are the ONLY sections you may evaluate
-${sectionList}
+${frameworkBlock}## Sections to Score (THE OUTPUT — score each)
+The salesperson was following this playbook. Score each section against the
+framework above (when present). These are the ONLY items in your sections[] output.
+${scoredList}
 
 You MUST evaluate every section listed above. You MUST NOT invent, rename, merge, or omit sections. The allowed names verbatim are: ${allowedJson}.
 
@@ -612,9 +645,9 @@ Default a reasonable attempt to ~3.0 and adjust based on transcript evidence. Th
 - closed → max 100 · partial → max 80 · not_closed → max 60 · no_outcome → max 50
 
 ## Chain-of-thought (do this internally for each section, then write the final JSON)
-For each section in the rubric, in order:
+For each section in "Sections to Score", in order:
   1. Quote 1–3 specific moments from the transcript that show how the salesperson handled this section.
-  2. Compare against the scoring scale.
+  2. Compare against the framework (when relevant) and the scoring scale.
   3. Decide on a score in [1, 5].
   4. Write 1–3 sentences of feedback that names the specific moment and what to do differently next time. Never return an empty feedback string.
 
@@ -640,7 +673,7 @@ ${input.transcript}
   "overallScore": <integer 0–100, computed as average(section scores) × 20, capped by outcome>,
   "sections": [
     {
-      "name": "<EXACT name from the rubric list above>",
+      "name": "<EXACT name from the Sections to Score list above>",
       "score": <number in [1, 5], 0.5 increments allowed>,
       "feedback": "<non-empty, references specific transcript moments>",
       "reasoning": "<short chain-of-thought: the evidence you used to land on this score>"
@@ -650,7 +683,8 @@ ${input.transcript}
 
 CRITICAL CONSTRAINTS:
 - Reply with JSON ONLY. No prose before or after. No \`\`\` fences.
-- sections[] MUST contain exactly these names, in this order: ${allowedJson}.
+- sections[] MUST contain exactly these names (from "Sections to Score"), in this order: ${allowedJson}.
+- DO NOT include any rubric-framework names in sections[] — those are mental-model only.
 - Every section MUST have non-empty feedback.
 - Every score MUST be between 1 and 5 inclusive.
 `.trim();

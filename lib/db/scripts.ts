@@ -4,6 +4,14 @@ export interface ScriptSection {
   name: string
   instructions: string
   tips: string
+  /** Section weight (0–100). Sum across all sections of a script must equal
+   *  100. Optional in the type for backwards compat with older scripts that
+   *  predate weight tracking, but the script-builder UI requires it on save. */
+  weight?: number
+  /** Critical flag — score ≤ 4 on a critical section triggers red alert in
+   *  the coaching email and adds the alert badge in CallDetail. Optional
+   *  for back-compat. */
+  critical?: boolean
 }
 
 export interface ScriptCriterion {
