@@ -1,4 +1,4 @@
--- Migration: 025_prompt_version_check
+-- Migration: 026_prompt_version_check
 -- Purpose: Constrain `calls.prompt_version` to known values so the column
 --          doesn't drift into wildcards (`v2-fixed`, `V2`, `prompt-v2`, …)
 --          that break analytics and A/B reads. Whitelist is intentionally

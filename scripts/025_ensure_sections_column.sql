@@ -1,4 +1,4 @@
--- Migration: 024_ensure_sections_column
+-- Migration: 025_ensure_sections_column
 -- Purpose: Garante a existência da coluna `calls.sections` (JSONB) usada
 --          pelo Prompt v2 (Task 1.2). A migration original que cria essa
 --          coluna está em `scripts/001_section_scores.sql`, mas o histórico

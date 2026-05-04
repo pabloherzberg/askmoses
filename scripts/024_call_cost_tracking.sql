@@ -1,4 +1,4 @@
--- Migration: 023_call_cost_tracking
+-- Migration: 024_call_cost_tracking
 -- Purpose: Track LLM cost and prompt metadata per call.
 --          Required by Task 1.2 (LLM Prompt Redesign) — toda call precisa
 --          documentar o modelo usado, uso de tokens, custo em USD e versão
