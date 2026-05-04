@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
-import { getSession } from '@/lib/auth'
+import { getSession, getOrgId } from '@/lib/auth'
 import { getScripts } from '@/lib/services/scripts'
 import { dbCreateScript } from '@/lib/db/scripts'
 
@@ -21,8 +21,10 @@ export async function POST(request: NextRequest) {
   if (!session) return unauthorized()
 
   const body = await request.json() as Record<string, unknown>
+  const orgId = await getOrgId()
 
   const newScript = await dbCreateScript({
+    orgId: orgId ?? undefined,
     rubricId: body.rubric_id as string,
     name: body.name as string,
     description: body.description as string | undefined,

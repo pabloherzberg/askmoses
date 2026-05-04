@@ -80,13 +80,18 @@ export default function SettingsPage() {
       fetch("/api/rubric?config=true"),
       fetch("/api/scripts"),
     ])
-    const { data: rubricData } = (await rubricRes.json()) as { data: Rubric | null; error: unknown }
+    // /api/rubric?config=true returns { rubric, criteria } — unwrap before
+    // saving to state so `rubric.id` and friends are reachable downstream.
+    const { data: rubricData } = (await rubricRes.json()) as {
+      data: { rubric: Rubric; criteria: unknown[] } | null
+      error: unknown
+    }
     const { data: scriptsData } = (await scriptsRes.json()) as { data: Script[] | null; error: unknown }
 
-    if (rubricData) {
-      setRubric(rubricData)
-      setSystemPrompt(rubricData.system_prompt || "")
-      setLlmModel(rubricData.llm_model || "openai/gpt-4o-mini")
+    if (rubricData?.rubric) {
+      setRubric(rubricData.rubric)
+      setSystemPrompt(rubricData.rubric.system_prompt || "")
+      setLlmModel(rubricData.rubric.llm_model || "openai/gpt-4o-mini")
     }
     if (scriptsData) setScripts(scriptsData)
     setLoading(false)
@@ -398,42 +403,45 @@ export default function SettingsPage() {
             {scripts.map((script) => (
               <Card key={script.id}>
                 <AccordionItem value={script.id} className="border-0">
-                  <AccordionTrigger className="hover:no-underline p-4">
-                    <div className="flex items-center gap-3 text-left flex-1">
-                      <div className="flex-1">
-                        {editingScriptId === script.id ? (
-                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              autoFocus
-                              value={editingScriptName}
-                              onChange={(e) => setEditingScriptName(e.target.value)}
-                              className="font-semibold h-9"
-                            />
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleUpdateScriptName(script.id, editingScriptName)
-                              }}
-                              className="h-9"
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingScriptId(null)
-                                setEditingScriptName("")
-                              }}
-                              className="h-9"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
+                  {editingScriptId === script.id ? (
+                    // While editing the name we replace the AccordionTrigger
+                    // with a plain row. The trigger renders as <button>, and
+                    // nesting Save/Cancel <Button>s inside would cause a
+                    // hydration error (button inside button).
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="flex flex-1 gap-2">
+                        <Input
+                          autoFocus
+                          value={editingScriptName}
+                          onChange={(e) => setEditingScriptName(e.target.value)}
+                          className="font-semibold h-9"
+                        />
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleUpdateScriptName(script.id, editingScriptName)}
+                          className="h-9"
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingScriptId(null)
+                            setEditingScriptName("")
+                          }}
+                          className="h-9"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {script.is_active && <Badge>{t('activeBadge')}</Badge>}
+                    </div>
+                  ) : (
+                    <AccordionTrigger className="hover:no-underline p-4">
+                      <div className="flex items-center gap-3 text-left flex-1">
+                        <div className="flex-1">
                           <div className="space-y-1">
                             <div
                               className="flex items-center gap-2 group cursor-pointer"
@@ -451,11 +459,11 @@ export default function SettingsPage() {
                             </p>
                             <p className="text-sm text-muted-foreground">{script.description}</p>
                           </div>
-                        )}
+                        </div>
+                        {script.is_active && <Badge>{t('activeBadge')}</Badge>}
                       </div>
-                      {script.is_active && <Badge>{t('activeBadge')}</Badge>}
-                    </div>
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                  )}
 
                   <AccordionContent className="pt-0">
                     <div className="space-y-4 p-4 border-t">
