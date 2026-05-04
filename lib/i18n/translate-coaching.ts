@@ -5,7 +5,9 @@ import { translateStrings } from '@/lib/i18n/translate'
 
 /**
  * Translate coaching-relevant text fields of a single Call.
- * Data fields (trainerName, prospect, date, duration, scores, transcript) are untouched.
+ * Data fields (trainerName, prospect, date, duration, scores, transcript) are
+ * untouched. Section names are NOT translated — they're owner-defined script
+ * step names (e.g., "Opening", "Discovery") and stay verbatim.
  */
 export async function translateCall(call: Call, locale: Locale): Promise<Call> {
   if (locale === 'en') return call
@@ -13,41 +15,62 @@ export async function translateCall(call: Call, locale: Locale): Promise<Call> {
   // Flatten all translatable strings into one batch so we only pay for one LLM call.
   const strengthsCount = call.strengths.length
   const improvementsCount = call.improvements.length
-  const batch = [call.feedback, ...call.strengths, ...call.improvements]
+  const sectionsCount = call.sections?.length ?? 0
+  const batch = [
+    call.feedback,
+    ...call.strengths,
+    ...call.improvements,
+    ...(call.sections ?? []).map((s) => s.feedback),
+  ]
   const translated = await translateStrings(batch, locale)
 
-  const [feedback, ...rest] = translated
-  const strengths = rest.slice(0, strengthsCount)
-  const improvements = rest.slice(strengthsCount, strengthsCount + improvementsCount)
+  let cursor = 0
+  const feedback = translated[cursor++]
+  const strengths = translated.slice(cursor, cursor + strengthsCount); cursor += strengthsCount
+  const improvements = translated.slice(cursor, cursor + improvementsCount); cursor += improvementsCount
+  const sections = call.sections
+    ? call.sections.map((s, i) => ({ ...s, feedback: translated[cursor + i] ?? s.feedback }))
+    : call.sections
+  cursor += sectionsCount
 
-  return { ...call, feedback, strengths, improvements }
+  return { ...call, feedback, strengths, improvements, sections }
 }
 
 /**
  * Translate a list of calls in a single batched LLM call.
- * Preserves order and the non-translatable fields of each call.
+ * Preserves order and the non-translatable fields of each call (incl. section
+ * names — only feedback text gets translated per section).
  */
 export async function translateCalls(calls: Call[], locale: Locale): Promise<Call[]> {
   if (locale === 'en' || calls.length === 0) return calls
 
   const batch: string[] = []
-  const shapes: { strengths: number; improvements: number }[] = []
+  const shapes: { strengths: number; improvements: number; sections: number }[] = []
   for (const c of calls) {
     batch.push(c.feedback)
     batch.push(...c.strengths)
     batch.push(...c.improvements)
-    shapes.push({ strengths: c.strengths.length, improvements: c.improvements.length })
+    batch.push(...(c.sections ?? []).map((s) => s.feedback))
+    shapes.push({
+      strengths: c.strengths.length,
+      improvements: c.improvements.length,
+      sections: c.sections?.length ?? 0,
+    })
   }
 
   const translated = await translateStrings(batch, locale)
 
   let cursor = 0
   return calls.map((c, i) => {
-    const { strengths: sLen, improvements: iLen } = shapes[i]
+    const { strengths: sLen, improvements: iLen, sections: secLen } = shapes[i]
     const feedback = translated[cursor++]
     const strengths = translated.slice(cursor, cursor + sLen); cursor += sLen
     const improvements = translated.slice(cursor, cursor + iLen); cursor += iLen
-    return { ...c, feedback, strengths, improvements }
+    const sections = c.sections
+      ? c.sections.map((s, idx) => ({ ...s, feedback: translated[cursor + idx] ?? s.feedback }))
+      : c.sections
+    cursor += secLen
+    return { ...c, feedback, strengths, improvements, sections }
   })
 }
 

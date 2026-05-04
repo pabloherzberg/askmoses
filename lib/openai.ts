@@ -30,10 +30,22 @@ const DEFAULT_MODEL = 'gpt-4o'
  * Exported so callers (e.g. `/api/analyze`) can persist the SAME id they
  * priced against in the cost table — otherwise `cost_usd` ends up as 0
  * because the prefixed value misses the pricing-table keys.
+ *
+ * Logs a warning when an explicit model id (non-empty) doesn't match the
+ * OpenAI whitelist — e.g. an org configured with `google/gemini-*` that
+ * would silently fall back to gpt-4o without telling anyone. Helps Ops
+ * spot misconfigured rubrics during the OpenAI-only demo phase.
  */
 export function resolveOpenAIModelId(modelName?: string | null): string {
   const sanitized = (modelName ?? '').replace(/^openai\//, '').trim()
-  return VALID_MODELS.has(sanitized) ? sanitized : DEFAULT_MODEL
+  if (VALID_MODELS.has(sanitized)) return sanitized
+  if (sanitized.length > 0) {
+    console.warn(
+      `[openai] Unknown/non-OpenAI model "${modelName}" requested — falling back to ${DEFAULT_MODEL}. ` +
+        `Update rubrics.llm_model if this org should run on a different OpenAI model.`,
+    )
+  }
+  return DEFAULT_MODEL
 }
 
 export function getOpenAIModel(modelName?: string | null) {

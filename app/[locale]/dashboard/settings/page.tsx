@@ -91,7 +91,10 @@ export default function SettingsPage() {
     if (rubricData?.rubric) {
       setRubric(rubricData.rubric)
       setSystemPrompt(rubricData.rubric.system_prompt || "")
-      setLlmModel(rubricData.rubric.llm_model || "openai/gpt-4o-mini")
+      // Default precisa bater com lib/openai.ts DEFAULT_MODEL — senão a UI
+      // mostra/salva um modelo (gpt-4o-mini) diferente do que /api/analyze
+      // realmente usa (gpt-4o), introduzindo divergência silenciosa.
+      setLlmModel(rubricData.rubric.llm_model || "openai/gpt-4o")
     }
     if (scriptsData) setScripts(scriptsData)
     setLoading(false)
