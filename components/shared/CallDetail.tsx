@@ -117,7 +117,8 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
                     )}
                     <RubricBar
                       label={section.name}
-                      value={section.score * 20}
+                      value={section.score}
+                      max={5}
                       color={color}
                     />
                     <p className="text-[11px] mt-1 ml-[156px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
