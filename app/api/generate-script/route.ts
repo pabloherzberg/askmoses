@@ -11,14 +11,25 @@ Respond ONLY with a valid JSON object — no markdown, no explanation outside th
   "name": "string — concise script name",
   "description": "string — one-sentence description",
   "sections": [
-    { "name": "string", "instructions": "string", "tips": "string" }
+    {
+      "name": "string",
+      "instructions": "string",
+      "tips": "string",
+      "weight": number (integer 1–100; all sections must sum to exactly 100),
+      "critical": boolean (true if a low score here is eliminatory — e.g. Discovery, Problem Agitation)
+    }
   ],
   "full_script": "string — complete script text with all sections combined",
   "criteria": [
     { "name": "string", "description": "string — what the evaluator should look for" }
   ],
   "explanation": "string — why this script structure works based on the provided material"
-}`
+}
+
+Rules for weight and critical:
+- weight values must sum to exactly 100 across all sections.
+- Mark critical: true for sections where failure is eliminatory (e.g. Discovery, Problem Agitation, Objection Handling).
+- Distribute weights proportionally to each section's impact on closing the deal.`
 
 function buildUserPrompt(transcripts: string[], textInput: string | null): string {
   const parts: string[] = []
