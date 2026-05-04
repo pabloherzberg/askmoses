@@ -115,7 +115,12 @@ export default function UploadPage() {
   useEffect(() => {
     async function init() {
       const [scriptsRes, meRes] = await Promise.all([
-        fetch("/api/scripts?active=true"),
+        // O dropdown da upload page deixa o usuário escolher qual script
+        // usar pra essa call — então busca TODOS, não só `is_active=true`.
+        // Filtrar em `is_active` aqui zerava o select pra orgs que ainda não
+        // marcaram nenhum script como ativo, ou escondia scripts arquivados
+        // que continuam válidos pra reanálise.
+        fetch("/api/scripts"),
         fetch("/api/me"),
       ])
 
