@@ -39,3 +39,15 @@ export function normaliseOutcome(raw: string): CallOutcome | null {
   if (CANONICAL_OUTCOMES.has(raw as CallOutcome)) return raw as CallOutcome
   return LEGACY_OUTCOME_MAP[raw] ?? null
 }
+
+// ── Scoring caps applied to overallScore (0–100), keyed by outcome ───────────
+// Section scores themselves are NEVER capped — only the rolled-up overall.
+export const OUTCOME_OVERALL_CAP: Record<CallOutcome, number> = {
+  closed:     100,
+  partial:    80,
+  not_closed: 60,
+  no_outcome: 50,
+}
+
+/** Multiplier to convert a [1–5] section average into a [0–100] overallScore. */
+export const SCORE_TO_PERCENT_MULTIPLIER = 20
