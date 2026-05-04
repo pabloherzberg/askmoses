@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server'
-import { forbidden, getOrgId, getSession, ok, unauthorized } from '@/lib/auth'
+import { forbidden, getOrgId, getRole, getSession, ok, unauthorized } from '@/lib/auth'
 import { getScripts } from '@/lib/services/scripts'
 import { dbCreateScript, type ScriptSection } from '@/lib/db/scripts'
+import { dbGetRubricById } from '@/lib/db/rubric'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -23,12 +24,32 @@ export async function POST(request: NextRequest) {
   const orgId = await getOrgId()
   if (!orgId) return forbidden()
 
+  // Role guard: scripts são configuração de rubric — só owner/admin criam,
+  // alinha com /api/rubric, /api/rubric/criteria, /api/calls. Trainer
+  // não tem permissão de mexer em playbooks da org.
+  const role = await getRole()
+  if (role === 'trainer') return forbidden()
+
   try {
     const body = await request.json() as Record<string, unknown>
 
+    // Cross-tenant guard: garante que rubric_id pertence à org da sessão
+    // antes de criar o script. createAdminClient() bypassa RLS, então a
+    // checagem aqui é a única defesa contra um owner apontar pra rubric
+    // de outra org e quebrar isolamento de tenant.
+    const rubricId = body.rubric_id as string | undefined
+    if (!rubricId) {
+      return Response.json(
+        { data: null, error: { message: 'rubric_id is required', code: 400 } },
+        { status: 400 },
+      )
+    }
+    const rubric = await dbGetRubricById(orgId, rubricId)
+    if (!rubric) return forbidden()
+
     const newScript = await dbCreateScript({
       orgId,
-      rubricId: body.rubric_id as string,
+      rubricId,
       name: body.name as string,
       description: body.description as string | undefined,
       // ScriptSection includes optional weight + critical (gravados no JSONB).

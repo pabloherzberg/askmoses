@@ -690,10 +690,41 @@ CRITICAL CONSTRAINTS:
 `.trim();
 }
 
-/** Coerce strengths/improvements items to clean strings. Prompt v2 returns
- *  plain strings, but we still strip markdown bold (`**`) defensively in case
- *  the model adds it for emphasis. */
+/** Coerce strengths/improvements items to clean strings.
+ *
+ *  Prompt v2 instructs the LLM to return plain strings, but it occasionally
+ *  drifts into objects like `{ "what happened": "...", "what to do instead":
+ *  "...", "why it matters": "..." }` — especially with the structured
+ *  improvements format we describe in the prompt. Without flattening, those
+ *  rendered as literal `[object Object]` in the UI/email.
+ *
+ *  Strategy:
+ *  - Plain strings → trim + strip markdown bold (`**`).
+ *  - Strings that look like JSON → try to parse, then flatten as object.
+ *  - Objects → join known structured keys in narrative order. Falls back
+ *    to joining all values when the keys are unknown.
+ */
 function stringifyItem(item: unknown): string {
-  if (typeof item === "string") return item.trim().replace(/\*\*/g, "");
-  return String(item).replace(/\*\*/g, "");
+  let value: unknown = item;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{")) {
+      try {
+        value = JSON.parse(trimmed) as unknown;
+      } catch {
+        return trimmed.replace(/\*\*/g, "");
+      }
+    } else {
+      return trimmed.replace(/\*\*/g, "");
+    }
+  }
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const ordered = ["what happened", "what to do instead", "why it matters"];
+    const parts = ordered.filter((k) => obj[k]).map((k) => String(obj[k]));
+    const joined =
+      parts.length > 0 ? parts.join(" → ") : Object.values(obj).join(" → ");
+    return joined.replace(/\*\*/g, "");
+  }
+  return String(value).replace(/\*\*/g, "");
 }

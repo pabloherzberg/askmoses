@@ -68,14 +68,14 @@ function parseCriteria(criteria: unknown): RubricScores {
 
 function parseSections(raw: unknown): CallSection[] | undefined {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
-  const out: CallSection[] = [];
+  const parsed: CallSection[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const s = item as Record<string, unknown>;
     const name = typeof s.name === "string" ? s.name : null;
     const score = typeof s.score === "number" ? s.score : Number(s.score);
     if (!name || !Number.isFinite(score)) continue;
-    out.push({
+    parsed.push({
       name,
       score,
       feedback: typeof s.feedback === "string" ? s.feedback : "",
@@ -86,7 +86,16 @@ function parseSections(raw: unknown): CallSection[] | undefined {
       weight: typeof s.weight === "number" ? s.weight : null,
     });
   }
-  return out.length > 0 ? out : undefined;
+  if (parsed.length === 0) return undefined;
+
+  // Backwards-compat: scripts/001_section_scores.sql backfilled legacy calls
+  // into the 0–10 scale (multiplied criteria.score × 2). Prompt v2 writes 1–5
+  // and CallDetail/RubricBar always render with `max={5}`. Without rescaling,
+  // legacy rows would render saturated bars and inflated numbers.
+  // Detection: any score > 5 means we're looking at the legacy scale.
+  const usesLegacyTenPointScale = parsed.some((s) => s.score > 5);
+  if (!usesLegacyTenPointScale) return parsed;
+  return parsed.map((s) => ({ ...s, score: s.score / 2 }));
 }
 
 function toCall(db: DbCall): Call {
