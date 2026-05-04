@@ -667,12 +667,11 @@
         "track": {
           "title": "Acompanhar a performance",
           "description": "Monitore tendências e identifique oportunidades de coaching",
-          "location": "Páginas Histórico & Analytics",
+          "location": "Página Calls",
           "details": [
-            "Histórico: veja todas as chamadas com busca e filtros",
+            "Calls: veja todas as chamadas com busca e filtros",
             "Filtre por nome, data ou nota",
             "Clique em qualquer chamada para ver detalhes e transcrição",
-            "Analytics: veja métricas agregadas de performance",
             "Acompanhe taxas de aprovação por critério",
             "Identifique quais seções precisam de mais treinamento"
           ],
@@ -685,9 +684,9 @@
         "insights": {
           "title": "Gerar insights do time",
           "description": "Use reconhecimento de padrões para otimizar o script com base em dados reais",
-          "location": "Página Insights",
+          "location": "Página Script Intelligence",
           "details": [
-            "Vá para Insights no menu lateral",
+            "Vá para Script Intelligence no menu lateral",
             "Selecione um script de vendas na lista",
             "Clique em 'Gerar insights' para analisar todas as chamadas desse script",
             "O sistema agrupa as chamadas por resultado: Fechada, Não fechada e Parcial",

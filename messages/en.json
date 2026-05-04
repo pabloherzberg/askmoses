@@ -667,12 +667,11 @@
         "track": {
           "title": "Track Performance",
           "description": "Monitor trends and identify coaching opportunities",
-          "location": "History & Analytics pages",
+          "location": "Calls page",
           "details": [
-            "History: View all analyzed calls with search and filters",
+            "Calls: View all analyzed calls with search and filters",
             "Filter by trainer name, date range, or score",
             "Click any call to see full details and transcript",
-            "Analytics: See aggregate performance metrics",
             "Track pass rates by criteria across all calls",
             "Identify which script sections need more training"
           ],
@@ -685,9 +684,9 @@
         "insights": {
           "title": "Generate Team Insights",
           "description": "Use pattern recognition to optimize your sales script based on real performance data",
-          "location": "Insights page",
+          "location": "Script Intelligence page",
           "details": [
-            "Navigate to Insights in the sidebar",
+            "Navigate to Script Intelligence in the sidebar",
             "Select a sales script from the dropdown",
             "Click 'Generate Insights' to analyze all calls using that script",
             "The system groups calls by outcome: Closed, Not Closed, and Partial",

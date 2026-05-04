@@ -667,12 +667,11 @@
         "track": {
           "title": "Suivre la performance",
           "description": "Surveillez les tendances et identifiez les opportunités de coaching",
-          "location": "Pages Historique & Analytics",
+          "location": "Page Calls",
           "details": [
-            "Historique : voyez tous les appels avec recherche et filtres",
+            "Calls : voyez tous les appels avec recherche et filtres",
             "Filtrez par nom, date ou score",
             "Cliquez sur un appel pour voir les détails et le transcript",
-            "Analytics : voyez les métriques agrégées",
             "Suivez les taux de réussite par critère",
             "Identifiez les sections qui nécessitent plus de formation"
           ],
@@ -685,9 +684,9 @@
         "insights": {
           "title": "Générer les insights de l'équipe",
           "description": "Utilisez la reconnaissance de motifs pour optimiser votre script sur la base de données réelles",
-          "location": "Page Insights",
+          "location": "Page Script Intelligence",
           "details": [
-            "Rendez-vous sur Insights dans la barre latérale",
+            "Rendez-vous sur Script Intelligence dans la barre latérale",
             "Sélectionnez un script dans le menu déroulant",
             "Cliquez sur « Générer des insights » pour analyser tous les appels",
             "Le système regroupe les appels par résultat : Closé, Non closé, Partiel",

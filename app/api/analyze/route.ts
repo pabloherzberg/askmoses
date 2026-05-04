@@ -368,17 +368,24 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
     }
 
     // ── 7. Normalise criteriaScores into SectionScore[] ─────────────────────
-    // Sections marked critical if they match the default critical section names.
-    // When Task 1.8 ships, this list will come from the rubric definition instead.
+    // Build lookup maps from rubric criteria: critical flag and weight per section name.
+    type RubricCriterion = { name: string; is_critical?: boolean; weight?: number }
+    const rubricCriteria = (rubricData?.criteria ?? []) as unknown as RubricCriterion[]
+
     const criticalSectionNames = new Set(
-      (rubricData?.criteria ?? [])
-        .filter((c) => (c as unknown as Record<string, unknown>)["is_critical"])
+      rubricCriteria
+        .filter((c) => c.is_critical)
         .map((c) => c.name.toLowerCase())
     );
     // Fallback: Discovery and Problem Agitation are always critical
     if (criticalSectionNames.size === 0) {
       criticalSectionNames.add("discovery");
       criticalSectionNames.add("problem agitation");
+    }
+
+    const weightByName: Record<string, number> = {}
+    for (const c of rubricCriteria) {
+      if (c.weight != null) weightByName[c.name.toLowerCase()] = c.weight
     }
 
     const normalisedSections: SectionScore[] = parsed.criteriaScores.map((c) => {
@@ -395,7 +402,8 @@ Reply ONLY with valid JSON, no markdown, following this exact format:
         score: c.score,
         feedback,
         critical: criticalSectionNames.has(name.toLowerCase()),
-      };
+        weight: weightByName[name.toLowerCase()] ?? null,
+      } as SectionScore & { weight: number | null };
     });
 
     return Response.json({
