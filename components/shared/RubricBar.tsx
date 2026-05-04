@@ -29,7 +29,7 @@ export function RubricBar({ label, value, color, showValue = true, className }: 
       >
         <div
           className="h-full rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${(value / 5) * 100}%`, background: colorMap[color] }}
+          style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: colorMap[color] }}
         />
       </div>
       {showValue && (
