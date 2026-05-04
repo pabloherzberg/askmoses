@@ -9,7 +9,7 @@ import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
-import type { Call, RubricScores } from "@/lib/types";
+import type { Call, CallSection, RubricScores } from "@/lib/types";
 import type {
   DbCall,
   CreateCallInput,
@@ -66,6 +66,29 @@ function parseCriteria(criteria: unknown): RubricScores {
 
 // ─── Mapper DbCall → Call ─────────────────────────────────────────────────────
 
+function parseSections(raw: unknown): CallSection[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: CallSection[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const s = item as Record<string, unknown>;
+    const name = typeof s.name === "string" ? s.name : null;
+    const score = typeof s.score === "number" ? s.score : Number(s.score);
+    if (!name || !Number.isFinite(score)) continue;
+    out.push({
+      name,
+      score,
+      feedback: typeof s.feedback === "string" ? s.feedback : "",
+      critical: typeof s.critical === "boolean" ? s.critical : false,
+      // Weight (0–100) from rubric_criteria. Null on script flow or
+      // pre-migration calls. Forwarded as-is to downstream consumers
+      // (email template, analytics).
+      weight: typeof s.weight === "number" ? s.weight : null,
+    });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 function toCall(db: DbCall): Call {
   return {
     id: db.id,
@@ -74,9 +97,12 @@ function toCall(db: DbCall): Call {
     date: db.created_at,
     duration: "—",
     score: db.overall_score ?? 0,
-    result: normaliseOutcome(db.call_outcome ?? "no_outcome"),
+    result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
     rubricScores: parseCriteria(db.criteria),
+    // sections (Prompt v2) preserves the rubric/script section names exactly.
+    // CallDetail prefers this over the legacy hardcoded rubricScores fallback.
+    sections: parseSections(db.sections),
     feedback: db.summary ?? "",
     strengths: db.strengths ?? [],
     improvements: db.improvements ?? [],
@@ -123,9 +149,12 @@ export async function getCalls(
     orgId,
     trainerId: filters?.trainerId,
     trainerName: filters?.trainerName,
-    // Normalise legacy outcome strings to the canonical enum so payloads
-    // from older clients (e.g. ?callOutcome=follow_up) keep returning rows.
-    callOutcome: filters?.callOutcome ? normaliseOutcome(filters.callOutcome) : undefined,
+    // Normalise outcome filter: legacy aliases (follow_up, no_decision...) viram
+    // canônicos. Valores desconhecidos viram undefined → sem filtro (em vez de
+    // jogar lixo no Supabase e estourar 500 com erro de cast no ENUM).
+    callOutcome: filters?.callOutcome
+      ? (normaliseOutcome(filters.callOutcome) ?? undefined)
+      : undefined,
     rubricId: filters?.rubricId,
     limit: filters?.limit,
     offset: filters?.offset,
@@ -159,6 +188,9 @@ export async function updateCall(
   return dbUpdateCall(id, input, scope);
 }
 
-export async function deleteCall(id: string, scope?: CallMutationScope): Promise<boolean> {
+export async function deleteCall(
+  id: string,
+  scope?: CallMutationScope,
+): Promise<boolean> {
   return dbDeleteCall(id, scope);
 }

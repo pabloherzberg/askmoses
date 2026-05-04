@@ -19,10 +19,23 @@ const VALID_MODELS = new Set([
   'gpt-3.5-turbo',
 ])
 
-const DEFAULT_MODEL = 'gpt-4o-mini'
+// Demo phase default — Lucas (2026-05-04): roda em gpt-4o, sem seletor de LLM na UI.
+const DEFAULT_MODEL = 'gpt-4o'
+
+/**
+ * Resolves a raw model name (which may carry an `openai/` prefix from
+ * the rubrics table) into the canonical OpenAI model id we actually call.
+ * Falls back to `DEFAULT_MODEL` when the input is empty/unknown.
+ *
+ * Exported so callers (e.g. `/api/analyze`) can persist the SAME id they
+ * priced against in the cost table — otherwise `cost_usd` ends up as 0
+ * because the prefixed value misses the pricing-table keys.
+ */
+export function resolveOpenAIModelId(modelName?: string | null): string {
+  const sanitized = (modelName ?? '').replace(/^openai\//, '').trim()
+  return VALID_MODELS.has(sanitized) ? sanitized : DEFAULT_MODEL
+}
 
 export function getOpenAIModel(modelName?: string | null) {
-  const sanitized = (modelName ?? '').trim()
-  const model = VALID_MODELS.has(sanitized) ? sanitized : DEFAULT_MODEL
-  return getOpenAIProvider()(model)
+  return getOpenAIProvider()(resolveOpenAIModelId(modelName))
 }

@@ -347,9 +347,11 @@ function callsForTrainer(orgId, trainerId, trainerName, trainerEmail, rubricId, 
       summary: t.summary,
       strengths: t.strengths,
       improvements: t.improvements,
-      // Insere valores legados aceitos pela CHECK de 010/011.
-      // A migration 022 converte para o ENUM final (follow_up→partial, no_decision→no_outcome).
-      call_outcome: t.result === 'closed' ? 'closed' : t.result === 'no_decision' ? 'not_closed' : 'partial',
+      // Passa t.result raw nas 2 colunas — todos os valores ('closed', 'follow_up',
+      // 'no_decision') são aceitos pelas CHECK de 010/011. A migration 022 converte
+      // para o ENUM final (follow_up→partial, no_decision→no_outcome) de forma
+      // consistente nas 2 colunas, evitando dessincronizar call_outcome vs detected_outcome.
+      call_outcome: t.result,
       detected_outcome: t.result,
       email_sent: false,
       created_at: date.toISOString(),

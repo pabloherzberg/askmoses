@@ -5,9 +5,10 @@ import type { Call } from '@/lib/types'
  * In Phase 2 this will be replaced by a real GPT-4o call.
  */
 export function buildInsightsAnalysis(calls: Call[]) {
-  const closedCalls = calls.filter((c) => c.result === 'closed')
-  const notClosedCalls = calls.filter((c) => c.result === 'not_closed' || c.result === 'no_outcome')
-  const partialCalls = calls.filter((c) => c.result === 'partial')
+  const closedCalls    = calls.filter((c) => c.result === 'closed')
+  const notClosedCalls = calls.filter((c) => c.result === 'not_closed')
+  const partialCalls   = calls.filter((c) => c.result === 'partial')
+  const noOutcomeCalls = calls.filter((c) => c.result === 'no_outcome')
 
   return {
     metrics: {
@@ -15,6 +16,7 @@ export function buildInsightsAnalysis(calls: Call[]) {
       closed: closedCalls.length,
       notClosed: notClosedCalls.length,
       partial: partialCalls.length,
+      noOutcome: noOutcomeCalls.length,
       closeRate: Math.round((closedCalls.length / calls.length) * 100),
     },
     successPatterns: [

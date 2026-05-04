@@ -18,7 +18,15 @@
 -- ─── 1. Criar o tipo ENUM ────────────────────────────────────────────────────
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'call_outcome_enum') THEN
+  -- Qualifica por schema: sem o JOIN em pg_namespace, um type homônimo em
+  -- outro schema faria o IF pular o CREATE e quebrar o ALTER COLUMN abaixo.
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'call_outcome_enum'
+      AND n.nspname = 'public'
+  ) THEN
     CREATE TYPE public.call_outcome_enum AS ENUM (
       'closed',
       'not_closed',

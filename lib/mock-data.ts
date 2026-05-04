@@ -976,6 +976,7 @@ export const supabaseCalls = calls.map((call) => ({
     { name: 'Objection Handling', score: call.rubricScores.objectionHandling, feedback: 'Evaluated' },
     { name: 'Close & Next Steps', score: call.rubricScores.closeAndNextSteps, feedback: 'Evaluated' },
   ],
+  sections: call.sections ?? null,
   summary: call.feedback,
   strengths: call.strengths,
   improvements: call.improvements,
@@ -983,6 +984,13 @@ export const supabaseCalls = calls.map((call) => ({
   detected_outcome: call.result,
   email_sent: true,
   email_id: `email-${call.id}`,
+  // Prompt v2 cost tracking — mocked from a typical gpt-4o call (demo default).
+  // 2400 input × $2.50/1M + 480 output × $10/1M = $0.0108
+  model_used: 'gpt-4o',
+  input_tokens: 2400,
+  output_tokens: 480,
+  cost_usd: 0.0108,
+  prompt_version: 'v2',
   created_at: `${call.date}T10:00:00Z`,
 }))
 

@@ -549,6 +549,7 @@
       "closedDeals": "Closed Deals",
       "notClosed": "Not Closed",
       "partial": "Partial",
+      "noOutcome": "No Outcome",
       "closeRate": "Close Rate",
       "conversionLeaderboard": "Conversion Leaderboard",
       "conversionSubtitle": "Close rate per sales person",

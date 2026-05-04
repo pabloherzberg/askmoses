@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
 import { getSession } from '@/lib/auth'
-import { dbUpdateScript, dbDeleteScript } from '@/lib/db/scripts'
+import { dbUpdateScript, dbDeleteScript, type ScriptSection } from '@/lib/db/scripts'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
@@ -13,7 +13,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const updated = await dbUpdateScript(id, {
     name: body.name as string | undefined,
     description: body.description as string | undefined,
-    sections: body.sections as { name: string; instructions: string; tips: string }[] | undefined,
+    sections: body.sections as ScriptSection[] | undefined,
     full_script: body.full_script as string | undefined,
     criteria: body.criteria as { name: string; description: string }[] | undefined,
     isActive: body.is_active as boolean | undefined,

@@ -549,6 +549,7 @@
       "closedDeals": "Cerradas",
       "notClosed": "No cerradas",
       "partial": "Parcial",
+      "noOutcome": "Sin resultado",
       "closeRate": "Tasa de cierre",
       "conversionLeaderboard": "Ranking de conversión",
       "conversionSubtitle": "Tasa de cierre por vendedor",

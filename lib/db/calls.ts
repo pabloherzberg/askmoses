@@ -20,6 +20,12 @@ export interface DbCall {
   call_outcome: string | null
   client_name: string | null
   detected_outcome: string | null
+  model_used: string | null
+  input_tokens: number | null
+  output_tokens: number | null
+  cost_usd: number | null
+  prompt_version: string | null
+  sections: unknown
 }
 
 export interface CreateCallInput {
@@ -38,6 +44,12 @@ export interface CreateCallInput {
   callOutcome?: string
   clientName?: string
   detectedOutcome?: string
+  modelUsed?: string
+  inputTokens?: number
+  outputTokens?: number
+  costUsd?: number
+  promptVersion?: string
+  sections?: Record<string, unknown> | unknown[]
 }
 
 export interface UpdateCallInput {
@@ -140,6 +152,12 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       call_outcome: input.callOutcome ?? null,
       client_name: input.clientName ?? null,
       detected_outcome: input.detectedOutcome ?? null,
+      model_used: input.modelUsed ?? null,
+      input_tokens: input.inputTokens ?? null,
+      output_tokens: input.outputTokens ?? null,
+      cost_usd: input.costUsd ?? null,
+      prompt_version: input.promptVersion ?? null,
+      sections: input.sections ?? null,
       email_sent: false,
     })
     .select()

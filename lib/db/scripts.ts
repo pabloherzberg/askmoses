@@ -4,6 +4,14 @@ export interface ScriptSection {
   name: string
   instructions: string
   tips: string
+  /** Section weight (0–100). Sum across all sections of a script must equal
+   *  100. Optional in the type for backwards compat with older scripts that
+   *  predate weight tracking, but the script-builder UI requires it on save. */
+  weight?: number
+  /** Critical flag — score ≤ 4 on a critical section triggers red alert in
+   *  the coaching email and adds the alert badge in CallDetail. Optional
+   *  for back-compat. */
+  critical?: boolean
 }
 
 export interface ScriptCriterion {
@@ -25,6 +33,7 @@ export interface DbScript {
 }
 
 export interface CreateScriptInput {
+  orgId?: string
   rubricId: string
   name: string
   description?: string
@@ -44,16 +53,22 @@ export interface UpdateScriptInput {
 }
 
 export async function dbGetScripts(filters?: {
+  orgId?: string
   rubricId?: string
   active?: boolean
 }): Promise<DbScript[]> {
   const supabase = createAdminClient()
 
+  // Active scripts surface first so the upload-page dropdown highlights the
+  // one the org currently treats as default; archived ones still appear so
+  // they can be re-used for re-analysis if needed.
   let query = supabase
     .from('scripts')
     .select('*')
+    .order('is_active', { ascending: false })
     .order('created_at', { ascending: false })
 
+  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
   if (filters?.rubricId) query = query.eq('rubric_id', filters.rubricId)
   if (filters?.active !== undefined) query = query.eq('is_active', filters.active)
 
@@ -64,12 +79,36 @@ export async function dbGetScripts(filters?: {
   return (data ?? []) as DbScript[]
 }
 
+/**
+ * Fetch a script by id. Pass `orgId` to enforce tenant isolation — required
+ * defense-in-depth because dbCreateAdminClient bypasses RLS. Calling this
+ * without `orgId` is a security bug; the parameter is required for that
+ * reason (only internal scripts/seed code should ever opt-out by passing
+ * an empty string explicitly).
+ */
+export async function dbGetScriptById(id: string, orgId: string): Promise<DbScript | null> {
+  const supabase = createAdminClient()
+
+  let query = supabase.from('scripts').select('*').eq('id', id)
+  if (orgId) query = query.eq('org_id', orgId)
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbGetScriptById: ${error.message}`)
+  }
+
+  return (data ?? null) as DbScript | null
+}
+
 export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('scripts')
     .insert({
+      org_id: input.orgId ?? null,
       rubric_id: input.rubricId,
       name: input.name,
       description: input.description ?? null,

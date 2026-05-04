@@ -115,7 +115,12 @@ export default function UploadPage() {
   useEffect(() => {
     async function init() {
       const [scriptsRes, meRes] = await Promise.all([
-        fetch("/api/scripts?active=true"),
+        // O dropdown da upload page deixa o usuário escolher qual script
+        // usar pra essa call — então busca TODOS, não só `is_active=true`.
+        // Filtrar em `is_active` aqui zerava o select pra orgs que ainda não
+        // marcaram nenhum script como ativo, ou escondia scripts arquivados
+        // que continuam válidos pra reanálise.
+        fetch("/api/scripts"),
         fetch("/api/me"),
       ])
 
@@ -796,11 +801,14 @@ export default function UploadPage() {
             <div className="space-y-2">
               <Label>{t("form.callOutcomeLabel")}</Label>
               <div className="grid grid-cols-2 gap-2">
+                {/* Cores alinhadas semanticamente com RESULT_STYLES (lib/constants):
+                    closed=green, partial=amber, not_closed=red, no_outcome=muted/gray.
+                    Mantém consistência visual entre form de seleção e badges de listagem. */}
                 {([
                   { value: "closed",     color: "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300" },
-                  { value: "partial",    color: "bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:text-blue-300" },
-                  { value: "not_closed", color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
-                  { value: "no_outcome", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                  { value: "partial",    color: "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
+                  { value: "not_closed", color: "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300" },
+                  { value: "no_outcome", color: "bg-gray-100 border-gray-400 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
                 ] as const).map((option) => (
                   <button
                     key={option.value}
