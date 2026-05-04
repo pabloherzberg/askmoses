@@ -1,6 +1,5 @@
 import { http, HttpResponse } from 'msw'
 import {
-  trainers,
   insights,
   clients,
   globalMetrics,
@@ -64,16 +63,11 @@ const apiHandlers = [
   // GET /api/calls — passthrough to real API route (Supabase)
   // GET /api/calls/:id — passthrough to real API route (Supabase)
 
-  // GET /api/trainers
-  http.get('/api/trainers', () => {
-    const totalCalls = trainers.reduce((sum, t) => sum + t.totalCalls, 0)
-    const avgScore = Math.round(trainers.reduce((sum, t) => sum + t.score, 0) / trainers.length)
-    const avgCloseRate = Math.round(trainers.reduce((sum, t) => sum + t.closeRate, 0) / trainers.length)
-    const bestTrainer = trainers.reduce((best, t) => (t.score > best.score ? t : best), trainers[0])
-
-    const stats = { totalCalls, avgScore, avgCloseRate, bestTrainer: bestTrainer.name, activeTrainers: trainers.length }
-    return ok({ trainers, stats })
-  }),
+  // GET /api/trainers — passthrough to real API route (Supabase, org-scoped).
+  // This handler used to return the global mock list from lib/mock-data.ts,
+  // which leaked Dog Wizard HQ trainers to every owner regardless of their
+  // session org. The real /api/trainers route filters by JWT.org_id, so we
+  // remove the mock and let the fetch fall through.
 
   // GET /api/insights
   http.get('/api/insights', () => {
