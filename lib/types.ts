@@ -42,7 +42,7 @@ export interface Trainer {
 
 export interface CallSection {
   name: string
-  score: number  // 0–5
+  score: number  // 1–5 (Prompt v2)
   feedback: string
   critical: boolean
 }
