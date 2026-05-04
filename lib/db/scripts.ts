@@ -25,6 +25,7 @@ export interface DbScript {
 }
 
 export interface CreateScriptInput {
+  orgId?: string
   rubricId: string
   name: string
   description?: string
@@ -70,6 +71,7 @@ export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript
   const { data, error } = await supabase
     .from('scripts')
     .insert({
+      org_id: input.orgId ?? null,
       rubric_id: input.rubricId,
       name: input.name,
       description: input.description ?? null,
