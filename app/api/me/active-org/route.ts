@@ -62,13 +62,17 @@ export async function POST(request: NextRequest) {
 
   if (updateErr) return serverError('Não foi possível trocar de organização', updateErr)
 
-  // Sincroniza app_metadata.role com a role do membership na nova org. O
-  // middleware roteia por JWT.role (rápido, sem DB hit), então sem isso um
-  // user dual-role (owner em A, trainer em B) ficaria no path errado depois
-  // do switch. Cliente precisa refreshSession() pra pegar o token novo.
+  // Sincroniza app_metadata.role com a role do membership na nova org e
+  // remove app_metadata.org_id legado. Middleware roteia por JWT.role
+  // (rápido, sem DB hit) — sem o sync, dual-role (owner em A, trainer em B)
+  // cai no path errado. org_id no JWT é deprecated (current_org() agora lê
+  // de users.active_org_id), e código legado que ler o claim antigo faria
+  // chamadas escopadas pra org anterior. Cliente precisa refreshSession()
+  // pra pegar o token novo.
   const currentMeta = (session.user.app_metadata ?? {}) as Record<string, unknown>
+  const { org_id: _droppedOrgId, ...metaWithoutOrgId } = currentMeta
   const { error: metaErr } = await admin.auth.admin.updateUserById(session.user.id, {
-    app_metadata: { ...currentMeta, role: membership.role },
+    app_metadata: { ...metaWithoutOrgId, role: membership.role },
   })
   if (metaErr) {
     console.error('[me/active-org] sync app_metadata.role falhou', metaErr)

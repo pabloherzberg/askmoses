@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 
   const { data: existingUser, error: existErr } = await admin
     .from('users')
-    .select('id')
+    .select('id, invite_status')
     .eq('email', email)
     .maybeSingle()
   if (existErr) return serverError('Não foi possível verificar o convite', existErr)
@@ -218,16 +218,32 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
     if (existingMembership) return conflict('Usuário já é membro dessa organização')
 
-    // Email já foi verificado em algum momento — auto-accept aqui é seguro.
+    // Auto-accept SOMENTE se o user já verificou email num convite anterior
+    // (users.invite_status='accepted'). Caso contrário (ainda pending), a
+    // nova membership também entra como pending — o magic link do convite
+    // original vai aceitar todas as memberships pendentes de uma vez via
+    // markInviteAccepted. Sem isso, alguém poderia ser adicionado a uma
+    // segunda org antes de provar posse do email.
+    const inviteStatus = existingUser.invite_status === 'accepted' ? 'accepted' : 'pending'
+
     const { error: memErr } = await admin.from('memberships').insert({
       user_id: existingUser.id,
       org_id: targetOrgId,
       role: targetRole,
-      invite_status: 'accepted',
+      invite_status: inviteStatus,
       invited_by: callerId,
       invited_at: new Date().toISOString(),
     })
-    if (memErr) return serverError('Não foi possível adicionar à organização', memErr)
+    if (memErr) {
+      // Trigger 032 levanta P0001 quando seat cap excedido — race-safe
+      const msg = (memErr as { message?: string }).message ?? ''
+      if (msg.includes('PLAN_LIMIT_SEATS')) {
+        return planLimitExceeded(
+          `Limite de reps atingido para o plano dessa organização. Faça upgrade do plano para convidar mais reps.`
+        )
+      }
+      return serverError('Não foi possível adicionar à organização', memErr)
+    }
 
     if (targetRole === 'trainer') {
       const { error } = await admin.from('trainers').insert({
@@ -260,7 +276,7 @@ export async function POST(request: NextRequest) {
       name,
       role: targetRole,
       orgId: targetOrgId,
-      inviteStatus: 'accepted',
+      inviteStatus,
       emailDelivery: 'none',
       multiOrgAdded: true,
     })
@@ -335,6 +351,12 @@ export async function POST(request: NextRequest) {
   if (memErr) {
     await admin.from('users').delete().eq('id', newUserId)
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+    const msg = (memErr as { message?: string }).message ?? ''
+    if (msg.includes('PLAN_LIMIT_SEATS')) {
+      return planLimitExceeded(
+        `Limite de reps atingido para o plano dessa organização. Faça upgrade do plano para convidar mais reps.`
+      )
+    }
     return serverError('Não foi possível criar o convite', memErr)
   }
 
@@ -517,7 +539,11 @@ export async function GET(request: NextRequest) {
   const inviterById = new Map((invitersRes.data ?? []).map((u) => [u.id, u]))
 
   const items = rows.map((r) => ({
-    id: r.users?.id ?? r.user_id,
+    // Em multi-org, o mesmo user_id aparece em N memberships. id virou compound
+    // (user_id:org_id) — match com PK de memberships e estável como React key.
+    id: `${r.user_id}:${r.org_id}`,
+    userId: r.user_id,
+    orgId: r.org_id,
     name: r.users?.name ?? null,
     email: r.users?.email ?? null,
     role: r.role,

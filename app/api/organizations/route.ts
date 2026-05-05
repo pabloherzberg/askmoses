@@ -129,18 +129,30 @@ export async function POST(request: NextRequest) {
     .single()
   if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
 
+  // Sem transação atômica no supabase-js — fazemos rollback manual em qualquer
+  // falha posterior. Sem isso, dois invariantes do schema quebram: (1) toda
+  // organization tem um client (via clients.org_id) e (2) é 1:1 espelhado em
+  // organizations.client_id. Estado parcial leva a queries que assumem o JOIN
+  // a falhar pra essa org.
   const { data: client, error: clientErr } = await admin
     .from('clients')
     .insert({ name, plan_id: plan.id, org_id: org.id, health: 'healthy' })
     .select('id')
     .single()
-  if (clientErr || !client) return serverError('Não foi possível criar o client', clientErr)
+  if (clientErr || !client) {
+    await admin.from('organizations').delete().eq('id', org.id)
+    return serverError('Não foi possível criar o client', clientErr)
+  }
 
   const { error: linkErr } = await admin
     .from('organizations')
     .update({ client_id: client.id })
     .eq('id', org.id)
-  if (linkErr) return serverError('Não foi possível vincular organização e client', linkErr)
+  if (linkErr) {
+    await admin.from('clients').delete().eq('id', client.id)
+    await admin.from('organizations').delete().eq('id', org.id)
+    return serverError('Não foi possível vincular organização e client', linkErr)
+  }
 
   return ok({ id: org.id, name: org.name, planCode: plan.code })
 }

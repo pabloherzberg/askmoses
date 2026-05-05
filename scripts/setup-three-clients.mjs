@@ -156,6 +156,11 @@ const RUBRIC_BY_ORG = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Idempotente em multi-org: 1ª iteração cria o auth user com o role/org da
+// 1ª linha do NEW_USERS pra esse email. Iterações subsequentes (mesmo email
+// em outra org/role — caso multi@ e dual-role@) NÃO sobrescrevem app_metadata,
+// preservando o role canônico do JWT pra não dessincronizar com active_org_id
+// (que também é setado só na 1ª via setActiveOrgIfNotSet).
 async function createAuthUser({ email, role, orgId }) {
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -170,14 +175,10 @@ async function createAuthUser({ email, role, orgId }) {
       if (listErr) throw listErr
       const existing = list.users.find((u) => u.email === email)
       if (!existing) throw new Error(`User ${email} not found after conflict`)
-      // Update app_metadata in case org changed — must succeed, otherwise the
-      // existing user keeps stale role/org_id claims and downstream auth breaks.
-      const { error: updateErr } = await supabase.auth.admin.updateUserById(existing.id, {
-        app_metadata: { ...(existing.app_metadata ?? {}), role, org_id: orgId },
-      })
-      if (updateErr) {
-        throw new Error(`createAuthUser(${email}): updateUserById failed: ${updateErr.message}`)
-      }
+      // Não tocamos no app_metadata: manter o role/org_id da 1ª criação.
+      // Multi-org tem várias entradas pro mesmo email — sobrescrever aqui
+      // faria o JWT terminar com a última iteração (trainer K9 pra dual-role)
+      // enquanto active_org_id fica na primeira (Dog Wizard owner) → split brain.
       return existing.id
     }
     throw error
