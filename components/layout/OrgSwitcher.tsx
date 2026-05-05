@@ -16,16 +16,25 @@ interface SwitcherPayload {
   activeOrgId: string | null
 }
 
-// OrgSwitcher (TC-06 / TC-07)
-//   Aparece só quando o user tem 2+ memberships aceitas. 1 só → render
-//   nada (a UI não tem o que oferecer). Troca via POST /api/me/active-org
-//   e força refresh pra reconstruir RLS context server-side.
+interface OrgSwitcherProps {
+  /**
+   * 'header'  — pílula compacta no header, hidden md:flex (desktop apenas).
+   * 'sidebar' — bloco full-width, usado dentro do Sheet mobile pra cobrir
+   *             o caso onde o header não exibe (telas < md).
+   */
+  variant?: 'header' | 'sidebar'
+}
+
 const HOME_BY_ROLE: Record<MembershipOption['role'], string> = {
   owner: '/dashboard',
   trainer: '/me',
 }
 
-export function OrgSwitcher() {
+// OrgSwitcher (TC-06 / TC-07)
+//   Renderiza só quando o user tem 2+ memberships aceitas. Troca via
+//   POST /api/me/active-org + refreshSession() pra pegar o novo JWT
+//   (role pode mudar em dual-role) e redireciona pra home da nova role.
+export function OrgSwitcher({ variant = 'header' }: OrgSwitcherProps) {
   const t = useTranslations('Shared.header.orgSwitcher')
   const locale = useLocale()
   const [payload, setPayload] = useState<SwitcherPayload | null>(null)
@@ -56,9 +65,6 @@ export function OrgSwitcher() {
         body: JSON.stringify({ orgId }),
       })
       if (res.ok) {
-        // refreshSession pega o novo JWT (app_metadata.role pode mudar pra
-        // dual-role). Vai pra home da nova role — evita ficar numa página
-        // proibida pelo middleware (ex.: trainer→owner switch parado em /me).
         const data = (await res.json()) as { data?: { role: MembershipOption['role'] } }
         const supabase = createClient()
         await supabase.auth.refreshSession()
@@ -68,9 +74,15 @@ export function OrgSwitcher() {
     })
   }
 
+  const isHeader = variant === 'header'
+
   return (
     <label
-      className="hidden md:flex items-center gap-2 px-2 py-1 rounded-md border text-xs font-medium"
+      className={
+        isHeader
+          ? 'hidden md:flex items-center gap-2 px-2 py-1 rounded-md border text-xs font-medium'
+          : 'flex w-full items-center gap-2 px-3 py-2.5 rounded-md border text-sm font-medium'
+      }
       style={{
         background: 'var(--am-bg3)',
         borderColor: 'var(--am-border2)',
@@ -79,13 +91,17 @@ export function OrgSwitcher() {
       title={t('label')}
       aria-busy={isPending}
     >
-      <Building2 size={14} style={{ color: 'var(--am-muted)' }} aria-hidden />
-      <span className="sr-only">{t('label')}</span>
+      <Building2 size={isHeader ? 14 : 16} style={{ color: 'var(--am-muted)' }} aria-hidden />
+      <span className={isHeader ? 'sr-only' : 'sr-only md:hidden'}>{t('label')}</span>
       <select
         value={payload.activeOrgId ?? ''}
         onChange={(e) => handleChange(e.target.value)}
         disabled={isPending}
-        className="bg-transparent outline-none text-xs font-medium cursor-pointer pr-1"
+        className={
+          isHeader
+            ? 'bg-transparent outline-none text-xs font-medium cursor-pointer pr-1'
+            : 'bg-transparent outline-none text-sm font-medium cursor-pointer flex-1'
+        }
         style={{ color: 'var(--am-text)' }}
       >
         {payload.memberships.map((m) => (

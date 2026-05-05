@@ -77,8 +77,11 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
               className="w-56 p-0 !bg-[var(--am-bg2)] border-r !border-[var(--am-border)]"
             >
               <SheetTitle className="sr-only">{tSidebar('navigation')}</SheetTitle>
-              <div className="pt-6 px-3" onClick={() => setOpen(false)}>
-                {mobileSidebar}
+              <div className="pt-6 px-3 flex flex-col gap-3">
+                {/* OrgSwitcher mobile — header esconde abaixo de md, então
+                    expomos aqui pro multi-org user trocar de contexto. */}
+                <OrgSwitcher variant="sidebar" />
+                <div onClick={() => setOpen(false)}>{mobileSidebar}</div>
               </div>
             </SheetContent>
           </Sheet>
