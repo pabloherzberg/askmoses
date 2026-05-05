@@ -11,10 +11,8 @@ interface InviteBody {
   role?: 'trainer' | 'owner'
   orgId?: string  // required when caller is admin
   ownerId?: string // required when admin invites a trainer
-  locale?: string  // locale do convidante; usado pra escolher o idioma do email
+  locale?: string
 }
-
-interface AppMetadata { role?: Role; org_id?: string }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -29,6 +27,13 @@ function conflict(message: string) {
   return Response.json(
     { data: null, error: { message, code: 409 } },
     { status: 409 }
+  )
+}
+
+function planLimitExceeded(message: string) {
+  return Response.json(
+    { data: null, error: { message, code: 403 } },
+    { status: 403 }
   )
 }
 
@@ -55,13 +60,20 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
 
+// POST /api/invites
+//   Owner: convida trainer pra própria org (ativa).
+//   Admin: convida owner ou trainer pra qualquer org (orgId obrigatório).
+//   Branch existente vs novo email:
+//     - email já tem conta → cria membership 'accepted' direto (sem email/link)
+//     - email não tem conta → fluxo completo (auth user + magic link + email)
+//   TC-11: bloqueia trainer invite se org no plano starter/pro atingiu o
+//   max_sales_people. Conta memberships role='trainer' com status pending+accepted.
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
 
   const callerRole = session.user.app_metadata?.role as Role | undefined
   const callerId = session.user.id
-  const callerOrgId = session.user.app_metadata?.org_id as string | undefined
 
   if (callerRole !== 'owner' && callerRole !== 'admin') return forbidden()
 
@@ -82,26 +94,46 @@ export async function POST(request: NextRequest) {
     return badRequest('role deve ser "trainer" ou "owner"')
   }
 
-  // ─── Permissões e resolução de org/owner ─────────────────────────────────
-  let targetOrgId: string
-  let targetOwnerId: string | null = null // FK para public.owners.id (só usado quando role='trainer')
-
   const admin = createAdminClient()
 
-  if (callerRole === 'owner') {
-    if (targetRole !== 'trainer') {
-      return forbidden() // owner só convida trainer
-    }
-    if (!callerOrgId) return serverError('Não foi possível identificar a organização do solicitante')
-    targetOrgId = callerOrgId
+  // ─── Resolve targetOrgId + targetOwnerId ─────────────────────────────────
 
-    // Resolve owners.id a partir do user_id do caller
+  let targetOrgId: string
+  let targetOwnerId: string | null = null
+
+  if (callerRole === 'owner') {
+    if (targetRole !== 'trainer') return forbidden() // owner só convida trainer
+
+    const { data: callerUser, error: callerErr } = await admin
+      .from('users')
+      .select('active_org_id')
+      .eq('id', callerId)
+      .maybeSingle()
+    if (callerErr) return serverError('Não foi possível identificar o solicitante', callerErr)
+    if (!callerUser?.active_org_id) {
+      return serverError('Não foi possível identificar a organização do solicitante')
+    }
+    targetOrgId = callerUser.active_org_id
+
+    // Garante que o caller é owner-membership na org ativa (não só admin que setou active_org_id)
+    const { data: callerMembership } = await admin
+      .from('memberships')
+      .select('role')
+      .eq('user_id', callerId)
+      .eq('org_id', targetOrgId)
+      .eq('invite_status', 'accepted')
+      .maybeSingle()
+    if (callerMembership?.role !== 'owner') return forbidden()
+
     const { data: ownerRow, error: ownerErr } = await admin
       .from('owners')
       .select('id')
       .eq('user_id', callerId)
+      .eq('org_id', targetOrgId)
       .maybeSingle()
-    if (ownerErr || !ownerRow) return serverError('Não foi possível identificar o solicitante', ownerErr)
+    if (ownerErr || !ownerRow) {
+      return serverError('Não foi possível identificar o solicitante', ownerErr)
+    }
     targetOwnerId = ownerRow.id
   } else {
     // admin
@@ -110,41 +142,22 @@ export async function POST(request: NextRequest) {
 
     if (targetRole === 'trainer') {
       if (!body.ownerId) return badRequest('ownerId é obrigatório quando admin convida um trainer')
-      // valida que o owner existe e pertence à org informada (via users.org_id do owner)
+
       const { data: ownerRow, error: ownerErr } = await admin
         .from('owners')
-        .select('id, user_id')
+        .select('id, org_id')
         .eq('id', body.ownerId)
         .maybeSingle()
       if (ownerErr) return serverError('Não foi possível validar o destinatário', ownerErr)
-
-      let validOwner = false
-      if (ownerRow) {
-        const { data: ownerUser, error: ownerUserErr } = await admin
-          .from('users')
-          .select('org_id')
-          .eq('id', ownerRow.user_id)
-          .maybeSingle()
-        if (ownerUserErr) return serverError('Não foi possível validar o destinatário', ownerUserErr)
-        validOwner = !!ownerUser && ownerUser.org_id === targetOrgId
-      }
-      if (!validOwner || !ownerRow) {
+      if (!ownerRow || ownerRow.org_id !== targetOrgId) {
         return badRequest('owner inválido para essa org')
       }
       targetOwnerId = ownerRow.id
     }
   }
 
-  // ─── Email já existe? ────────────────────────────────────────────────────
-  const { data: existing, error: existErr } = await admin
-    .from('users')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle()
-  if (existErr) return serverError('Não foi possível verificar o convite', existErr)
-  if (existing) return conflict('Não foi possível enviar o convite')
-
   // ─── Org existe? ─────────────────────────────────────────────────────────
+
   const { data: org, error: orgErr } = await admin
     .from('organizations')
     .select('id, name')
@@ -153,13 +166,124 @@ export async function POST(request: NextRequest) {
   if (orgErr) return serverError('Não foi possível validar a organização', orgErr)
   if (!org) return badRequest('org inválida')
 
-  // ─── 1. generateLink — cria auth.user + retorna o token_hash do convite ──
-  // Origin é derivado de request.nextUrl (validado pelo Next/host header
-  // canonicalizado), nunca do header `Origin` (cliente-controlado).
-  // O `action_link` retornado pelo Supabase aponta pro endpoint /auth/v1/verify
-  // do Supabase, que redireciona com tokens no HASH fragment — não chega no
-  // servidor. Usamos o `hashed_token` direto numa rota nossa (/api/auth/verify-otp)
-  // que faz verifyOtp via SDK.
+  // ─── TC-11: Gate de seats (apenas trainer invite) ────────────────────────
+  // clients tem FK plan_id pra plans e org_id pra organizations — JOIN simples.
+  // Se max_sales_people é NULL no plano (ilimitado), pula o gate.
+
+  if (targetRole === 'trainer') {
+    const { data: clientRow, error: clientErr } = await admin
+      .from('clients')
+      .select('plans(max_sales_people)')
+      .eq('org_id', targetOrgId)
+      .maybeSingle()
+    if (clientErr) return serverError('Não foi possível resolver o plano da organização', clientErr)
+
+    const planNested = (clientRow?.plans ?? null) as { max_sales_people: number | null } | null
+    const maxSeats = planNested?.max_sales_people
+
+    if (typeof maxSeats === 'number') {
+      const { count, error: countErr } = await admin
+        .from('memberships')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', targetOrgId)
+        .eq('role', 'trainer')
+        .in('invite_status', ['pending', 'accepted'])
+      if (countErr) return serverError('Não foi possível contar seats', countErr)
+
+      if ((count ?? 0) >= maxSeats) {
+        return planLimitExceeded(
+          `Limite de ${maxSeats} reps atingido para o plano dessa organização. Faça upgrade do plano para convidar mais reps.`
+        )
+      }
+    }
+  }
+
+  // ─── Email já existe? ────────────────────────────────────────────────────
+
+  const { data: existingUser, error: existErr } = await admin
+    .from('users')
+    .select('id, invite_status')
+    .eq('email', email)
+    .maybeSingle()
+  if (existErr) return serverError('Não foi possível verificar o convite', existErr)
+
+  // ─── Branch A: existing user → membership-only, sem auth flow ────────────
+
+  if (existingUser) {
+    const { data: existingMembership } = await admin
+      .from('memberships')
+      .select('user_id')
+      .eq('user_id', existingUser.id)
+      .eq('org_id', targetOrgId)
+      .maybeSingle()
+    if (existingMembership) return conflict('Usuário já é membro dessa organização')
+
+    // Auto-accept SOMENTE se o user já verificou email num convite anterior
+    // (users.invite_status='accepted'). Caso contrário (ainda pending), a
+    // nova membership também entra como pending — o magic link do convite
+    // original vai aceitar todas as memberships pendentes de uma vez via
+    // markInviteAccepted. Sem isso, alguém poderia ser adicionado a uma
+    // segunda org antes de provar posse do email.
+    const inviteStatus = existingUser.invite_status === 'accepted' ? 'accepted' : 'pending'
+
+    const { error: memErr } = await admin.from('memberships').insert({
+      user_id: existingUser.id,
+      org_id: targetOrgId,
+      role: targetRole,
+      invite_status: inviteStatus,
+      invited_by: callerId,
+      invited_at: new Date().toISOString(),
+    })
+    if (memErr) {
+      // Trigger 032 levanta P0001 quando seat cap excedido — race-safe
+      const msg = (memErr as { message?: string }).message ?? ''
+      if (msg.includes('PLAN_LIMIT_SEATS')) {
+        return planLimitExceeded(
+          `Limite de reps atingido para o plano dessa organização. Faça upgrade do plano para convidar mais reps.`
+        )
+      }
+      return serverError('Não foi possível adicionar à organização', memErr)
+    }
+
+    if (targetRole === 'trainer') {
+      const { error } = await admin.from('trainers').insert({
+        user_id: existingUser.id,
+        owner_id: targetOwnerId,
+        org_id: targetOrgId,
+      })
+      if (error) {
+        await admin.from('memberships').delete()
+          .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+        return serverError('Não foi possível criar trainer', error)
+      }
+    } else {
+      const { error } = await admin.from('owners').insert({
+        user_id: existingUser.id,
+        org_id: targetOrgId,
+        company: org.name,
+        plan: 'Starter',
+      })
+      if (error) {
+        await admin.from('memberships').delete()
+          .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+        return serverError('Não foi possível criar owner', error)
+      }
+    }
+
+    return ok({
+      id: existingUser.id,
+      email,
+      name,
+      role: targetRole,
+      orgId: targetOrgId,
+      inviteStatus,
+      emailDelivery: 'none',
+      multiOrgAdded: true,
+    })
+  }
+
+  // ─── Branch B: new user → full invite flow ───────────────────────────────
+
   const origin = request.nextUrl.origin
   const homePath = targetRole === 'trainer' ? '/me' : '/dashboard'
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
@@ -177,35 +301,30 @@ export async function POST(request: NextRequest) {
   const tokenHash = linkData.properties.hashed_token
   const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&next=${encodeURIComponent(homePath)}`
 
-  // Helper de rollback — usado quando algum passo posterior falha. Garante
-  // que não deixamos auth.user/public.users/trainers/owners órfãos. As
-  // chamadas .from(...).delete() não fazem throw (erro vai em .error);
-  // para deleteUser usamos .catch porque ele realmente lança Promise rejeitada.
   const rollback = async () => {
     if (targetRole === 'trainer') {
       await admin.from('trainers').delete().eq('user_id', newUserId)
     } else {
       await admin.from('owners').delete().eq('user_id', newUserId)
     }
+    await admin.from('memberships').delete().eq('user_id', newUserId)
     await admin.from('users').delete().eq('id', newUserId)
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
   }
 
-  // ─── 2. app_metadata para o JWT (role + org_id) ──────────────────────────
-  // Falha aqui é bloqueante: middleware/redirects dependem de role e org_id
-  // no JWT. Sem isso, o convidado loga e cai num estado quebrado (sem home,
-  // sem RLS válido). Melhor desfazer o auth.user e devolver erro genérico.
-  const appMetadata: AppMetadata = { role: targetRole, org_id: targetOrgId }
+  // app_metadata.role: lido por middleware/redirects pra rotear após login.
+  // app_metadata.org_id: NÃO setamos — fonte de verdade é users.active_org_id.
   const { error: metaErr } = await admin.auth.admin.updateUserById(newUserId, {
-    app_metadata: appMetadata,
+    app_metadata: { role: targetRole },
   })
   if (metaErr) {
-    console.error('[invites] Não foi possível aplicar metadados do convite')
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
     return serverError('Não foi possível criar o convite', metaErr)
   }
 
-  // ─── 3. INSERT public.users ──────────────────────────────────────────────
+  // users.role + users.invite_status são deprecated mas ainda existem.
+  // Setamos com valores que não quebram queries legadas; fonte canônica
+  // é memberships.{role,invite_status} + users.active_org_id.
   const { error: usersErr } = await admin.from('users').insert({
     id: newUserId,
     name,
@@ -213,9 +332,7 @@ export async function POST(request: NextRequest) {
     role: targetRole,
     avatar: deriveAvatar(name),
     avatar_color: pickAvatarColor(email),
-    org_id: targetOrgId,
-    invited_by: callerId,
-    invited_at: new Date().toISOString(),
+    active_org_id: targetOrgId,
     invite_status: 'pending',
   })
   if (usersErr) {
@@ -223,7 +340,26 @@ export async function POST(request: NextRequest) {
     return serverError('Não foi possível criar o convite', usersErr)
   }
 
-  // ─── 4. INSERT em trainers OU owners ─────────────────────────────────────
+  const { error: memErr } = await admin.from('memberships').insert({
+    user_id: newUserId,
+    org_id: targetOrgId,
+    role: targetRole,
+    invite_status: 'pending',
+    invited_by: callerId,
+    invited_at: new Date().toISOString(),
+  })
+  if (memErr) {
+    await admin.from('users').delete().eq('id', newUserId)
+    await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+    const msg = (memErr as { message?: string }).message ?? ''
+    if (msg.includes('PLAN_LIMIT_SEATS')) {
+      return planLimitExceeded(
+        `Limite de reps atingido para o plano dessa organização. Faça upgrade do plano para convidar mais reps.`
+      )
+    }
+    return serverError('Não foi possível criar o convite', memErr)
+  }
+
   if (targetRole === 'trainer') {
     const { error: trainerErr } = await admin.from('trainers').insert({
       user_id: newUserId,
@@ -231,25 +367,22 @@ export async function POST(request: NextRequest) {
       org_id: targetOrgId,
     })
     if (trainerErr) {
-      await admin.from('users').delete().eq('id', newUserId)
-      await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+      await rollback()
       return serverError('Não foi possível concluir o convite', trainerErr)
     }
   } else {
-    // owner
     const { error: ownerInsertErr } = await admin.from('owners').insert({
       user_id: newUserId,
+      org_id: targetOrgId,
       company: org.name,
       plan: 'Starter',
     })
     if (ownerInsertErr) {
-      await admin.from('users').delete().eq('id', newUserId)
-      await admin.auth.admin.deleteUser(newUserId).catch(() => {})
+      await rollback()
       return serverError('Não foi possível concluir o convite', ownerInsertErr)
     }
   }
 
-  // ─── 5. Resolve nome do convidante (pra personalizar o email) ────────────
   const { data: inviterRow } = await admin
     .from('users')
     .select('name')
@@ -257,7 +390,6 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
   const inviterName = inviterRow?.name ?? null
 
-  // ─── 6. Envia o email via Resend ─────────────────────────────────────────
   const { subject, html } = buildInviteEmail({
     inviteeName: name,
     role: targetRole,
@@ -269,9 +401,6 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    // Sem Resend configurado (típico em dev): logamos o link pra desenvolvedor
-    // copiar e prosseguimos. O usuário fica em pending — admin pode revogar
-    // e reconvidar quando o key for configurado.
     console.warn(`[invites] RESEND_API_KEY ausente — convite criado em modo mock. action_link=${actionLink}`)
     return ok({
       id: newUserId,
@@ -314,28 +443,25 @@ export async function POST(request: NextRequest) {
 }
 
 // ─── GET /api/invites — lista usuários convidados (pendentes + aceitos) ────
-//   Owner: vê todos da própria org
+//   Owner: vê todos da própria org ativa
 //   Admin: vê todos; pode filtrar por org via ?orgId=…
 //   Filtros opcionais: ?status=pending|accepted, ?role=trainer|owner
 //   Paginação: ?page=1&pageSize=20 (max 100)
-//   Resposta: { items, page, pageSize, total } — items vêm com org e
-//   invitedBy resolvidos (id + name) para o admin/owner identificar o
-//   responsável pelo convite sem chamadas extras.
+//   Lista é montada via memberships (canônica), com user e org resolvidos.
+
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 
-interface UserRow {
-  id: string
-  name: string
-  email: string
-  role: Role
-  avatar: string | null
-  avatar_color: string | null
-  org_id: string | null
+interface MembershipRow {
+  user_id: string
+  org_id: string
+  role: 'owner' | 'trainer'
+  invite_status: 'pending' | 'accepted'
   invited_by: string | null
   invited_at: string | null
-  invite_status: 'pending' | 'accepted'
   created_at: string
+  users: { id: string; name: string; email: string; avatar: string | null; avatar_color: string | null } | null
+  organizations: { id: string; name: string } | null
 }
 
 export async function GET(request: NextRequest) {
@@ -343,7 +469,7 @@ export async function GET(request: NextRequest) {
   if (!session) return unauthorized()
 
   const callerRole = session.user.app_metadata?.role as Role | undefined
-  const callerOrgId = session.user.app_metadata?.org_id as string | undefined
+  const callerId = session.user.id
 
   if (callerRole !== 'owner' && callerRole !== 'admin') return forbidden()
 
@@ -370,10 +496,18 @@ export async function GET(request: NextRequest) {
   const to = from + pageSize - 1
 
   const admin = createAdminClient()
+
+  // memberships tem 2 FKs pra users (user_id e invited_by) — sem o hint
+  // !user_id, supabase-js não consegue desambiguar e a query retorna vazia
+  // silenciosamente. Forçamos a relação explícita pelo nome da FK column.
   let query = admin
-    .from('users')
+    .from('memberships')
     .select(
-      'id, name, email, role, avatar, avatar_color, org_id, invited_by, invited_at, invite_status, created_at',
+      `
+      user_id, org_id, role, invite_status, invited_by, invited_at, created_at,
+      users!user_id (id, name, email, avatar, avatar_color),
+      organizations (id, name)
+    `,
       { count: 'exact' }
     )
     .order('invited_at', { ascending: false, nullsFirst: false })
@@ -381,8 +515,12 @@ export async function GET(request: NextRequest) {
     .range(from, to)
 
   if (callerRole === 'owner') {
-    if (!callerOrgId) return serverError('Não foi possível identificar a organização do solicitante')
-    query = query.eq('org_id', callerOrgId)
+    const { data: callerUser } = await admin
+      .from('users').select('active_org_id').eq('id', callerId).maybeSingle()
+    if (!callerUser?.active_org_id) {
+      return serverError('Não foi possível identificar a organização do solicitante')
+    }
+    query = query.eq('org_id', callerUser.active_org_id)
   } else if (orgIdParam) {
     query = query.eq('org_id', orgIdParam)
   }
@@ -393,38 +531,34 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query
   if (error) return serverError('Não foi possível listar os convites', error)
 
-  const rows = (data ?? []) as UserRow[]
-
-  // ─── Resolve org { id, name } e invitedBy { id, name } em batch ──────────
-  const orgIds = Array.from(new Set(rows.map((r) => r.org_id).filter((v): v is string => !!v)))
+  const rows = (data ?? []) as unknown as MembershipRow[]
   const inviterIds = Array.from(new Set(rows.map((r) => r.invited_by).filter((v): v is string => !!v)))
 
-  const [orgsRes, invitersRes] = await Promise.all([
-    orgIds.length > 0
-      ? admin.from('organizations').select('id, name').in('id', orgIds)
-      : Promise.resolve({ data: [], error: null }),
-    inviterIds.length > 0
-      ? admin.from('users').select('id, name').in('id', inviterIds)
-      : Promise.resolve({ data: [], error: null }),
-  ])
-
-  if (orgsRes.error) return serverError('Não foi possível resolver as organizações', orgsRes.error)
+  const invitersRes = inviterIds.length > 0
+    ? await admin.from('users').select('id, name').in('id', inviterIds)
+    : { data: [], error: null }
   if (invitersRes.error) return serverError('Não foi possível resolver os responsáveis', invitersRes.error)
 
-  const orgById = new Map((orgsRes.data ?? []).map((o) => [o.id, o]))
   const inviterById = new Map((invitersRes.data ?? []).map((u) => [u.id, u]))
 
   const items = rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    email: r.email,
+    // `id` segue sendo o UUID do user — DELETE /api/invites/[id] espera UUID.
+    // Em multi-org o mesmo user_id pode repetir; frontend deve usar
+    // `membershipId` como React key (composto user_id:org_id, único por row)
+    // e mandar `orgId` como querystring no DELETE quando o caller é admin.
+    id: r.user_id,
+    membershipId: `${r.user_id}:${r.org_id}`,
+    userId: r.user_id,
+    orgId: r.org_id,
+    name: r.users?.name ?? null,
+    email: r.users?.email ?? null,
     role: r.role,
-    avatar: r.avatar,
-    avatar_color: r.avatar_color,
+    avatar: r.users?.avatar ?? null,
+    avatar_color: r.users?.avatar_color ?? null,
     invited_at: r.invited_at,
     invite_status: r.invite_status,
     created_at: r.created_at,
-    org: r.org_id ? orgById.get(r.org_id) ?? null : null,
+    org: r.organizations,
     invitedBy: r.invited_by ? inviterById.get(r.invited_by) ?? null : null,
   }))
 

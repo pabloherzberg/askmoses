@@ -86,4 +86,19 @@ export const DEMO_CLIENTS: DemoClient[] = [
       { email: 'trainer-pawacademy-4@demo.askmoses.ai', password: DEMO_PASSWORD, roleLabel: 'Sales Person 4', name: 'Naomi T.'   },
     ],
   },
+  // ─── Multi-org demo ──────────────────────────────────────────────────────
+  // Users com membership em mais de uma org. Login → entram numa active_org
+  // arbitrária; usam o seletor no header pra trocar de contexto (TC-06/07).
+  // orgId aqui é só placeholder — esses users não são "donos" de uma única org.
+  {
+    id: 'multi-org',
+    name: 'Multi-org',
+    planName: 'Demo',
+    planCode: 'pro_rag',
+    orgId: '00000000-0000-0000-0000-000000000100',
+    users: [
+      { email: 'multi@demo.askmoses.ai',     password: DEMO_PASSWORD, roleLabel: 'Owner (2 orgs)',         name: 'Mira O.' },
+      { email: 'dual-role@demo.askmoses.ai', password: DEMO_PASSWORD, roleLabel: 'Owner + Sales (2 orgs)', name: 'Sam Q.'  },
+    ],
+  },
 ]
