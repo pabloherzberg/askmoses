@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       : 0;
   const avgScore =
     trainers.length > 0
-      ? Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+      ? Math.round((trainers.reduce((s, t) => s + t.score, 0) / trainers.length) * 10) / 10
       : 0;
   const topTrainer = sorted[0] ?? null;
 

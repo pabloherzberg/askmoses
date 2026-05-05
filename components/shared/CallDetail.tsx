@@ -19,8 +19,8 @@ const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: 
 const SECTION_COLORS: RubricColor[] = ['blue', 'amber', 'green', 'red', 'accent2']
 
 function scoreColor(score: number) {
-  if (score >= 85) return 'var(--am-green)'
-  if (score >= 75) return 'var(--am-amber)'
+  if (score >= 4.25) return 'var(--am-green)'
+  if (score >= 3.75) return 'var(--am-amber)'
   return 'var(--am-red)'
 }
 
@@ -77,7 +77,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             className="text-5xl font-semibold font-mono leading-none"
             style={{ color: scoreColor(call.score) }}
           >
-            {call.score}
+            {call.score.toFixed(1)}
           </span>
           <span
             className="text-xs font-medium px-2.5 py-1 rounded-full font-mono"

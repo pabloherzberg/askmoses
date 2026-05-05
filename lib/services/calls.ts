@@ -57,8 +57,7 @@ function parseCriteria(criteria: unknown): RubricScores {
     const key = CRITERIA_NAME_MAP[rawName];
     if (key) {
       const raw = item.score ?? 0;
-      // AI returns 0–5, but seeded calls store 0–100. Normalise both to 0–100.
-      result[key] = raw > 5 ? Math.round(raw) : Math.round(raw * 20);
+      result[key] = Math.round(raw * 10) / 10;
     }
   }
   return result;
@@ -88,14 +87,7 @@ function parseSections(raw: unknown): CallSection[] | undefined {
   }
   if (parsed.length === 0) return undefined;
 
-  // Backwards-compat: scripts/001_section_scores.sql backfilled legacy calls
-  // into the 0–10 scale (multiplied criteria.score × 2). Prompt v2 writes 1–5
-  // and CallDetail/RubricBar always render with `max={5}`. Without rescaling,
-  // legacy rows would render saturated bars and inflated numbers.
-  // Detection: any score > 5 means we're looking at the legacy scale.
-  const usesLegacyTenPointScale = parsed.some((s) => s.score > 5);
-  if (!usesLegacyTenPointScale) return parsed;
-  return parsed.map((s) => ({ ...s, score: s.score / 2 }));
+  return parsed;
 }
 
 function toCall(db: DbCall): Call {
@@ -140,8 +132,8 @@ export function avgRubricScores(calls: Call[]): RubricScores {
   const result = { ...defaults };
   for (const key of keys) {
     result[key] = Math.round(
-      calls.reduce((s, c) => s + c.rubricScores[key], 0) / calls.length,
-    );
+      (calls.reduce((s, c) => s + c.rubricScores[key], 0) / calls.length) * 10,
+    ) / 10;
   }
   return result;
 }

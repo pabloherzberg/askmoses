@@ -18,7 +18,6 @@ import {
 } from "@/lib/auth";
 import {
   OUTCOME_OVERALL_CAP,
-  SCORE_TO_PERCENT_MULTIPLIER,
   normaliseOutcome,
   type CallOutcome,
 } from "@/lib/constants";
@@ -426,11 +425,11 @@ export async function POST(request: NextRequest) {
 
     const parsed = reorderSectionsToRubric(validation.data, allowedSections);
 
-    // ── 4. Compute overallScore: average × 20, capped by outcome ─────────
+    // ── 4. Compute overallScore: average rounded to 1 decimal, capped by outcome ─
     const scores = parsed.sections.map((s) => s.score);
     const avg =
       scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
-    const rawScore = Math.round(avg * SCORE_TO_PERCENT_MULTIPLIER);
+    const rawScore = Math.round(avg * 10) / 10;
     const reportedOutcome = coerceOutcome(
       body.callOutcome ?? parsed.detectedOutcome,
     );

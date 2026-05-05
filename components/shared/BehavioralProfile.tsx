@@ -14,8 +14,8 @@ const sourceStyle = {
 } as const
 
 function levelFromScore(score: number): 'High' | 'Med' | 'Low' {
-  if (score >= 85) return 'High'
-  if (score >= 70) return 'Med'
+  if (score >= 4.25) return 'High'
+  if (score >= 3.5) return 'Med'
   return 'Low'
 }
 

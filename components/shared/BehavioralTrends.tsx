@@ -1,8 +1,8 @@
 import type { BehavioralTrendDimension } from '@/lib/mock-data'
 
 function barColor(score: number) {
-  if (score >= 75) return 'var(--am-green)'
-  if (score >= 60) return 'var(--am-amber)'
+  if (score >= 3.75) return 'var(--am-green)'
+  if (score >= 3.0) return 'var(--am-amber)'
   return 'var(--am-red)'
 }
 
