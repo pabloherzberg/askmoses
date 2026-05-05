@@ -227,7 +227,7 @@
       },
       "th": {
         "score": "Nota",
-        "percent": "%",
+        "percent": "Score",
         "correlation": "Corr.",
         "impact": "Impacto",
         "source": "Fonte"

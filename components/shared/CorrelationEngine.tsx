@@ -92,11 +92,11 @@ export function CorrelationEngine({ factors }: Props) {
 
       {/* Column headers */}
       <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}>
-        {(['score', 'percent', 'correlation', 'impact', 'source'] as const).map((k) => (
-          <span key={k} className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>
-            {t(`th.${k}`)}
-          </span>
-        ))}
+        <span className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>{t('th.score')}</span>
+        <span className="text-[10px] font-medium text-right" style={{ color: 'var(--am-muted)' }}>{t('th.percent')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.correlation')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.impact')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.source')}</span>
       </div>
 
       {/* Rows */}
@@ -135,7 +135,7 @@ export function CorrelationEngine({ factors }: Props) {
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${f.score}%`,
+                      width: `${(f.score / 5) * 100}%`,
                       background: barColor[f.correlation],
                       transition: 'width 0.4s ease',
                     }}
@@ -143,9 +143,9 @@ export function CorrelationEngine({ factors }: Props) {
                 </div>
               </div>
 
-              {/* Score % */}
+              {/* Score */}
               <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
-                {f.score}%
+                {f.score.toFixed(1)}/5
               </span>
 
               {/* Correlation badge */}
