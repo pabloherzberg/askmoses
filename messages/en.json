@@ -51,8 +51,8 @@
     "subtitle": "Invite new members to your organization. The invitee receives a magic link via email.",
     "card": {
       "title": "Add Member",
-      "descriptionOwner": "You can invite trainers to your organization.",
-      "descriptionAdmin": "As an admin, you can invite owners and trainers to any organization."
+      "descriptionOwner": "You can invite sales people to your organization.",
+      "descriptionAdmin": "As an admin, you can invite owners and sales people to any organization."
     },
     "form": {
       "nameLabel": "Name",
@@ -60,7 +60,7 @@
       "emailLabel": "Email",
       "emailPlaceholder": "email@company.com",
       "roleLabel": "Role",
-      "roleTrainer": "Trainer",
+      "roleTrainer": "Sales Person",
       "roleOwner": "Owner",
       "orgLabel": "Organization",
       "orgPlaceholder": "Select an organization",
@@ -102,7 +102,7 @@
       "revokeError": "Could not revoke the invitation",
       "fillFields": "Fill in name and email",
       "orgRequired": "Provide the organization ID",
-      "ownerRequired": "Provide the owner ID for the trainer"
+      "ownerRequired": "Provide the owner ID for the sales person"
     }
   },
   "Shared": {

@@ -51,8 +51,8 @@
     "subtitle": "Convide novos membros para a sua organização. O convidado recebe um link mágico por e-mail.",
     "card": {
       "title": "Adicionar Membro",
-      "descriptionOwner": "Você pode convidar trainers para a sua organização.",
-      "descriptionAdmin": "Como admin, você pode convidar owners e trainers para qualquer organização."
+      "descriptionOwner": "Você pode convidar vendedores para a sua organização.",
+      "descriptionAdmin": "Como admin, você pode convidar owners e vendedores para qualquer organização."
     },
     "form": {
       "nameLabel": "Nome",
@@ -60,7 +60,7 @@
       "emailLabel": "E-mail",
       "emailPlaceholder": "email@empresa.com",
       "roleLabel": "Papel",
-      "roleTrainer": "Trainer",
+      "roleTrainer": "Vendedor",
       "roleOwner": "Owner",
       "orgLabel": "Organização",
       "orgPlaceholder": "Selecione a organização",
@@ -102,7 +102,7 @@
       "revokeError": "Não foi possível revogar o convite",
       "fillFields": "Preencha nome e e-mail",
       "orgRequired": "Informe o ID da organização",
-      "ownerRequired": "Informe o ID do owner para o trainer"
+      "ownerRequired": "Informe o ID do owner para o vendedor"
     }
   },
   "Shared": {

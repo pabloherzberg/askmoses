@@ -183,6 +183,13 @@ export function InvitePageClient({ role: callerRole }: Props) {
   const selectedOrg = orgs.find((o) => o.id === form.orgId)
   const ownerOptions = selectedOrg?.owners ?? []
 
+  const roleLabel = (role: Role) =>
+    role === 'trainer'
+      ? t('form.roleTrainer')
+      : role === 'owner'
+      ? t('form.roleOwner')
+      : role
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFeedback(null)
@@ -443,7 +450,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium truncate">{u.name}</p>
-                      <Badge variant="secondary" className="capitalize">{u.role}</Badge>
+                      <Badge variant="secondary">{roleLabel(u.role)}</Badge>
                       <Badge variant="outline" style={{ color: 'var(--am-amber)', borderColor: 'var(--am-amber)' }}>
                         {t('pendingBadge')}
                       </Badge>
@@ -523,7 +530,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="capitalize">{u.role}</Badge>
+                        <Badge variant="secondary">{roleLabel(u.role)}</Badge>
                       </TableCell>
                       {isAdmin && (
                         <TableCell className="text-muted-foreground">
