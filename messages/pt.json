@@ -123,6 +123,7 @@
       "howToUse": "Como usar",
       "saasPanel": "Painel SaaS",
       "rubricConfig": "Configuração da rubrica",
+      "createOrganization": "Nova organização",
       "tools": "Ferramentas",
       "starterTier": "Plano Starter",
       "starterTierSubtitle": "Upload manual",
@@ -134,7 +135,12 @@
       "signOut": "Sair",
       "clientName": "Unleashed Consulting",
       "weekProgress": "Semana 6 / 6",
-      "live": "Ao vivo"
+      "live": "Ao vivo",
+      "orgSwitcher": {
+        "label": "Trocar organização",
+        "owner": "Owner",
+        "trainer": "Vendedor"
+      }
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -439,6 +445,21 @@
       "healthy": "Saudável",
       "atRisk": "Em risco",
       "churning": "Crítico"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionamento",
+      "title": "Nova organização",
+      "subtitle": "Crie um novo tenant e atribua seu plano.",
+      "nameLabel": "Nome da organização",
+      "namePlaceholder": "Acme Ltda.",
+      "planLabel": "Plano",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Criar organização",
+      "submitting": "Criando…",
+      "successDetail": "{name} provisionada no plano {plan}.",
+      "genericError": "Não foi possível criar a organização. Tente novamente."
     },
     "rubric": {
       "label": "Config. da rubrica",
