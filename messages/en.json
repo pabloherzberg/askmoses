@@ -359,6 +359,7 @@
       "avgCloseRate": "Avg Close Rate",
       "ptsSinceWeek1": "pts since week 1",
       "avgScore": "Avg Score",
+      "teamAvgCallScore": "Team Avg Call Score",
       "totalCalls": "Total Calls",
       "activeSalesPeopleOne": "{count} active sales person",
       "activeSalesPeopleOther": "{count} active sales people",

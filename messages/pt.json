@@ -359,6 +359,7 @@
       "avgCloseRate": "Taxa média de fechamento",
       "ptsSinceWeek1": "pts desde a semana 1",
       "avgScore": "Nota média",
+      "teamAvgCallScore": "Nota média por call",
       "totalCalls": "Total de chamadas",
       "activeSalesPeopleOne": "{count} vendedor ativo",
       "activeSalesPeopleOther": "{count} vendedores ativos",

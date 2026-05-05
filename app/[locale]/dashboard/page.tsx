@@ -85,18 +85,18 @@ export default async function DashboardPage() {
           }}
         />
         <ScoreCard
+          label={tMetrics("teamAvgCallScore")}
+          value={avgScore}
+          valueColor="var(--am-accent2)"
+          delta={11}
+          deltaLabel={tMetrics("ptsSinceWeek1")}
+        />
+        <ScoreCard
           label={tMetrics("monthlyRevenue")}
           value="$18,200"
           valueColor="var(--am-green)"
           delta={12}
           deltaLabel={tMetrics("vsBaseline")}
-        />
-        <ScoreCard
-          label={tMetrics("avgScore")}
-          value={avgScore}
-          valueColor="var(--am-accent2)"
-          delta={11}
-          deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
           label={tMetrics("totalCalls")}
@@ -134,12 +134,6 @@ export default async function DashboardPage() {
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
               {tHealth("title")}
             </p>
-            <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded border"
-              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
-            >
-              {tHealth("mockBadge")}
-            </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
             {tHealth("subtitle")}
@@ -241,9 +235,6 @@ export default async function DashboardPage() {
             )
           })}
 
-          <p className="mt-3 text-[10px]" style={{ color: "var(--am-amber)" }}>
-            {tHealth("mockFooter")}
-          </p>
         </div>
 
         {/* Active alerts */}
@@ -256,12 +247,6 @@ export default async function DashboardPage() {
             <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
               {tAlerts("title")}
             </p>
-            <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded border"
-              style={{ color: "var(--am-amber)", borderColor: "var(--am-amber)", background: "rgba(255,171,46,0.08)" }}
-            >
-              {tAlerts("mockBadge")}
-            </span>
           </div>
           <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
             {alertsCountLabel}
@@ -326,10 +311,6 @@ export default async function DashboardPage() {
             })}
           </div>
 
-          {/* Footer note */}
-          <p className="text-[10px] mt-4 leading-relaxed" style={{ color: "var(--am-amber)" }}>
-            {tAlerts("mockFooter")}
-          </p>
         </div>
       </div>
 

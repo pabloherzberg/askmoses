@@ -28,16 +28,6 @@ export function WorstCallsTeamWeekly() {
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
           Worst Call This Week
         </p>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded border"
-          style={{
-            color: 'var(--am-amber)',
-            borderColor: 'rgba(255,171,46,0.35)',
-            background: 'rgba(255,171,46,0.08)',
-          }}
-        >
-          mock data only
-        </span>
       </div>
       <p className="text-[11px] mb-4" style={{ color: 'var(--am-muted)' }}>
         2 calls needing attention this week — use for targeted coaching sessions
@@ -49,9 +39,6 @@ export function WorstCallsTeamWeekly() {
         ))}
       </div>
 
-      <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo
-      </p>
     </div>
   )
 }

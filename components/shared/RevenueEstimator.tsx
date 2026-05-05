@@ -32,12 +32,6 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
           {t('title')}
         </p>
-        <span
-          className="text-[10px] font-medium px-2 py-0.5 rounded"
-          style={{ background: 'var(--am-amber-bg)', color: 'var(--am-amber)' }}
-        >
-          {t('mockBadge')}
-        </span>
       </div>
 
       {/* Column headers */}
@@ -91,10 +85,6 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
         </p>
       </div>
 
-      {/* Footer note */}
-      <p className="text-[10px] mt-3" style={{ color: 'var(--am-amber)' }}>
-        {t('mockFooter')}
-      </p>
     </div>
   )
 }
