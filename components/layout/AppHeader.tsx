@@ -15,6 +15,7 @@ import {
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
+import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { createClient } from '@/lib/supabase/client'
 
 interface AppHeaderProps {
@@ -130,6 +131,7 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
         )}
 
         <div className="flex items-center gap-1.5">
+          <OrgSwitcher />
           <LanguageSwitcher />
           <ThemeToggle />
           <button

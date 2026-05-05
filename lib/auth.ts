@@ -1,6 +1,35 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Role } from '@/lib/types'
+
+export type PlanCode = 'starter' | 'pro' | 'pro_rag'
+
+export interface ActiveOrgContext {
+  userId: string
+  isSuperAdmin: boolean
+  activeOrgId: string | null
+  role: Role | null
+  planCode: PlanCode | null
+  hasRag: boolean
+  maxSalesPeople: number | null
+  maxCallsPerMonth: number | null
+}
+
+export interface MembershipOption {
+  orgId: string
+  orgName: string
+  role: Exclude<Role, 'admin'>
+}
+
+interface OrgContextRpc {
+  activeOrgId: string | null
+  role: Role | null
+  planCode: PlanCode | null
+  hasRag: boolean
+  maxSalesPeople: number | null
+  maxCallsPerMonth: number | null
+}
 
 export async function getSession() {
   const supabase = await createClient()
@@ -8,14 +37,83 @@ export async function getSession() {
   return session
 }
 
-export async function getRole(): Promise<Role | null> {
+// ─── Active-org context — uma rpc por request, memoizada via React.cache ────
+// rpc('get_user_org_context') resolve users → memberships → organizations →
+// clients → plans num único round trip. Para super-admin o JWT já basta;
+// não chamamos a rpc (admin geralmente tem active_org_id NULL).
+export const getActiveOrgContext = cache(async (): Promise<ActiveOrgContext | null> => {
   const session = await getSession()
-  return (session?.user?.app_metadata?.role as Role) ?? null
+  if (!session) return null
+
+  const userId = session.user.id
+  const isSuperAdmin = session.user.app_metadata?.role === 'admin'
+
+  if (isSuperAdmin) {
+    return {
+      userId,
+      isSuperAdmin: true,
+      activeOrgId: null,
+      role: 'admin',
+      planCode: null,
+      hasRag: false,
+      maxSalesPeople: null,
+      maxCallsPerMonth: null,
+    }
+  }
+
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('get_user_org_context', { p_user_id: userId })
+  if (error || !data) {
+    return {
+      userId,
+      isSuperAdmin: false,
+      activeOrgId: null,
+      role: null,
+      planCode: null,
+      hasRag: false,
+      maxSalesPeople: null,
+      maxCallsPerMonth: null,
+    }
+  }
+
+  const ctx = data as OrgContextRpc
+  return {
+    userId,
+    isSuperAdmin: false,
+    activeOrgId: ctx.activeOrgId,
+    role: ctx.role,
+    planCode: ctx.planCode,
+    hasRag: ctx.hasRag,
+    maxSalesPeople: ctx.maxSalesPeople,
+    maxCallsPerMonth: ctx.maxCallsPerMonth,
+  }
+})
+
+export async function getMembershipsForSwitcher(): Promise<MembershipOption[]> {
+  const session = await getSession()
+  if (!session) return []
+
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('get_memberships_for_switcher', { p_user_id: session.user.id })
+  if (error || !data) return []
+  return data as MembershipOption[]
+}
+
+// ─── Compat helpers — assinatura antiga, agora derivam do active-org ────────
+
+export async function getRole(): Promise<Role | null> {
+  const ctx = await getActiveOrgContext()
+  return ctx?.role ?? null
 }
 
 export async function getOrgId(): Promise<string | null> {
-  const session = await getSession()
-  return (session?.user?.app_metadata?.org_id as string) ?? null
+  const ctx = await getActiveOrgContext()
+  return ctx?.activeOrgId ?? null
+}
+
+export async function isSuperAdmin(): Promise<boolean> {
+  const ctx = await getActiveOrgContext()
+  return ctx?.isSuperAdmin ?? false
 }
 
 export async function getTrainerDbId(): Promise<string | null> {
@@ -35,7 +133,28 @@ export function redirectByRole(role: Role): string {
   return routes[role] ?? '/login'
 }
 
-// ─── Response helpers ─────────────────────────────────────────────────────────
+// ─── Plan-feature gates ──────────────────────────────────────────────────────
+
+// Retorna uma 403 Response pronta se a org ativa não tem RAG habilitado
+// no plano. Caso tenha, devolve null (caller prossegue). Usado por endpoints
+// gated por has_rag (TC-12 / TC-13).
+export async function requireRagFeature(): Promise<Response | null> {
+  const ctx = await getActiveOrgContext()
+  if (ctx?.hasRag) return null
+  return Response.json(
+    {
+      data: null,
+      error: {
+        message: 'Feature de RAG disponível apenas no plano Pro + RAG. Faça upgrade pra acessar.',
+        code: 403,
+        reason: 'PLAN_RAG_REQUIRED',
+      },
+    },
+    { status: 403 }
+  )
+}
+
+// ─── Response helpers ────────────────────────────────────────────────────────
 
 export function unauthorized() {
   return Response.json({ data: null, error: { message: 'Não autenticado', code: 401 } }, { status: 401 })
