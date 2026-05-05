@@ -15,7 +15,6 @@ import {
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
-import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { createClient } from '@/lib/supabase/client'
 
 interface AppHeaderProps {
@@ -77,11 +76,8 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
               className="w-56 p-0 !bg-[var(--am-bg2)] border-r !border-[var(--am-border)]"
             >
               <SheetTitle className="sr-only">{tSidebar('navigation')}</SheetTitle>
-              <div className="pt-6 px-3 flex flex-col gap-3">
-                {/* OrgSwitcher mobile — header esconde abaixo de md, então
-                    expomos aqui pro multi-org user trocar de contexto. */}
-                <OrgSwitcher variant="sidebar" />
-                <div onClick={() => setOpen(false)}>{mobileSidebar}</div>
+              <div className="pt-6 px-3" onClick={() => setOpen(false)}>
+                {mobileSidebar}
               </div>
             </SheetContent>
           </Sheet>
@@ -134,7 +130,6 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
         )}
 
         <div className="flex items-center gap-1.5">
-          <OrgSwitcher />
           <LanguageSwitcher />
           <ThemeToggle />
           <button

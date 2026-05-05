@@ -13,13 +13,10 @@ const SAFE_NEXT_PATHS: ReadonlySet<string> = new Set([
 
 export async function markInviteAccepted(userId: string): Promise<void> {
   const admin = createAdminClient()
-  // Aceita TODAS as memberships pendentes do user — o magic link verifica
-  // o email, então qualquer convite anterior pendente desse mesmo email vira
-  // accepted nesse momento. (users.invite_status legado não é mais lido.)
   await admin
-    .from('memberships')
+    .from('users')
     .update({ invite_status: 'accepted' })
-    .eq('user_id', userId)
+    .eq('id', userId)
     .eq('invite_status', 'pending')
 }
 

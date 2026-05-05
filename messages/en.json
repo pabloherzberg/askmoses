@@ -123,7 +123,6 @@
       "howToUse": "How to Use",
       "saasPanel": "SaaS Panel",
       "rubricConfig": "Rubric Config",
-      "createOrganization": "New Organization",
       "tools": "Tools",
       "starterTier": "Starter Tier",
       "starterTierSubtitle": "Manual Upload",
@@ -135,12 +134,7 @@
       "signOut": "Sign out",
       "clientName": "Unleashed Consulting",
       "weekProgress": "Week 6 / 6",
-      "live": "Live",
-      "orgSwitcher": {
-        "label": "Switch organization",
-        "owner": "Owner",
-        "trainer": "Trainer"
-      }
+      "live": "Live"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -445,21 +439,6 @@
       "healthy": "Healthy",
       "atRisk": "At Risk",
       "churning": "Critical"
-    },
-    "createOrg": {
-      "eyebrow": "Provisioning",
-      "title": "New organization",
-      "subtitle": "Create a new tenant and assign its plan.",
-      "nameLabel": "Organization name",
-      "namePlaceholder": "Acme Inc.",
-      "planLabel": "Plan",
-      "plan_starter": "Starter",
-      "plan_pro": "Pro",
-      "plan_pro_rag": "Pro + RAG",
-      "submit": "Create organization",
-      "submitting": "Creating…",
-      "successDetail": "{name} provisioned on the {plan} plan.",
-      "genericError": "Could not create the organization. Try again."
     },
     "rubric": {
       "label": "Rubric Config",
