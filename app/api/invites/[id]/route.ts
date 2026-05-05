@@ -17,17 +17,19 @@ function serverError(context: string, err?: unknown) {
   )
 }
 
-// DELETE /api/invites/[id] — revoga um convite pendente
+// DELETE /api/invites/[id]?orgId=<uuid>
 //   Owner: revoga convite pendente da própria org ATIVA (current_org).
+//          orgId no query é ignorado — o escopo é sempre o active_org.
 //          Não pode revogar invite de outro owner.
-//   Admin: revoga qualquer convite pendente.
+//   Admin: orgId é OBRIGATÓRIO no querystring — em multi-org o mesmo user_id
+//          pode ter pendências em N orgs. Sem orgId, .maybeSingle() falharia.
 //   Trainer: 403.
 //
-// Em multi-org, [id] é o user_id do convidado. A membership pendente daquele
-// user na org-escopo é o que sai. Auth user só é deletado se o user ficar
-// sem nenhuma membership (caso típico de um invite recém-criado).
+// [id] é o user_id do convidado. A membership pendente daquele user no
+// (user_id, org_id) escopo é o que sai. Auth user só é deletado se o user
+// ficar sem nenhuma membership (caso típico de invite recém-criado).
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
@@ -42,27 +44,31 @@ export async function DELETE(
   const admin = createAdminClient()
 
   // ─── Resolve escopo do caller ────────────────────────────────────────────
-  // Owner é restrito à própria org ativa (lida do users.active_org_id, não
-  // do JWT — JWT.org_id é deprecated e pode estar stale após troca de org).
-  let scopedOrgId: string | null = null
+  let scopedOrgId: string
   if (callerRole === 'owner') {
+    // Owner: escopo lido do users.active_org_id (não do JWT, deprecated).
     const ctx = await getActiveOrgContext()
     if (!ctx?.activeOrgId) {
       return serverError('Não foi possível identificar a organização do solicitante')
     }
     scopedOrgId = ctx.activeOrgId
+  } else {
+    // Admin: orgId é obrigatório no querystring pra desambiguar em multi-org.
+    const orgIdParam = request.nextUrl.searchParams.get('orgId')
+    if (!orgIdParam || !UUID_RE.test(orgIdParam)) {
+      return badRequest('orgId é obrigatório no querystring quando admin revoga')
+    }
+    scopedOrgId = orgIdParam
   }
 
-  // ─── Busca a membership pendente do alvo no escopo ───────────────────────
-  let membershipQuery = admin
+  // ─── Busca a membership pendente do alvo no escopo (sempre filtrada) ─────
+  const { data: pending, error: memErr } = await admin
     .from('memberships')
     .select('user_id, org_id, role, invite_status')
     .eq('user_id', id)
+    .eq('org_id', scopedOrgId)
     .eq('invite_status', 'pending')
-
-  if (scopedOrgId) membershipQuery = membershipQuery.eq('org_id', scopedOrgId)
-
-  const { data: pending, error: memErr } = await membershipQuery.maybeSingle()
+    .maybeSingle()
   if (memErr) return serverError('Não foi possível localizar o convite', memErr)
   if (!pending) {
     // Não revela cross-tenant, não revela se já foi aceito — sempre 404 genérico

@@ -1,15 +1,29 @@
 import { type NextRequest } from 'next/server'
-import { getActiveOrgContext, getSession, ok, unauthorized } from '@/lib/auth'
+import {
+  type ActiveOrgContext,
+  getActiveOrgContext,
+  getActiveOrgContextFor,
+  getSession,
+  ok,
+  unauthorized,
+} from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
-  // Primary: session do cookie. Fallback: Bearer token (login envia antes do cookie propagar).
+  // Primary: session do cookie. Fallback: Bearer token (login envia antes do
+  // cookie propagar). No fallback NÃO temos cookie, então getActiveOrgContext()
+  // (que depende de getSession) retornaria null — usamos a variante explicit
+  // getActiveOrgContextFor(userId, isSuperAdmin) com o user resolvido do token.
   let userId: string | null = null
+  let isSuperAdmin = false
+  let viaSession = false
 
   const session = await getSession()
   if (session) {
     userId = session.user.id
+    isSuperAdmin = session.user.app_metadata?.role === 'admin'
+    viaSession = true
   } else {
     const authHeader = request.headers.get('authorization') ?? ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -17,6 +31,7 @@ export async function GET(request: NextRequest) {
       const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser(token)
       userId = user?.id ?? null
+      isSuperAdmin = user?.app_metadata?.role === 'admin'
     }
   }
 
@@ -32,9 +47,10 @@ export async function GET(request: NextRequest) {
   if (!user) return unauthorized()
 
   // Role canônica vem de getActiveOrgContext (membership na org ativa OU
-  // 'admin' do JWT). users.role é deprecado — em multi-org ele fica preso
-  // ao último write do setup, então não serve pra rotear o frontend.
-  const ctx = await getActiveOrgContext()
+  // 'admin' do JWT). users.role legado está preso ao último write do setup.
+  const ctx: ActiveOrgContext | null = viaSession
+    ? await getActiveOrgContext()
+    : await getActiveOrgContextFor(userId, isSuperAdmin)
   const role = ctx?.role ?? null
 
   let trainerId: string | null = null

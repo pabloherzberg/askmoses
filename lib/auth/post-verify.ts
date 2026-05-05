@@ -19,7 +19,11 @@ export async function markInviteAccepted(userId: string): Promise<void> {
   // /api/auth/magic-link (gate de quem pode receber link) e por
   // dbGetTrainers (filtro 'accepted' nas listas operacionais). Manter os
   // dois sincronizados até a migration que dropar users.invite_status.
-  await Promise.all([
+  //
+  // Logamos errors em vez de throw: se um update falhar (RLS drift, schema
+  // change), o user já está autenticado e o redirect tem que acontecer —
+  // mas precisamos enxergar o estado quebrado nos logs pra agir.
+  const [memRes, userRes] = await Promise.all([
     admin
       .from('memberships')
       .update({ invite_status: 'accepted' })
@@ -31,6 +35,19 @@ export async function markInviteAccepted(userId: string): Promise<void> {
       .eq('id', userId)
       .eq('invite_status', 'pending'),
   ])
+
+  if (memRes.error) {
+    console.error('[post-verify] markInviteAccepted: memberships update falhou', {
+      userId,
+      error: memRes.error,
+    })
+  }
+  if (userRes.error) {
+    console.error('[post-verify] markInviteAccepted: users update falhou', {
+      userId,
+      error: userRes.error,
+    })
+  }
 }
 
 export function resolveDestination(role: Role | undefined, nextRaw: string | null): string {

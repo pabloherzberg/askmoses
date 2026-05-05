@@ -41,13 +41,8 @@ export async function getSession() {
 // rpc('get_user_org_context') resolve users → memberships → organizations →
 // clients → plans num único round trip. Para super-admin o JWT já basta;
 // não chamamos a rpc (admin geralmente tem active_org_id NULL).
-export const getActiveOrgContext = cache(async (): Promise<ActiveOrgContext | null> => {
-  const session = await getSession()
-  if (!session) return null
 
-  const userId = session.user.id
-  const isSuperAdmin = session.user.app_metadata?.role === 'admin'
-
+async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<ActiveOrgContext> {
   if (isSuperAdmin) {
     return {
       userId,
@@ -87,7 +82,24 @@ export const getActiveOrgContext = cache(async (): Promise<ActiveOrgContext | nu
     maxSalesPeople: ctx.maxSalesPeople,
     maxCallsPerMonth: ctx.maxCallsPerMonth,
   }
+}
+
+export const getActiveOrgContext = cache(async (): Promise<ActiveOrgContext | null> => {
+  const session = await getSession()
+  if (!session) return null
+  return loadOrgContext(session.user.id, session.user.app_metadata?.role === 'admin')
 })
+
+// Variante sem cookie/session — pra fluxos que já resolveram userId via Bearer
+// token (ex.: /api/me no fallback do login antes do cookie propagar). NÃO é
+// memoizada porque não tem chave estável de request; calls repetidas =
+// queries repetidas. Use só onde getActiveOrgContext() não funciona.
+export async function getActiveOrgContextFor(
+  userId: string,
+  isSuperAdmin: boolean
+): Promise<ActiveOrgContext> {
+  return loadOrgContext(userId, isSuperAdmin)
+}
 
 export async function getMembershipsForSwitcher(): Promise<MembershipOption[]> {
   const session = await getSession()

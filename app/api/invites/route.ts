@@ -497,12 +497,15 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
 
+  // memberships tem 2 FKs pra users (user_id e invited_by) — sem o hint
+  // !user_id, supabase-js não consegue desambiguar e a query retorna vazia
+  // silenciosamente. Forçamos a relação explícita pelo nome da FK column.
   let query = admin
     .from('memberships')
     .select(
       `
       user_id, org_id, role, invite_status, invited_by, invited_at, created_at,
-      users (id, name, email, avatar, avatar_color),
+      users!user_id (id, name, email, avatar, avatar_color),
       organizations (id, name)
     `,
       { count: 'exact' }
@@ -539,9 +542,12 @@ export async function GET(request: NextRequest) {
   const inviterById = new Map((invitersRes.data ?? []).map((u) => [u.id, u]))
 
   const items = rows.map((r) => ({
-    // Em multi-org, o mesmo user_id aparece em N memberships. id virou compound
-    // (user_id:org_id) — match com PK de memberships e estável como React key.
-    id: `${r.user_id}:${r.org_id}`,
+    // `id` segue sendo o UUID do user — DELETE /api/invites/[id] espera UUID.
+    // Em multi-org o mesmo user_id pode repetir; frontend deve usar
+    // `membershipId` como React key (composto user_id:org_id, único por row)
+    // e mandar `orgId` como querystring no DELETE quando o caller é admin.
+    id: r.user_id,
+    membershipId: `${r.user_id}:${r.org_id}`,
     userId: r.user_id,
     orgId: r.org_id,
     name: r.users?.name ?? null,
