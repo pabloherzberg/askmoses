@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  Brain, Wand2, Settings, HelpCircle, Home, GraduationCap, UserPlus
+  HelpCircle, Home, GraduationCap, UserPlus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -69,17 +69,13 @@ export function TrainerNavItems() {
 export function OwnerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const mainNav = [
-    { label: t('dashboard'),          href: '/dashboard',           icon: Home },
-    { label: t('teamCommandCenter'),  href: '/team-command-center', icon: GraduationCap },
-    { label: t('calls'),              href: '/calls',               icon: Phone },
-    { label: t('scriptIntelligence'), href: '/dashboard/insights', icon: Brain },
+    { label: t('dashboard'),         href: '/dashboard',           icon: Home },
+    { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
+    { label: t('calls'),             href: '/calls',               icon: Phone },
   ]
   const toolsNav = [
-    { label: t('uploadCall'),    href: '/dashboard/upload',         icon: Upload },
-    { label: t('scriptBuilder'), href: '/dashboard/script-builder', icon: Wand2 },
-    { label: t('rubric'),        href: '/dashboard/settings',       icon: Settings },
-    { label: t('members'),       href: '/dashboard/settings/invite', icon: UserPlus },
-    { label: t('howToUse'),      href: '/dashboard/guide',          icon: HelpCircle },
+    { label: t('members'),  href: '/dashboard/settings/invite', icon: UserPlus },
+    { label: t('howToUse'), href: '/dashboard/guide',           icon: HelpCircle },
   ]
   return (
     <nav className="flex flex-col gap-1">

@@ -365,6 +365,7 @@
       "avgCloseRate": "Taux de closing moyen",
       "ptsSinceWeek1": "pts depuis la semaine 1",
       "avgScore": "Score moyen",
+      "teamAvgCallScore": "Score moyen par appel",
       "totalCalls": "Total d'appels",
       "activeSalesPeopleOne": "{count} commercial actif",
       "activeSalesPeopleOther": "{count} commerciaux actifs",

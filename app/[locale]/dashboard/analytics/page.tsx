@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
         const s = trainerStats.get(call.trainerName)!;
         s.total += call.score;
         s.count += 1;
-        if (call.score >= 95) s.perfect += 1;
+        if (call.score >= 4.75) s.perfect += 1;
       });
 
       const achievementsList: Achievement[] = [];
