@@ -1,6 +1,7 @@
 export interface CoachingEmailSection {
   name: string
   score: number // 0–5
+  critical?: boolean
   justification?: string
   feedback?: string
 }
@@ -81,18 +82,18 @@ function progressBar(display: number): string {
   return `<table border="0" cellpadding="0" cellspacing="0" role="presentation"><tr>${filledCells}${emptyCells}</tr></table>`
 }
 
-function badge(display: number): string {
+function badge(display: number, critical?: boolean): string {
   if (display >= 9) return ' 🏆'
-  if (display <= 4) return ' ⚠️'
+  if (critical && display <= 8) return ' ⚠️'
   return ''
 }
 
 function sectionRow(section: CoachingEmailSection): string {
   const display = toDisplay(section.score)
-  const isCritical = display <= 4
+  const isCritical = !!section.critical && display <= 8
   const borderColor = isCritical ? '#D94444' : '#E2E6EF'
   const color = scoreColor(display)
-  const bdg = badge(display)
+  const bdg = badge(display, section.critical)
 
   return `
     <tr>
