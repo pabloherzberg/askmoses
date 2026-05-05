@@ -51,8 +51,8 @@
     "subtitle": "Invitez de nouveaux membres dans votre organisation. L'invité reçoit un lien magique par e-mail.",
     "card": {
       "title": "Ajouter un Membre",
-      "descriptionOwner": "Vous pouvez inviter des trainers dans votre organisation.",
-      "descriptionAdmin": "En tant qu'admin, vous pouvez inviter des owners et trainers dans n'importe quelle organisation."
+      "descriptionOwner": "Vous pouvez inviter des commerciaux dans votre organisation.",
+      "descriptionAdmin": "En tant qu'admin, vous pouvez inviter des owners et commerciaux dans n'importe quelle organisation."
     },
     "form": {
       "nameLabel": "Nom",
@@ -60,7 +60,7 @@
       "emailLabel": "E-mail",
       "emailPlaceholder": "email@entreprise.com",
       "roleLabel": "Rôle",
-      "roleTrainer": "Trainer",
+      "roleTrainer": "Commercial",
       "roleOwner": "Owner",
       "orgLabel": "Organisation",
       "orgPlaceholder": "Sélectionnez l'organisation",
@@ -102,7 +102,7 @@
       "revokeError": "Impossible de révoquer l'invitation",
       "fillFields": "Remplissez le nom et l'e-mail",
       "orgRequired": "Indiquez l'ID de l'organisation",
-      "ownerRequired": "Indiquez l'ID de l'owner pour le trainer"
+      "ownerRequired": "Indiquez l'ID de l'owner pour le commercial"
     }
   },
   "Shared": {

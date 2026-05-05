@@ -51,8 +51,8 @@
     "subtitle": "Invita nuevos miembros a tu organización. El invitado recibe un enlace mágico por correo.",
     "card": {
       "title": "Agregar Miembro",
-      "descriptionOwner": "Puedes invitar trainers a tu organización.",
-      "descriptionAdmin": "Como admin, puedes invitar owners y trainers a cualquier organización."
+      "descriptionOwner": "Puedes invitar vendedores a tu organización.",
+      "descriptionAdmin": "Como admin, puedes invitar owners y vendedores a cualquier organización."
     },
     "form": {
       "nameLabel": "Nombre",
@@ -60,7 +60,7 @@
       "emailLabel": "Correo",
       "emailPlaceholder": "correo@empresa.com",
       "roleLabel": "Rol",
-      "roleTrainer": "Trainer",
+      "roleTrainer": "Vendedor",
       "roleOwner": "Owner",
       "orgLabel": "Organización",
       "orgPlaceholder": "Selecciona la organización",
@@ -102,7 +102,7 @@
       "revokeError": "No se pudo revocar la invitación",
       "fillFields": "Completa nombre y correo",
       "orgRequired": "Indica el ID de la organización",
-      "ownerRequired": "Indica el ID del owner para el trainer"
+      "ownerRequired": "Indica el ID del owner para el vendedor"
     }
   },
   "Shared": {

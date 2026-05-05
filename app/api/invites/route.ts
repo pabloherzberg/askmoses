@@ -52,7 +52,10 @@ function deriveAvatar(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-const AVATAR_COLORS = ['blue', 'purple', 'green', 'red', 'amber'] as const
+// Enum `avatar_color` no banco aceita apenas blue/purple/green/red.
+// 'amber' existe no tipo TS mas não no enum do Supabase — manter fora daqui
+// até haver migration que adicione o valor (seed também usa só estes 4).
+const AVATAR_COLORS = ['blue', 'purple', 'green', 'red'] as const
 
 function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
   let hash = 0
