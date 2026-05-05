@@ -65,7 +65,7 @@ export function CallCard({ call, variant = 'best' }: Props) {
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-[12px] font-mono font-semibold" style={{ color: p.scoreFg }}>
-            {call.score}/100
+            {call.score.toFixed(1)}/5
           </span>
           <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>·</span>
           <span className="text-[11px] font-semibold" style={{ color: p.resultFg }}>

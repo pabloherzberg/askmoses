@@ -21,22 +21,22 @@ interface AnalysisSummary {
 export const outcomeProfiles: Record<string, AnalysisProfile> = {
   closed: {
     scores: [5, 4, 5, 4, 5],
-    overall: 92,
+    overall: 4.6,
     detected: 'closed',
   },
   follow_up: {
     scores: [4, 4, 4, 3, 3],
-    overall: 72,
+    overall: 3.6,
     detected: 'partial',
   },
   objection_unresolved: {
     scores: [4, 3, 3, 2, 2],
-    overall: 56,
+    overall: 2.8,
     detected: 'not_closed',
   },
   no_decision: {
     scores: [3, 2, 3, 2, 1],
-    overall: 44,
+    overall: 2.2,
     detected: 'not_closed',
   },
 }
@@ -187,14 +187,14 @@ export const mockGeneratedScript = {
 
 export function buildMockAnalysis(): AnalyzeResult {
   const criteriaScores = [
-    { criterionId: 'discovery', criterionName: 'Discovery', score: 82, justification: 'Good open-ended questions, identified the main pain point.' },
-    { criterionId: 'problem-agitation', criterionName: 'Problem Agitation', score: 71, justification: 'Mentioned impacts but did not go deep enough.' },
-    { criterionId: 'offer-presentation', criterionName: 'Offer Presentation', score: 79, justification: 'Clear presentation but loosely connected to the identified pain.' },
-    { criterionId: 'objection-handling', criterionName: 'Objection Handling', score: 75, justification: 'Handled the price objection but conceded too quickly.' },
-    { criterionId: 'close', criterionName: 'Close & Next Steps', score: 80, justification: 'Next steps defined with a date, but without urgency.' },
+    { criterionId: 'discovery', criterionName: 'Discovery', score: 4.1, justification: 'Good open-ended questions, identified the main pain point.' },
+    { criterionId: 'problem-agitation', criterionName: 'Problem Agitation', score: 3.6, justification: 'Mentioned impacts but did not go deep enough.' },
+    { criterionId: 'offer-presentation', criterionName: 'Offer Presentation', score: 4.0, justification: 'Clear presentation but loosely connected to the identified pain.' },
+    { criterionId: 'objection-handling', criterionName: 'Objection Handling', score: 3.8, justification: 'Handled the price objection but conceded too quickly.' },
+    { criterionId: 'close', criterionName: 'Close & Next Steps', score: 4.0, justification: 'Next steps defined with a date, but without urgency.' },
   ]
   return {
-    overallScore: 78,
+    overallScore: 3.9,
     detectedOutcome: 'follow-up',
     summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The trainer showed solid product knowledge but needs to deepen problem agitation.',
     strengths: [

@@ -138,7 +138,7 @@ function bulletList(items: string[], limit = 3): string {
 export function buildCoachingEmail(data: CoachingEmailData): { subject: string; html: string } {
   const lang = t(data.locale ?? 'en')
   const clientLabel = data.clientName ? ` ${data.clientName}` : ''
-  const subject = `${lang.subject} — ${lang.subtitle}${clientLabel} | ${data.overallScore}/100`
+  const subject = `${lang.subject} — ${lang.subtitle}${clientLabel} | ${data.overallScore.toFixed(1)}/5`
 
   const worstSection = [...data.sections].sort((a, b) => a.score - b.score)[0]
   const criticalNote = worstSection && toDisplay(worstSection.score) <= 4
@@ -176,8 +176,8 @@ export function buildCoachingEmail(data: CoachingEmailData): { subject: string; 
                     <table border="0" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="background-color:rgba(255,255,255,0.15);border-radius:8px;padding:8px 16px;">
-                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:22px;font-weight:700;color:#FFFFFF;">${data.overallScore}</span>
-                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:14px;color:#C4B8FF;">/100</span>
+                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:22px;font-weight:700;color:#FFFFFF;">${data.overallScore.toFixed(1)}</span>
+                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:14px;color:#C4B8FF;">/5</span>
                         </td>
                       </tr>
                     </table>

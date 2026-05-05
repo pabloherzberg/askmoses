@@ -220,7 +220,7 @@ export async function generateInsights(scriptId?: string) {
     .slice(0, 20)
     .map(
       (c, i) =>
-        `Call ${i + 1} [${c.result}] — Trainer: ${c.trainerName}, Score: ${c.score}/100\nTranscript excerpt: ${c.transcript?.slice(0, 500) ?? ""}`,
+        `Call ${i + 1} [${c.result}] — Trainer: ${c.trainerName}, Score: ${c.score.toFixed(1)}/5\nTranscript excerpt: ${c.transcript?.slice(0, 500) ?? ""}`,
     )
     .join("\n\n---\n\n");
 
