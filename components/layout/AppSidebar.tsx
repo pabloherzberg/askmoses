@@ -4,8 +4,8 @@ import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, Phone,
-  Brain, HelpCircle, Home, GraduationCap, UserPlus
+  LayoutDashboard, Phone, Upload,
+  HelpCircle, Home, GraduationCap, UserPlus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -69,10 +69,9 @@ export function TrainerNavItems() {
 export function OwnerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const mainNav = [
-    { label: t('dashboard'),          href: '/dashboard',           icon: Home },
-    { label: t('teamCommandCenter'),  href: '/team-command-center', icon: GraduationCap },
-    { label: t('calls'),              href: '/calls',               icon: Phone },
-    { label: t('scriptIntelligence'), href: '/dashboard/insights', icon: Brain },
+    { label: t('dashboard'),         href: '/dashboard',           icon: Home },
+    { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
+    { label: t('calls'),             href: '/calls',               icon: Phone },
   ]
   const toolsNav = [
     { label: t('members'),  href: '/dashboard/settings/invite', icon: UserPlus },
