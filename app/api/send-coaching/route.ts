@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     const sections: CoachingEmailSection[] = (body.sections ?? body.criteria ?? []).map(s => ({
       name: s.name ?? (s as unknown as Record<string, unknown>)['criterionName'] as string ?? '',
       score: s.score ?? 0,
+      critical: s.critical,
       justification: s.justification,
       feedback: s.feedback,
     }))

@@ -123,6 +123,7 @@
       "howToUse": "Cómo usar",
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
+      "createOrganization": "Nueva organización",
       "tools": "Herramientas",
       "starterTier": "Plan Starter",
       "starterTierSubtitle": "Subida manual",
@@ -134,7 +135,12 @@
       "signOut": "Cerrar sesión",
       "clientName": "Unleashed Consulting",
       "weekProgress": "Semana 6 / 6",
-      "live": "En vivo"
+      "live": "En vivo",
+      "orgSwitcher": {
+        "label": "Cambiar organización",
+        "owner": "Dueño",
+        "trainer": "Vendedor"
+      }
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -440,6 +446,21 @@
       "healthy": "Saludable",
       "atRisk": "En riesgo",
       "churning": "Crítico"
+    },
+    "createOrg": {
+      "eyebrow": "Aprovisionamiento",
+      "title": "Nueva organización",
+      "subtitle": "Crea un nuevo tenant y asigna su plan.",
+      "nameLabel": "Nombre de la organización",
+      "namePlaceholder": "Acme S.A.",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Crear organización",
+      "submitting": "Creando…",
+      "successDetail": "{name} aprovisionada en el plan {plan}.",
+      "genericError": "No se pudo crear la organización. Inténtalo de nuevo."
     },
     "rubric": {
       "label": "Config. de la rúbrica",

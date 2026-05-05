@@ -11,11 +11,13 @@ import { dbGetScriptById } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
   forbidden,
+  getActiveOrgContext,
   getOrgId,
   getSession,
   getTrainerDbId,
   unauthorized,
 } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   OUTCOME_OVERALL_CAP,
   normaliseOutcome,
@@ -221,6 +223,41 @@ export async function POST(request: NextRequest) {
 
     const orgId = await getOrgId();
     if (!orgId) return forbidden();
+
+    // ── TC-10: Gate de calls/mês ─────────────────────────────────────────
+    // getActiveOrgContext() compartilha cache com getOrgId() — zero queries
+    // adicionais. Se max_calls_per_month for null no plano (Pro+RAG), pula.
+    const ctx = await getActiveOrgContext();
+    if (typeof ctx?.maxCallsPerMonth === "number") {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const admin = createAdminClient();
+      const { count, error: countErr } = await admin
+        .from("calls")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", orgId)
+        .gte("created_at", startOfMonth.toISOString());
+
+      if (countErr) {
+        console.error("[analyze] limit check failed", countErr);
+        return Response.json(
+          { error: "Não foi possível verificar o limite de calls do plano" },
+          { status: 500 },
+        );
+      }
+
+      if ((count ?? 0) >= ctx.maxCallsPerMonth) {
+        return Response.json(
+          {
+            error: `Limite de ${ctx.maxCallsPerMonth} calls/mês atingido para o plano dessa organização. Faça upgrade para continuar analisando.`,
+            code: "PLAN_LIMIT_CALLS",
+          },
+          { status: 403 },
+        );
+      }
+    }
 
     const body = (await request.json()) as AnalyzeRequestBody;
     const { transcript, clientName, trainerName, trainerEmail } = body;

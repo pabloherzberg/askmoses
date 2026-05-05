@@ -123,6 +123,7 @@
       "howToUse": "Mode d'emploi",
       "saasPanel": "Panneau SaaS",
       "rubricConfig": "Config de la grille",
+      "createOrganization": "Nouvelle organisation",
       "tools": "Outils",
       "starterTier": "Palier Starter",
       "starterTierSubtitle": "Upload manuel",
@@ -134,7 +135,12 @@
       "signOut": "Se déconnecter",
       "clientName": "Unleashed Consulting",
       "weekProgress": "Semaine 6 / 6",
-      "live": "En direct"
+      "live": "En direct",
+      "orgSwitcher": {
+        "label": "Changer d'organisation",
+        "owner": "Propriétaire",
+        "trainer": "Commercial"
+      }
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -440,6 +446,21 @@
       "healthy": "Sain",
       "atRisk": "À risque",
       "churning": "Critique"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionnement",
+      "title": "Nouvelle organisation",
+      "subtitle": "Créez un nouveau tenant et assignez son plan.",
+      "nameLabel": "Nom de l'organisation",
+      "namePlaceholder": "Acme SARL",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Créer l'organisation",
+      "submitting": "Création…",
+      "successDetail": "{name} provisionnée sur le plan {plan}.",
+      "genericError": "Impossible de créer l'organisation. Réessayez."
     },
     "rubric": {
       "label": "Config. de la grille",
