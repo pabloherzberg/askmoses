@@ -95,9 +95,8 @@ const PASSWORD = 'demo123'
 // ─── Roster (apenas org 200 e 300 — org 100 já vem do 013) ────────────────────
 
 const ORG_LABEL = {
-  [ORG_DOG_WIZARD_HQ]: { company: 'Dog Wizard HQ',     plan: 'Pro' },
-  [ORG_K9_ELITE]:      { company: 'K9 Elite Training', plan: 'Pro+RAG' },
-  [ORG_PAW_ACADEMY]:   { company: 'Paw Academy',       plan: 'Starter' },
+  [ORG_K9_ELITE]:    { company: 'K9 Elite Training', plan: 'Pro+RAG' },
+  [ORG_PAW_ACADEMY]: { company: 'Paw Academy',       plan: 'Starter' },
 }
 
 const NEW_USERS = [
@@ -114,16 +113,6 @@ const NEW_USERS = [
   { email: 'trainer-pawacademy-2@demo.askmoses.ai', role: 'trainer', orgId: ORG_PAW_ACADEMY, name: 'Sofia G.',   avatar: 'SG', avatarColor: 'purple',  trainerStats: { totalCalls: 24, score: 75, scoreDelta: -1, closeRate: 54, closeDelta: -2, rubric: { discovery: 76, problemAgitation: 70, offerPresentation: 75, objectionHandling: 68, closeAndNextSteps: 72 } } },
   { email: 'trainer-pawacademy-3@demo.askmoses.ai', role: 'trainer', orgId: ORG_PAW_ACADEMY, name: 'Hassan B.',  avatar: 'HB', avatarColor: 'green',  trainerStats: { totalCalls: 19, score: 71, scoreDelta: -3, closeRate: 49, closeDelta: -5, rubric: { discovery: 70, problemAgitation: 65, offerPresentation: 73, objectionHandling: 62, closeAndNextSteps: 68 } } },
   { email: 'trainer-pawacademy-4@demo.askmoses.ai', role: 'trainer', orgId: ORG_PAW_ACADEMY, name: 'Naomi T.',   avatar: 'NT', avatarColor: 'red',    trainerStats: { totalCalls: 16, score: 68, scoreDelta: -4, closeRate: 45, closeDelta: -6, rubric: { discovery: 68, problemAgitation: 60, offerPresentation: 70, objectionHandling: 58, closeAndNextSteps: 64 } } },
-
-  // ─── Multi-org demo users (TC-06/TC-07) ──────────────────────────────────
-  // Mesmo email aparece em N orgs — uma row por membership. Skip Paw
-  // Academy de propósito: starter plan tem 5 seats e queremos preservar
-  // o cap pra demonstrar TC-11 (próximo invite vai pro limite).
-  { email: 'multi@demo.askmoses.ai',     role: 'owner',   orgId: ORG_DOG_WIZARD_HQ, name: 'Mira O.', avatar: 'MO', avatarColor: 'purple', trainerStats: null },
-  { email: 'multi@demo.askmoses.ai',     role: 'owner',   orgId: ORG_K9_ELITE,      name: 'Mira O.', avatar: 'MO', avatarColor: 'purple', trainerStats: null },
-  // dual-role: owner em uma org + trainer em outra. K9 Elite tem cap=15 (Pro), comporta.
-  { email: 'dual-role@demo.askmoses.ai', role: 'owner',   orgId: ORG_DOG_WIZARD_HQ, name: 'Sam Q.',  avatar: 'SQ', avatarColor: 'green',  trainerStats: null },
-  { email: 'dual-role@demo.askmoses.ai', role: 'trainer', orgId: ORG_K9_ELITE,      name: 'Sam Q.',  avatar: 'SQ', avatarColor: 'green',  trainerStats: { totalCalls: 14, score: 73, scoreDelta: 0, closeRate: 50, closeDelta: 0, rubric: { discovery: 75, problemAgitation: 70, offerPresentation: 73, objectionHandling: 65, closeAndNextSteps: 72 } } },
 ]
 
 // Sample call shapes per trainer skill level (for procedural generation)
@@ -215,54 +204,26 @@ async function upsertPublicUser(userId, { name, email, avatar, avatarColor, role
   if (error) throw error
 }
 
-// Schema askmoses-dev: tabela `owners` separada com (id, user_id, org_id,
-// company, plan). trainers.owner_id FKs aqui — não para users.id direto.
-// Após 031, owners.UNIQUE é (user_id, org_id) — multi-org owner OK.
-async function upsertOwnerRecord(userUserId, orgId, company, planLabel) {
+// Schema askmoses-dev: tabela `owners` separada com (id, user_id, company,
+// plan). trainers.owner_id FKs aqui — não para users.id direto. Cria/upserta
+// e devolve owners.id para uso no trainers.owner_id.
+async function upsertOwnerRecord(userUserId, company, planLabel) {
+  // Tenta achar pelo user_id primeiro (ON CONFLICT em user_id)
   const { data: existing } = await supabase
     .from('owners')
     .select('id')
     .eq('user_id', userUserId)
-    .eq('org_id', orgId)
     .maybeSingle()
 
   if (existing) return existing.id
 
   const { data, error } = await supabase
     .from('owners')
-    .insert({ user_id: userUserId, org_id: orgId, company, plan: planLabel })
+    .insert({ user_id: userUserId, company, plan: planLabel })
     .select('id')
     .single()
   if (error) throw error
   return data.id
-}
-
-// Cria/atualiza memberships(user_id, org_id, role). Status='accepted' pra
-// users de seed — eles têm credenciais e podem logar imediatamente.
-async function upsertMembership(userId, orgId, role) {
-  const { error } = await supabase
-    .from('memberships')
-    .upsert(
-      {
-        user_id: userId,
-        org_id: orgId,
-        role,
-        invite_status: 'accepted',
-        invited_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,org_id' }
-    )
-  if (error) throw error
-}
-
-// Define users.active_org_id se ainda não estiver definido (não sobrescreve
-// — o user pode ter trocado manualmente em re-runs do seed).
-async function setActiveOrgIfNotSet(userId, orgId) {
-  await supabase
-    .from('users')
-    .update({ active_org_id: orgId })
-    .eq('id', userId)
-    .is('active_org_id', null)
 }
 
 async function upsertTrainer(userId, orgId, ownerUserId, stats) {
@@ -286,7 +247,7 @@ async function upsertTrainer(userId, orgId, ownerUserId, stats) {
         score_objection_handling:  stats.rubric.objectionHandling,
         score_close_next_steps:    stats.rubric.closeAndNextSteps,
       },
-      { onConflict: 'user_id,org_id' }
+      { onConflict: 'user_id' }
     )
     .select('id')
     .single()
@@ -426,13 +387,10 @@ async function seedInsights(orgId, planLabel) {
 
 async function main() {
   console.log('=== AskMoses.AI — Multi-tenant 3 Clients setup ===\n')
-  console.log('Pré-requisitos: 012, 013, 018, 019, 027, 028, 029, 030, 031 já aplicados no Supabase SQL Editor.\n')
+  console.log('Pré-requisitos: 012, 013, 018, 019 já aplicados no Supabase SQL Editor.\n')
 
-  // Step 1a — Owners primeiro (auth user + public.users + public.owners + memberships)
-  // ownerRecordIdByOrg guarda o PRIMEIRO owner de cada org — esse é o que
-  // os trainers daquela org referenciam via trainers.owner_id. Co-owners
-  // (multi@demo, dual-role@demo) entram em owners + memberships, mas não
-  // viram primary.
+  // Step 1a — Owners primeiro (auth user + public.users + public.owners)
+  // owners.id é o que trainers.owner_id referencia (FK), não users.id
   const ownerRecordIdByOrg = {}
   for (const u of NEW_USERS.filter((x) => x.role === 'owner')) {
     console.log(`→ ${u.email} (owner, ${u.orgId.slice(-3)})`)
@@ -441,17 +399,15 @@ async function main() {
       await upsertProfile(userId, u.role, u.orgId)
       await upsertPublicUser(userId, u)
       const orgMeta = ORG_LABEL[u.orgId]
-      const ownerRecordId = await upsertOwnerRecord(userId, u.orgId, orgMeta.company, orgMeta.plan)
-      await upsertMembership(userId, u.orgId, 'owner')
-      await setActiveOrgIfNotSet(userId, u.orgId)
-      if (!ownerRecordIdByOrg[u.orgId]) ownerRecordIdByOrg[u.orgId] = ownerRecordId
+      const ownerRecordId = await upsertOwnerRecord(userId, orgMeta.company, orgMeta.plan)
+      ownerRecordIdByOrg[u.orgId] = ownerRecordId
       console.log(`  ✓ user ${userId} + owner record ${ownerRecordId}`)
     } catch (err) {
       console.error(`  ✗ ${err.message}`)
     }
   }
 
-  // Step 1b — Trainers, vinculados ao owner record primary do seu org
+  // Step 1b — Trainers, vinculados ao owner record do seu org
   const trainerIdByEmail = {}
   for (const u of NEW_USERS.filter((x) => x.role === 'trainer')) {
     console.log(`→ ${u.email} (trainer, ${u.orgId.slice(-3)})`)
@@ -462,9 +418,7 @@ async function main() {
       const ownerRecordId = ownerRecordIdByOrg[u.orgId]
       if (!ownerRecordId) throw new Error(`No owners.id captured for org ${u.orgId}`)
       const trainerId = await upsertTrainer(userId, u.orgId, ownerRecordId, u.trainerStats)
-      await upsertMembership(userId, u.orgId, 'trainer')
-      await setActiveOrgIfNotSet(userId, u.orgId)
-      if (trainerId) trainerIdByEmail[`${u.email}|${u.orgId}`] = { trainerId, userId, ...u }
+      if (trainerId) trainerIdByEmail[u.email] = { trainerId, userId, ...u }
       console.log(`  ✓ ${userId}${trainerId ? ` (trainer ${trainerId})` : ''}`)
     } catch (err) {
       console.error(`  ✗ ${err.message}`)
@@ -483,25 +437,23 @@ async function main() {
   const rubricPaw   = RUBRIC_BY_ORG[ORG_PAW_ACADEMY].id
   const today = new Date('2026-04-22T10:00:00Z')
 
-  // Level baseado no score do trainer — K9 Elite tem time top + dual-role mid;
-  // Paw tem mid (top 2) + low (resto). Funciona mesmo com novos trainers.
-  const pickLevel = (score) => (score >= 85 ? 'high' : score >= 73 ? 'mid' : 'low')
-
+  // K9 Elite Training (Pro+RAG) — high performers
   const eliteTrainers = NEW_USERS.filter((u) => u.orgId === ORG_K9_ELITE && u.role === 'trainer')
   for (const u of eliteTrainers) {
-    const reg = trainerIdByEmail[`${u.email}|${u.orgId}`]
+    const reg = trainerIdByEmail[u.email]
     if (!reg) continue
-    const level = pickLevel(u.trainerStats.score)
-    const rows = callsForTrainer(ORG_K9_ELITE, reg.trainerId, u.name, u.email, rubricElite, level, today, 5)
+    const rows = callsForTrainer(ORG_K9_ELITE, reg.trainerId, u.name, u.email, rubricElite, 'high', today, 5)
     await insertCalls(rows)
-    console.log(`  ✓ ${u.name}: ${rows.length} calls (${level})`)
+    console.log(`  ✓ ${u.name}: ${rows.length} calls (high)`)
   }
 
+  // Paw Academy (Starter) — mid/low performers
   const pawTrainers = NEW_USERS.filter((u) => u.orgId === ORG_PAW_ACADEMY && u.role === 'trainer')
-  for (const u of pawTrainers) {
-    const reg = trainerIdByEmail[`${u.email}|${u.orgId}`]
+  for (let i = 0; i < pawTrainers.length; i++) {
+    const u = pawTrainers[i]
+    const reg = trainerIdByEmail[u.email]
     if (!reg) continue
-    const level = pickLevel(u.trainerStats.score)
+    const level = i < 2 ? 'mid' : 'low'
     const rows = callsForTrainer(ORG_PAW_ACADEMY, reg.trainerId, u.name, u.email, rubricPaw, level, today, 5)
     await insertCalls(rows)
     console.log(`  ✓ ${u.name}: ${rows.length} calls (${level})`)
@@ -515,12 +467,7 @@ async function main() {
 
   console.log('\n✅ Setup completo.\n')
   console.log('Logins disponíveis:')
-  const seen = new Set()
-  for (const u of NEW_USERS) {
-    if (seen.has(u.email)) continue
-    seen.add(u.email)
-    console.log(`   ${u.email} / ${PASSWORD}`)
-  }
+  for (const u of NEW_USERS) console.log(`   ${u.email} / ${PASSWORD}`)
 }
 
 main().catch((err) => {
