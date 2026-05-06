@@ -57,7 +57,8 @@ function parseCriteria(criteria: unknown): RubricScores {
     const key = CRITERIA_NAME_MAP[rawName];
     if (key) {
       const raw = item.score ?? 0;
-      result[key] = Math.round(raw * 10) / 10;
+      const normalised = raw > 5 ? raw / 20 : raw;
+      result[key] = Math.round(normalised * 10) / 10;
     }
   }
   return result;
@@ -97,7 +98,7 @@ function toCall(db: DbCall): Call {
     trainerName: db.trainer_name,
     date: db.created_at,
     duration: "—",
-    score: db.overall_score ?? 0,
+    score: (() => { const s = db.overall_score ?? 0; return Math.round((s > 5 ? s / 20 : s) * 10) / 10; })(),
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
     rubricScores: parseCriteria(db.criteria),

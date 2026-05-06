@@ -341,11 +341,16 @@ export default async function DashboardPage() {
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>{t("detailedRubricLabel")}</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
       >
+        <p
+          className="text-[11px] font-semibold tracking-widest uppercase mb-4"
+          style={{ color: "var(--am-muted)" }}
+        >
+          {t("detailedRubricLabel")}
+        </p>
         <table className="w-full border-collapse">
           <thead>
             <tr>
