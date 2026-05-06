@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  HelpCircle, Home, GraduationCap, UserPlus, Settings
+  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -72,12 +72,13 @@ export function OwnerNavItems() {
     { label: t('dashboard'), href: '/dashboard', icon: Home },
     { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
     { label: t('calls'), href: '/calls', icon: Phone },
+    { label: 'Script Intelligence', href: '/dashboard/script-builder', icon: BrainCircuit },
   ]
   const toolsNav = [
-    { label: t('uploadCall'),   href: '/dashboard/upload',          icon: Upload   },
-    { label: t('rubricConfig'), href: '/dashboard/settings',        icon: Settings },
-    { label: t('members'),      href: '/dashboard/settings/invite', icon: UserPlus },
-    { label: t('howToUse'),     href: '/dashboard/guide',           icon: HelpCircle },
+    { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
+    { label: t('rubricConfig'), href: '/dashboard/settings', icon: Settings },
+    { label: t('members'), href: '/dashboard/settings/invite', icon: UserPlus },
+    { label: t('howToUse'), href: '/dashboard/guide', icon: HelpCircle },
   ]
   return (
     <nav className="flex flex-col gap-1">
