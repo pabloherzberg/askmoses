@@ -56,8 +56,8 @@ export function TrainerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const trainerNav = [
     { label: t('myDashboard'), href: '/me', icon: LayoutDashboard },
-    { label: t('myCalls'),     href: '/me/calls', icon: Phone },
-    { label: t('uploadCall'),  href: '/dashboard/upload', icon: Upload },
+    { label: t('myCalls'), href: '/me/calls', icon: Phone },
+    { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
   ]
   return (
     <nav className="flex flex-col gap-1">
@@ -69,13 +69,14 @@ export function TrainerNavItems() {
 export function OwnerNavItems() {
   const t = useTranslations('Shared.sidebar')
   const mainNav = [
-    { label: t('dashboard'),         href: '/dashboard',           icon: Home },
+    { label: t('dashboard'), href: '/dashboard', icon: Home },
     { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
-    { label: t('calls'),             href: '/calls',               icon: Phone },
+    { label: t('calls'), href: '/calls', icon: Phone },
   ]
   const toolsNav = [
-    { label: t('members'),  href: '/dashboard/settings/invite', icon: UserPlus },
-    { label: t('howToUse'), href: '/dashboard/guide',           icon: HelpCircle },
+    { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
+    { label: t('members'), href: '/dashboard/settings/invite', icon: UserPlus },
+    { label: t('howToUse'), href: '/dashboard/guide', icon: HelpCircle },
   ]
   return (
     <nav className="flex flex-col gap-1">
