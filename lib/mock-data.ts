@@ -894,6 +894,23 @@ export const trendData: TrendPoint[] = [
 export const estimatedRevenue = 18200
 export const revenueBaseline = 15100
 
+// ─── 6-Week Close Rate Trend ─────────────────────────────────────────────────
+
+export const closeRateTrend: { week: string; closeRate: number }[] = [
+  { week: 'W1', closeRate: 57 },
+  { week: 'W2', closeRate: 56 },
+  { week: 'W3', closeRate: 64 },
+  { week: 'W4', closeRate: 64 },
+  { week: 'W5', closeRate: 72 },
+  { week: 'W6', closeRate: 65 },
+]
+
+export const closeRateTrendSummary = {
+  from: 57,
+  to: 65,
+  delta: 8,
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerScore> = {

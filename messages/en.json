@@ -246,6 +246,12 @@
       },
       "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
     },
+    "closeRateTrend": {
+      "title": "6-Week Close Rate Trend",
+      "summary": "Week 1: {from}% → Week 6: {to}% {delta}pts",
+      "closeRate": "Close rate",
+      "teamPill": "Team"
+    },
     "rubricGapDetection": {
       "title": "Rubric Gap Detection",
       "mockBadge": "mock data only",
