@@ -466,8 +466,7 @@ export default function UploadPage() {
   }
 
   if (step === "results" && analysisResult) {
-    const overallScore =
-      Math.round((analysisResult.overallScore / 20) * 10) / 10;
+    const overallScore = Math.round(analysisResult.overallScore * 10) / 10;
     const overallLabel =
       overallScore >= 4
         ? t("results.badges.strong")

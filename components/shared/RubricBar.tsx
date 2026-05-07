@@ -12,8 +12,7 @@ const colorMap: Record<RubricColor, string> = {
 interface RubricBarProps {
   label: string
   value: number
-  /** Upper bound of `value`. Default 100 (trainer rubric aggregates).
-   *  Pass `max={5}` for per-section scores from Prompt v2. */
+  /** Upper bound of `value`. Default 5. */
   max?: number
   color: RubricColor
   showValue?: boolean
@@ -23,13 +22,13 @@ interface RubricBarProps {
 export function RubricBar({
   label,
   value,
-  max = 100,
+  max = 5,
   color,
   showValue = true,
   className,
 }: RubricBarProps) {
   const widthPct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0
-  const displayValue = max <= 10 ? value.toFixed(1) : Math.round(value).toString()
+  const displayValue = value.toFixed(1)
   return (
     <div className={cn('flex items-center gap-3', className)}>
       <span className="text-xs w-36 flex-shrink-0" style={{ color: 'var(--am-muted)' }}>
