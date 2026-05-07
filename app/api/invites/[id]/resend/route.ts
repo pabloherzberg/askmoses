@@ -91,8 +91,13 @@ export async function POST(
   ])
   if (userErr) return serverError('Não foi possível resolver o convidado', userErr)
   if (orgErr) return serverError('Não foi possível resolver a organização', orgErr)
-  if (!user?.email || !user?.name) return notFound('Convite')
+  if (!user?.email) return notFound('Convite')
   if (!org) return notFound('Organização')
+
+  // users.name pode ser NULL em registros legados (anteriores ao 020). Sem
+  // ele, ainda dá pra reenviar — usamos o local-part do email como saudação.
+  // Inviter pode atualizar o nome depois via convite acompanhado do form.
+  const inviteeName = user.name?.trim() || user.email.split('@')[0]
 
   // ─── Gera token + envia email ───────────────────────────────────────────
   try {
@@ -100,7 +105,7 @@ export async function POST(
       userId: id,
       orgId: scopedOrgId,
       role: pending.role,
-      inviteeName: user.name,
+      inviteeName,
       inviteeEmail: user.email,
       orgName: org.name,
       inviterId: session.user.id,

@@ -98,7 +98,7 @@
     "feedback": {
       "invited": "Invitación enviada. A la espera de aceptación.",
       "revoked": "Invitación revocada.",
-      "resent": "Nuevo enlace enviado. Los enlaces enviados anteriormente a este usuario dejan de funcionar.",
+      "resent": "Nuevo enlace enviado. El enlace anterior de esta invitación deja de funcionar.",
       "inviteError": "No se pudo enviar la invitación",
       "revokeError": "No se pudo revocar la invitación",
       "resendError": "No se pudo reenviar la invitación",

@@ -4,7 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from './invite-template'
 
 // Validade do token. 7 dias = folga pra fim de semana e timezone do convidado.
-// Se mudar, atualiza também a regra equivalente em /api/invites/[id]/resend.
+// O DB não impõe expiração — quem decide é este TTL (gravado em
+// invite_tokens.expires_at) + a checagem `expires_at > now()` dentro da RPC
+// `consume_invite_token` (migration 034). Mudou aqui? Confere se a janela
+// continua coerente com o fluxo de aceite.
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 export type InviteEmailDelivery = 'sent' | 'mocked'
@@ -100,7 +103,12 @@ export async function sendInviteEmail(params: SendInviteParams): Promise<SendInv
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn(`[send-invite] RESEND_API_KEY ausente — modo mock. action_link=${actionLink}`)
+    // NÃO logar o action_link inteiro — contém o token cleartext (?token=…)
+    // que é credencial de uso único. Logamos só o prefixo do hash (já é
+    // SHA-256 e irreversível) pra auditoria/correlação no DB.
+    console.warn(
+      `[send-invite] RESEND_API_KEY ausente — modo mock. user_id=${params.userId} org_id=${params.orgId} token_hash_prefix=${hash.slice(0, 8)}`
+    )
     return { emailDelivery: 'mocked', emailId: null }
   }
 

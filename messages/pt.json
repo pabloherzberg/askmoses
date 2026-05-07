@@ -98,7 +98,7 @@
     "feedback": {
       "invited": "Convite enviado. Aguardando aceitação.",
       "revoked": "Convite revogado.",
-      "resent": "Novo link enviado. Links enviados anteriormente para este usuário deixam de funcionar.",
+      "resent": "Novo link enviado. O link anterior deste convite deixa de funcionar.",
       "inviteError": "Não foi possível enviar o convite",
       "revokeError": "Não foi possível revogar o convite",
       "resendError": "Não foi possível reenviar o convite",

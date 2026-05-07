@@ -100,7 +100,18 @@ export async function GET(request: NextRequest) {
   // Reusamos verify-otp (que faz verifyOtp + seta cookies). É a única forma
   // de bootstrap de sessão server-side com supabase-js sem o user já estar
   // autenticado.
-  const role = await getRoleForUser(admin, userId)
+  //
+  // Role pra resolveDestination tem que vir de memberships.role do par
+  // (userId, orgId) consumido — não de users.role (legado, single-org).
+  // Em multi-org o user pode ser trainer numa org e owner em outra; o
+  // home path certo depende de qual convite acabou de ser aceito.
+  const { data: membership } = await admin
+    .from('memberships')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('org_id', orgId)
+    .maybeSingle()
+  const role = (membership?.role as Role | undefined) ?? undefined
   const homePath = resolveDestination(role, nextRaw)
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
@@ -119,20 +130,4 @@ export async function GET(request: NextRequest) {
   return NextResponse.redirect(
     `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHashSupabase)}&type=magiclink&next=${encodeURIComponent(homePath)}`
   )
-}
-
-// app_metadata.role no auth user é setado no POST /api/invites — leitura
-// direta de auth.users seria possível, mas adicionar a chamada já basta:
-// passamos pelo admin client que tem acesso. Mantemos simples lendo da
-// users + memberships (fonte canônica pós-027).
-async function getRoleForUser(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string
-): Promise<Role | undefined> {
-  const { data } = await admin
-    .from('users')
-    .select('role')
-    .eq('id', userId)
-    .maybeSingle()
-  return (data?.role as Role | undefined) ?? undefined
 }
