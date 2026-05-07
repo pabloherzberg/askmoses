@@ -246,6 +246,12 @@
       },
       "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — pas de calcul réel côté frontend"
     },
+    "closeRateTrend": {
+      "title": "Tendance du taux de closing — 6 semaines",
+      "summary": "Semaine 1: {from}% → Semaine 6: {to}% {delta}pts",
+      "closeRate": "Taux de closing",
+      "teamPill": "Équipe"
+    },
     "rubricGapDetection": {
       "title": "Détection des lacunes de la grille",
       "mockBadge": "données mock uniquement",
