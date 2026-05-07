@@ -98,12 +98,15 @@
     "feedback": {
       "invited": "Invitation sent. Awaiting acceptance.",
       "revoked": "Invitation revoked.",
+      "resent": "New link sent. Previously sent links to this user no longer work.",
       "inviteError": "Could not send the invitation",
       "revokeError": "Could not revoke the invitation",
+      "resendError": "Could not resend the invitation",
       "fillFields": "Fill in name and email",
       "orgRequired": "Provide the organization ID",
       "ownerRequired": "Provide the owner ID for the sales person"
-    }
+    },
+    "resendButton": "Resend invitation"
   },
   "Shared": {
     "sidebar": {

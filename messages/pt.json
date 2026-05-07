@@ -98,12 +98,15 @@
     "feedback": {
       "invited": "Convite enviado. Aguardando aceitação.",
       "revoked": "Convite revogado.",
+      "resent": "Novo link enviado. Links enviados anteriormente para este usuário deixam de funcionar.",
       "inviteError": "Não foi possível enviar o convite",
       "revokeError": "Não foi possível revogar o convite",
+      "resendError": "Não foi possível reenviar o convite",
       "fillFields": "Preencha nome e e-mail",
       "orgRequired": "Informe o ID da organização",
       "ownerRequired": "Informe o ID do owner para o vendedor"
-    }
+    },
+    "resendButton": "Reenviar convite"
   },
   "Shared": {
     "sidebar": {

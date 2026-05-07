@@ -98,12 +98,15 @@
     "feedback": {
       "invited": "Invitación enviada. A la espera de aceptación.",
       "revoked": "Invitación revocada.",
+      "resent": "Nuevo enlace enviado. Los enlaces enviados anteriormente a este usuario dejan de funcionar.",
       "inviteError": "No se pudo enviar la invitación",
       "revokeError": "No se pudo revocar la invitación",
+      "resendError": "No se pudo reenviar la invitación",
       "fillFields": "Completa nombre y correo",
       "orgRequired": "Indica el ID de la organización",
       "ownerRequired": "Indica el ID del owner para el vendedor"
-    }
+    },
+    "resendButton": "Reenviar invitación"
   },
   "Shared": {
     "sidebar": {
