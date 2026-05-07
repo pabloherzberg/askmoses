@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ChevronLeft, ChevronRight, Loader2, Send, Trash2, UserPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Send, MailPlus, Trash2, UserPlus } from 'lucide-react'
 import type { Role } from '@/lib/types'
 
 interface OrgRef {
@@ -103,6 +103,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<InviteUser | null>(null)
+  const [resendingKey, setResendingKey] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
 
@@ -240,6 +241,37 @@ export function InvitePageClient({ role: callerRole }: Props) {
       void fetchActive(activePage)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleResend = async (u: InviteUser) => {
+    // Admin precisa mandar orgId no querystring pra desambiguar multi-org
+    // (mesma regra do DELETE). Owner sempre age na própria active_org —
+    // o endpoint ignora orgId nesse caso, mas mandamos por consistência.
+    const orgId = u.org?.id
+    if (isAdmin && !orgId) return
+
+    const key = `${u.id}:${orgId ?? ''}`
+    setResendingKey(key)
+    setFeedback(null)
+    try {
+      const qs = isAdmin && orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+      const res = await fetch(`/api/invites/${u.id}/resend${qs}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale }),
+      })
+      const json = (await res.json()) as { data: unknown; error: { message: string } | null }
+
+      if (!res.ok || json.error) {
+        setFeedback({ kind: 'error', message: t('feedback.resendError') })
+        return
+      }
+
+      setFeedback({ kind: 'success', message: t('feedback.resent') })
+      void fetchPending()
+    } finally {
+      setResendingKey(null)
     }
   }
 
@@ -482,18 +514,34 @@ export function InvitePageClient({ role: callerRole }: Props) {
                       </p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setRevokeTarget(u)}
-                    disabled={revokingId === u.id}
-                  >
-                    {revokingId === u.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleResend(u)}
+                      disabled={resendingKey === `${u.id}:${u.org?.id ?? ''}` || revokingId === u.id}
+                      title={t('resendButton')}
+                      aria-label={t('resendButton')}
+                    >
+                      {resendingKey === `${u.id}:${u.org?.id ?? ''}` ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MailPlus className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRevokeTarget(u)}
+                      disabled={revokingId === u.id || resendingKey === `${u.id}:${u.org?.id ?? ''}`}
+                    >
+                      {revokingId === u.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
