@@ -24,7 +24,6 @@ import {
 } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
-import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
 
 export default async function DashboardPage() {
@@ -122,13 +121,6 @@ export default async function DashboardPage() {
           deltaLabel={tMetrics("vsBaselineCurrency")}
         />
       </div>
-
-      {/* ── Conversion Rate Trend — destaque máximo ───────────── */}
-      <PerformanceTrend
-        trends={performanceTrends}
-        salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
-        chartHeight={280}
-      />
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
