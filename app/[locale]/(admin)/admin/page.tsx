@@ -138,14 +138,14 @@ export default async function AdminPage() {
                         className="text-sm font-semibold font-mono"
                         style={{
                           color:
-                            client.avgScore >= 85
+                            client.avgScore >= 4.25
                               ? 'var(--am-green)'
-                              : client.avgScore >= 75
+                              : client.avgScore >= 3.75
                               ? 'var(--am-amber)'
                               : 'var(--am-red)',
                         }}
                       >
-                        {client.avgScore}
+                        {client.avgScore.toFixed(1)}
                       </span>
                     </td>
 

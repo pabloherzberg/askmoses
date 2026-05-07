@@ -5,15 +5,18 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Phone } from 'lucide-react'
 import { ScorePill } from '@/components/shared/ScorePill'
+import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
 interface CallsTableProps {
   calls: Call[]
   showTrainerColumn?: boolean
+  sectionLabel: string
+  title: string
 }
 
-export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps) {
+export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, title }: CallsTableProps) {
   const router = useRouter()
   const locale = useLocale()
   const t = useTranslations('Owner.calls')
@@ -52,6 +55,16 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
 
   return (
     <div>
+      <div className="mb-6">
+        <SectionLabel>{sectionLabel}</SectionLabel>
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
+          {title}
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--am-muted)' }}>
+          {countLabel}
+        </p>
+      </div>
+
       <div className="flex flex-wrap gap-3 mb-5">
         <select className={selectClass} style={selectStyle} value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
           <option value="all">{tOutcomes('all')}</option>
@@ -65,9 +78,6 @@ export function CallsTable({ calls, showTrainerColumn = true }: CallsTableProps)
             {trainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
           </select>
         )}
-        <span className="ml-auto text-xs self-center" style={{ color: 'var(--am-muted)' }}>
-          {countLabel}
-        </span>
       </div>
 
       <div className="rounded-2xl border overflow-hidden shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>

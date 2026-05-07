@@ -40,16 +40,6 @@ export function RubricGapDetection({ gaps }: Props) {
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
           {t('title')}
         </p>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-          style={{
-            color: 'var(--am-amber)',
-            borderColor: 'rgba(255,171,46,0.35)',
-            background: 'rgba(255,171,46,0.08)',
-          }}
-        >
-          {t('mockBadge')}
-        </span>
       </div>
 
       {/* Single grid — headers + rows share the same column template */}
@@ -113,10 +103,6 @@ export function RubricGapDetection({ gaps }: Props) {
         ))}
       </div>
 
-      {/* Footer note */}
-      <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        {t('mockFooter')}
-      </p>
     </div>
   )
 }

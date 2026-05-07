@@ -14,8 +14,8 @@ const sourceStyle = {
 } as const
 
 function levelFromScore(score: number): 'High' | 'Med' | 'Low' {
-  if (score >= 85) return 'High'
-  if (score >= 70) return 'Med'
+  if (score >= 4.25) return 'High'
+  if (score >= 3.5) return 'Med'
   return 'Low'
 }
 
@@ -68,17 +68,17 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
                 <div className="relative h-[10px] rounded-full col-span-2 sm:col-span-1" style={{ background: 'var(--am-bg4)' }}>
                   <div
                     className="absolute left-0 top-0 h-full rounded-full"
-                    style={{ width: `${dim.score}%`, background: barColor }}
+                    style={{ width: `${(dim.score / 5) * 100}%`, background: barColor }}
                   />
                   <div
                     className="absolute top-0 h-full w-[2px] rounded-full"
-                    style={{ left: markerPct, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
+                    style={{ left: `${(dim.teamAvg / 5) * 100}%`, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
                   />
                 </div>
 
                 {/* Score */}
                 <span className="text-[12px] font-mono font-semibold" style={{ color: 'var(--am-text)' }}>
-                  {dim.score}
+                  {dim.score.toFixed(1)}
                 </span>
 
                 {/* Delta */}

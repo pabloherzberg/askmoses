@@ -196,11 +196,10 @@ export async function generateInsights(scriptId?: string) {
   const orgId = await getOrgId();
   const calls = orgId ? await getCalls({ limit: 50, orgId }) : [];
 
-  const closedCalls = calls.filter((c) => c.result === "closed");
-  const notClosedCalls = calls.filter(
-    (c) => c.result === "no_decision" || c.result === "objection_unresolved",
-  );
-  const partialCalls = calls.filter((c) => c.result === "follow_up");
+  const closedCalls    = calls.filter((c) => c.result === "closed");
+  const notClosedCalls = calls.filter((c) => c.result === "not_closed");
+  const partialCalls   = calls.filter((c) => c.result === "partial");
+  const noOutcomeCalls = calls.filter((c) => c.result === "no_outcome");
   const closeRate =
     calls.length > 0
       ? Math.round((closedCalls.length / calls.length) * 100)
@@ -211,6 +210,7 @@ export async function generateInsights(scriptId?: string) {
     closed: closedCalls.length,
     notClosed: notClosedCalls.length,
     partial: partialCalls.length,
+    noOutcome: noOutcomeCalls.length,
     closeRate,
   };
 
@@ -220,14 +220,14 @@ export async function generateInsights(scriptId?: string) {
     .slice(0, 20)
     .map(
       (c, i) =>
-        `Call ${i + 1} [${c.result}] — Trainer: ${c.trainerName}, Score: ${c.score}/100\nTranscript excerpt: ${c.transcript?.slice(0, 500) ?? ""}`,
+        `Call ${i + 1} [${c.result}] — Trainer: ${c.trainerName}, Score: ${c.score.toFixed(1)}/5\nTranscript excerpt: ${c.transcript?.slice(0, 500) ?? ""}`,
     )
     .join("\n\n---\n\n");
 
   // ── 3. Call Gemini ────────────────────────────────────────────────────────
   const prompt = `
 You are an expert sales coach analysing a batch of dog training sales calls.
-You have ${calls.length} calls: ${closedCalls.length} closed, ${partialCalls.length} follow-up, ${notClosedCalls.length} not closed.
+You have ${calls.length} calls: ${closedCalls.length} closed, ${partialCalls.length} partial (follow-up pending), ${notClosedCalls.length} not closed, ${noOutcomeCalls.length} with no clear outcome.
 Close rate: ${closeRate}%.
 ${scriptId ? `Script ID being analysed: ${scriptId}` : ""}
 

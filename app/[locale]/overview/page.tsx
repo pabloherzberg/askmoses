@@ -52,7 +52,7 @@ export default async function OverviewPage() {
       : 0;
   const avgScore =
     trainers.length > 0
-      ? Math.round(trainers.reduce((s, t) => s + t.score, 0) / trainers.length)
+      ? Math.round((trainers.reduce((s, t) => s + t.score, 0) / trainers.length) * 10) / 10
       : 0;
   const topTrainer = sorted[0] ?? null;
 
@@ -364,11 +364,16 @@ export default async function OverviewPage() {
       <WorstCallsTeamWeekly />
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
-      <SectionLabel>{t("detailedRubricLabel")}</SectionLabel>
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
       >
+        <p
+          className="text-[11px] font-semibold tracking-widest uppercase mb-4"
+          style={{ color: "var(--am-muted)" }}
+        >
+          {t("detailedRubricLabel")}
+        </p>
         <table className="w-full border-collapse">
           <thead>
             <tr>

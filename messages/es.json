@@ -22,6 +22,14 @@
     "submitting": "Iniciando sesión...",
     "invalidCredentials": "Correo o contraseña incorrectos",
     "profileNotFound": "Perfil de usuario no encontrado. Ejecuta el script de seed en Supabase.",
+    "magicLinkSubmit": "Enviar enlace",
+    "magicLinkSubmitting": "Enviando...",
+    "magicLinkSent": "Si este correo está registrado, te enviaremos un enlace de acceso. Revisa tu bandeja de entrada.",
+    "magicLinkHint": "Te enviaremos un enlace de acceso por correo. No se necesita contraseña.",
+    "emailRequiredForMagic": "Ingresa un correo válido para recibir el enlace",
+    "signInMode": "Forma de iniciar sesión",
+    "modePassword": "Contraseña",
+    "modeMagic": "Enlace mágico",
     "demoAccess": "Acceso demo",
     "demoAccountSubtitle": "Elige el cliente y el usuario",
     "roleSalesPerson": "Vendedor",
@@ -38,6 +46,68 @@
     "es": "Español",
     "fr": "Français"
   },
+  "Invite": {
+    "title": "Invitaciones",
+    "subtitle": "Invita nuevos miembros a tu organización. El invitado recibe un enlace mágico por correo.",
+    "card": {
+      "title": "Agregar Miembro",
+      "descriptionOwner": "Puedes invitar vendedores a tu organización.",
+      "descriptionAdmin": "Como admin, puedes invitar owners y vendedores a cualquier organización."
+    },
+    "form": {
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Nombre completo",
+      "emailLabel": "Correo",
+      "emailPlaceholder": "correo@empresa.com",
+      "roleLabel": "Rol",
+      "roleTrainer": "Vendedor",
+      "roleOwner": "Owner",
+      "orgLabel": "Organización",
+      "orgPlaceholder": "Selecciona la organización",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Selecciona el owner",
+      "ownerSelectOrgFirst": "Selecciona la organización primero",
+      "ownerNoneInOrg": "Esta organización no tiene owners",
+      "submit": "Enviar invitación",
+      "submitting": "Enviando..."
+    },
+    "pendingTitle": "Invitaciones Pendientes",
+    "pendingBadge": "Pendiente",
+    "sentAt": "Enviado el {date}",
+    "invitedByLabel": "Invitado por",
+    "orgLabel": "Org",
+    "filterOrgLabel": "Organización",
+    "filterAllOrgs": "Todas las organizaciones",
+    "activeTitle": "Miembros Activos",
+    "emptyActive": "Aún no hay miembros activos.",
+    "emptyActiveFiltered": "No hay miembros activos en esta organización.",
+    "emptyPendingFiltered": "No hay invitaciones pendientes en esta organización.",
+    "confirmRevoke": "¿Revocar esta invitación? El destinatario ya no podrá usar el enlace.",
+    "revokeDialog": {
+      "title": "¿Revocar invitación?",
+      "description": "El destinatario ya no podrá usar el enlace enviado.",
+      "cancel": "Cancelar",
+      "confirm": "Revocar"
+    },
+    "pagination": {
+      "page": "Página {page} de {total}",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "showing": "{from}–{to} de {total}"
+    },
+    "feedback": {
+      "invited": "Invitación enviada. A la espera de aceptación.",
+      "revoked": "Invitación revocada.",
+      "resent": "Nuevo enlace enviado. El enlace anterior de esta invitación deja de funcionar.",
+      "inviteError": "No se pudo enviar la invitación",
+      "revokeError": "No se pudo revocar la invitación",
+      "resendError": "No se pudo reenviar la invitación",
+      "fillFields": "Completa nombre y correo",
+      "orgRequired": "Indica el ID de la organización",
+      "ownerRequired": "Indica el ID del owner para el vendedor"
+    },
+    "resendButton": "Reenviar invitación"
+  },
   "Shared": {
     "sidebar": {
       "dashboard": "Dashboard",
@@ -52,9 +122,11 @@
       "scriptIntelligence": "Script Intelligence",
       "scriptBuilder": "Constructor de scripts",
       "rubric": "Rúbrica",
+      "members": "Miembros",
       "howToUse": "Cómo usar",
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
+      "createOrganization": "Nueva organización",
       "tools": "Herramientas",
       "starterTier": "Plan Starter",
       "starterTierSubtitle": "Subida manual",
@@ -66,7 +138,12 @@
       "signOut": "Cerrar sesión",
       "clientName": "Unleashed Consulting",
       "weekProgress": "Semana 6 / 6",
-      "live": "En vivo"
+      "live": "En vivo",
+      "orgSwitcher": {
+        "label": "Cambiar organización",
+        "owner": "Dueño",
+        "trainer": "Vendedor"
+      }
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -80,18 +157,18 @@
     },
     "outcomes": {
       "all": "Todos los resultados",
-      "unknown": "Desconocido",
+      "unknown": "Sin resultado",
       "short": {
         "closed": "Cerrada",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objeción",
-        "no_decision": "Sin decisión"
+        "partial": "Parcial",
+        "not_closed": "No cerrada",
+        "no_outcome": "Sin resultado"
       },
       "full": {
         "closed": "Cerrada",
-        "follow_up": "Follow-up",
-        "objection_unresolved": "Objeción no resuelta",
-        "no_decision": "Sin decisión"
+        "partial": "Parcial — follow-up pendiente",
+        "not_closed": "No cerrada",
+        "no_outcome": "Sin resultado"
       }
     },
     "rubric": {
@@ -153,7 +230,7 @@
       },
       "th": {
         "score": "Puntuación",
-        "percent": "%",
+        "percent": "Score",
         "correlation": "Corr.",
         "impact": "Impacto",
         "source": "Fuente"
@@ -238,9 +315,9 @@
     "quickStats": "Estadísticas rápidas",
     "stats": {
       "closed": "Cerradas",
-      "followUp": "Follow-up",
-      "objection": "Objeción",
-      "noDecision": "Sin decisión"
+      "partial": "Parcial",
+      "notClosed": "No cerradas",
+      "noOutcome": "Sin resultado"
     },
     "recentCalls": "Llamadas recientes",
     "noCallsYet": "Aún no hay llamadas.",
@@ -291,6 +368,7 @@
       "avgCloseRate": "Tasa media de cierre",
       "ptsSinceWeek1": "pts desde la semana 1",
       "avgScore": "Puntuación media",
+      "teamAvgCallScore": "Score medio por llamada",
       "totalCalls": "Total de llamadas",
       "activeSalesPeopleOne": "{count} vendedor activo",
       "activeSalesPeopleOther": "{count} vendedores activos",
@@ -371,6 +449,21 @@
       "healthy": "Saludable",
       "atRisk": "En riesgo",
       "churning": "Crítico"
+    },
+    "createOrg": {
+      "eyebrow": "Aprovisionamiento",
+      "title": "Nueva organización",
+      "subtitle": "Crea un nuevo tenant y asigna su plan.",
+      "nameLabel": "Nombre de la organización",
+      "namePlaceholder": "Acme S.A.",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Crear organización",
+      "submitting": "Creando…",
+      "successDetail": "{name} aprovisionada en el plan {plan}.",
+      "genericError": "No se pudo crear la organización. Inténtalo de nuevo."
     },
     "rubric": {
       "label": "Config. de la rúbrica",
@@ -481,6 +574,7 @@
       "closedDeals": "Cerradas",
       "notClosed": "No cerradas",
       "partial": "Parcial",
+      "noOutcome": "Sin resultado",
       "closeRate": "Tasa de cierre",
       "conversionLeaderboard": "Ranking de conversión",
       "conversionSubtitle": "Tasa de cierre por vendedor",
@@ -599,12 +693,11 @@
         "track": {
           "title": "Seguir el rendimiento",
           "description": "Monitorea tendencias e identifica oportunidades de coaching",
-          "location": "Páginas Historial y Analytics",
+          "location": "Página Calls",
           "details": [
-            "Historial: ve todas las llamadas con búsqueda y filtros",
+            "Calls: ve todas las llamadas con búsqueda y filtros",
             "Filtra por nombre, fecha o puntuación",
             "Haz clic en cualquier llamada para ver detalles y transcripción",
-            "Analytics: ve métricas agregadas de rendimiento",
             "Sigue las tasas de aprobación por criterio",
             "Identifica qué secciones necesitan más entrenamiento"
           ],
@@ -617,9 +710,9 @@
         "insights": {
           "title": "Generar insights del equipo",
           "description": "Usa reconocimiento de patrones para optimizar tu script con datos reales",
-          "location": "Página Insights",
+          "location": "Página Script Intelligence",
           "details": [
-            "Navega a Insights en el menú lateral",
+            "Navega a Script Intelligence en el menú lateral",
             "Selecciona un script en el menú desplegable",
             "Haz clic en 'Generar insights' para analizar todas las llamadas de ese script",
             "El sistema agrupa por resultado: Cerrada, No cerrada y Parcial",
@@ -894,31 +987,31 @@
         "subtitle": "Revisa el feedback de coaching de la IA para {name}",
         "startOver": "Empezar de nuevo",
         "overallScore": "Puntuación general",
-        "scoreSuffix": "/100",
-        "scoreScaleHint": "Promedio de puntuaciones por sección (escala 0–5) × 20",
+        "scoreSuffix": "/5",
+        "scoreScaleHint": "Promedio de puntuaciones por sección, escala 0–5",
         "badges": {
           "strong": "Fuerte",
           "adequate": "Adecuado",
           "needsWork": "Necesita mejorar",
           "critical": "Crítico"
         },
-        "outcomeBadge": "Resultado: {label} · Máx {cap}/100",
+        "outcomeBadge": "Resultado: {label} · Máx {cap}/5",
         "outcomes": {
           "closed": {
-            "label": "Cerrado",
+            "label": "Cerrada",
             "note": "Trato cerrado — rango completo de puntuación disponible."
           },
-          "follow_up": {
-            "label": "Follow-up",
-            "note": "Sin cierre — puntuación limitada a 80."
+          "partial": {
+            "label": "Parcial",
+            "note": "Propuesta hecha, follow-up pendiente — puntuación limitada a 80."
           },
-          "objection_unresolved": {
-            "label": "Objeción no resuelta",
-            "note": "La objeción no se superó — puntuación limitada a 60."
+          "not_closed": {
+            "label": "No cerrada",
+            "note": "Llamada completa, no cerró — puntuación limitada a 60."
           },
-          "no_decision": {
-            "label": "Sin decisión",
-            "note": "El prospecto se fue sin decisión — puntuación limitada a 50."
+          "no_outcome": {
+            "label": "Sin resultado",
+            "note": "Llamada incompleta o sin resolución clara — puntuación limitada a 50."
           }
         },
         "sectionBreakdown": "Desglose por sección",
@@ -931,6 +1024,7 @@
           "notAttempted": "No intentada"
         },
         "sectionScore": "{score}/5 — {label}",
+        "criticalSectionAlert": "Sección crítica — requiere atención inmediata",
         "strengths": "Fortalezas",
         "areasForImprovement": "Áreas de mejora",
         "summary": "Resumen",
@@ -963,10 +1057,10 @@
         "callOutcomeLabel": "Resultado de la llamada *",
         "callOutcomeHint": "¿Cómo terminó esta llamada?",
         "outcomes": {
-          "closed": "Cerrado",
-          "follow_up": "Follow-up agendado",
-          "objection_unresolved": "Objeción no resuelta",
-          "no_decision": "Sin decisión"
+          "closed": "Cerrada",
+          "partial": "Parcial — follow-up pendiente",
+          "not_closed": "No cerrada",
+          "no_outcome": "Sin resultado"
         },
         "callContentTitle": "Contenido de la llamada",
         "callContentSubtitle": "Sube audio o video, o pega la transcripción directamente",

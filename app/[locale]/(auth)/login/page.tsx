@@ -26,10 +26,19 @@ export default function LoginPage() {
   const locale = useLocale()
 
   const [activeClientId, setActiveClientId] = useState<string>(DEMO_CLIENTS[0].id)
+  const [mode, setMode] = useState<'password' | 'magic'>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [magicLoading, setMagicLoading] = useState(false)
+  const [magicNotice, setMagicNotice] = useState('')
+
+  const switchMode = (next: 'password' | 'magic') => {
+    setMode(next)
+    setError('')
+    setMagicNotice('')
+  }
 
   const activeClient = DEMO_CLIENTS.find((c) => c.id === activeClientId) ?? DEMO_CLIENTS[0]
 
@@ -70,6 +79,34 @@ export default function LoginPage() {
     setEmail(demoEmail)
     setPassword(demoPassword)
     setError('')
+    setMagicNotice('')
+    setMode('password')
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setMagicNotice('')
+
+    if (!email || !EMAIL_RE.test(email)) {
+      setError(t('emailRequiredForMagic'))
+      return
+    }
+
+    setMagicLoading(true)
+    try {
+      // Resposta é sempre genérica — não distinguimos email cadastrado x não
+      await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, locale }),
+      })
+      setMagicNotice(t('magicLinkSent'))
+    } finally {
+      setMagicLoading(false)
+    }
   }
 
   return (
@@ -94,8 +131,37 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Mode tabs */}
+      <div
+        className="flex gap-1 p-1 rounded-lg mb-4"
+        style={{ background: 'var(--am-bg4)', border: '1px solid var(--am-border)' }}
+        role="tablist"
+        aria-label={t('signInMode')}
+      >
+        {(['password', 'magic'] as const).map((m) => {
+          const isActive = mode === m
+          return (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => switchMode(m)}
+              className="flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+              style={{
+                background: isActive ? 'var(--am-bg2)' : 'transparent',
+                color: isActive ? 'var(--am-text)' : 'var(--am-muted)',
+                border: isActive ? '1px solid var(--am-border)' : '1px solid transparent',
+              }}
+            >
+              {m === 'password' ? t('modePassword') : t('modeMagic')}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Form */}
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={mode === 'password' ? handleLogin : handleMagicLink} className="space-y-4">
         <div>
           <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
             {t('emailLabel')}
@@ -111,32 +177,45 @@ export default function LoginPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
-            {t('passwordLabel')}
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-            style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
-            placeholder={t('passwordPlaceholder')}
-          />
-        </div>
+        {mode === 'password' && (
+          <div>
+            <label className="block text-xs mb-1.5" style={{ color: 'var(--am-muted)' }}>
+              {t('passwordLabel')}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
+              style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
+              placeholder={t('passwordPlaceholder')}
+            />
+          </div>
+        )}
+
+        {mode === 'magic' && (
+          <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
+            {t('magicLinkHint')}
+          </p>
+        )}
 
         {error && (
           <p className="text-xs" style={{ color: 'var(--am-red)' }}>{error}</p>
         )}
+        {magicNotice && (
+          <p className="text-xs" style={{ color: 'var(--am-green)' }}>{magicNotice}</p>
+        )}
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || magicLoading}
           className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-60"
           style={{ background: 'var(--accent)' }}
         >
-          {loading ? t('submitting') : t('submit')}
+          {mode === 'password'
+            ? (loading ? t('submitting') : t('submit'))
+            : (magicLoading ? t('magicLinkSubmitting') : t('magicLinkSubmit'))}
         </button>
       </form>
 

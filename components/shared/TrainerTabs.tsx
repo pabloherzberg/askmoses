@@ -102,7 +102,7 @@ export function TrainerTabs() {
               </p>
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
                 {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
-                {trainer.score >= 85 && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
+                {trainer.score >= 4.25 && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
               </p>
             </div>
           </div>

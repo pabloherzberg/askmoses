@@ -61,12 +61,6 @@ export function CorrelationEngine({ factors }: Props) {
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
           {t('title')}
         </p>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-          style={{ color: 'var(--am-amber)', borderColor: 'rgba(255,171,46,0.35)', background: 'rgba(255,171,46,0.08)' }}
-        >
-          {t('mockBadge')}
-        </span>
       </div>
 
       {/* Legend */}
@@ -98,11 +92,11 @@ export function CorrelationEngine({ factors }: Props) {
 
       {/* Column headers */}
       <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}>
-        {(['score', 'percent', 'correlation', 'impact', 'source'] as const).map((k) => (
-          <span key={k} className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>
-            {t(`th.${k}`)}
-          </span>
-        ))}
+        <span className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>{t('th.score')}</span>
+        <span className="text-[10px] font-medium text-right" style={{ color: 'var(--am-muted)' }}>{t('th.percent')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.correlation')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.impact')}</span>
+        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.source')}</span>
       </div>
 
       {/* Rows */}
@@ -141,7 +135,7 @@ export function CorrelationEngine({ factors }: Props) {
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${f.score}%`,
+                      width: `${(f.score / 5) * 100}%`,
                       background: barColor[f.correlation],
                       transition: 'width 0.4s ease',
                     }}
@@ -149,9 +143,9 @@ export function CorrelationEngine({ factors }: Props) {
                 </div>
               </div>
 
-              {/* Score % */}
+              {/* Score */}
               <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
-                {f.score}%
+                {f.score.toFixed(1)}/5
               </span>
 
               {/* Correlation badge */}
@@ -173,10 +167,6 @@ export function CorrelationEngine({ factors }: Props) {
         ))}
       </div>
 
-      {/* Footer note */}
-      <p className="mt-4 text-[10px]" style={{ color: 'var(--am-red)' }}>
-        {t('mockFooter')}
-      </p>
     </div>
   )
 }

@@ -38,7 +38,7 @@ function SectionBar({ sections }: { sections: ScriptIntelligenceResult["sections
       {sections.map((s) => (
         <div
           key={s.id}
-          title={`${s.name}: ${s.score}/100`}
+          title={`${s.name}: ${s.score.toFixed(1)}/5`}
           style={{ flex: 1, background: colors[s.id] ?? "var(--am-muted)" }}
         />
       ))}
@@ -78,15 +78,15 @@ function StatusBadge({ status, t }: { status: "strong" | "weak" | "missing"; t: 
 }
 
 function scoreColor(score: number) {
-  if (score >= 75) return "var(--am-green)"
-  if (score >= 65) return "var(--am-amber)"
+  if (score >= 4.25) return "var(--am-green)"
+  if (score >= 3.75) return "var(--am-amber)"
   return "var(--am-red)"
 }
 
 function ScorePill({ score }: { score: number }) {
   return (
     <span className="text-sm font-bold font-mono" style={{ color: scoreColor(score) }}>
-      {score}/100
+      {score.toFixed(1)}/5
     </span>
   )
 }
@@ -120,7 +120,12 @@ export default function InsightsPage() {
 
   useEffect(() => {
     async function loadScripts() {
-      const res = await fetch("/api/scripts?active=true")
+      // Script Intelligence é uma tela analítica — owner deve poder auditar
+      // qualquer script da org, inclusive arquivados (`is_active=false`).
+      // Filtrar por active=true zerava o dropdown de orgs cujos scripts foram
+      // criados via Settings (que defaulta is_active=false) sem nunca ativar.
+      // O ordering org-scoped (is_active DESC) mantém o ativo no topo.
+      const res = await fetch("/api/scripts")
       const { data } = (await res.json()) as { data: Script[] | null; error: unknown }
       if (data) setScripts(data)
       setLoading(false)
@@ -249,9 +254,9 @@ export default function InsightsPage() {
                   <p className="text-xs mb-1" style={{ color: "var(--am-muted)" }}>{t("playbook.healthScore")}</p>
                   <p className="font-bold">
                     <span className="text-4xl font-mono" style={{ color: scoreColor(scriptResult.healthScore) }}>
-                      {scriptResult.healthScore}
+                      {scriptResult.healthScore.toFixed(1)}
                     </span>
-                    <span className="text-xl ml-0.5" style={{ color: "var(--am-muted)" }}>/100</span>
+                    <span className="text-xl ml-0.5" style={{ color: "var(--am-muted)" }}>/5</span>
                   </p>
                 </div>
                 <div className="flex-1 space-y-2">
@@ -261,8 +266,8 @@ export default function InsightsPage() {
                   <SectionBar sections={scriptResult.sections} />
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                     {scriptResult.sections.map((s) => (
-                      <span key={s.id} className="text-xs font-mono" style={{ color: s.score < 65 ? "var(--am-red)" : s.score < 75 ? "var(--am-amber)" : "var(--am-muted)" }}>
-                        {s.name}: {s.score}
+                      <span key={s.id} className="text-xs font-mono" style={{ color: s.score < 3.25 ? "var(--am-red)" : s.score < 3.75 ? "var(--am-amber)" : "var(--am-muted)" }}>
+                        {s.name}: {s.score.toFixed(1)}
                       </span>
                     ))}
                   </div>

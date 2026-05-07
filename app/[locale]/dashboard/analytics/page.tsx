@@ -55,6 +55,7 @@ export default function AnalyticsPage() {
     closed: 0,
     notClosed: 0,
     partial: 0,
+    noOutcome: 0,
     closeRate: 0,
   });
   const [trainerConversions, setTrainerConversions] = useState<
@@ -129,7 +130,7 @@ export default function AnalyticsPage() {
         const s = trainerStats.get(call.trainerName)!;
         s.total += call.score;
         s.count += 1;
-        if (call.score >= 95) s.perfect += 1;
+        if (call.score >= 4.75) s.perfect += 1;
       });
 
       const achievementsList: Achievement[] = [];
@@ -210,11 +211,12 @@ export default function AnalyticsPage() {
       setInsights(insightsList);
 
       const closed = sorted.filter((c) => c.result === "closed").length;
-      const notClosed = sorted.filter((c) => c.result === "no_decision" || c.result === "objection_unresolved").length;
-      const partial = sorted.filter((c) => c.result === "follow_up").length;
+      const notClosed = sorted.filter((c) => c.result === "not_closed").length;
+      const partial = sorted.filter((c) => c.result === "partial").length;
+      const noOutcome = sorted.filter((c) => c.result === "no_outcome").length;
       const closeRate =
         sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
-      setOutcomeMetrics({ closed, notClosed, partial, closeRate });
+      setOutcomeMetrics({ closed, notClosed, partial, noOutcome, closeRate });
 
       const trainerMap = new Map<string, { closed: number; total: number }>();
       sorted.forEach((call) => {
@@ -286,13 +288,21 @@ export default function AnalyticsPage() {
       )}
 
       {/* Conversion Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-6">
             <p className="text-3xl font-bold text-green-600 dark:text-green-400">
               {outcomeMetrics.closed}
             </p>
             <p className="text-sm text-muted-foreground">{t('closedDeals')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              {outcomeMetrics.partial}
+            </p>
+            <p className="text-sm text-muted-foreground">{t('partial')}</p>
           </CardContent>
         </Card>
         <Card>
@@ -305,10 +315,10 @@ export default function AnalyticsPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-              {outcomeMetrics.partial}
+            <p className="text-3xl font-bold text-muted-foreground">
+              {outcomeMetrics.noOutcome}
             </p>
-            <p className="text-sm text-muted-foreground">{t('partial')}</p>
+            <p className="text-sm text-muted-foreground">{t('noOutcome')}</p>
           </CardContent>
         </Card>
         <Card

@@ -28,8 +28,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, CheckCircle, XCircle, Eye, Loader2 } from "lucide-react"
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants"
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from "@/lib/constants"
 
 const RUBRIC_KEYS = ['discovery', 'problemAgitation', 'offerPresentation', 'objectionHandling', 'closeAndNextSteps'] as const
 
@@ -43,6 +50,7 @@ export default function HistoryPage() {
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [outcomeFilter, setOutcomeFilter] = useState<string>("all")
   const [selectedCall, setSelectedCall] = useState<Call | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
@@ -66,11 +74,14 @@ export default function HistoryPage() {
     fetchCalls()
   }, [locale])
 
-  const filteredCalls = calls.filter(
-    (call) =>
+  const filteredCalls = calls.filter((call) => {
+    const matchesSearch =
       call.trainerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       call.prospect.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+    const matchesOutcome =
+      outcomeFilter === "all" || call.result === outcomeFilter
+    return matchesSearch && matchesOutcome
+  })
 
   const paginatedCalls = filteredCalls.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -109,11 +120,36 @@ export default function HistoryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder={t('searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              placeholder={t('searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="flex-1"
+            />
+            <Select
+              value={outcomeFilter}
+              onValueChange={(v) => {
+                setOutcomeFilter(v)
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="sm:w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tOutcomes('all')}</SelectItem>
+                {CALL_OUTCOMES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {tOutcomes(`short.${option.value}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
@@ -162,8 +198,8 @@ export default function HistoryPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold tabular-nums">{call.score}</span>
-                            <span className="text-muted-foreground text-sm">/100</span>
+                            <span className="font-semibold tabular-nums">{call.score.toFixed(1)}</span>
+                            <span className="text-muted-foreground text-sm">/5</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -250,8 +286,8 @@ export default function HistoryPage() {
                 {/* Score */}
                 <div className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
                   <div className="text-5xl font-bold">
-                    {selectedCall.score}
-                    <span className="text-2xl font-normal opacity-80">/100</span>
+                    {selectedCall.score.toFixed(1)}
+                    <span className="text-2xl font-normal opacity-80">/5</span>
                   </div>
                   <p className="text-sm opacity-90 mt-1">{t('overallScore')}</p>
                 </div>
@@ -305,13 +341,13 @@ export default function HistoryPage() {
                   <h3 className="font-semibold mb-3">{t('sectionBreakdown')}</h3>
                   <div className="space-y-3">
                     {Object.entries(selectedCall.rubricScores).map(([key, score]) => {
-                      const pct = score
+                      const pct = (score / 5) * 100
                       const color =
-                        score >= 85 ? "bg-green-500" : score >= 75 ? "bg-amber-500" : "bg-red-500"
+                        score >= 4.25 ? "bg-green-500" : score >= 3.75 ? "bg-amber-500" : "bg-red-500"
                       const textColor =
-                        score >= 85
+                        score >= 4.25
                           ? "bg-green-100 border-green-200 text-green-700"
-                          : score >= 75
+                          : score >= 3.75
                             ? "bg-amber-100 border-amber-200 text-amber-700"
                             : "bg-red-100 border-red-200 text-red-700"
                       const label = (RUBRIC_KEYS as readonly string[]).includes(key) ? tRubric(key) : key
@@ -322,7 +358,7 @@ export default function HistoryPage() {
                               {label}
                             </span>
                             <Badge variant="outline" className={`font-semibold ${textColor}`}>
-                              {score}/100
+                              {score.toFixed(1)}/5
                             </Badge>
                           </div>
                           <div className="h-1.5 rounded-full bg-black/10">

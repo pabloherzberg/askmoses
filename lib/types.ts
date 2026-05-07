@@ -1,9 +1,17 @@
 export type Role = 'trainer' | 'owner' | 'admin'
-export type CallResult = 'closed' | 'follow_up' | 'objection_unresolved' | 'no_decision'
+export type CallResult = 'closed' | 'not_closed' | 'partial' | 'no_outcome'
 export type HealthStatus = 'healthy' | 'at-risk' | 'churning'
 export type AvatarColor = 'blue' | 'purple' | 'green' | 'red' | 'amber'
 export type TagColor = 'red' | 'amber' | 'blue' | 'green'
 export type RubricColor = 'blue' | 'amber' | 'green' | 'red' | 'accent2'
+export type InviteStatus = 'pending' | 'accepted'
+export type OtpType = 'invite' | 'magiclink' | 'recovery' | 'email_change'
+
+const OTP_TYPES: ReadonlySet<OtpType> = new Set(['invite', 'magiclink', 'recovery', 'email_change'])
+
+export function isValidOtpType(value: string | null | undefined): value is OtpType {
+  return typeof value === 'string' && OTP_TYPES.has(value as OtpType)
+}
 
 export interface RubricScores {
   discovery: number
@@ -32,6 +40,18 @@ export interface Trainer {
   rubricScores: RubricScores
 }
 
+export interface CallSection {
+  name: string
+  score: number  // 1–5 (Prompt v2)
+  feedback: string
+  critical: boolean
+  /** Section weight (0–100) from rubric_criteria.weight. Sum across the
+   *  rubric should equal 100. Null when running with a script (script
+   *  sections don't carry weight) or against a rubric without the
+   *  weight column applied. */
+  weight?: number | null
+}
+
 export interface Call {
   id: string
   trainerId: string
@@ -42,6 +62,7 @@ export interface Call {
   result: CallResult
   prospect: string
   rubricScores: RubricScores
+  sections?: CallSection[]
   feedback: string
   strengths: string[]
   improvements: string[]

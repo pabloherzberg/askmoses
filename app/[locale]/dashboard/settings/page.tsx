@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const [newScriptForm, setNewScriptForm] = useState({
     name: "",
     description: "",
-    sections: [{ name: "", instructions: "", tips: "" }],
+    sections: [{ name: "", instructions: "", tips: "", weight: 0, critical: false }],
   })
 
   useEffect(() => {
@@ -80,13 +80,21 @@ export default function SettingsPage() {
       fetch("/api/rubric?config=true"),
       fetch("/api/scripts"),
     ])
-    const { data: rubricData } = (await rubricRes.json()) as { data: Rubric | null; error: unknown }
+    // /api/rubric?config=true returns { rubric, criteria } — unwrap before
+    // saving to state so `rubric.id` and friends are reachable downstream.
+    const { data: rubricData } = (await rubricRes.json()) as {
+      data: { rubric: Rubric; criteria: unknown[] } | null
+      error: unknown
+    }
     const { data: scriptsData } = (await scriptsRes.json()) as { data: Script[] | null; error: unknown }
 
-    if (rubricData) {
-      setRubric(rubricData)
-      setSystemPrompt(rubricData.system_prompt || "")
-      setLlmModel(rubricData.llm_model || "openai/gpt-4o-mini")
+    if (rubricData?.rubric) {
+      setRubric(rubricData.rubric)
+      setSystemPrompt(rubricData.rubric.system_prompt || "")
+      // Default precisa bater com lib/openai.ts DEFAULT_MODEL — senão a UI
+      // mostra/salva um modelo (gpt-4o-mini) diferente do que /api/analyze
+      // realmente usa (gpt-4o), introduzindo divergência silenciosa.
+      setLlmModel(rubricData.rubric.llm_model || "openai/gpt-4o")
     }
     if (scriptsData) setScripts(scriptsData)
     setLoading(false)
@@ -137,14 +145,17 @@ export default function SettingsPage() {
           sections: filteredSections,
           full_script: fullScriptText,
           criteria: generatedCriteria,
-          is_active: false,
+          // Lifecycle: scripts são criados ativos. is_active=false é reservado
+          // pro soft delete (ainda a implementar) — não é o estado inicial.
+          // Alinha com o comportamento do script-builder, que também cria ativo.
+          is_active: true,
         }),
       })
       const { data: scriptData } = (await res.json()) as { data: Script | null; error: unknown }
 
       if (scriptData) {
         setScripts([...scripts, { ...scriptData, criteria: generatedCriteria }])
-        setNewScriptForm({ name: "", description: "", sections: [{ name: "", instructions: "", tips: "" }] })
+        setNewScriptForm({ name: "", description: "", sections: [{ name: "", instructions: "", tips: "", weight: 0, critical: false }] })
       }
     } catch (error) {
       console.error("[v0] Error creating script:", error)
@@ -359,8 +370,51 @@ export default function SettingsPage() {
                           setNewScriptForm({ ...newScriptForm, sections: updated })
                         }}
                       />
+                      <div className="flex items-center gap-4 pt-1">
+                        <div className="flex items-center gap-2 flex-1">
+                          <Label className="text-xs whitespace-nowrap">Weight (%)</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={section.weight}
+                            onChange={(e) => {
+                              const updated = [...newScriptForm.sections]
+                              updated[idx].weight = Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
+                              setNewScriptForm({ ...newScriptForm, sections: updated })
+                            }}
+                            className="text-sm w-20"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={section.critical}
+                            onChange={(e) => {
+                              const updated = [...newScriptForm.sections]
+                              updated[idx].critical = e.target.checked
+                              setNewScriptForm({ ...newScriptForm, sections: updated })
+                            }}
+                            className="rounded"
+                          />
+                          <span className="font-medium text-destructive">Critical</span>
+                          <span className="text-muted-foreground">(score ≤ 4 triggers alert)</span>
+                        </label>
+                      </div>
                     </div>
                   ))}
+                  {(() => {
+                    const validSections = newScriptForm.sections.filter((s) => s.name)
+                    const total = validSections.reduce((sum, s) => sum + (s.weight || 0), 0)
+                    if (validSections.length === 0) return null
+                    return total !== 100 ? (
+                      <p className="text-xs text-destructive font-medium">
+                        ⚠ Weights sum to {total}% — must equal 100% before saving.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-green-500 font-medium">✓ Weights sum to 100%</p>
+                    )
+                  })()}
                   <Button
                     variant="outline"
                     onClick={() =>
@@ -368,7 +422,7 @@ export default function SettingsPage() {
                         ...newScriptForm,
                         sections: [
                           ...newScriptForm.sections,
-                          { name: "", instructions: "", tips: "" },
+                          { name: "", instructions: "", tips: "", weight: 0, critical: false },
                         ],
                       })
                     }
@@ -380,10 +434,20 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleCreateScript} disabled={!newScriptForm.name}>
-                  <Zap className="mr-2 h-4 w-4" />
-                  {t('createAndGenerate')}
-                </Button>
+                {(() => {
+                  // Save bloqueado se houver sections nomeadas e a soma dos pesos
+                  // não fechar 100% — espelha o validador do script-builder pra
+                  // o analyze receber pesos coerentes (sum 100, sem null).
+                  const validSections = newScriptForm.sections.filter((s) => s.name)
+                  const weightTotal = validSections.reduce((sum, s) => sum + (s.weight || 0), 0)
+                  const weightInvalid = validSections.length > 0 && weightTotal !== 100
+                  return (
+                    <Button onClick={handleCreateScript} disabled={!newScriptForm.name || weightInvalid}>
+                      <Zap className="mr-2 h-4 w-4" />
+                      {t('createAndGenerate')}
+                    </Button>
+                  )
+                })()}
                 <Button variant="outline" onClick={() => setCreatingScript(false)}>
                   {t('cancel')}
                 </Button>
@@ -398,42 +462,45 @@ export default function SettingsPage() {
             {scripts.map((script) => (
               <Card key={script.id}>
                 <AccordionItem value={script.id} className="border-0">
-                  <AccordionTrigger className="hover:no-underline p-4">
-                    <div className="flex items-center gap-3 text-left flex-1">
-                      <div className="flex-1">
-                        {editingScriptId === script.id ? (
-                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              autoFocus
-                              value={editingScriptName}
-                              onChange={(e) => setEditingScriptName(e.target.value)}
-                              className="font-semibold h-9"
-                            />
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleUpdateScriptName(script.id, editingScriptName)
-                              }}
-                              className="h-9"
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingScriptId(null)
-                                setEditingScriptName("")
-                              }}
-                              className="h-9"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
+                  {editingScriptId === script.id ? (
+                    // While editing the name we replace the AccordionTrigger
+                    // with a plain row. The trigger renders as <button>, and
+                    // nesting Save/Cancel <Button>s inside would cause a
+                    // hydration error (button inside button).
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="flex flex-1 gap-2">
+                        <Input
+                          autoFocus
+                          value={editingScriptName}
+                          onChange={(e) => setEditingScriptName(e.target.value)}
+                          className="font-semibold h-9"
+                        />
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleUpdateScriptName(script.id, editingScriptName)}
+                          className="h-9"
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingScriptId(null)
+                            setEditingScriptName("")
+                          }}
+                          className="h-9"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {script.is_active && <Badge>{t('activeBadge')}</Badge>}
+                    </div>
+                  ) : (
+                    <AccordionTrigger className="hover:no-underline p-4">
+                      <div className="flex items-center gap-3 text-left flex-1">
+                        <div className="flex-1">
                           <div className="space-y-1">
                             <div
                               className="flex items-center gap-2 group cursor-pointer"
@@ -451,11 +518,11 @@ export default function SettingsPage() {
                             </p>
                             <p className="text-sm text-muted-foreground">{script.description}</p>
                           </div>
-                        )}
+                        </div>
+                        {script.is_active && <Badge>{t('activeBadge')}</Badge>}
                       </div>
-                      {script.is_active && <Badge>{t('activeBadge')}</Badge>}
-                    </div>
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                  )}
 
                   <AccordionContent className="pt-0">
                     <div className="space-y-4 p-4 border-t">

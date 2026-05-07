@@ -49,6 +49,8 @@ interface GeneratedScript {
     name: string
     instructions: string
     tips: string
+    weight: number
+    critical: boolean
   }>
   full_script: string
   criteria: Array<{
@@ -84,7 +86,7 @@ export default function ScriptBuilderPage() {
   const [saving, setSaving] = useState(false)
 
   // Confirm step state
-  const [confirmSections, setConfirmSections] = useState<Array<{ name: string; instructions: string; tips: string }>>([])
+  const [confirmSections, setConfirmSections] = useState<Array<{ name: string; instructions: string; tips: string; weight: number; critical: boolean }>>([])
   const [confirmCriteria, setConfirmCriteria] = useState<Array<{ name: string; description: string }>>([])
   const [confirmLlmModel, setConfirmLlmModel] = useState("openai/gpt-4o-mini")
   const [confirmSystemPrompt, setConfirmSystemPrompt] = useState("")
@@ -710,12 +712,53 @@ export default function ScriptBuilderPage() {
                     placeholder={t("confirm.sectionTipsPlaceholder")}
                     className="text-sm"
                   />
+                  <div className="flex items-center gap-4 pt-1">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Label className="text-xs whitespace-nowrap">Weight (%)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={section.weight}
+                        onChange={(e) => {
+                          const updated = [...confirmSections]
+                          updated[idx].weight = Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
+                          setConfirmSections(updated)
+                        }}
+                        className="text-sm w-20"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={section.critical}
+                        onChange={(e) => {
+                          const updated = [...confirmSections]
+                          updated[idx].critical = e.target.checked
+                          setConfirmSections(updated)
+                        }}
+                        className="rounded"
+                      />
+                      <span className="font-medium text-destructive">Critical</span>
+                      <span className="text-muted-foreground">(score ≤ 4 triggers alert)</span>
+                    </label>
+                  </div>
                 </div>
               ))}
+              {(() => {
+                const total = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
+                return total !== 100 && confirmSections.length > 0 ? (
+                  <p className="text-xs text-destructive font-medium">
+                    ⚠ Weights sum to {total}% — must equal 100% before saving.
+                  </p>
+                ) : total === 100 ? (
+                  <p className="text-xs text-green-500 font-medium">✓ Weights sum to 100%</p>
+                ) : null
+              })()}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setConfirmSections([...confirmSections, { name: "", instructions: "", tips: "" }])}
+                onClick={() => setConfirmSections([...confirmSections, { name: "", instructions: "", tips: "", weight: 0, critical: false }])}
               >
                 {t("confirm.addSection")}
               </Button>
@@ -777,6 +820,8 @@ export default function ScriptBuilderPage() {
             <Button
               onClick={async () => {
                 if (!editedName) return
+                const weightTotal = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
+                if (confirmSections.length > 0 && weightTotal !== 100) return
                 setSaving(true)
                 try {
                   const rubricRes = await fetch("/api/rubric?config=true")
@@ -807,7 +852,7 @@ export default function ScriptBuilderPage() {
                 }
                 setSaving(false)
               }}
-              disabled={saving || !editedName}
+              disabled={saving || !editedName || (confirmSections.length > 0 && confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0) !== 100)}
               className="flex-1"
               size="lg"
             >
