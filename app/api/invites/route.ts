@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
+import { sendInviteEmail } from '@/lib/email/send-invite'
 import type { Role } from '@/lib/types'
 
 interface InviteBody {
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
 
   const { data: existingUser, error: existErr } = await admin
     .from('users')
-    .select('id, invite_status')
+    .select('id, name, invite_status')
     .eq('email', email)
     .maybeSingle()
   if (existErr) return serverError('Não foi possível verificar o convite', existErr)
@@ -273,6 +274,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ─── Email do convite (só quando inviteStatus='pending') ──────────────
+    // 'accepted' = user já verificou em convite anterior, foi auto-juntado
+    // à nova org, não há ação a tomar — sem email.
+    // 'pending' = user existe mas nunca verificou. Geramos token isolado
+    // por (user, org) via invite_tokens (migration 034) — clicar aqui
+    // aceita SOMENTE essa membership, sem invalidar links de outras orgs.
+    let emailDelivery: 'sent' | 'mocked' | 'none' = 'none'
+    let emailId: string | null = null
+
+    if (inviteStatus === 'pending') {
+      try {
+        const result = await sendInviteEmail({
+          userId: existingUser.id,
+          orgId: targetOrgId,
+          role: targetRole,
+          // Usamos o name do DB (já validado em convite anterior); o name
+          // do body é o que o inviter digitou — pode divergir.
+          inviteeName: existingUser.name ?? name,
+          inviteeEmail: email,
+          orgName: org.name,
+          inviterId: callerId,
+          origin: request.nextUrl.origin,
+          locale: body.locale,
+        })
+        emailDelivery = result.emailDelivery
+        emailId = result.emailId
+      } catch (err) {
+        // Rollback: trainer/owner row + membership. O user em si fica —
+        // ele já existia antes desta request.
+        if (targetRole === 'trainer') {
+          await admin.from('trainers').delete()
+            .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+        } else {
+          await admin.from('owners').delete()
+            .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+        }
+        await admin.from('memberships').delete()
+          .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+        return serverError('Não foi possível enviar o email do convite', err)
+      }
+    }
+
     return ok({
       id: existingUser.id,
       email,
@@ -280,7 +323,8 @@ export async function POST(request: NextRequest) {
       role: targetRole,
       orgId: targetOrgId,
       inviteStatus,
-      emailDelivery: 'none',
+      emailDelivery,
+      emailId,
       multiOrgAdded: true,
     })
   }
