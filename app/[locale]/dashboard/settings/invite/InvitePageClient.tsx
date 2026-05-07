@@ -38,6 +38,10 @@ interface UserRef {
 
 interface InviteUser {
   id: string
+  // Em multi-org o mesmo user_id aparece em N rows (uma por membership);
+  // membershipId = `${user_id}:${org_id}` é único por row e o que React
+  // deve usar como key. Vem pronto do GET /api/invites.
+  membershipId: string
   name: string
   email: string
   role: Role
@@ -477,7 +481,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
         ) : (
           <div className="space-y-2">
             {pending.map((u) => (
-              <Card key={u.id}>
+              <Card key={u.membershipId}>
                 <CardContent className="flex items-center justify-between gap-4 py-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -574,7 +578,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                 </TableHeader>
                 <TableBody>
                   {active.map((u) => (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.membershipId}>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
