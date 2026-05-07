@@ -909,7 +909,6 @@ export const closeRateTrendSummary = {
   from: 57,
   to: 65,
   delta: 8,
-  label: 'Week 1: 57% → Week 6: 65% +8pts',
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

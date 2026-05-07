@@ -432,14 +432,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Bottom stack: Revenue → CloseRateTrend → RubricGap ── */}
-      <div className="flex flex-col gap-4 mb-4">
-        <RevenueEstimator items={revenueData.items} total={revenueData.total} />
-        <CloseRateTrend
-          data={closeRateTrend}
-          summary={closeRateTrendSummary}
-          trainerTrends={performanceTrends}
-          salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
-        />
+      <RevenueEstimator items={revenueData.items} total={revenueData.total} />
+      <CloseRateTrend
+        data={closeRateTrend}
+        summary={closeRateTrendSummary}
+        trainerTrends={performanceTrends}
+        salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
+      />
+      <div className="mb-4">
         <RubricGapDetection gaps={rubricGaps} />
       </div>
 
