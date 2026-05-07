@@ -9,7 +9,7 @@ import { RubricBar } from "@/components/shared/RubricBar";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
+import { correlationEngine, rubricGaps, activeAlerts, estimatedRevenue, revenueBaseline } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
@@ -92,16 +92,17 @@ export default async function DashboardPage() {
           deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label={tMetrics("monthlyRevenue")}
-          value="$18,200"
-          valueColor="var(--am-green)"
-          delta={12}
-          deltaLabel={tMetrics("vsBaseline")}
-        />
-        <ScoreCard
           label={tMetrics("totalCalls")}
           value={totalCalls}
           deltaLabel={activeSalesPeopleLabel}
+        />
+        <ScoreCard
+          label={tMetrics("monthlyRevenue")}
+          value={`$${estimatedRevenue.toLocaleString("en-US")}`}
+          valueColor="var(--am-green)"
+          delta={estimatedRevenue - revenueBaseline}
+          deltaPrefix="$"
+          deltaLabel={tMetrics("vsBaselineCurrency")}
         />
       </div>
 

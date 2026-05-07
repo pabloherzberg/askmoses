@@ -365,6 +365,7 @@
     "metrics": {
       "monthlyRevenue": "Revenu mensuel estimé",
       "vsBaseline": "% vs base",
+      "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Taux de closing moyen",
       "ptsSinceWeek1": "pts depuis la semaine 1",
       "avgScore": "Score moyen",

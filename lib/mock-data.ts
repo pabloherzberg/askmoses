@@ -889,6 +889,11 @@ export const trendData: TrendPoint[] = [
   { week: 'W6', closeRate: 68, score: 4.3 },
 ]
 
+// ─── Top Metrics — Est. Monthly Revenue ──────────────────────────────────────
+
+export const estimatedRevenue = 18200
+export const revenueBaseline = 15100
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerScore> = {
