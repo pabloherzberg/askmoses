@@ -24,6 +24,10 @@ export interface DbCall {
   cost_usd: number | null
   prompt_version: string | null
   sections: unknown
+  // ML fields — added in migration 036
+  closed: boolean | null
+  call_date: string | null
+  duration_seconds: number | null
 }
 
 export interface CreateCallInput {
