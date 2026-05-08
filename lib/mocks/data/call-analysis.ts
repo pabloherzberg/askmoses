@@ -193,9 +193,16 @@ export function buildMockAnalysis(): AnalyzeResult {
     { criterionId: 'objection-handling', criterionName: 'Objection Handling', score: 3.8, justification: 'Handled the price objection but conceded too quickly.' },
     { criterionId: 'close', criterionName: 'Close & Next Steps', score: 4.0, justification: 'Next steps defined with a date, but without urgency.' },
   ]
+  const sections = [
+    { name: 'Discovery', score: 4.1, feedback: 'Good open-ended questions, identified the main pain point.', critical: true, weight: 20 },
+    { name: 'Problem Agitation', score: 3.6, feedback: 'Mentioned impacts but did not go deep enough.', critical: true, weight: 20 },
+    { name: 'Offer Presentation', score: 4.0, feedback: 'Clear presentation but loosely connected to the identified pain.', critical: false, weight: 20 },
+    { name: 'Objection Handling', score: 3.8, feedback: 'Handled the price objection but conceded too quickly.', critical: false, weight: 20 },
+    { name: 'Close & Next Steps', score: 4.0, feedback: 'Next steps defined with a date, but without urgency.', critical: false, weight: 20 },
+  ]
   return {
     overallScore: 3.9,
-    detectedOutcome: 'follow-up',
+    detectedOutcome: 'partial',
     summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The trainer showed solid product knowledge but needs to deepen problem agitation.',
     strengths: [
       'Discovery correctly identified the real pain of the prospect',
@@ -208,9 +215,9 @@ export function buildMockAnalysis(): AnalyzeResult {
       'Practice direct closing techniques',
     ],
     criteriaScores,
-    criteria: criteriaScores,
-    sections: criteriaScores,
+    sections,
     transcript: '',
+    cost: { modelUsed: 'gpt-4o-mini', inputTokens: 0, outputTokens: 0, costUsd: 0, promptVersion: 'mock' },
   }
 }
 

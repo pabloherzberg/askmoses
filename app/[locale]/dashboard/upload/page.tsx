@@ -65,7 +65,6 @@ interface SectionResult {
 interface AnalysisResult {
   overallScore: number;
   sections: SectionResult[];
-  criteria: SectionResult[]; // backward compat
   detectedOutcome?: CallOutcome;
   summary: string;
   strengths: string[];
@@ -360,12 +359,11 @@ export default function UploadPage() {
       const analysis = await analyzeRes.json();
       console.log("[v0] Analysis complete:", {
         score: analysis.overallScore,
-        criteria: analysis.criteria?.length,
+        sections: analysis.sections?.length,
       });
       setProgress(100);
       setAnalysisResult(analysis);
-      const sections: SectionResult[] =
-        analysis.sections || analysis.criteria || [];
+      const sections: SectionResult[] = analysis.sections ?? [];
       const initialExpanded = new Set(
         sections
           .map((s: SectionResult, i: number) =>
@@ -397,10 +395,7 @@ export default function UploadPage() {
           trainerEmail: formData.trainerEmail,
           clientName: formData.clientName,
           overallScore: analysisResult.overallScore,
-          totalCriteria:
-            analysisResult.sections?.length || analysisResult.criteria.length,
-          sections: analysisResult.sections || analysisResult.criteria,
-          criteria: analysisResult.sections || analysisResult.criteria,
+          sections: analysisResult.sections,
           summary: analysisResult.summary,
           strengths: analysisResult.strengths,
           improvements: analysisResult.improvements,
@@ -586,7 +581,7 @@ export default function UploadPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {(analysisResult.sections || analysisResult.criteria).map(
+            {(analysisResult.sections ?? []).map(
               (section, index) => {
                 const score = section.score ?? 0;
                 const pct = (score / 5) * 100;

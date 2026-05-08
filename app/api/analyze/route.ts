@@ -81,7 +81,6 @@ export interface AnalyzeResult {
   improvements: string[];
   criteriaScores: CriterionScore[];
   sections: SectionScore[];
-  criteria: SectionScore[]; // alias for backward compat
   transcript: string;
   cost: CallCostBreakdown;
 }
@@ -512,8 +511,6 @@ export async function POST(request: NextRequest) {
         trainerEmail: trainerEmail ?? undefined,
         transcript,
         overallScore,
-        totalCriteria: criteriaScores.length,
-        criteria: criteriaScores as unknown as Record<string, unknown>,
         sections: normalisedSections as unknown as Record<string, unknown>[],
         summary: parsed.summary,
         strengths: parsed.strengths,
@@ -557,7 +554,6 @@ export async function POST(request: NextRequest) {
       strengths: parsed.strengths,
       improvements: parsed.improvements,
       criteriaScores,
-      criteria: normalisedSections,
       sections: normalisedSections,
       transcript,
       cost: {

@@ -3,7 +3,7 @@ import type { Trainer, AvatarColor } from '@/lib/types'
 
 // ─── Sync trainer stats from real calls ──────────────────────────────────────
 
-const CRITERIA_COLUMN_MAP: Record<string, string> = {
+const SECTION_COLUMN_MAP: Record<string, string> = {
   'discovery':              'score_discovery',
   'problem agitation':      'score_problem_agitation',
   'offer presentation':     'score_offer_presentation',
@@ -12,14 +12,14 @@ const CRITERIA_COLUMN_MAP: Record<string, string> = {
   'close and next steps':   'score_close_next_steps',
 }
 
-interface CriterionScore { criterionName?: string; name?: string; score?: number }
+interface SectionScore { name?: string; score?: number }
 
 export async function syncTrainerStats(trainerId: string): Promise<void> {
   const supabase = createAdminClient()
 
   const { data: calls, error } = await supabase
     .from('calls')
-    .select('overall_score, call_outcome, created_at, criteria')
+    .select('overall_score, call_outcome, created_at, sections')
     .eq('trainer_id', trainerId)
     .order('created_at', { ascending: false })
 
@@ -45,10 +45,10 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
   // Rubric section averages — AI returns 0–5, seeded calls store 0–100.
   const sectionSums: Record<string, { sum: number; count: number }> = {}
   for (const call of calls) {
-    const items = Array.isArray(call.criteria) ? call.criteria as CriterionScore[] : []
+    const items = Array.isArray(call.sections) ? call.sections as SectionScore[] : []
     for (const item of items) {
-      const rawName = (item.criterionName ?? item.name ?? '').toLowerCase().trim()
-      const col = CRITERIA_COLUMN_MAP[rawName]
+      const rawName = (item.name ?? '').toLowerCase().trim()
+      const col = SECTION_COLUMN_MAP[rawName]
       if (!col) continue
       if (!sectionSums[col]) sectionSums[col] = { sum: 0, count: 0 }
       const raw = item.score ?? 0

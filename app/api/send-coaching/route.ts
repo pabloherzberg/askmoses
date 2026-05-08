@@ -7,7 +7,6 @@ interface SendCoachingBody {
   clientName?: string
   overallScore?: number
   sections?: CoachingEmailSection[]
-  criteria?: CoachingEmailSection[]
   strengths?: string[]
   improvements?: string[]
   locale?: string
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
       locale,
     } = body
 
-    const sections: CoachingEmailSection[] = (body.sections ?? body.criteria ?? []).map(s => ({
+    const sections: CoachingEmailSection[] = (body.sections ?? []).map(s => ({
       name: s.name ?? (s as unknown as Record<string, unknown>)['criterionName'] as string ?? '',
       score: s.score ?? 0,
       critical: s.critical,

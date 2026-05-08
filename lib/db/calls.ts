@@ -8,8 +8,6 @@ export interface DbCall {
   trainer_email: string | null
   transcript: string | null
   overall_score: number | null
-  total_criteria: number | null
-  criteria: Record<string, unknown> | null
   summary: string | null
   strengths: string[] | null
   improvements: string[] | null
@@ -36,8 +34,6 @@ export interface CreateCallInput {
   trainerEmail?: string
   transcript?: string
   overallScore?: number
-  totalCriteria?: number
-  criteria?: Record<string, unknown>
   summary?: string
   strengths?: string[]
   improvements?: string[]
@@ -58,8 +54,6 @@ export interface UpdateCallInput {
   trainerEmail?: string
   transcript?: string
   overallScore?: number
-  totalCriteria?: number
-  criteria?: Record<string, unknown>
   summary?: string
   strengths?: string[]
   improvements?: string[]
@@ -144,8 +138,6 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       trainer_email: input.trainerEmail ?? '',
       transcript: input.transcript ?? null,
       overall_score: input.overallScore ?? null,
-      total_criteria: input.totalCriteria ?? null,
-      criteria: input.criteria ?? null,
       summary: input.summary ?? null,
       strengths: input.strengths ?? null,
       improvements: input.improvements ?? null,
@@ -192,8 +184,6 @@ export async function dbUpdateCall(
   if (input.trainerEmail !== undefined) patch.trainer_email = input.trainerEmail
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.overallScore !== undefined) patch.overall_score = input.overallScore
-  if (input.totalCriteria !== undefined) patch.total_criteria = input.totalCriteria
-  if (input.criteria !== undefined) patch.criteria = input.criteria
   if (input.summary !== undefined) patch.summary = input.summary
   if (input.strengths !== undefined) patch.strengths = input.strengths
   if (input.improvements !== undefined) patch.improvements = input.improvements
