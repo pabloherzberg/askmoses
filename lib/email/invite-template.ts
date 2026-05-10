@@ -29,8 +29,8 @@ const i18n: Record<string, Lang> = {
   en: {
     subject: (orgName) =>
       orgName
-        ? `You have been invited to ${orgName} on AskMoses.AI`
-        : 'You have been invited to AskMoses.AI',
+        ? `You've been invited to join ${orgName} on AskMoses`
+        : "You've been invited to join AskMoses",
     preheader: 'Activate your account to start using AskMoses.AI.',
     greeting: (name) => `Hello, ${name}.`,
     bodyIntro: ({ inviterName, orgName, roleLabel }) => {
@@ -40,7 +40,7 @@ const i18n: Record<string, Lang> = {
     },
     cta: 'Accept invitation',
     ctaHint:
-      'This link is single-use and may expire. Open it on the device where you want to sign in.',
+      'This link expires in 48 hours and is single-use. Open it on the device where you want to sign in.',
     fallbackHint:
       'If the button does not work, copy and paste the link below into your browser:',
     footer: 'Sent automatically by AskMoses.AI',
@@ -49,8 +49,8 @@ const i18n: Record<string, Lang> = {
   pt: {
     subject: (orgName) =>
       orgName
-        ? `Você foi convidado(a) para ${orgName} no AskMoses.AI`
-        : 'Você foi convidado(a) para o AskMoses.AI',
+        ? `Você foi convidado(a) para entrar em ${orgName} no AskMoses`
+        : 'Você foi convidado(a) para entrar no AskMoses',
     preheader: 'Ative sua conta para começar a usar o AskMoses.AI.',
     greeting: (name) => `Olá, ${name}.`,
     bodyIntro: ({ inviterName, orgName, roleLabel }) => {
@@ -60,7 +60,7 @@ const i18n: Record<string, Lang> = {
     },
     cta: 'Aceitar convite',
     ctaHint:
-      'Este link é de uso único e pode expirar. Abra-o no dispositivo em que deseja entrar.',
+      'Este link expira em 48 horas e é de uso único. Abra-o no dispositivo em que deseja entrar.',
     fallbackHint:
       'Se o botão não funcionar, copie e cole o link abaixo no seu navegador:',
     footer: 'Enviado automaticamente pelo AskMoses.AI',
@@ -69,8 +69,8 @@ const i18n: Record<string, Lang> = {
   es: {
     subject: (orgName) =>
       orgName
-        ? `Te invitaron a ${orgName} en AskMoses.AI`
-        : 'Te invitaron a AskMoses.AI',
+        ? `Te invitaron a unirte a ${orgName} en AskMoses`
+        : 'Te invitaron a unirte a AskMoses',
     preheader: 'Activa tu cuenta para empezar a usar AskMoses.AI.',
     greeting: (name) => `Hola, ${name}.`,
     bodyIntro: ({ inviterName, orgName, roleLabel }) => {
@@ -80,7 +80,7 @@ const i18n: Record<string, Lang> = {
     },
     cta: 'Aceptar invitación',
     ctaHint:
-      'Este enlace es de un solo uso y puede caducar. Ábrelo en el dispositivo donde quieras iniciar sesión.',
+      'Este enlace caduca en 48 horas y es de un solo uso. Ábrelo en el dispositivo donde quieras iniciar sesión.',
     fallbackHint:
       'Si el botón no funciona, copia y pega el enlace abajo en tu navegador:',
     footer: 'Enviado automáticamente por AskMoses.AI',
@@ -89,8 +89,8 @@ const i18n: Record<string, Lang> = {
   fr: {
     subject: (orgName) =>
       orgName
-        ? `Vous avez été invité(e) à rejoindre ${orgName} sur AskMoses.AI`
-        : 'Vous avez été invité(e) à rejoindre AskMoses.AI',
+        ? `Vous avez été invité(e) à rejoindre ${orgName} sur AskMoses`
+        : 'Vous avez été invité(e) à rejoindre AskMoses',
     preheader: 'Activez votre compte pour commencer à utiliser AskMoses.AI.',
     greeting: (name) => `Bonjour, ${name}.`,
     bodyIntro: ({ inviterName, orgName, roleLabel }) => {
@@ -100,7 +100,7 @@ const i18n: Record<string, Lang> = {
     },
     cta: "Accepter l'invitation",
     ctaHint:
-      "Ce lien est à usage unique et peut expirer. Ouvrez-le sur l'appareil avec lequel vous souhaitez vous connecter.",
+      "Ce lien expire dans 48 heures et est à usage unique. Ouvrez-le sur l'appareil avec lequel vous souhaitez vous connecter.",
     fallbackHint:
       'Si le bouton ne fonctionne pas, copiez et collez le lien ci-dessous dans votre navigateur :',
     footer: 'Envoyé automatiquement par AskMoses.AI',
