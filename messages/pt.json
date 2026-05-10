@@ -22,6 +22,7 @@
     "submitting": "Entrando...",
     "invalidCredentials": "E-mail ou senha incorretos",
     "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
+    "inviteExpired": "Este link de convite expirou. Peça ao seu admin para reenviar o convite.",
     "magicLinkSubmit": "Enviar link",
     "magicLinkSubmitting": "Enviando...",
     "magicLinkSent": "Se este e-mail estiver cadastrado, enviaremos um link de acesso. Verifique sua caixa de entrada.",

@@ -39,15 +39,18 @@ export async function GET(request: NextRequest) {
   })
   if (rpcErr) {
     console.error('[verify-invite-token] consume_invite_token falhou', rpcErr)
-    return NextResponse.redirect(`${origin}/login`)
+    return NextResponse.redirect(`${origin}/login?error=invite_expired`)
   }
 
   // RPC retorna SETOF (user_id, org_id). PostgREST devolve array; vazio quando
   // o token não estava válido (consumido/expirado/invalidado/inexistente).
+  // Não distinguimos os 4 casos no redirect — a ação do usuário é sempre a
+  // mesma: pedir reenvio ao admin. Mensagem renderizada via i18n key
+  // `Login.inviteExpired` em app/[locale]/(auth)/login/page.tsx.
   const row = Array.isArray(consumed) ? consumed[0] : consumed
   if (!row?.user_id || !row?.org_id) {
     console.warn('[verify-invite-token] token inválido, expirado ou já consumido')
-    return NextResponse.redirect(`${origin}/login`)
+    return NextResponse.redirect(`${origin}/login?error=invite_expired`)
   }
 
   const userId = row.user_id as string
