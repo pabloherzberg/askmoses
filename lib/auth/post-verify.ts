@@ -11,14 +11,17 @@ const SAFE_NEXT_PATHS: ReadonlySet<string> = new Set([
   '/team-command-center',
 ])
 
-export async function markInviteAccepted(userId: string): Promise<void> {
+export async function markInviteAccepted(userId: string, orgId: string): Promise<void> {
   const admin = createAdminClient()
-  // Aceita TODAS as memberships pendentes do user — o magic link verificou
-  // o email, então qualquer convite anterior pendente vira accepted. E
-  // ESPELHA em users.invite_status: o campo legado ainda é lido por
-  // /api/auth/magic-link (gate de quem pode receber link) e por
-  // dbGetTrainers (filtro 'accepted' nas listas operacionais). Manter os
-  // dois sincronizados até a migration que dropar users.invite_status.
+  // Aceita APENAS a membership de (user, org) — cada convite é per-org e
+  // exige confirmação explícita do email da org que convidou. Aceitar
+  // todas as pendentes de uma vez permitia que alguém fosse adicionado a
+  // uma segunda org sem provar posse do email pra aquela org específica.
+  //
+  // users.invite_status é o campo legado lido por /api/auth/magic-link
+  // (gate de quem pode receber link) e por dbGetTrainers (filtro nas
+  // listas operacionais). Marcamos accepted no primeiro convite aceito —
+  // se já estiver accepted, o .eq('invite_status','pending') faz no-op.
   //
   // Logamos errors em vez de throw: se um update falhar (RLS drift, schema
   // change), o user já está autenticado e o redirect tem que acontecer —
@@ -28,6 +31,7 @@ export async function markInviteAccepted(userId: string): Promise<void> {
       .from('memberships')
       .update({ invite_status: 'accepted' })
       .eq('user_id', userId)
+      .eq('org_id', orgId)
       .eq('invite_status', 'pending'),
     admin
       .from('users')
@@ -39,6 +43,7 @@ export async function markInviteAccepted(userId: string): Promise<void> {
   if (memRes.error) {
     console.error('[post-verify] markInviteAccepted: memberships update falhou', {
       userId,
+      orgId,
       error: memRes.error,
     })
   }
