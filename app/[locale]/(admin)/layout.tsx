@@ -1,5 +1,5 @@
 import type React from 'react'
-import { AdminSidebar, AdminNavItems } from '@/components/layout/AdminSidebar'
+import { AppSidebar, AdminNavItems } from '@/components/layout/AppSidebar'
 import { AppHeader } from '@/components/layout/AppHeader'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -7,7 +7,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen" style={{ background: 'var(--am-bg)' }}>
       <AppHeader mobileSidebar={<AdminNavItems />} />
       <div className="flex">
-        <AdminSidebar />
+        <AppSidebar role="admin" />
         <main className="flex-1 min-w-0 lg:pl-56 pt-[61px]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
             {children}
