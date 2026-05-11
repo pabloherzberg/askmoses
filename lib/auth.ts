@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Role } from '@/lib/types'
 
 export type PlanCode = 'starter' | 'pro' | 'pro_rag'
+export type SubscriptionStatus = 'inactive' | 'active'
 
 export interface ActiveOrgContext {
   userId: string
@@ -14,6 +15,7 @@ export interface ActiveOrgContext {
   hasRag: boolean
   maxSalesPeople: number | null
   maxCallsPerMonth: number | null
+  subscriptionStatus: SubscriptionStatus
 }
 
 export interface MembershipOption {
@@ -29,6 +31,7 @@ interface OrgContextRpc {
   hasRag: boolean
   maxSalesPeople: number | null
   maxCallsPerMonth: number | null
+  subscriptionStatus: SubscriptionStatus | null
 }
 
 export async function getSession() {
@@ -53,6 +56,9 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
       hasRag: false,
       maxSalesPeople: null,
       maxCallsPerMonth: null,
+      // Admin nunca é gated por sub — 'active' aqui evita que checks futuros
+      // de plan-gate barrem indevidamente mesmo se esquecerem o isSuperAdmin.
+      subscriptionStatus: 'active',
     }
   }
 
@@ -68,6 +74,7 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
       hasRag: false,
       maxSalesPeople: null,
       maxCallsPerMonth: null,
+      subscriptionStatus: 'inactive',
     }
   }
 
@@ -81,6 +88,7 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
     hasRag: ctx.hasRag,
     maxSalesPeople: ctx.maxSalesPeople,
     maxCallsPerMonth: ctx.maxCallsPerMonth,
+    subscriptionStatus: ctx.subscriptionStatus ?? 'inactive',
   }
 }
 
