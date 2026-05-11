@@ -183,3 +183,31 @@ export interface RevenueEstimatorItem {
   monthlyImpact: number
   confidence: CorrelationLevel
 }
+
+export type MarketingCopyType = 'headline' | 'primary-text'
+export type ConfidenceLevel = 'high' | 'medium' | 'low'
+
+export interface MarketingCopySuggestion {
+  id: string
+  type: MarketingCopyType
+  text: string
+  confidence: number
+  basis: string
+  confidenceLevel: ConfidenceLevel
+}
+
+export interface MarketingSourceCall {
+  id: string
+  name: string
+  duration: string
+  score: number
+}
+
+export interface MarketingIntelligence {
+  lastRun: string
+  nextRun: string
+  sampleSize: number
+  headlines: MarketingCopySuggestion[]
+  primaryTexts: MarketingCopySuggestion[]
+  sourceCalls: MarketingSourceCall[]
+}

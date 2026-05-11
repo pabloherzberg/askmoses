@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit
+  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit, Megaphone,
+  Building2, PlusCircle, Wand2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -73,6 +74,7 @@ export function OwnerNavItems() {
     { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
     { label: t('calls'), href: '/calls', icon: Phone },
     { label: 'Script Intelligence', href: '/dashboard/script-builder', icon: BrainCircuit },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence', icon: Megaphone },
   ]
   const toolsNav = [
     { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
@@ -95,9 +97,34 @@ export function OwnerNavItems() {
   )
 }
 
+export function AdminNavItems() {
+  const t = useTranslations('Shared.sidebar')
+  const nav = [
+    { label: t('saasPanel'),             href: '/admin',                     icon: Building2  },
+    { label: t('createOrganization'),    href: '/admin/organizations/new',   icon: PlusCircle },
+    { label: t('rubricConfig'),          href: '/admin/rubric',              icon: Settings   },
+    { label: t('scriptBuilder'),         href: '/dashboard/script-builder',  icon: Wand2      },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence',    icon: Megaphone  },
+    { label: t('uploadCall'),            href: '/dashboard/upload',          icon: Upload     },
+    { label: t('members'),               href: '/dashboard/settings/invite', icon: UserPlus   },
+    { label: t('howToUse'),              href: '/dashboard/guide',           icon: HelpCircle },
+  ]
+  return (
+    <nav className="flex flex-col gap-1">
+      {nav.map((item) => <NavItem key={item.href} {...item} />)}
+    </nav>
+  )
+}
+
+export function NavItemsForRole({ role }: { role?: Role | null }) {
+  if (role === 'admin') return <AdminNavItems />
+  if (role === 'trainer') return <TrainerNavItems />
+  return <OwnerNavItems />
+}
+
 export function AppSidebar({ role, children }: { role?: Role | null; children?: React.ReactNode }) {
   const t = useTranslations('Shared.sidebar')
-  const nav = children ?? (role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />)
+  const nav = children ?? <NavItemsForRole role={role} />
 
   return (
     <aside

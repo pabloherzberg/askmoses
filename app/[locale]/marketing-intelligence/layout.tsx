@@ -3,7 +3,7 @@ import { AppHeader } from '@/components/layout/AppHeader'
 import { AppSidebar, NavItemsForRole } from '@/components/layout/AppSidebar'
 import { getRole } from '@/lib/auth'
 
-export default async function CallsLayout({ children }: { children: React.ReactNode }) {
+export default async function MarketingIntelligenceLayout({ children }: { children: React.ReactNode }) {
   const role = await getRole()
 
   return (
