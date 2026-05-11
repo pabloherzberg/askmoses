@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit
+  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit, Megaphone
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -73,6 +73,7 @@ export function OwnerNavItems() {
     { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
     { label: t('calls'), href: '/calls', icon: Phone },
     { label: 'Script Intelligence', href: '/dashboard/script-builder', icon: BrainCircuit },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence', icon: Megaphone },
   ]
   const toolsNav = [
     { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
