@@ -177,6 +177,30 @@ export async function requireRagFeature(): Promise<Response | null> {
   )
 }
 
+// Retorna 402 Payment Required se a org ativa está com subscription
+// inativa (Owner ainda não pagou plano). Admin sempre passa — isSuperAdmin
+// bypass garantido em loadOrgContext que retorna 'active' pra admin.
+// 402 (em vez de 403) distingue 'precisa pagar' de 'sem permissão' — front
+// pode ter handler global que redireciona pra /settings/billing nesse caso.
+// Não aplica em rotas de onboarding/billing/auth (essas precisam ser
+// acessíveis pra Owner sub-inativa concluir o pagamento).
+export async function requireActiveSubscription(): Promise<Response | null> {
+  const ctx = await getActiveOrgContext()
+  if (ctx?.isSuperAdmin) return null
+  if (ctx?.subscriptionStatus === 'active') return null
+  return Response.json(
+    {
+      data: null,
+      error: {
+        message: 'Plano inativo. Acesse a área de billing para assinar e desbloquear o recurso.',
+        code: 402,
+        reason: 'NO_ACTIVE_SUBSCRIPTION',
+      },
+    },
+    { status: 402 }
+  )
+}
+
 // ─── Response helpers ────────────────────────────────────────────────────────
 
 export function unauthorized() {
