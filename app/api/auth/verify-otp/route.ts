@@ -22,6 +22,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login`)
   }
 
+  // type=invite exige orgId — sem ele não dá pra aceitar uma membership
+  // específica. Links pré-fix (sem orgId) caem aqui; tratamos como expirado
+  // pra não autenticar um user que ficaria sem acesso (membership pending +
+  // RLS bloqueando tudo). A tela de login mostra a mensagem via ?error.
+  if (typeRaw === 'invite' && !orgIdRaw) {
+    console.warn('[verify-otp] type=invite sem orgId — link pré-fix tratado como expirado')
+    return NextResponse.redirect(`${origin}/login?error=invite_expired`)
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: typeRaw })
   if (error || !data?.session) {
@@ -32,16 +41,8 @@ export async function GET(request: NextRequest) {
   const userId = data.session.user.id
   const role = data.session.user.app_metadata?.role as Role | undefined
 
-  // type=invite só aceita a membership da org que está no link. Sem orgId
-  // não dá pra saber qual org o user está confirmando — logamos e seguimos
-  // sem aceitar nada (a membership fica pending até o user clicar num link
-  // que carregue orgId).
-  if (typeRaw === 'invite') {
-    if (orgIdRaw) {
-      await markInviteAccepted(userId, orgIdRaw)
-    } else {
-      console.warn('[verify-otp] type=invite sem orgId — nenhuma membership aceita', { userId })
-    }
+  if (typeRaw === 'invite' && orgIdRaw) {
+    await markInviteAccepted(userId, orgIdRaw)
   }
 
   return NextResponse.redirect(`${origin}${resolveDestination(role, nextRaw)}`)
