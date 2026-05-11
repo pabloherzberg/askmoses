@@ -129,14 +129,17 @@ export async function isSuperAdmin(): Promise<boolean> {
 }
 
 export async function getTrainerDbId(): Promise<string | null> {
-  const session = await getSession()
-  if (!session) return null
+  const ctx = await getActiveOrgContext()
+  if (!ctx?.activeOrgId) return null
+  // Em multi-org o user tem N rows em trainers (uma por org) — sem o filtro
+  // por org_id, .single() explodia e a página /me caía em branco.
   const admin = createAdminClient()
   const { data } = await admin
     .from('trainers')
     .select('id')
-    .eq('user_id', session.user.id)
-    .single()
+    .eq('user_id', ctx.userId)
+    .eq('org_id', ctx.activeOrgId)
+    .maybeSingle()
   return data?.id ?? null
 }
 

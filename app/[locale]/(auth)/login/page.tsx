@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -24,6 +25,7 @@ const PLAN_BADGE_STYLE: Record<PlanCode, { bg: string; color: string }> = {
 export default function LoginPage() {
   const t = useTranslations('Login')
   const locale = useLocale()
+  const searchParams = useSearchParams()
 
   const [activeClientId, setActiveClientId] = useState<string>(DEMO_CLIENTS[0].id)
   const [mode, setMode] = useState<'password' | 'magic'>('password')
@@ -33,6 +35,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [magicLoading, setMagicLoading] = useState(false)
   const [magicNotice, setMagicNotice] = useState('')
+
+  // Erros propagados via query param pelo callback /api/auth/verify-invite-token.
+  // Hoje só `invite_expired` (cobre token expirado, consumido ou invalidado).
+  useEffect(() => {
+    const errParam = searchParams.get('error')
+    if (errParam === 'invite_expired') {
+      setError(t('inviteExpired'))
+    }
+  }, [searchParams, t])
 
   const switchMode = (next: 'password' | 'magic') => {
     setMode(next)

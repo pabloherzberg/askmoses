@@ -68,7 +68,9 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
 //   Owner: convida trainer pra própria org (ativa).
 //   Admin: convida owner ou trainer pra qualquer org (orgId obrigatório).
 //   Branch existente vs novo email:
-//     - email já tem conta → cria membership 'accepted' direto (sem email/link)
+//     - email já tem conta → cria membership 'pending' + email com token
+//       per-org (invite_tokens). O user TEM que clicar no link da nova org
+//       pra aceitar — convite anterior aceito não dá auto-join.
 //     - email não tem conta → fluxo completo (auth user + magic link + email)
 //   TC-11: bloqueia trainer invite se org no plano starter/pro atingiu o
 //   max_sales_people. Conta memberships role='trainer' com status pending+accepted.
@@ -222,13 +224,12 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
     if (existingMembership) return conflict('Usuário já é membro dessa organização')
 
-    // Auto-accept SOMENTE se o user já verificou email num convite anterior
-    // (users.invite_status='accepted'). Caso contrário (ainda pending), a
-    // nova membership também entra como pending — o magic link do convite
-    // original vai aceitar todas as memberships pendentes de uma vez via
-    // markInviteAccepted. Sem isso, alguém poderia ser adicionado a uma
-    // segunda org antes de provar posse do email.
-    const inviteStatus = existingUser.invite_status === 'accepted' ? 'accepted' : 'pending'
+    // Toda nova membership entra 'pending' — mesmo que o user já tenha
+    // verificado outro convite no passado. Cada org exige clique no link
+    // específico daquela org (invite_tokens), senão alguém poderia
+    // adicionar um email já-verificado a uma segunda org sem o dono do
+    // email autorizar.
+    const inviteStatus = 'pending' as const
 
     const { error: memErr } = await admin.from('memberships').insert({
       user_id: existingUser.id,
@@ -274,46 +275,52 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ─── Email do convite (só quando inviteStatus='pending') ──────────────
-    // 'accepted' = user já verificou em convite anterior, foi auto-juntado
-    // à nova org, não há ação a tomar — sem email.
-    // 'pending' = user existe mas nunca verificou. Geramos token isolado
-    // por (user, org) via invite_tokens (migration 034) — clicar aqui
-    // aceita SOMENTE essa membership, sem invalidar links de outras orgs.
+    // Token isolado por (user, org) via invite_tokens (migration 034) —
+    // clicar no link aceita SOMENTE essa membership, sem afetar pendências
+    // do mesmo user em outras orgs. O email vai sempre, mesmo se o user já
+    // tem conta verificada de outra org.
     let emailDelivery: 'sent' | 'mocked' | 'none' = 'none'
     let emailId: string | null = null
 
-    if (inviteStatus === 'pending') {
-      try {
-        const result = await sendInviteEmail({
-          userId: existingUser.id,
-          orgId: targetOrgId,
-          role: targetRole,
-          // Usamos o name do DB (já validado em convite anterior); o name
-          // do body é o que o inviter digitou — pode divergir.
-          inviteeName: existingUser.name ?? name,
-          inviteeEmail: email,
-          orgName: org.name,
-          inviterId: callerId,
-          origin: request.nextUrl.origin,
-          locale: body.locale,
-        })
-        emailDelivery = result.emailDelivery
-        emailId = result.emailId
-      } catch (err) {
-        // Rollback: trainer/owner row + membership. O user em si fica —
-        // ele já existia antes desta request.
-        if (targetRole === 'trainer') {
-          await admin.from('trainers').delete()
-            .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
-        } else {
-          await admin.from('owners').delete()
-            .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
-        }
-        await admin.from('memberships').delete()
+    try {
+      const result = await sendInviteEmail({
+        userId: existingUser.id,
+        orgId: targetOrgId,
+        role: targetRole,
+        // Usamos o name do DB (já validado em convite anterior); o name
+        // do body é o que o inviter digitou — pode divergir.
+        inviteeName: existingUser.name ?? name,
+        inviteeEmail: email,
+        orgName: org.name,
+        inviterId: callerId,
+        origin: request.nextUrl.origin,
+        locale: body.locale,
+      })
+      emailDelivery = result.emailDelivery
+      emailId = result.emailId
+    } catch (err) {
+      // Rollback: invite_tokens + trainer/owner row + membership. O user em
+      // si fica — ele já existia antes desta request.
+      //
+      // invite_tokens é invalidado primeiro porque sendInviteEmail insere o
+      // token ANTES de chamar o Resend — se o envio falha, sobra token ativo
+      // sem membership correspondente (estado órfão). Sem essa limpeza, se o
+      // email foi entregue apesar do erro, o link levaria a um consume sem
+      // membership pra aceitar.
+      await admin.rpc('invalidate_active_invite_tokens', {
+        p_user_id: existingUser.id,
+        p_org_id: targetOrgId,
+      })
+      if (targetRole === 'trainer') {
+        await admin.from('trainers').delete()
           .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
-        return serverError('Não foi possível enviar o email do convite', err)
+      } else {
+        await admin.from('owners').delete()
+          .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
       }
+      await admin.from('memberships').delete()
+        .eq('user_id', existingUser.id).eq('org_id', targetOrgId)
+      return serverError('Não foi possível enviar o email do convite', err)
     }
 
     return ok({
@@ -346,7 +353,10 @@ export async function POST(request: NextRequest) {
   }
   const newUserId = linkData.user.id
   const tokenHash = linkData.properties.hashed_token
-  const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&next=${encodeURIComponent(homePath)}`
+  // orgId no link: markInviteAccepted (verify-otp) aceita SÓ a membership
+  // dessa org. Sem isso, voltaria a aceitar todas as pendentes do user de
+  // uma vez (bug histórico do multi-org).
+  const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&orgId=${encodeURIComponent(targetOrgId)}&next=${encodeURIComponent(homePath)}`
 
   const rollback = async () => {
     if (targetRole === 'trainer') {
