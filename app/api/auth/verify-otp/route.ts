@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get('token_hash')
   const typeRaw = searchParams.get('type')
   const nextRaw = searchParams.get('next')
+  const orgIdRaw = searchParams.get('orgId')
 
   if (!tokenHash || !isValidOtpType(typeRaw)) {
     return NextResponse.redirect(`${origin}/login`)
@@ -31,8 +32,16 @@ export async function GET(request: NextRequest) {
   const userId = data.session.user.id
   const role = data.session.user.app_metadata?.role as Role | undefined
 
+  // type=invite só aceita a membership da org que está no link. Sem orgId
+  // não dá pra saber qual org o user está confirmando — logamos e seguimos
+  // sem aceitar nada (a membership fica pending até o user clicar num link
+  // que carregue orgId).
   if (typeRaw === 'invite') {
-    await markInviteAccepted(userId)
+    if (orgIdRaw) {
+      await markInviteAccepted(userId, orgIdRaw)
+    } else {
+      console.warn('[verify-otp] type=invite sem orgId — nenhuma membership aceita', { userId })
+    }
   }
 
   return NextResponse.redirect(`${origin}${resolveDestination(role, nextRaw)}`)
