@@ -124,7 +124,7 @@ export default async function DashboardPage() {
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={correlationEngine} />
+        <CorrelationEngine factors={correlationEngine} totalCalls={totalCalls} />
       </div>
 
       {/* ── Main grid: team health + alerts ──────────────────── */}

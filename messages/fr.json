@@ -222,6 +222,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — Ce qui mène aux closes",
+      "titleNoVolume": "Coaching Drivers — Moyennes de l'équipe par dimension",
       "mockBadge": "données mock uniquement",
       "legend": {
         "highCorrelation": "Corrélation élevée",
@@ -246,7 +247,12 @@
         "Rubric": "Grille",
         "Behavioral": "Comportemental"
       },
+      "disclaimer": "Lorsque le volume d'appels sera suffisant, AskMoses identifiera quelles dimensions sont les plus corrélées aux closes.",
       "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — pas de calcul réel côté frontend"
+    },
+    "behavioralProfile": {
+      "title": "Profil de corrélation comportementale",
+      "teamAvg": "Moyenne équipe"
     },
     "closeRateTrend": {
       "title": "Tendance du taux de closing — 6 semaines",

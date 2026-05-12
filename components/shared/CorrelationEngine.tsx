@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { Info } from 'lucide-react'
 import type { CorrelationFactor, CorrelationLevel, CorrelationSource } from '@/lib/types'
 
 const barColor: Record<CorrelationLevel, string> = {
@@ -20,12 +21,19 @@ const sourceStyle: Record<CorrelationSource, { color: string; bg: string }> = {
   Behavioral: { color: 'var(--am-green)',   bg: 'rgba(34,217,160,0.12)' },
 }
 
+// Volume mínimo para o título exibir linguagem estatística ("Correlation Engine —
+// What Drives Closes"). Abaixo disso o título fala em médias por dimensão e o
+// disclaimer abaixo explica que a correlação estatística virá com volume.
+const MIN_CALLS_FOR_STATS = 30
+
 interface Props {
   factors: CorrelationFactor[]
+  totalCalls?: number
 }
 
-export function CorrelationEngine({ factors }: Props) {
+export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
   const t = useTranslations('Shared.correlationEngine')
+  const hasVolume = totalCalls >= MIN_CALLS_FOR_STATS
 
   function LevelBadge({ value }: { value: CorrelationLevel }) {
     const s = levelStyle[value]
@@ -59,7 +67,7 @@ export function CorrelationEngine({ factors }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          {t('title')}
+          {hasVolume ? t('title') : t('titleNoVolume')}
         </p>
       </div>
 
@@ -167,6 +175,16 @@ export function CorrelationEngine({ factors }: Props) {
         ))}
       </div>
 
+      {/* Disclaimer — só aparece enquanto não há volume mínimo de calls */}
+      {!hasVolume && (
+        <div
+          className="mt-4 pt-3 flex items-start gap-2 text-[11px] italic"
+          style={{ borderTop: '1px solid var(--am-border)', color: 'var(--am-muted)' }}
+        >
+          <Info size={14} className="flex-shrink-0 mt-0.5" />
+          <span>{t('disclaimer')}</span>
+        </div>
+      )}
     </div>
   )
 }
