@@ -6,19 +6,19 @@ import type { CorrelationFactor, CorrelationLevel, CorrelationSource } from '@/l
 
 const barColor: Record<CorrelationLevel, string> = {
   High: 'var(--am-green)',
-  Med:  'var(--am-amber)',
-  Low:  'var(--am-muted)',
+  Med: 'var(--am-amber)',
+  Low: 'var(--am-muted)',
 }
 
 const levelStyle: Record<CorrelationLevel, { color: string; bg: string }> = {
-  High: { color: 'var(--am-green)',  bg: 'rgba(34,217,160,0.12)' },
-  Med:  { color: 'var(--am-amber)',  bg: 'rgba(255,171,46,0.12)' },
-  Low:  { color: 'var(--am-muted)',  bg: 'rgba(122,132,154,0.12)' },
+  High: { color: 'var(--am-green)', bg: 'rgba(34,217,160,0.12)' },
+  Med: { color: 'var(--am-amber)', bg: 'rgba(255,171,46,0.12)' },
+  Low: { color: 'var(--am-muted)', bg: 'rgba(122,132,154,0.12)' },
 }
 
 const sourceStyle: Record<CorrelationSource, { color: string; bg: string }> = {
-  Rubric:     { color: 'var(--am-accent2)', bg: 'rgba(155,135,255,0.12)' },
-  Behavioral: { color: 'var(--am-green)',   bg: 'rgba(34,217,160,0.12)' },
+  Rubric: { color: 'var(--am-accent2)', bg: 'rgba(155,135,255,0.12)' },
+  Behavioral: { color: 'var(--am-green)', bg: 'rgba(34,217,160,0.12)' },
 }
 
 // Volume mínimo para o título exibir linguagem estatística ("Correlation Engine —
@@ -74,9 +74,9 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
       {/* Legend */}
       <div className="flex flex-wrap gap-3 mb-4">
         {([
-          { level: 'High'  as CorrelationLevel, key: 'highCorrelation' },
-          { level: 'Med'   as CorrelationLevel, key: 'medCorrelation'  },
-          { level: 'Low'   as CorrelationLevel, key: 'lowCorrelation'  },
+          { level: 'High' as CorrelationLevel, key: 'highCorrelation' },
+          { level: 'Med' as CorrelationLevel, key: 'medCorrelation' },
+          { level: 'Low' as CorrelationLevel, key: 'lowCorrelation' },
         ]).map(({ level, key }) => (
           <div key={level} className="flex items-center gap-1.5">
             <span
