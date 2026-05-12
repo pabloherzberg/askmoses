@@ -222,6 +222,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — Qué impulsa los cierres",
+      "titleNoVolume": "Coaching Drivers — Promedios del equipo por dimensión",
       "mockBadge": "solo datos mock",
       "legend": {
         "highCorrelation": "Correlación alta",
@@ -246,7 +247,12 @@
         "Rubric": "Rúbrica",
         "Behavioral": "Conductual"
       },
+      "disclaimer": "Cuando haya volumen suficiente de llamadas, AskMoses identificará qué dimensiones se correlacionan más con los cierres.",
       "mockFooter": "† todos los valores vienen de mock-data.ts — sin cálculo real en el frontend"
+    },
+    "behavioralProfile": {
+      "title": "Perfil de correlación conductual",
+      "teamAvg": "Promedio del equipo"
     },
     "closeRateTrend": {
       "title": "Tendencia de cierre — 6 semanas",

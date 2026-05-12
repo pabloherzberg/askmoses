@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { BehavioralDimension } from '@/lib/mock-data'
 
 const levelStyle = {
@@ -25,6 +26,7 @@ interface BehavioralProfileProps {
 }
 
 export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: BehavioralProfileProps) {
+  const t = useTranslations('Shared.behavioralProfile')
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -35,7 +37,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
         className="text-[11px] font-semibold tracking-widest uppercase mb-5"
         style={{ color: 'var(--am-muted)' }}
       >
-        Behavioral Correlation Profile
+        {t('title')}
       </p>
 
       {/* Rows */}
@@ -118,7 +120,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: Behav
         </span>
         <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--am-muted)' }}>
           <span className="inline-block w-3 h-2.5 rounded-sm" style={{ background: 'var(--am-muted)', opacity: 0.5 }} />
-          Team avg
+          {t('teamAvg')}
         </span>
       </div>
     </div>

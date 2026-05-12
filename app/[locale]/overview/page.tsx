@@ -105,7 +105,7 @@ export default async function OverviewPage() {
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={correlationEngine} />
+        <CorrelationEngine factors={correlationEngine} totalCalls={totalCalls} />
       </div>
 
       {/* ── Rubric Gap Detection ───────────────────────────────── */}
