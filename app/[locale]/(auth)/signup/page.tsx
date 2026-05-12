@@ -36,10 +36,17 @@ export default function SignupPage() {
       // email branded via Resend. Cliente não chama supabase.auth.signUp()
       // direto pra manter consistência com o pipeline de email do app
       // (invite/magic-link também usam Resend, não o SMTP do Supabase).
+      // email lowercased/trimmed aqui pra bater com a normalização do server
+      // — evita casing mismatch entre signup e login.
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email, password, locale }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          locale,
+        }),
       })
       const json = (await res.json()) as {
         data: { sent: boolean; mocked?: boolean } | null

@@ -61,7 +61,14 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      // Normaliza email pra bater com como foi gravado no signup (lowercase).
+      // signInWithPassword do Supabase costuma normalizar, mas explicitar
+      // aqui elimina qualquer ambiguidade de versão.
+      const normalizedEmail = email.trim().toLowerCase()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
       if (authError || !data.session) {
         setError(t('invalidCredentials'))
         return

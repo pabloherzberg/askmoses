@@ -260,6 +260,13 @@
     "upsell": {
       "defaultCta": "Comparar planes",
       "upgradeTo": "Mejora a {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activa tu plan para desbloquear AskMoses",
+        "ownerBody": "Tu organización aún no tiene un plan activo. Elige uno para desbloquear el panel, el análisis de llamadas y todo lo demás que ofrece AskMoses.",
+        "ownerCta": "Activar plan ahora",
+        "trainerTitle": "La suscripción de tu organización está inactiva",
+        "trainerBody": "El owner de tu organización aún no activó un plan. Contáctalo para reactivar el acceso. No necesitas hacer nada aquí."
+      },
       "uploadTwilio": {
         "title": "Sáltate la carga manual — pásate al automático",
         "description": "Conecta Twilio o GHL una vez y cada llamada se ingesta, transcribe y analiza sin que nadie tenga que clicar en 'Upload'."
