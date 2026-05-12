@@ -15,6 +15,7 @@ import {
   getOrgId,
   getSession,
   getTrainerDbId,
+  requireActiveSubscription,
   unauthorized,
 } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -219,6 +220,12 @@ export async function POST(request: NextRequest) {
     // table, trainer stats sync), so we refuse anonymous calls outright.
     const session = await getSession();
     if (!session) return unauthorized();
+
+    // Subscription gate antes de gastar custo de LLM. Owner/trainer sub-inactive
+    // recebe 402; admin bypassa. Sem isso, sub-inactive podia drenar quota
+    // OpenAI via fetch direto na rota.
+    const subErr = await requireActiveSubscription();
+    if (subErr) return subErr;
 
     const orgId = await getOrgId();
     if (!orgId) return forbidden();

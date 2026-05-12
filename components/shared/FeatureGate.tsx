@@ -18,9 +18,16 @@ interface FeatureGateProps {
 // Decisão UX (definida com PO): renderiza o conteúdo gated por baixo
 // (blur + pointer-events-none) em vez de redirect — mostra o "valor
 // gated" pro user e mantém o sidebar/header navegáveis pra ele acessar
-// /onboarding/plan ou /logout. Performance: children são renderizados
-// e fazem fetch normalmente; só visualmente bloqueados. Aceitável pra
-// MVP; futura otimização pode short-circuitar antes de renderizar.
+// /onboarding/plan ou /logout.
+//
+// IMPORTANTE: esse gate é UI-only — não é um security boundary. Os
+// children continuam sendo renderizados e fazem fetch normalmente.
+// A proteção real contra acesso a dados está nas rotas API via
+// requireActiveSubscription() (lib/auth.ts) — já aplicado em
+// /api/calls, /api/analyze, /api/insights, /api/invites. Rotas
+// adicionais devem incluir esse gate antes de retornar dados ou
+// gastar custo de LLM. Visualmente borrar children é parte da UX,
+// não da política de segurança.
 export async function FeatureGate({ children }: FeatureGateProps) {
   const ctx = await getActiveOrgContext()
   const t = await getTranslations('Shared.upsell.subscriptionInactive')

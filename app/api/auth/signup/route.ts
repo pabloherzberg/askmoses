@@ -91,12 +91,15 @@ export async function POST(request: NextRequest) {
     return badRequest(`password deve ter ao menos ${PASSWORD_MIN} caracteres`, 'PASSWORD_INVALID')
   }
 
-  // Rate limit por IP + email — previne tanto spam (mesmo IP, emails
-  // variando) quanto enumeration (mesmo email, IPs variando via proxy).
+  // Rate limit em 2 buckets independentes:
+  //   - signup:ip:<ip>      → 5/10min por IP (trava bot variando emails do mesmo IP)
+  //   - signup:email:<email>→ 5/10min por email (trava distribuído com IPs proxy)
+  // Chave composta (IP+email) que tínhamos antes deixava cada email do mesmo
+  // IP com seu próprio bucket — bot conseguia signup ilimitado variando email.
   const ip = clientIp(request)
-  const rateKey = `signup:${ip}:${email}`
-  const limit = checkRateLimit(rateKey, SIGNUP_LIMIT, SIGNUP_WINDOW_MS)
-  if (!limit.allowed) {
+  const ipLimit    = checkRateLimit(`signup:ip:${ip}`,       SIGNUP_LIMIT, SIGNUP_WINDOW_MS)
+  const emailLimit = checkRateLimit(`signup:email:${email}`, SIGNUP_LIMIT, SIGNUP_WINDOW_MS)
+  if (!ipLimit.allowed || !emailLimit.allowed) {
     return tooMany('Muitas tentativas. Tente novamente em alguns minutos.')
   }
   if (Math.random() < 0.01) pruneExpiredBuckets()

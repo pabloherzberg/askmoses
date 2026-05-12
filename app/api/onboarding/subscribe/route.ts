@@ -6,7 +6,8 @@ const PLAN_CODES = ['starter', 'pro', 'pro_rag'] as const
 type PlanCode = (typeof PLAN_CODES)[number]
 
 // Mapeia code do plans → label legado em owners.plan (text CHECK constraint).
-// Mantido aqui só pra preencher o campo redundante; fonte canônica é clients.plan_id.
+// Mantido aqui só pra preencher o campo redundante; fonte canônica pós-merge
+// (migration 038) é organizations.plan_id (clients table foi dropada).
 const OWNERS_PLAN_LABEL: Record<PlanCode, string> = {
   starter: 'Starter',
   pro: 'Pro',

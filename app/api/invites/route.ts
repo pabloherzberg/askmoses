@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { Resend } from 'resend'
-import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
+import { getSession, ok, unauthorized, forbidden, requireActiveSubscription } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
@@ -82,6 +82,15 @@ export async function POST(request: NextRequest) {
   const callerId = session.user.id
 
   if (callerRole !== 'owner' && callerRole !== 'admin') return forbidden()
+
+  // Owner sem subscription ativa não pode convidar — força ativar plano primeiro.
+  // Admin bypassa (loadOrgContext retorna 'active' pra super-admin). Sem isso,
+  // owner em onboarding mid-flight podia gastar seats antes mesmo de pagar.
+  // Resposta 402 (Payment Required) é semanticamente correta vs 403.
+  if (callerRole === 'owner') {
+    const subErr = await requireActiveSubscription()
+    if (subErr) return subErr
+  }
 
   let body: InviteBody
   try {
@@ -174,9 +183,9 @@ export async function POST(request: NextRequest) {
 
   // ─── TC-11: Gate de seats (apenas trainer invite) ────────────────────────
   // Pós-merge (migration 038), organizations tem plan_id direto — JOIN puxa
-  // plans sem passar por clients. Se max_sales_people é NULL no plano
-  // (ilimitado), pula o gate. Org sem plano (onboarding mid-flight) também
-  // pula — owner ainda nem ativou subscription, não cabe ser convidando ninguém.
+  // plans sem passar por clients. Se max_sales_people é NULL (Pro/Pro+RAG,
+  // ilimitado), pula o gate. Caller owner sem sub ativa já foi barrado antes
+  // por requireActiveSubscription() — aqui só chega quem tem plano ativo.
 
   if (targetRole === 'trainer') {
     const { data: orgRow, error: orgErr } = await admin
