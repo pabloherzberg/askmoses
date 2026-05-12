@@ -174,7 +174,7 @@ export function PlanPicker({ plans }: PlanPickerProps) {
                 type="button"
                 disabled={isLoading || submitting !== null}
                 onClick={() => handleSelect(plan.code)}
-                className="w-full py-2.5 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
+                className="w-full py-2.5 rounded-lg text-sm font-medium transition-opacity cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
                 style={{
                   background: isRecommended ? 'var(--accent)' : 'var(--am-bg3)',
                   color: isRecommended ? '#fff' : 'var(--am-text)',

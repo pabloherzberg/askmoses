@@ -57,9 +57,8 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
 //     recebem 403 — não é caminho de criação adicional de org (Task B
 //     trata 2ª org via settings).
 //   Cria atomicamente (com rollback manual):
-//     organizations → clients (subscription_status='inactive', plan_id=null)
-//     → organizations.client_id (1:1) → users → memberships → owners
-//     → app_metadata.role='owner'
+//     organizations (subscription_status='inactive', plan_id=null)
+//     → users → memberships → owners → app_metadata.role='owner'
 //   Subscription começa 'inactive' — Owner precisa concluir step-2 do
 //   onboarding (POST /api/onboarding/subscribe) pra ativar. Plan gate
 //   no resto do app via requireActiveSubscription() / <FeatureGate>.
@@ -127,41 +126,24 @@ export async function POST(request: NextRequest) {
     'Owner'
 
   // ─── Criação atômica com rollback manual ─────────────────────────────────
-  // Sem transação real no supabase-js. Replicamos o padrão de
-  // /api/organizations POST (admin): cada step desfaz os anteriores em erro.
+  // Sem transação real no supabase-js. Cada step desfaz os anteriores em erro.
+  // Pós-merge (migration 038): organizations já carrega plan_id +
+  // subscription_status + health, então não há mais o passo "criar client
+  // mirror + linkar via client_id".
 
   const { data: org, error: orgErr } = await admin
     .from('organizations')
-    .insert({ name })
+    .insert({
+      name,
+      // plan_id deliberadamente null — Owner escolhe no step-2 do onboarding.
+      // subscription_status default 'inactive' (DB), explicitado aqui pra
+      // deixar a intenção do self-service legível no código.
+      subscription_status: 'inactive',
+      health: 'healthy',
+    })
     .select('id, name')
     .single()
   if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
-
-  const { data: client, error: clientErr } = await admin
-    .from('clients')
-    .insert({
-      name,
-      org_id: org.id,
-      health: 'healthy',
-      subscription_status: 'inactive',
-      // plan_id deliberadamente null — Owner escolhe no step-2 do onboarding
-    })
-    .select('id')
-    .single()
-  if (clientErr || !client) {
-    await admin.from('organizations').delete().eq('id', org.id)
-    return serverError('Não foi possível criar o client', clientErr)
-  }
-
-  const { error: linkErr } = await admin
-    .from('organizations')
-    .update({ client_id: client.id })
-    .eq('id', org.id)
-  if (linkErr) {
-    await admin.from('clients').delete().eq('id', client.id)
-    await admin.from('organizations').delete().eq('id', org.id)
-    return serverError('Não foi possível vincular organização e client', linkErr)
-  }
 
   const { error: userErr } = await admin.from('users').insert({
     id: callerId,
@@ -174,7 +156,6 @@ export async function POST(request: NextRequest) {
     invite_status: 'accepted',
   })
   if (userErr) {
-    await admin.from('clients').delete().eq('id', client.id)
     await admin.from('organizations').delete().eq('id', org.id)
     return serverError('Não foi possível criar o usuário', userErr)
   }
@@ -188,14 +169,13 @@ export async function POST(request: NextRequest) {
   })
   if (memErr) {
     await admin.from('users').delete().eq('id', callerId)
-    await admin.from('clients').delete().eq('id', client.id)
     await admin.from('organizations').delete().eq('id', org.id)
     return serverError('Não foi possível criar a membership', memErr)
   }
 
   // owners.plan é text legacy ('Starter' / 'Pro' / 'Pro+RAG') com CHECK NOT NULL
   // (ver 015:173). Setamos 'Starter' por default — fonte canônica do plano é
-  // clients.plan_id, esse campo só evita quebrar leituras antigas.
+  // organizations.plan_id, esse campo só evita quebrar leituras antigas.
   const { error: ownerErr } = await admin.from('owners').insert({
     user_id: callerId,
     org_id: org.id,
@@ -205,7 +185,6 @@ export async function POST(request: NextRequest) {
   if (ownerErr) {
     await admin.from('memberships').delete().eq('user_id', callerId).eq('org_id', org.id)
     await admin.from('users').delete().eq('id', callerId)
-    await admin.from('clients').delete().eq('id', client.id)
     await admin.from('organizations').delete().eq('id', org.id)
     return serverError('Não foi possível criar o owner', ownerErr)
   }
@@ -220,7 +199,6 @@ export async function POST(request: NextRequest) {
     await admin.from('owners').delete().eq('user_id', callerId).eq('org_id', org.id)
     await admin.from('memberships').delete().eq('user_id', callerId).eq('org_id', org.id)
     await admin.from('users').delete().eq('id', callerId)
-    await admin.from('clients').delete().eq('id', client.id)
     await admin.from('organizations').delete().eq('id', org.id)
     return serverError('Não foi possível atualizar a role', metaErr)
   }

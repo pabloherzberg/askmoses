@@ -1,6 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Client, GlobalMetrics, HealthStatus, Plan, PlanCode } from '@/lib/types'
 
+// Após migration 038 a tabela `clients` foi mesclada em `organizations`.
+// O tipo TS `Client` continua existindo como shape lida pelas telas Admin
+// — só a fonte de dados mudou. As funções abaixo lêem direto de
+// organizations + plans e remontam o shape `Client` pra não impactar
+// callers (admin pages, métricas globais, etc.).
+//
+// Conceitualmente: 1 organization == 1 client. O `orgId` no shape é
+// redundante com o `id`, mas mantido pra preservar a API pública.
+
 interface DbPlanNested {
   id: string
   code: PlanCode
@@ -14,16 +23,15 @@ interface DbPlanNested {
   features: string[] | null
 }
 
-interface DbClientRow {
+interface DbOrgRow {
   id: string
   name: string
-  plan_id: string
-  org_id: string
-  calls_this_month: number
-  avg_score: number
-  mrr: number
+  plan_id: string | null
+  calls_this_month: number | null
+  avg_score: number | null
+  mrr: number | null
   health: HealthStatus
-  trainers_count: number
+  trainers_count: number | null
   plans: DbPlanNested | null
 }
 
@@ -42,16 +50,21 @@ function toPlan(row: DbPlanNested): Plan {
   }
 }
 
-function toClient(row: DbClientRow): Client {
+function toClient(row: DbOrgRow): Client {
   if (!row.plans) {
-    throw new Error(`Client ${row.id} has no plan join (plan_id=${row.plan_id})`)
+    // Pós-merge: org pode existir sem plano (Owner em onboarding step-2).
+    // Antes esse caso não existia (clients sempre tinha plan_id NOT NULL na
+    // prática). Quem consome essa função em listagens deve filtrar por
+    // plan_id NOT NULL ou tratar org-sem-plano explicitamente. Aqui
+    // levantamos pra não silenciosamente retornar shape inconsistente.
+    throw new Error(`Organization ${row.id} has no plan (plan_id=${row.plan_id ?? 'null'})`)
   }
   return {
     id: row.id,
     name: row.name,
-    planId: row.plan_id,
+    planId: row.plan_id ?? '',
     plan: toPlan(row.plans),
-    orgId: row.org_id,
+    orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
     avgScore: row.avg_score ?? 0,
     mrr: Number(row.mrr ?? 0),
@@ -61,32 +74,38 @@ function toClient(row: DbClientRow): Client {
 }
 
 /**
- * Lista clientes (organizações) do banco com plano embutido.
+ * Lista clientes (organizations) com plano embutido.
+ * Filtra orgs sem plano (sub não-ativada / mid-onboarding).
  */
 export async function dbGetClients(): Promise<Client[]> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
-    .from('clients')
-    .select('*, plans(*)')
+    .from('organizations')
+    .select(
+      'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, plans(*)'
+    )
+    .not('plan_id', 'is', null)
     .order('name', { ascending: true })
 
   if (error) throw new Error(`dbGetClients: ${error.message}`)
 
-  return (data ?? []).map((row) => toClient(row as DbClientRow))
+  return (data ?? []).map((row) => toClient(row as unknown as DbOrgRow))
 }
 
 /**
  * Retorna o client (com plano embutido) vinculado a um org_id.
- * Usado por rotas autenticadas para resolver o plano do tenant atual.
+ * Pós-merge: orgId === clientId. Mantém a assinatura antiga.
  */
 export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
-    .from('clients')
-    .select('*, plans(*)')
-    .eq('org_id', orgId)
+    .from('organizations')
+    .select(
+      'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, plans(*)'
+    )
+    .eq('id', orgId)
     .maybeSingle()
 
   if (error) {
@@ -94,18 +113,26 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
     throw new Error(`dbGetClientByOrgId: ${error.message}`)
   }
 
-  return data ? toClient(data as DbClientRow) : null
+  if (!data) return null
+  // Org sem plano (onboarding mid-flight) não vira Client — caller decide
+  // o que fazer (Admin views, métricas etc. tratam como "sem assinatura").
+  if (!(data as { plan_id: string | null }).plan_id) return null
+
+  return toClient(data as unknown as DbOrgRow)
 }
 
 /**
- * Calcula métricas globais (MRR, total calls, avg score).
+ * Métricas globais (MRR, total calls, avg score) agregadas pelas
+ * organizations com plano ativo. Orgs sem plano ficam de fora pra não
+ * contaminar o avg_score / MRR com zeros do estado de onboarding.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
-    .from('clients')
+    .from('organizations')
     .select('mrr, calls_this_month, avg_score')
+    .not('plan_id', 'is', null)
 
   if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`)
 

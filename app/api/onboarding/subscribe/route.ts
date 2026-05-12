@@ -90,26 +90,17 @@ export async function POST(request: NextRequest) {
   if (planErr) return serverError('Não foi possível resolver o plano', planErr)
   if (!plan) return badRequest('plano não encontrado', 'PLAN_NOT_FOUND')
 
-  // Localiza o client espelho da org ativa pra fazer o update.
-  // organizations.client_id é setado no /api/onboarding/organization — se
-  // estiver null aqui é estado inconsistente.
-  const { data: orgRow, error: orgErr } = await admin
-    .from('organizations')
-    .select('client_id')
-    .eq('id', ctx.activeOrgId)
-    .maybeSingle()
-  if (orgErr) return serverError('Não foi possível resolver a organização', orgErr)
-  if (!orgRow?.client_id) return serverError('Organização sem client espelho')
-
-  // STUB: ativa direto. Quando Stripe entrar, esse passo migra pro webhook
-  // e o response abaixo passa a retornar { success: false, checkoutUrl }.
+  // STUB: ativa direto na própria organization. Pós-merge (migration 038)
+  // plan_id e subscription_status vivem em organizations — não há mais um
+  // client espelho separado. Quando Stripe entrar, esse passo migra pro
+  // webhook e o response passa a retornar { success: false, checkoutUrl }.
   const { error: updateErr } = await admin
-    .from('clients')
+    .from('organizations')
     .update({
       plan_id: plan.id,
       subscription_status: 'active',
     })
-    .eq('id', orgRow.client_id)
+    .eq('id', ctx.activeOrgId)
   if (updateErr) return serverError('Não foi possível ativar a assinatura', updateErr)
 
   // Manter owners.plan (campo legacy text) sincronizado pra não quebrar

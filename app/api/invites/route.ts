@@ -173,18 +173,20 @@ export async function POST(request: NextRequest) {
   if (!org) return badRequest('org inválida')
 
   // ─── TC-11: Gate de seats (apenas trainer invite) ────────────────────────
-  // clients tem FK plan_id pra plans e org_id pra organizations — JOIN simples.
-  // Se max_sales_people é NULL no plano (ilimitado), pula o gate.
+  // Pós-merge (migration 038), organizations tem plan_id direto — JOIN puxa
+  // plans sem passar por clients. Se max_sales_people é NULL no plano
+  // (ilimitado), pula o gate. Org sem plano (onboarding mid-flight) também
+  // pula — owner ainda nem ativou subscription, não cabe ser convidando ninguém.
 
   if (targetRole === 'trainer') {
-    const { data: clientRow, error: clientErr } = await admin
-      .from('clients')
+    const { data: orgRow, error: orgErr } = await admin
+      .from('organizations')
       .select('plans(max_sales_people)')
-      .eq('org_id', targetOrgId)
+      .eq('id', targetOrgId)
       .maybeSingle()
-    if (clientErr) return serverError('Não foi possível resolver o plano da organização', clientErr)
+    if (orgErr) return serverError('Não foi possível resolver o plano da organização', orgErr)
 
-    const planNested = (clientRow?.plans ?? null) as { max_sales_people: number | null } | null
+    const planNested = (orgRow?.plans ?? null) as { max_sales_people: number | null } | null
     const maxSeats = planNested?.max_sales_people
 
     if (typeof maxSeats === 'number') {
