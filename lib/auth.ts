@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Role } from '@/lib/types'
 
 export type PlanCode = 'starter' | 'pro' | 'pro_rag'
+export type SubscriptionStatus = 'inactive' | 'active'
 
 export interface ActiveOrgContext {
   userId: string
@@ -14,6 +15,7 @@ export interface ActiveOrgContext {
   hasRag: boolean
   maxSalesPeople: number | null
   maxCallsPerMonth: number | null
+  subscriptionStatus: SubscriptionStatus
 }
 
 export interface MembershipOption {
@@ -29,6 +31,7 @@ interface OrgContextRpc {
   hasRag: boolean
   maxSalesPeople: number | null
   maxCallsPerMonth: number | null
+  subscriptionStatus: SubscriptionStatus | null
 }
 
 export async function getSession() {
@@ -53,6 +56,9 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
       hasRag: false,
       maxSalesPeople: null,
       maxCallsPerMonth: null,
+      // Admin nunca é gated por sub — 'active' aqui evita que checks futuros
+      // de plan-gate barrem indevidamente mesmo se esquecerem o isSuperAdmin.
+      subscriptionStatus: 'active',
     }
   }
 
@@ -68,6 +74,7 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
       hasRag: false,
       maxSalesPeople: null,
       maxCallsPerMonth: null,
+      subscriptionStatus: 'inactive',
     }
   }
 
@@ -81,6 +88,7 @@ async function loadOrgContext(userId: string, isSuperAdmin: boolean): Promise<Ac
     hasRag: ctx.hasRag,
     maxSalesPeople: ctx.maxSalesPeople,
     maxCallsPerMonth: ctx.maxCallsPerMonth,
+    subscriptionStatus: ctx.subscriptionStatus ?? 'inactive',
   }
 }
 
@@ -166,6 +174,30 @@ export async function requireRagFeature(): Promise<Response | null> {
       },
     },
     { status: 403 }
+  )
+}
+
+// Retorna 402 Payment Required se a org ativa está com subscription
+// inativa (Owner ainda não pagou plano). Admin sempre passa — isSuperAdmin
+// bypass garantido em loadOrgContext que retorna 'active' pra admin.
+// 402 (em vez de 403) distingue 'precisa pagar' de 'sem permissão' — front
+// pode ter handler global que redireciona pra /settings/billing nesse caso.
+// Não aplica em rotas de onboarding/billing/auth (essas precisam ser
+// acessíveis pra Owner sub-inativa concluir o pagamento).
+export async function requireActiveSubscription(): Promise<Response | null> {
+  const ctx = await getActiveOrgContext()
+  if (ctx?.isSuperAdmin) return null
+  if (ctx?.subscriptionStatus === 'active') return null
+  return Response.json(
+    {
+      data: null,
+      error: {
+        message: 'Plano inativo. Acesse a área de billing para assinar e desbloquear o recurso.',
+        code: 402,
+        reason: 'NO_ACTIVE_SUBSCRIPTION',
+      },
+    },
+    { status: 402 }
   )
 }
 

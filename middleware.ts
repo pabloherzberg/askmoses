@@ -26,6 +26,11 @@ function redirectByRole(role: Role, locale: Locale, baseUrl: string) {
   return localized(routes[role] ?? '/login', locale, baseUrl)
 }
 
+// Rotas que NÃO precisam de login (qualquer visitante pode acessar).
+// /signup é público porque é onde o user cria a conta antes de existir
+// sessão. Logged-in users são redirecionados via lógica no bloco isPublic.
+const PUBLIC_PATHS = ['/login', '/signup', '/presentation', '/demobiz', '/tech']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -47,8 +52,8 @@ export async function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 404 })
   }
 
-  const publicPaths = ['/login', '/presentation', '/demobiz', '/tech']
-  const isPublic = rawPath === '/' || publicPaths.some((p) => rawPath.startsWith(p))
+  const isPublic = rawPath === '/' || PUBLIC_PATHS.some((p) => rawPath.startsWith(p))
+  const isOnboarding = rawPath === '/onboarding' || rawPath.startsWith('/onboarding/')
 
   // Start from the intl response so locale headers/cookies are preserved
   let supabaseResponse = NextResponse.next({ request })
@@ -75,15 +80,52 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.app_metadata?.role as Role | undefined
 
+  // /onboarding é multi-step e semi-público — requer login mas permite
+  // estados intermediários do fluxo de cadastro:
+  //   step-1 (/onboarding):       user SEM role (acabou de confirmar email)
+  //   step-2 (/onboarding/plan):  owner com role definida, sub 'inactive'
+  //                                (criou org no step-1, falta pagar plano)
+  //
+  // Pelo modelo de roles (Admin nunca tem org; Trainer sempre via invite),
+  // a única transição válida que passa por /onboarding é signup → step-1
+  // → step-2 → /dashboard. Admin/Trainer aqui = bug → safe-fail pra home.
+  // Self-service 2ª org (Task B futura) será uma rota separada.
+  if (isOnboarding) {
+    if (!user) return NextResponse.redirect(localized('/login', locale, request.url))
+
+    const isStep2 = rawPath.startsWith('/onboarding/plan')
+
+    if (isStep2) {
+      // /onboarding/plan: owner-only. Sem role = ainda no step-1.
+      if (!role) return NextResponse.redirect(localized('/onboarding', locale, request.url))
+      if (role !== 'owner') return NextResponse.redirect(redirectByRole(role, locale, request.url))
+      // Owner com sub já ativa não precisa do step-2 — a página redireciona
+      // server-side; deixamos passar aqui pra não duplicar a checagem.
+      return supabaseResponse
+    }
+
+    // step-1 (/onboarding exato ou outras subrotas não conhecidas):
+    // só user sem role; role-bearing volta pra home.
+    if (role) return NextResponse.redirect(redirectByRole(role, locale, request.url))
+    return supabaseResponse
+  }
+
   if (isPublic) {
-    if (user && role && rawPath.startsWith('/login')) {
+    // Logged-in com role tentando /login ou /signup → manda pra home dele
+    if (user && role && (rawPath.startsWith('/login') || rawPath.startsWith('/signup'))) {
       return NextResponse.redirect(redirectByRole(role, locale, request.url))
+    }
+    // Logged-in sem role tentando /signup → manda pro onboarding (já se cadastrou)
+    if (user && !role && rawPath.startsWith('/signup')) {
+      return NextResponse.redirect(localized('/onboarding', locale, request.url))
     }
     return supabaseResponse
   }
 
   if (!user) return NextResponse.redirect(localized('/login', locale, request.url))
-  if (!role) return NextResponse.redirect(localized('/login', locale, request.url))
+  // User logado sem role = limbo pós-signup. Manda pro onboarding em vez do
+  // login (que ficaria em loop porque ele já tem sessão).
+  if (!role) return NextResponse.redirect(localized('/onboarding', locale, request.url))
 
   if (rawPath.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))

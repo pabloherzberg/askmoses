@@ -5,9 +5,9 @@ export type AvatarColor = 'blue' | 'purple' | 'green' | 'red' | 'amber'
 export type TagColor = 'red' | 'amber' | 'blue' | 'green'
 export type RubricColor = 'blue' | 'amber' | 'green' | 'red' | 'accent2'
 export type InviteStatus = 'pending' | 'accepted'
-export type OtpType = 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type OtpType = 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'signup'
 
-const OTP_TYPES: ReadonlySet<OtpType> = new Set(['invite', 'magiclink', 'recovery', 'email_change'])
+const OTP_TYPES: ReadonlySet<OtpType> = new Set(['invite', 'magiclink', 'recovery', 'email_change', 'signup'])
 
 export function isValidOtpType(value: string | null | undefined): value is OtpType {
   return typeof value === 'string' && OTP_TYPES.has(value as OtpType)

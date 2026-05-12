@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized, forbidden } from '@/lib/auth'
+import { ok, unauthorized, forbidden, requireActiveSubscription } from '@/lib/auth'
 import { getSession, getRole } from '@/lib/auth'
 import { getInsights, generateInsights } from '@/lib/services/insights'
 import { translateInsights, type InsightsPayload } from '@/lib/i18n/translate-coaching'
@@ -14,6 +14,10 @@ export async function GET() {
   const session = await getSession()
   if (!session) return unauthorized()
 
+  // Subscription gate: sub-inactive não vê insights (dados + custo LLM no POST).
+  const subErr = await requireActiveSubscription()
+  if (subErr) return subErr
+
   const data = await getInsights()
   return ok(data)
 }
@@ -21,6 +25,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const subErr = await requireActiveSubscription()
+  if (subErr) return subErr
 
   const role = await getRole()
   if (role === 'trainer') return forbidden()

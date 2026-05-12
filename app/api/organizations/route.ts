@@ -44,8 +44,7 @@ function serverError(context: string, err?: unknown) {
 
 // GET /api/organizations
 //   Admin: retorna todas as orgs com seus owners (id + nome + email)
-//   Owner/trainer: 403 (orgs são metadados globais e a UI deles deriva
-//   tudo do JWT, não precisam dessa lista)
+//   Owner/trainer: 403
 export async function GET() {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -55,8 +54,7 @@ export async function GET() {
 
   const admin = createAdminClient()
 
-  // Duas queries: todas as orgs (pra mostrar até as sem owners) + owners JOIN users.
-  // owners.org_id veio da migration 031 — usa ele direto, sem ler users.org_id legado.
+  // Owners JOIN users — owners.org_id é a FK canônica pós-migration 031.
   const [orgsRes, ownersRes] = await Promise.all([
     admin.from('organizations').select('id, name').order('name'),
     admin.from('owners').select('id, org_id, users!inner (id, name, email)'),
@@ -85,11 +83,14 @@ export async function GET() {
 
 // POST /api/organizations
 //   Body: { name: string, planCode: 'starter' | 'pro' | 'pro_rag' }
-//   Cria uma organização com seu Client espelho (1:1) e o plano associado.
+//   Cria uma organização com plano ativo (admin pré-vende um cliente
+//   enterprise / migração manual de cliente legado). Pós-merge de
+//   clients em organizations (migration 038), é um único INSERT — sem
+//   mais o ritual de criar client espelho + atualizar client_id reverso.
+//   Sub default 'active' pq admin-created = enterprise contratado, não
+//   self-service. Self-service usa /api/onboarding/organization (sub
+//   default 'inactive', plan_id null).
 //   Apenas super-admin pode criar — TC-08/TC-09. Owner/trainer recebe 403.
-//   Sem rollback transacional (Supabase JS não expõe transações): em caso
-//   de falha no meio do fluxo, deixamos rastros pra inspeção em vez de
-//   tentar undo silencioso (admin pode ver e limpar).
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -124,35 +125,15 @@ export async function POST(request: NextRequest) {
 
   const { data: org, error: orgErr } = await admin
     .from('organizations')
-    .insert({ name })
+    .insert({
+      name,
+      plan_id: plan.id,
+      subscription_status: 'active',
+      health: 'healthy',
+    })
     .select('id, name')
     .single()
   if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
-
-  // Sem transação atômica no supabase-js — fazemos rollback manual em qualquer
-  // falha posterior. Sem isso, dois invariantes do schema quebram: (1) toda
-  // organization tem um client (via clients.org_id) e (2) é 1:1 espelhado em
-  // organizations.client_id. Estado parcial leva a queries que assumem o JOIN
-  // a falhar pra essa org.
-  const { data: client, error: clientErr } = await admin
-    .from('clients')
-    .insert({ name, plan_id: plan.id, org_id: org.id, health: 'healthy' })
-    .select('id')
-    .single()
-  if (clientErr || !client) {
-    await admin.from('organizations').delete().eq('id', org.id)
-    return serverError('Não foi possível criar o client', clientErr)
-  }
-
-  const { error: linkErr } = await admin
-    .from('organizations')
-    .update({ client_id: client.id })
-    .eq('id', org.id)
-  if (linkErr) {
-    await admin.from('clients').delete().eq('id', client.id)
-    await admin.from('organizations').delete().eq('id', org.id)
-    return serverError('Não foi possível vincular organização e client', linkErr)
-  }
 
   return ok({ id: org.id, name: org.name, planCode: plan.code })
 }

@@ -38,7 +38,61 @@
     "roleManager": "Manager",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "backToHome": "Retour à l'accueil"
+    "backToHome": "Retour à l'accueil",
+    "noAccount": "Pas encore de compte ?",
+    "signupLink": "S'inscrire"
+  },
+  "Signup": {
+    "title": "Créez votre compte",
+    "subtitle": "Inscrivez-vous et configurez votre organisation en moins d'une minute.",
+    "nameLabel": "Votre nom",
+    "namePlaceholder": "Votre nom complet",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "votre@email.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "Au moins {min} caractères",
+    "submit": "Créer un compte",
+    "submitting": "Création du compte...",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "loginLink": "Se connecter",
+    "backToHome": "Retour à l'accueil",
+    "nameRequired": "Veuillez saisir votre nom",
+    "emailInvalid": "Veuillez saisir un e-mail valide",
+    "passwordTooShort": "Le mot de passe doit contenir au moins {min} caractères",
+    "emailAlreadyRegistered": "Cet e-mail est déjà enregistré. Veuillez vous connecter.",
+    "genericError": "Impossible de créer le compte. Veuillez réessayer.",
+    "verifyEmailTitle": "Confirmez votre e-mail",
+    "verifyEmailBody": "Nous avons envoyé un lien de confirmation à {email}. Cliquez sur le lien pour activer votre compte et continuer.",
+    "backToLogin": "Retour à la connexion"
+  },
+  "Onboarding": {
+    "stepLabel": "Étape {current} sur {total}",
+    "stepSubtitle": "Configuration de l'organisation",
+    "title": "Nommez votre organisation",
+    "subtitle": "C'est le nom que votre équipe verra dans AskMoses.",
+    "orgNameLabel": "Nom de l'organisation",
+    "orgNamePlaceholder": "Ex : Acme Sales",
+    "submit": "Continuer",
+    "submitting": "Création de l'organisation...",
+    "nameInvalid": "Le nom doit comporter entre {min} et {max} caractères",
+    "alreadyHasOrg": "Vous êtes déjà associé à une organisation. Pour en créer une autre, contactez l'administrateur.",
+    "genericError": "Impossible de créer l'organisation. Veuillez réessayer."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Étape {current} sur {total}",
+    "stepSubtitle": "Choix du plan",
+    "title": "Choisissez votre plan",
+    "subtitle": "Sélectionnez le plan qui correspond le mieux à votre activité. Vous pourrez en changer à tout moment.",
+    "recommendedBadge": "Recommandé",
+    "perMonth": "/mois",
+    "seatsLimit": "Jusqu'à {count} commerciaux",
+    "seatsUnlimited": "Commerciaux illimités",
+    "selectPlan": "Choisir ce plan",
+    "subscribing": "Activation...",
+    "stubNotice": "Mode développement — abonnement activé sans facturation réelle. L'intégration Stripe arrive bientôt.",
+    "noPlansError": "Impossible de charger les plans. Veuillez recharger la page.",
+    "genericError": "Impossible d'activer le plan. Veuillez réessayer."
   },
   "LanguageSwitcher": {
     "label": "Langue",
@@ -207,6 +261,13 @@
     "upsell": {
       "defaultCta": "Comparer les forfaits",
       "upgradeTo": "Passez à {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activez votre plan pour débloquer AskMoses",
+        "ownerBody": "Votre organisation n'a pas encore de plan actif. Choisissez un plan pour débloquer le tableau de bord, l'analyse des appels et tout ce qu'AskMoses propose.",
+        "ownerCta": "Activer le plan maintenant",
+        "trainerTitle": "L'abonnement de votre organisation est inactif",
+        "trainerBody": "Le propriétaire de votre organisation n'a pas encore activé de plan. Contactez-le pour réactiver l'accès. Vous n'avez rien à faire ici."
+      },
       "uploadTwilio": {
         "title": "Plus d'upload manuel — passez à l'automatique",
         "description": "Connectez Twilio ou GHL une seule fois et chaque appel est ingéré, transcrit et analysé sans que personne ait à cliquer sur 'Upload'."

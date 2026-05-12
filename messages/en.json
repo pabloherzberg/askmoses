@@ -38,7 +38,61 @@
     "roleManager": "Manager",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "noAccount": "Don't have an account yet?",
+    "signupLink": "Sign up"
+  },
+  "Signup": {
+    "title": "Create your account",
+    "subtitle": "Sign up and set up your organization in under a minute.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Your full name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "At least {min} characters",
+    "submit": "Create account",
+    "submitting": "Creating account...",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Sign in",
+    "backToHome": "Back to home",
+    "nameRequired": "Please enter your name",
+    "emailInvalid": "Please enter a valid email",
+    "passwordTooShort": "Password must be at least {min} characters",
+    "emailAlreadyRegistered": "This email is already registered. Please sign in.",
+    "genericError": "Could not create the account. Please try again.",
+    "verifyEmailTitle": "Confirm your email",
+    "verifyEmailBody": "We've sent a confirmation link to {email}. Click the link to activate your account and continue.",
+    "backToLogin": "Back to login"
+  },
+  "Onboarding": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Organization setup",
+    "title": "Name your organization",
+    "subtitle": "This is the name your team will see inside AskMoses.",
+    "orgNameLabel": "Organization name",
+    "orgNamePlaceholder": "e.g. Acme Sales",
+    "submit": "Continue",
+    "submitting": "Creating organization...",
+    "nameInvalid": "Name must be between {min} and {max} characters",
+    "alreadyHasOrg": "You're already linked to an organization. To create another one, please contact the Admin.",
+    "genericError": "Could not create the organization. Please try again."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Choose your plan",
+    "title": "Pick the plan that fits",
+    "subtitle": "Select the plan that best matches your operation. You can switch any time later.",
+    "recommendedBadge": "Recommended",
+    "perMonth": "/month",
+    "seatsLimit": "Up to {count} sales people",
+    "seatsUnlimited": "Unlimited sales people",
+    "selectPlan": "Choose plan",
+    "subscribing": "Activating...",
+    "stubNotice": "Development mode — subscription activated without real charge. Stripe integration coming soon.",
+    "noPlansError": "Could not load plans. Please reload the page.",
+    "genericError": "Could not activate the plan. Please try again."
   },
   "LanguageSwitcher": {
     "label": "Language",
@@ -207,6 +261,13 @@
     "upsell": {
       "defaultCta": "Compare plans",
       "upgradeTo": "Upgrade to {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activate your plan to unlock AskMoses",
+        "ownerBody": "Your organization doesn't have an active plan yet. Pick a plan to unlock the dashboard, call analysis, and everything else AskMoses offers.",
+        "ownerCta": "Activate plan now",
+        "trainerTitle": "Your organization's subscription is inactive",
+        "trainerBody": "Your organization's owner hasn't activated a plan yet. Get in touch with them to reactivate access. You don't need to do anything here."
+      },
       "uploadTwilio": {
         "title": "Skip the manual upload — go automatic",
         "description": "Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."

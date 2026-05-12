@@ -61,7 +61,14 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      // Normaliza email pra bater com como foi gravado no signup (lowercase).
+      // signInWithPassword do Supabase costuma normalizar, mas explicitar
+      // aqui elimina qualquer ambiguidade de versão.
+      const normalizedEmail = email.trim().toLowerCase()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
       if (authError || !data.session) {
         setError(t('invalidCredentials'))
         return
@@ -229,6 +236,13 @@ export default function LoginPage() {
             : (magicLoading ? t('magicLinkSubmitting') : t('magicLinkSubmit'))}
         </button>
       </form>
+
+      <p className="text-xs text-center mt-4" style={{ color: 'var(--am-muted)' }}>
+        {t('noAccount')}{' '}
+        <Link href={`/${locale}/signup`} className="underline" style={{ color: 'var(--am-accent2)' }}>
+          {t('signupLink')}
+        </Link>
+      </p>
 
       {/* Demo shortcuts — Client tabs + per-client users */}
       <div

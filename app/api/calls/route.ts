@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId } from '@/lib/auth'
+import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId, requireActiveSubscription } from '@/lib/auth'
 import { getCalls, createCall } from '@/lib/services/calls'
 import type { CreateCallInput } from '@/lib/services/calls'
 import { routing, type Locale } from '@/i18n/routing'
@@ -12,6 +12,12 @@ function resolveLocale(raw: string | null): Locale {
 export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  // Subscription gate: owner/trainer sem sub ativa não vê calls. Admin bypassa.
+  // Defense-in-depth: o FeatureGate no front é UI-only — sem isso aqui,
+  // chamadas diretas via fetch ainda retornariam dados da org sub-inactive.
+  const subErr = await requireActiveSubscription()
+  if (subErr) return subErr
 
   const role = await getRole()
   const { searchParams } = request.nextUrl
