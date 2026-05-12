@@ -36,18 +36,29 @@ ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS trainers_count      INT DEFAULT 0;
 
 -- ─── 2. Backfill: copia tudo do client espelho pra organizations ────────────
+-- Guard pra idempotência: se a migration já rodou em outro ambiente e a
+-- tabela clients já não existe, pula o backfill (UPDATE referenciaria
+-- tabela inexistente e erraria). Re-rodadas viram no-op seguro.
 
-UPDATE public.organizations o
-SET
-  plan_id             = c.plan_id,
-  subscription_status = c.subscription_status,
-  health              = c.health,
-  mrr                 = c.mrr,
-  calls_this_month    = c.calls_this_month,
-  avg_score           = c.avg_score,
-  trainers_count      = c.trainers_count
-FROM public.clients c
-WHERE c.org_id = o.id;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'clients'
+  ) THEN
+    UPDATE public.organizations o
+    SET
+      plan_id             = c.plan_id,
+      subscription_status = c.subscription_status,
+      health              = c.health,
+      mrr                 = c.mrr,
+      calls_this_month    = c.calls_this_month,
+      avg_score           = c.avg_score,
+      trainers_count      = c.trainers_count
+    FROM public.clients c
+    WHERE c.org_id = o.id;
+  END IF;
+END $$;
 
 -- ─── 3. Índices novos no organizations ──────────────────────────────────────
 

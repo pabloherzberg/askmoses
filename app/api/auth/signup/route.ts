@@ -135,7 +135,13 @@ export async function POST(request: NextRequest) {
   const tokenHash = linkData.properties.hashed_token
 
   const origin = request.nextUrl.origin
-  const nextPath = `/${locale ?? 'en'}/onboarding`
+  // next sem prefixo de locale — segue o padrão dos outros fluxos (invites
+  // usa '/me' ou '/dashboard'). Locale é resolvido pelo next-intl middleware
+  // no redirect final, baseado em Accept-Language do user. Incluir locale
+  // aqui não funciona porque isSafeNextPath (lib/auth/post-verify) só aceita
+  // paths em SAFE_NEXT_PATHS — caminhos prefixados com locale são rejeitados
+  // e caem no fallback genérico, fazendo o locale do email se perder.
+  const nextPath = '/onboarding'
   const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=signup&next=${encodeURIComponent(nextPath)}`
 
   const { subject, html } = buildSignupEmail({

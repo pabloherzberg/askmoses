@@ -104,12 +104,23 @@ export async function POST(request: NextRequest) {
   if (updateErr) return serverError('Não foi possível ativar a assinatura', updateErr)
 
   // Manter owners.plan (campo legacy text) sincronizado pra não quebrar
-  // queries antigas que lêem ele em vez de plans.code.
-  await admin
+  // queries antigas que lêem ele em vez de plans.code. Falha aqui NÃO
+  // reverte a subscription — a fonte de verdade é organizations.plan_id +
+  // organizations.subscription_status, que já está consistente. Logamos
+  // pra inspeção; o pior caso é owners.plan ficar stale numa leitura legacy.
+  const { error: ownersUpdateErr } = await admin
     .from('owners')
     .update({ plan: OWNERS_PLAN_LABEL[planCode] })
     .eq('user_id', ctx.userId)
     .eq('org_id', ctx.activeOrgId)
+  if (ownersUpdateErr) {
+    console.warn('[onboarding/subscribe] owners.plan update falhou — campo legacy ficou stale', {
+      userId: ctx.userId,
+      orgId: ctx.activeOrgId,
+      planCode,
+      err: ownersUpdateErr,
+    })
+  }
 
   return ok({
     success: true,

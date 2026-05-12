@@ -130,6 +130,36 @@ export async function POST(request: NextRequest) {
   // Pós-merge (migration 038): organizations já carrega plan_id +
   // subscription_status + health, então não há mais o passo "criar client
   // mirror + linkar via client_id".
+  //
+  // Ordem deliberada: INSERT users PRIMEIRO. Sem transação distribuída, esse
+  // INSERT serve como "lock" via PK (callerId). Owner abrindo 2 abas e
+  // submetendo em paralelo → uma das requests bate em duplicate key e
+  // aborta antes de criar uma org órfã. O pre-check (memberships count +
+  // users existence) acima dá UX agradável em casos sequenciais; esse
+  // INSERT é o gate real contra concorrência.
+
+  const { error: userErr } = await admin.from('users').insert({
+    id: callerId,
+    name: userName,
+    email,
+    role: 'owner',
+    avatar: deriveAvatar(userName),
+    avatar_color: pickAvatarColor(email),
+    active_org_id: null,
+    invite_status: 'accepted',
+  })
+  if (userErr) {
+    // PK collision = race com outra request paralela do mesmo user.
+    // Trata como conflict pra dar a mesma resposta do pre-check.
+    const errCode = (userErr as { code?: string }).code
+    if (errCode === '23505') {
+      return conflict(
+        'Você já está vinculado a uma organização. Para criar outra, fale com o Admin.',
+        'ALREADY_HAS_ORG'
+      )
+    }
+    return serverError('Não foi possível criar o usuário', userErr)
+  }
 
   const { data: org, error: orgErr } = await admin
     .from('organizations')
@@ -143,21 +173,19 @@ export async function POST(request: NextRequest) {
     })
     .select('id, name')
     .single()
-  if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
+  if (orgErr || !org) {
+    await admin.from('users').delete().eq('id', callerId)
+    return serverError('Não foi possível criar a organização', orgErr)
+  }
 
-  const { error: userErr } = await admin.from('users').insert({
-    id: callerId,
-    name: userName,
-    email,
-    role: 'owner',
-    avatar: deriveAvatar(userName),
-    avatar_color: pickAvatarColor(email),
-    active_org_id: org.id,
-    invite_status: 'accepted',
-  })
-  if (userErr) {
+  const { error: activeOrgErr } = await admin
+    .from('users')
+    .update({ active_org_id: org.id })
+    .eq('id', callerId)
+  if (activeOrgErr) {
     await admin.from('organizations').delete().eq('id', org.id)
-    return serverError('Não foi possível criar o usuário', userErr)
+    await admin.from('users').delete().eq('id', callerId)
+    return serverError('Não foi possível vincular o usuário à organização', activeOrgErr)
   }
 
   const { error: memErr } = await admin.from('memberships').insert({
@@ -168,8 +196,8 @@ export async function POST(request: NextRequest) {
     invited_at: new Date().toISOString(),
   })
   if (memErr) {
-    await admin.from('users').delete().eq('id', callerId)
     await admin.from('organizations').delete().eq('id', org.id)
+    await admin.from('users').delete().eq('id', callerId)
     return serverError('Não foi possível criar a membership', memErr)
   }
 
