@@ -9,6 +9,7 @@ const SAFE_NEXT_PATHS: ReadonlySet<string> = new Set([
   '/admin',
   '/calls',
   '/team-command-center',
+  '/onboarding',
 ])
 
 export async function markInviteAccepted(userId: string, orgId: string): Promise<void> {
@@ -57,7 +58,10 @@ export async function markInviteAccepted(userId: string, orgId: string): Promise
 
 export function resolveDestination(role: Role | undefined, nextRaw: string | null): string {
   if (nextRaw && isSafeNextPath(nextRaw)) return nextRaw
-  return role ? HOME[role] : '/login'
+  // Sem role + sessão válida = Owner pós-signup que ainda não criou org.
+  // Mandar pra /onboarding evita o loop (middleware redirecionaria /login →
+  // /onboarding de qualquer forma já que ele tem sessão).
+  return role ? HOME[role] : '/onboarding'
 }
 
 function isSafeNextPath(value: string): boolean {

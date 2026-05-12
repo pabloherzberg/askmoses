@@ -80,14 +80,32 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.app_metadata?.role as Role | undefined
 
-  // /onboarding é semi-público: requer login mas aceita user sem role.
-  // Pelo modelo de roles, o único caminho válido pra "sessão sem role"
-  // é Owner-em-onboarding (signup → criar 1ª org). Admin nasce com role;
-  // Trainer só entra via invite (sempre com role+org). Qualquer outro
-  // estado aqui é inconsistente — redirecionar pra role-home é o safe-fail.
+  // /onboarding é multi-step e semi-público — requer login mas permite
+  // estados intermediários do fluxo de cadastro:
+  //   step-1 (/onboarding):       user SEM role (acabou de confirmar email)
+  //   step-2 (/onboarding/plan):  owner com role definida, sub 'inactive'
+  //                                (criou org no step-1, falta pagar plano)
+  //
+  // Pelo modelo de roles (Admin nunca tem org; Trainer sempre via invite),
+  // a única transição válida que passa por /onboarding é signup → step-1
+  // → step-2 → /dashboard. Admin/Trainer aqui = bug → safe-fail pra home.
   // Self-service 2ª org (Task B futura) será uma rota separada.
   if (isOnboarding) {
     if (!user) return NextResponse.redirect(localized('/login', locale, request.url))
+
+    const isStep2 = rawPath.startsWith('/onboarding/plan')
+
+    if (isStep2) {
+      // /onboarding/plan: owner-only. Sem role = ainda no step-1.
+      if (!role) return NextResponse.redirect(localized('/onboarding', locale, request.url))
+      if (role !== 'owner') return NextResponse.redirect(redirectByRole(role, locale, request.url))
+      // Owner com sub já ativa não precisa do step-2 — a página redireciona
+      // server-side; deixamos passar aqui pra não duplicar a checagem.
+      return supabaseResponse
+    }
+
+    // step-1 (/onboarding exato ou outras subrotas não conhecidas):
+    // só user sem role; role-bearing volta pra home.
     if (role) return NextResponse.redirect(redirectByRole(role, locale, request.url))
     return supabaseResponse
   }

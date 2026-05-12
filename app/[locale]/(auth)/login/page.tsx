@@ -230,6 +230,13 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <p className="text-xs text-center mt-4" style={{ color: 'var(--am-muted)' }}>
+        {t('noAccount')}{' '}
+        <Link href={`/${locale}/signup`} className="underline" style={{ color: 'var(--am-accent2)' }}>
+          {t('signupLink')}
+        </Link>
+      </p>
+
       {/* Demo shortcuts — Client tabs + per-client users */}
       <div
         className="mt-8 mb-8 p-4 rounded-xl border"
