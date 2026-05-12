@@ -167,6 +167,7 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "teamCommandCenter": "Team Command Center",
+      "marketingIntelligence": "Marketing Intelligence",
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
@@ -282,6 +283,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — What Drives Closes",
+      "titleNoVolume": "Coaching Drivers — Team Averages by Dimension",
       "mockBadge": "mock data only",
       "legend": {
         "highCorrelation": "High correlation",
@@ -306,7 +308,12 @@
         "Rubric": "Rubric",
         "Behavioral": "Behavioral"
       },
+      "disclaimer": "After sufficient call volume, AskMoses will identify which dimensions correlate most with closes.",
       "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "behavioralProfile": {
+      "title": "Behavioral Correlation Profile",
+      "teamAvg": "Team avg"
     },
     "closeRateTrend": {
       "title": "6-Week Close Rate Trend",

@@ -310,8 +310,18 @@ export async function POST(request: NextRequest) {
       emailDelivery = result.emailDelivery
       emailId = result.emailId
     } catch (err) {
-      // Rollback: trainer/owner row + membership. O user em si fica —
-      // ele já existia antes desta request.
+      // Rollback: invite_tokens + trainer/owner row + membership. O user em
+      // si fica — ele já existia antes desta request.
+      //
+      // invite_tokens é invalidado primeiro porque sendInviteEmail insere o
+      // token ANTES de chamar o Resend — se o envio falha, sobra token ativo
+      // sem membership correspondente (estado órfão). Sem essa limpeza, se o
+      // email foi entregue apesar do erro, o link levaria a um consume sem
+      // membership pra aceitar.
+      await admin.rpc('invalidate_active_invite_tokens', {
+        p_user_id: existingUser.id,
+        p_org_id: targetOrgId,
+      })
       if (targetRole === 'trainer') {
         await admin.from('trainers').delete()
           .eq('user_id', existingUser.id).eq('org_id', targetOrgId)

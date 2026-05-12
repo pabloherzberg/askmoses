@@ -145,7 +145,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Trainer: allow /me, /calls (filtered server-side), /dashboard/upload
-  const trainerBlocked = ['/team-command-center']
+  const trainerBlocked = ['/team-command-center', '/marketing-intelligence']
   const trainerDashboardBlocked =
     rawPath.startsWith('/dashboard') && !rawPath.startsWith('/dashboard/upload')
   if (

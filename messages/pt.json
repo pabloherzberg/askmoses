@@ -167,6 +167,7 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "teamCommandCenter": "Centro de Comando",
+      "marketingIntelligence": "Marketing Intelligence",
       "calls": "Chamadas",
       "myDashboard": "Meu painel",
       "myCalls": "Minhas chamadas",
@@ -282,6 +283,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — O que leva ao fechamento",
+      "titleNoVolume": "Coaching Drivers — Médias do time por dimensão",
       "mockBadge": "apenas dados mock",
       "legend": {
         "highCorrelation": "Correlação alta",
@@ -306,7 +308,12 @@
         "Rubric": "Rubrica",
         "Behavioral": "Comportamental"
       },
+      "disclaimer": "Quando houver volume suficiente de calls, o AskMoses identificará quais dimensões mais correlacionam com fechamentos.",
       "mockFooter": "† todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+    },
+    "behavioralProfile": {
+      "title": "Perfil de correlação comportamental",
+      "teamAvg": "Média do time"
     },
     "closeRateTrend": {
       "title": "Tendência de fechamento — 6 semanas",
