@@ -7,14 +7,13 @@ import {
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
-import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
+import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
 import {
-  correlationEngine,
   rubricGaps,
   activeAlerts,
   estimatedRevenue,
@@ -49,10 +48,13 @@ export default async function DashboardPage() {
     getTranslations("Owner.activeAlerts"),
   ]);
 
+  const coachingDrivers = buildCoachingDrivers(rubric);
+
   const performanceTrends = await getPerformanceTrends(trainers);
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score);
   const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
+  console.log('[dashboard] totalCalls por trainer:', trainers.map((t) => ({ name: t.name, calls: t.totalCalls })), '→ totalCalls=', totalCalls);
   const avgClose =
     trainers.length > 0
       ? Math.round(
@@ -124,7 +126,7 @@ export default async function DashboardPage() {
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={correlationEngine} totalCalls={totalCalls} />
+        <CorrelationEngine factors={coachingDrivers} totalCalls={totalCalls} />
       </div>
 
       {/* ── Main grid: team health + alerts ──────────────────── */}
