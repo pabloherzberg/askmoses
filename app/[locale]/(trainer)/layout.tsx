@@ -9,7 +9,7 @@ export default function TrainerLayout({ children }: { children: React.ReactNode 
       <AppHeader mobileSidebar={<TrainerNavItems />} />
       <div className="flex">
         <AppSidebar role="trainer" />
-        <main className="flex-1 min-w-0 lg:pl-56 pt-[61px]">
+        <main className="flex-1 min-w-0 lg:pl-56 pt-[calc(61px+var(--impersonate-banner-h,0px))]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
             <FeatureGate>{children}</FeatureGate>
           </div>

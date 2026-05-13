@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
+import { AdminOrgRow } from './AdminOrgRow'
 import type { HealthStatus, PlanCode } from '@/lib/types'
 
 const healthStyles: Record<HealthStatus, { bg: string; color: string; key: 'healthy' | 'atRisk' | 'churning' }> = {
@@ -95,77 +96,13 @@ export default async function AdminPage() {
                 const health = healthStyles[client.health]
                 const plan   = planStyles[client.plan.code] ?? planStyles.starter
                 return (
-                  <tr
+                  <AdminOrgRow
                     key={client.id}
-                    style={{
-                      borderBottom: i < clients.length - 1 ? '1px solid var(--am-border)' : 'none',
-                    }}
-                  >
-                    {/* Client name */}
-                    <td className="px-5 py-4">
-                      <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-                        {client.name}
-                      </p>
-                    </td>
-
-                    {/* Plan */}
-                    <td className="px-5 py-4">
-                      <span
-                        className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono"
-                        style={{ background: plan.bg, color: plan.color }}
-                      >
-                        {client.plan.name}
-                      </span>
-                    </td>
-
-                    {/* Trainers count */}
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
-                        {client.trainersCount}
-                      </span>
-                    </td>
-
-                    {/* Calls */}
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
-                        {client.callsThisMonth}
-                      </span>
-                    </td>
-
-                    {/* Avg score */}
-                    <td className="px-5 py-4">
-                      <span
-                        className="text-sm font-semibold font-mono"
-                        style={{
-                          color:
-                            client.avgScore >= 4.25
-                              ? 'var(--am-green)'
-                              : client.avgScore >= 3.75
-                              ? 'var(--am-amber)'
-                              : 'var(--am-red)',
-                        }}
-                      >
-                        {client.avgScore.toFixed(1)}
-                      </span>
-                    </td>
-
-                    {/* MRR */}
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
-                        ${client.mrr.toLocaleString()}
-                      </span>
-                    </td>
-
-                    {/* Health */}
-                    <td className="px-5 py-4">
-                      <span
-                        className="text-[11px] font-medium px-2.5 py-1 rounded-full font-mono"
-                        style={{ background: health.bg, color: health.color }}
-                      >
-                        {tHealth(health.key)}
-                      </span>
-                    </td>
-                  </tr>
+                    client={client}
+                    isLast={i === clients.length - 1}
+                    styles={{ health, plan }}
+                    healthLabel={tHealth(health.key)}
+                  />
                 )
               })}
             </tbody>

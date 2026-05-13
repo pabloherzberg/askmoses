@@ -8,7 +8,10 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { MSWProvider } from "@/components/msw-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { ImpersonationBanner } from "@/components/shared/ImpersonationBanner"
 import { routing } from "@/i18n/routing"
+import { getActiveOrgContext } from "@/lib/auth"
+import { createAdminClient } from "@/lib/supabase/admin"
 import "@/styles/globals.css"
 
 const dmSans = DM_Sans({
@@ -69,10 +72,32 @@ export default async function LocaleLayout({ children, params }: Props) {
   // breaks `t()` lookups in client components.
   const messages = await getMessages()
 
+  // Banner de impersonate: server-resolve da org alvo pra renderizar nome.
+  // ctx.isImpersonating só é true quando Admin tem JWT app_metadata.impersonating_org_id
+  // setado (POST /api/admin/impersonate). Caso normal: null → componente
+  // retorna null e não renderiza.
+  let impersonatingOrgName: string | null = null
+  const ctx = await getActiveOrgContext()
+  if (ctx?.isImpersonating && ctx.activeOrgId) {
+    const admin = createAdminClient()
+    const { data: org } = await admin
+      .from('organizations')
+      .select('name')
+      .eq('id', ctx.activeOrgId)
+      .maybeSingle()
+    impersonatingOrgName = (org as { name?: string } | null)?.name ?? null
+  }
+
+  // CSS var consumida pelo AppHeader (top) e mains (padding-top) — quando
+  // impersonando, banner ocupa 36px no topo e tudo escorrega pra baixo.
+  // Quando nulo, default 0 mantém o layout original.
+  const bannerHeight = impersonatingOrgName ? '36px' : '0px'
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
         className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}
+        style={{ ['--impersonate-banner-h' as string]: bannerHeight }}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
@@ -81,6 +106,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             enableSystem={false}
             disableTransitionOnChange
           >
+            <ImpersonationBanner orgName={impersonatingOrgName} />
             <MSWProvider>{children}</MSWProvider>
             <Toaster />
             <Analytics />

@@ -143,10 +143,12 @@ export async function DELETE() {
     // Job de cleanup fecha sessões órfãs.
   }
 
-  // Remove o claim mantendo o resto do metadata.
+  // Supabase faz merge (não replace) em app_metadata via updateUserById —
+  // omitir a chave não limpa o valor anterior. Setar explicitamente null
+  // força o clear. Mantemos role + qualquer outro flag intacto via spread.
   const { impersonating_org_id: _dropped, ...metaWithoutImpersonate } = currentMeta
   const { error: metaErr } = await admin.auth.admin.updateUserById(session.user.id, {
-    app_metadata: metaWithoutImpersonate,
+    app_metadata: { ...metaWithoutImpersonate, impersonating_org_id: null },
   })
   if (metaErr) return serverError('Não foi possível encerrar impersonate', metaErr)
 
