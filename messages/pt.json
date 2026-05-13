@@ -202,6 +202,12 @@
         "trainer": "Vendedor"
       }
     },
+    "userMenu": {
+      "triggerAria": "Menu do usuário",
+      "loading": "Carregando…",
+      "password": "Senha",
+      "signOut": "Sair"
+    },
     "pageTitles": {
       "dashboard": "Dashboard",
       "upload": "Enviar chamada",
@@ -360,6 +366,31 @@
         "ctaPrefix": "Revisar em"
       },
       "ctaAria": "{prefix} {time} — não funcional na demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Segurança",
+    "title": "Senha",
+    "subtitle": "Defina ou troque sua senha. O magic link continua funcionando — a senha é uma alternativa.",
+    "welcome": {
+      "aria": "Bem-vindo",
+      "close": "Fechar",
+      "title": "Bem-vindo! Que tal definir uma senha agora?",
+      "body": "Você pode pular e continuar entrando por magic link. Se preferir, define uma senha aqui em segundos.",
+      "skip": "Pular por enquanto"
+    },
+    "form": {
+      "newLabel": "Nova senha",
+      "confirmLabel": "Confirmar senha",
+      "placeholder": "••••••••",
+      "hint": "Mínimo de {min} caracteres.",
+      "submit": "Salvar senha",
+      "submitting": "Salvando…",
+      "magicLinkNote": "Você pode continuar entrando por magic link também.",
+      "successDetail": "Senha atualizada com sucesso.",
+      "errorTooShort": "Senha deve ter pelo menos {min} caracteres.",
+      "errorMismatch": "As senhas não conferem.",
+      "errorGeneric": "Não foi possível salvar a senha. Tente novamente."
     }
   },
   "Trainer": {

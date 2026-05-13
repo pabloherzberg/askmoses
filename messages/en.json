@@ -202,6 +202,12 @@
         "trainer": "Sales Person"
       }
     },
+    "userMenu": {
+      "triggerAria": "User menu",
+      "loading": "Loading…",
+      "password": "Password",
+      "signOut": "Sign out"
+    },
     "pageTitles": {
       "dashboard": "Dashboard",
       "upload": "Upload Call",
@@ -360,22 +366,31 @@
         "ctaPrefix": "Review at"
       },
       "ctaAria": "{prefix} {time} — non-functional in demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Security",
+    "title": "Password",
+    "subtitle": "Set or change your password. Magic link still works — password is an alternative.",
+    "welcome": {
+      "aria": "Welcome",
+      "close": "Close",
+      "title": "Welcome! Want to set a password now?",
+      "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
+      "skip": "Skip for now"
     },
-    "behavioralProfile": {
-      "title": "Behavioral Correlation Profile",
-      "mockBadge": "mock data only",
-      "legend": {
-        "aboveAvg": "Sales person score (above avg)",
-        "belowAvg": "Sales person score (below avg)",
-        "teamAvgMarker": "Team avg marker"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs team avg",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Team avg"
-      },
-      "mockFooter": "† all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation"
+    "form": {
+      "newLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} characters.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "magicLinkNote": "You can still sign in via magic link.",
+      "successDetail": "Password updated successfully.",
+      "errorTooShort": "Password must be at least {min} characters.",
+      "errorMismatch": "Passwords do not match.",
+      "errorGeneric": "Could not save password. Try again."
     }
   },
   "Trainer": {

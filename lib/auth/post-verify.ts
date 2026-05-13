@@ -10,6 +10,7 @@ const SAFE_NEXT_PATHS: ReadonlySet<string> = new Set([
   '/calls',
   '/team-command-center',
   '/onboarding',
+  '/password',
 ])
 
 export async function markInviteAccepted(userId: string, orgId: string): Promise<void> {

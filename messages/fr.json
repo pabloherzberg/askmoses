@@ -202,6 +202,13 @@
         "trainer": "Commercial"
       }
     },
+    "userMenu": {
+      "triggerAria": "Menu utilisateur",
+      "loading": "Chargement…",
+      "account": "Compte",
+      "setPassword": "Définir le mot de passe",
+      "signOut": "Déconnexion"
+    },
     "pageTitles": {
       "dashboard": "Dashboard",
       "upload": "Charger un appel",
@@ -360,6 +367,31 @@
         "ctaPrefix": "Revoir à"
       },
       "ctaAria": "{prefix} {time} — non fonctionnel en démo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Sécurité",
+    "title": "Mot de passe",
+    "subtitle": "Définissez ou changez votre mot de passe. Le magic link fonctionne toujours — le mot de passe est une alternative.",
+    "welcome": {
+      "aria": "Bienvenue",
+      "close": "Fermer",
+      "title": "Bienvenue ! Vous voulez définir un mot de passe maintenant ?",
+      "body": "Vous pouvez passer cette étape et continuer à vous connecter par magic link. Si vous préférez, définissez un mot de passe ici en quelques secondes.",
+      "skip": "Passer pour l'instant"
+    },
+    "form": {
+      "newLabel": "Nouveau mot de passe",
+      "confirmLabel": "Confirmer le mot de passe",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} caractères.",
+      "submit": "Enregistrer",
+      "submitting": "Enregistrement…",
+      "magicLinkNote": "Vous pouvez aussi continuer à vous connecter par magic link.",
+      "successDetail": "Mot de passe mis à jour.",
+      "errorTooShort": "Le mot de passe doit comporter au moins {min} caractères.",
+      "errorMismatch": "Les mots de passe ne correspondent pas.",
+      "errorGeneric": "Impossible d'enregistrer le mot de passe. Réessayez."
     }
   },
   "Trainer": {

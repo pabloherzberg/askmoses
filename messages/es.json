@@ -202,6 +202,12 @@
         "trainer": "Vendedor"
       }
     },
+    "userMenu": {
+      "triggerAria": "Menú de usuario",
+      "loading": "Cargando…",
+      "password": "Contraseña",
+      "signOut": "Salir"
+    },
     "pageTitles": {
       "dashboard": "Dashboard",
       "upload": "Subir llamada",
@@ -360,6 +366,31 @@
         "ctaPrefix": "Revisar en"
       },
       "ctaAria": "{prefix} {time} — no funcional en la demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Seguridad",
+    "title": "Contraseña",
+    "subtitle": "Define o cambia tu contraseña. El magic link sigue funcionando — la contraseña es una alternativa.",
+    "welcome": {
+      "aria": "Bienvenido",
+      "close": "Cerrar",
+      "title": "¡Bienvenido! ¿Quieres definir una contraseña ahora?",
+      "body": "Puedes saltarte este paso y seguir entrando por magic link. Si lo prefieres, define una contraseña aquí en segundos.",
+      "skip": "Saltar por ahora"
+    },
+    "form": {
+      "newLabel": "Nueva contraseña",
+      "confirmLabel": "Confirmar contraseña",
+      "placeholder": "••••••••",
+      "hint": "Mínimo {min} caracteres.",
+      "submit": "Guardar contraseña",
+      "submitting": "Guardando…",
+      "magicLinkNote": "También puedes seguir entrando por magic link.",
+      "successDetail": "Contraseña actualizada correctamente.",
+      "errorTooShort": "La contraseña debe tener al menos {min} caracteres.",
+      "errorMismatch": "Las contraseñas no coinciden.",
+      "errorGeneric": "No se pudo guardar la contraseña. Inténtalo de nuevo."
     }
   },
   "Trainer": {

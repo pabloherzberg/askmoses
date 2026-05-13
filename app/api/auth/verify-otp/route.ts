@@ -45,5 +45,17 @@ export async function GET(request: NextRequest) {
     await markInviteAccepted(userId, orgIdRaw)
   }
 
-  return NextResponse.redirect(`${origin}${resolveDestination(role, nextRaw)}`)
+  const homePath = resolveDestination(role, nextRaw)
+
+  // Primeiro acesso após invite aceito: redireciona pra /password?welcome=1
+  // com next=<home original>. Página mostra banner "definir senha agora ou
+  // pular" — decisão Victor 2026-05-13: magic link continua funcionando, a
+  // senha é opcional. Apenas pro fluxo invite — magiclink/recovery vão direto.
+  if (typeRaw === 'invite') {
+    return NextResponse.redirect(
+      `${origin}/password?welcome=1&next=${encodeURIComponent(homePath)}`,
+    )
+  }
+
+  return NextResponse.redirect(`${origin}${homePath}`)
 }

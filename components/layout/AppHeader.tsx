@@ -5,7 +5,7 @@ import type React from 'react'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { LogOut, Menu } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -16,7 +16,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
-import { createClient } from '@/lib/supabase/client'
+import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -35,12 +35,6 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
   const t = useTranslations('Shared.header')
   const tSidebar = useTranslations('Shared.sidebar')
   const [open, setOpen] = useState(false)
-
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = `/${locale}/login`
-  }
 
   // Resolve title — string literal or pathname map.
   // Map keys may be locale-prefixed (e.g. "/en/dashboard") or bare ("/dashboard").
@@ -143,28 +137,9 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
           <OrgSwitcher />
           <LanguageSwitcher />
           <ThemeToggle />
-          <button
-            onClick={handleLogout}
-            aria-label={t('signOut')}
-            title={t('signOut')}
-            className="am-theme-toggle"
-            style={{
-              background: 'var(--am-bg3)',
-              border: '1px solid var(--am-border2)',
-              color: 'var(--am-muted)',
-              borderRadius: '8px',
-              width: '34px',
-              height: '34px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'color 0.2s, background 0.2s',
-              flexShrink: 0,
-            }}
-          >
-            <LogOut size={16} />
-          </button>
+          {/* Avatar dropdown substitui o botão de logout standalone — agora signOut
+              vive dentro do menu, ao lado de "Conta"/"Definir senha". */}
+          <UserAvatarMenu />
         </div>
       </div>
     </header>
