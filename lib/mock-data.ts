@@ -663,7 +663,7 @@ export const rubricSections: RubricSection[] = [
     name: 'Discovery',
     weight: 20,
     isCritical: true,
-    description: 'Quality of open-ended questions and active listening. The trainer must identify the real pain before any presentation.',
+    description: 'Quality of open-ended questions and active listening. The sales person must identify the real pain before any presentation.',
     teamAvg: 4.1,
     color: 'blue',
     trainerScores: { marcus: 4.7, jamie: 4.4, jordan: 4.0, taylor: 3.4 },
@@ -721,7 +721,7 @@ export const insights: Insight[] = [
     tag: 'Team pattern',
     tagColor: 'red',
     summary:
-      '3 of 4 trainers score below 70 on Objection Handling. Calls that skip this step close at 38% vs. 71% when executed correctly.',
+      '3 of 4 sales people score below 70 on Objection Handling. Calls that skip this step close at 38% vs. 71% when executed correctly.',
     action:
       '30-min role-play focused on price objections. Use Marcus\'s calls as the benchmark.',
   },
@@ -730,7 +730,7 @@ export const insights: Insight[] = [
     type: 'warning',
     icon: '⚠️',
     title: 'Taylor is at risk of disengagement',
-    tag: 'Trainer alert',
+    tag: 'Sales person alert',
     tagColor: 'amber',
     summary:
       'Score dropped 12pts in 2 weeks, call volume down 40%, and close rate is the lowest at 55%. This is a coaching emergency, not a performance issue.',
@@ -745,7 +745,7 @@ export const insights: Insight[] = [
     tag: 'Best practices',
     tagColor: 'blue',
     summary:
-      'Marcus scores 94 in Discovery — 11pts above average. He asks 3 open-ended questions before presenting the offer. No other trainer replicates this.',
+      'Marcus scores 94 in Discovery — 11pts above average. He asks 3 open-ended questions before presenting the offer. No other sales person replicates this.',
     action:
       'Pull 2 clips from Marcus\'s calls and share as training material at the next team meeting.',
   },
@@ -953,7 +953,7 @@ export const scripts = [
     ],
     full_script: 'Complete dog training sales script...',
     criteria: [
-      { name: 'Rapport Building', description: 'Trainer establishes connection in first 2 minutes' },
+      { name: 'Rapport Building', description: 'Sales person establishes connection in first 2 minutes' },
       { name: 'Open Questions', description: 'At least 3 open questions before presenting offer' },
       { name: 'Pain Identification', description: 'Identifies the real pain, not just the symptom' },
       { name: 'Emotional Connection', description: 'Connects the problem to emotional/financial impact' },
@@ -1116,7 +1116,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/19/2026',
       score:    4.6,
       result:   'Closed',
-      analysis: 'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this.',
+      analysis: 'Discovery phase: asked 4 open-ended questions before presenting offer. No other sales person replicates this.',
       listenAt: '1:48',
     },
   ],
@@ -1194,7 +1194,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:            '3/19/2026',
       score:           4.6,
       result:          'Closed',
-      analysis:        'Discovery phase: asked 4 open-ended questions before presenting offer. No other trainer replicates this pattern.',
+      analysis:        'Discovery phase: asked 4 open-ended questions before presenting offer. No other sales person replicates this pattern.',
       listenAt:        '1:48',
     },
   ],
@@ -1509,7 +1509,7 @@ export const activeAlerts: ActiveAlert[] = [
   {
     type: 'warning',
     dotColor: 'amber',
-    message: '3 trainers skipping objection handling',
+    message: '3 sales people skipping objection handling',
     cta: 'Train now',
   },
   {
