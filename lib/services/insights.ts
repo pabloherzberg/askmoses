@@ -97,7 +97,7 @@ function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
     title: `${weakest.label} is the biggest revenue leak`,
     tag: "Team pattern",
     tagColor: "red",
-    summary: `${trainersBelow} of ${sorted.length} trainers score below 3.5 on ${weakest.label}. Calls that skip this step close at ${closeRateLow}% vs. ${closeRateHigh}% when executed correctly.`,
+    summary: `${trainersBelow} of ${sorted.length} sales people score below 3.5 on ${weakest.label}. Calls that skip this step close at ${closeRateLow}% vs. ${closeRateHigh}% when executed correctly.`,
     action: `30-min role-play focused on ${weakest.label.toLowerCase()}. Use ${bestOnWeakestName}'s calls as the benchmark.`,
   });
 
@@ -123,7 +123,7 @@ function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
       type: "warning",
       icon: "⚠️",
       title: `${atRisk.name} is at risk of disengagement`,
-      tag: "Trainer alert",
+      tag: "Sales person alert",
       tagColor: "amber",
       summary: `Score dropped ${Math.abs(atRisk.scoreDelta)}pts recently, ${atRisk.totalCalls} total calls, and close rate is at ${atRiskCloseRate}%. This is a coaching emergency, not a performance issue.`,
       action: `Schedule a 1:1 with ${atRisk.name}. Review the last 3 calls and identify where confidence dropped.`,
@@ -134,7 +134,7 @@ function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
       type: "warning",
       icon: "⚠️",
       title: `${atRisk.name} needs coaching attention`,
-      tag: "Trainer alert",
+      tag: "Sales person alert",
       tagColor: "amber",
       summary: `Lowest score on the team (${atRisk.score}), ${atRisk.totalCalls} total calls, close rate at ${atRiskCloseRate}%. Targeted coaching can close the gap.`,
       action: `Schedule a 1:1 with ${atRisk.name}. Review the last 3 calls and identify specific areas for improvement.`,
@@ -161,7 +161,7 @@ function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
     title: `${topTrainer.name}'s ${strongest.label} can elevate the whole team`,
     tag: "Best practices",
     tagColor: "blue",
-    summary: `${topTrainer.name} scores ${topScore}/5 in ${strongest.label} — ${delta}pts above team average (${teamAvgOnStrongest}/5). This is a replicable pattern that other trainers can adopt.`,
+    summary: `${topTrainer.name} scores ${topScore}/5 in ${strongest.label} — ${delta}pts above team average (${teamAvgOnStrongest}/5). This is a replicable pattern that the sales team can adopt.`,
     action: `Pull 2 clips from ${topTrainer.name}'s calls and share as training material at the next team meeting.`,
   });
 

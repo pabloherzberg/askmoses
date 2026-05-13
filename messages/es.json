@@ -183,6 +183,7 @@
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
       "createOrganization": "Nueva organización",
+      "aiControls": "AI Controls",
       "tools": "Herramientas",
       "starterTier": "Plan Starter",
       "starterTierSubtitle": "Subida manual",
@@ -588,6 +589,46 @@
       "toastSavedBody": "Criterios de la rúbrica actualizados correctamente.",
       "toastErrorTitle": "Error",
       "toastErrorBody": "Fallo al guardar cambios de la rúbrica. Inténtalo de nuevo."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "Controles de IA",
+      "subtitle": "Configura temperatura y límite de tokens por módulo de IA. Solo visible para admins.",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "updatedBy": "Actualizado por",
+      "logLabel": "Registro de cambios",
+      "logEmpty": "Aún no se han registrado cambios.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Evalúa llamadas según la rúbrica",
+        "correlation_engine": "Genera insights de correlación en el panel del gestor",
+        "marketing_intelligence": "Genera titulares y textos de anuncios"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Rango recomendado:",
+        "maxTokensRange": "Rango válido:"
+      },
+      "th": {
+        "logModule": "Módulo",
+        "logField": "Campo",
+        "logPrev": "Valor anterior",
+        "logNew": "Nuevo valor",
+        "logUser": "Usuario",
+        "logDate": "Fecha"
+      },
+      "toastSavedTitle": "Guardado",
+      "toastSavedBody": "Configuración de {module} actualizada.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Fallo al guardar. Inténtalo de nuevo."
     }
   },
   "Coaching": {

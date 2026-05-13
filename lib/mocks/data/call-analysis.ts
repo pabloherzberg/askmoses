@@ -115,7 +115,7 @@ export function buildObjectionSections(scores: number[]) {
 
 export const summaryByOutcome: Record<string, AnalysisSummary> = {
   closed: {
-    summary: 'Excellent call with solid execution at every stage. The trainer guided the prospect from discovery to close naturally and without pressure.',
+    summary: 'Excellent call with solid execution at every stage. The sales person guided the prospect from discovery to close naturally and without pressure.',
     strengths: [
       'Deep discovery with 4+ open-ended questions before the offer',
       'Created real urgency by connecting the problem to emotional costs',
@@ -138,7 +138,7 @@ export const summaryByOutcome: Record<string, AnalysisSummary> = {
     ],
   },
   objection_unresolved: {
-    summary: 'Call with a promising start that stalled in the objection phase. The trainer couldn\'t reframe the investment and went into defensive mode.',
+    summary: 'Call with a promising start that stalled in the objection phase. The sales person couldn\'t reframe the investment and went into defensive mode.',
     strengths: [
       'Good call opening with strong initial rapport',
       'Knows the product well and presented it clearly',
@@ -150,7 +150,7 @@ export const summaryByOutcome: Record<string, AnalysisSummary> = {
     ],
   },
   no_decision: {
-    summary: 'Weak call with no clear direction. The prospect led the conversation and the trainer couldn\'t create enough value to move forward. Urgent coaching needed.',
+    summary: 'Weak call with no clear direction. The prospect led the conversation and the sales person couldn\'t create enough value to move forward. Urgent coaching needed.',
     strengths: [
       'Managed to keep the prospect on the call',
     ],
@@ -203,7 +203,7 @@ export function buildMockAnalysis(): AnalyzeResult {
   return {
     overallScore: 3.9,
     detectedOutcome: 'partial',
-    summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The trainer showed solid product knowledge but needs to deepen problem agitation.',
+    summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The sales person showed solid product knowledge but needs to deepen problem agitation.',
     strengths: [
       'Discovery correctly identified the real pain of the prospect',
       'Maintained prospect engagement throughout the call',
@@ -223,7 +223,7 @@ export function buildMockAnalysis(): AnalyzeResult {
 
 export const mockGeneratedCriteria = {
   criteria: [
-    { name: 'Rapport Building', description: 'Trainer establishes genuine connection in the first 2 minutes' },
+    { name: 'Rapport Building', description: 'Sales person establishes genuine connection in the first 2 minutes' },
     { name: 'Open-Ended Discovery', description: 'At least 3 open questions before any product mention' },
     { name: 'Emotional Pain Identification', description: 'Connects problem to emotional/financial impact' },
     { name: 'Value Anchoring', description: 'Establishes value before revealing price' },
