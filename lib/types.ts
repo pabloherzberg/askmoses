@@ -211,3 +211,23 @@ export interface MarketingIntelligence {
   primaryTexts: MarketingCopySuggestion[]
   sourceCalls: MarketingSourceCall[]
 }
+
+export type AiModuleId = 'scoring_engine' | 'correlation_engine' | 'marketing_intelligence'
+
+export interface AiModuleConfig {
+  module_id: AiModuleId
+  temperature: number
+  max_tokens: number
+  updated_by: string
+  updated_at: string
+}
+
+export interface AiModuleConfigLogEntry {
+  id: string
+  module_id: AiModuleId
+  field: 'temperature' | 'max_tokens'
+  previous_value: number
+  new_value: number
+  updated_by: string
+  updated_at: string
+}

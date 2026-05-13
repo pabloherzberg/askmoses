@@ -5,7 +5,10 @@ import {
   globalMetrics,
   supabaseCalls,
   demoCredentials,
+  aiModuleConfigs,
+  aiModuleConfigLog,
 } from '@/lib/mock-data'
+import type { AiModuleId } from '@/lib/types'
 import { buildScriptIntelligence } from '@/lib/mocks/data/script-intelligence'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -84,6 +87,30 @@ const apiHandlers = [
   // GET /api/clients
   http.get('/api/clients', () => {
     return ok({ clients, metrics: globalMetrics })
+  }),
+
+  // GET /api/ai-module-configs
+  http.get('/api/ai-module-configs', () => {
+    return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
+  }),
+
+  // PUT /api/ai-module-configs
+  http.put('/api/ai-module-configs', async ({ request }) => {
+    const body = await request.json() as { module_id: AiModuleId; temperature: number; max_tokens: number; updated_by: string }
+    const idx = aiModuleConfigs.findIndex((c) => c.module_id === body.module_id)
+    if (idx === -1) {
+      return HttpResponse.json({ data: null, error: { message: 'Module not found', code: 404 } }, { status: 404 })
+    }
+    const prev = aiModuleConfigs[idx]
+    const now = new Date().toISOString()
+    if (prev.temperature !== body.temperature) {
+      aiModuleConfigLog.unshift({ id: `log-${Date.now()}-t`, module_id: body.module_id, field: 'temperature', previous_value: prev.temperature, new_value: body.temperature, updated_by: body.updated_by, updated_at: now })
+    }
+    if (prev.max_tokens !== body.max_tokens) {
+      aiModuleConfigLog.unshift({ id: `log-${Date.now()}-m`, module_id: body.module_id, field: 'max_tokens', previous_value: prev.max_tokens, new_value: body.max_tokens, updated_by: body.updated_by, updated_at: now })
+    }
+    aiModuleConfigs[idx] = { ...prev, temperature: body.temperature, max_tokens: body.max_tokens, updated_by: body.updated_by, updated_at: now }
+    return ok({ config: aiModuleConfigs[idx], log: aiModuleConfigLog })
   }),
 
   // GET /api/coaching — passthrough to real API route (server-side translation

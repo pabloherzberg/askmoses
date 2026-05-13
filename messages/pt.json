@@ -183,6 +183,7 @@
       "saasPanel": "Painel SaaS",
       "rubricConfig": "Configuração da rubrica",
       "createOrganization": "Nova organização",
+      "aiControls": "AI Controls",
       "tools": "Ferramentas",
       "starterTier": "Plano Starter",
       "starterTierSubtitle": "Upload manual",
@@ -556,6 +557,46 @@
       "toastSavedBody": "Critérios da rubrica atualizados com sucesso.",
       "toastErrorTitle": "Erro",
       "toastErrorBody": "Falha ao salvar alterações da rubrica. Tente novamente."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "Controles de IA",
+      "subtitle": "Configure temperatura e limite de tokens por módulo de IA. Visível apenas para admins.",
+      "save": "Salvar",
+      "saving": "Salvando...",
+      "updatedBy": "Atualizado por",
+      "logLabel": "Log de alterações",
+      "logEmpty": "Nenhuma alteração registrada ainda.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Avalia chamadas com base na rubrica",
+        "correlation_engine": "Gera insights de correlação no painel do gestor",
+        "marketing_intelligence": "Gera headlines e textos de anúncios"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Range recomendado:",
+        "maxTokensRange": "Range válido:"
+      },
+      "th": {
+        "logModule": "Módulo",
+        "logField": "Campo",
+        "logPrev": "Valor anterior",
+        "logNew": "Novo valor",
+        "logUser": "Usuário",
+        "logDate": "Data"
+      },
+      "toastSavedTitle": "Salvo",
+      "toastSavedBody": "Configuração de {module} atualizada.",
+      "toastErrorTitle": "Erro",
+      "toastErrorBody": "Falha ao salvar. Tente novamente."
     }
   },
   "Coaching": {

@@ -183,6 +183,7 @@
       "saasPanel": "SaaS Panel",
       "rubricConfig": "Rubric Config",
       "createOrganization": "New Organization",
+      "aiControls": "AI Controls",
       "tools": "Tools",
       "starterTier": "Starter Tier",
       "starterTierSubtitle": "Manual Upload",
@@ -556,6 +557,46 @@
       "toastSavedBody": "Rubric criteria updated successfully.",
       "toastErrorTitle": "Error",
       "toastErrorBody": "Failed to save rubric changes. Try again."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "AI Controls",
+      "subtitle": "Configure temperature and token limits per AI module. Visible to admins only.",
+      "save": "Save",
+      "saving": "Saving...",
+      "updatedBy": "Updated by",
+      "logLabel": "Change Log",
+      "logEmpty": "No changes recorded yet.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Evaluates calls based on the rubric",
+        "correlation_engine": "Generates correlation insights on the owner dashboard",
+        "marketing_intelligence": "Generates ad headlines and primary text"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Recommended range:",
+        "maxTokensRange": "Valid range:"
+      },
+      "th": {
+        "logModule": "Module",
+        "logField": "Field",
+        "logPrev": "Previous Value",
+        "logNew": "New Value",
+        "logUser": "User",
+        "logDate": "Date"
+      },
+      "toastSavedTitle": "Saved",
+      "toastSavedBody": "{module} configuration updated.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Failed to save. Try again."
     }
   },
   "Coaching": {

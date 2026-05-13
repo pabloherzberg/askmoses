@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
   HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit, Megaphone,
-  Building2, PlusCircle, Wand2
+  Building2, PlusCircle, Wand2, SlidersHorizontal
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -100,14 +100,15 @@ export function OwnerNavItems() {
 export function AdminNavItems() {
   const t = useTranslations('Shared.sidebar')
   const nav = [
-    { label: t('saasPanel'),             href: '/admin',                     icon: Building2  },
-    { label: t('createOrganization'),    href: '/admin/organizations/new',   icon: PlusCircle },
-    { label: t('rubricConfig'),          href: '/admin/rubric',              icon: Settings   },
-    { label: t('scriptBuilder'),         href: '/dashboard/script-builder',  icon: Wand2      },
-    { label: t('marketingIntelligence'), href: '/marketing-intelligence',    icon: Megaphone  },
-    { label: t('uploadCall'),            href: '/dashboard/upload',          icon: Upload     },
-    { label: t('members'),               href: '/dashboard/settings/invite', icon: UserPlus   },
-    { label: t('howToUse'),              href: '/dashboard/guide',           icon: HelpCircle },
+    { label: t('saasPanel'),             href: '/admin',                     icon: Building2         },
+    { label: t('createOrganization'),    href: '/admin/organizations/new',   icon: PlusCircle        },
+    { label: t('rubricConfig'),          href: '/admin/rubric',              icon: Settings          },
+    { label: t('aiControls'),            href: '/admin/ai-controls',         icon: SlidersHorizontal },
+    { label: t('scriptBuilder'),         href: '/dashboard/script-builder',  icon: Wand2             },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence',    icon: Megaphone         },
+    { label: t('uploadCall'),            href: '/dashboard/upload',          icon: Upload            },
+    { label: t('members'),               href: '/dashboard/settings/invite', icon: UserPlus          },
+    { label: t('howToUse'),              href: '/dashboard/guide',           icon: HelpCircle        },
   ]
   return (
     <nav className="flex flex-col gap-1">
