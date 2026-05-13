@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { forbidden, getOrgId, getRole, getSession, ok, unauthorized } from '@/lib/auth'
+import { forbidden, getOrgId, getRole, getSession, ok, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { getScripts } from '@/lib/services/scripts'
 import { dbCreateScript, type ScriptSection } from '@/lib/db/scripts'
 import { dbGetRubricById } from '@/lib/db/rubric'
@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
+
   const orgId = await getOrgId()
   if (!orgId) return forbidden()
 

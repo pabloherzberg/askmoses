@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { Resend } from 'resend'
-import { getSession, ok, unauthorized, forbidden, requireActiveSubscription } from '@/lib/auth'
+import { getSession, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
@@ -77,6 +77,13 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  // Admin impersonando NÃO pode convidar trainer/owner pra org alheia —
+  // mesmo que app_metadata.role='admin' permita o caller passar o role
+  // check, requireOwnerWrite bloqueia o caminho impersonate. Admin operando
+  // do próprio painel (sem impersonate) continua passando.
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const callerRole = session.user.app_metadata?.role as Role | undefined
   const callerId = session.user.id

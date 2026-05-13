@@ -1,4 +1,4 @@
-import { forbidden, getActiveOrgContext, getSession, ok, unauthorized } from '@/lib/auth'
+import { forbidden, getActiveOrgContext, getSession, ok, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { executeMarketingRun, NoClosedCallsError } from '@/lib/services/marketing-intelligence'
 
 // POST /api/marketing-intelligence/run
@@ -8,6 +8,13 @@ import { executeMarketingRun, NoClosedCallsError } from '@/lib/services/marketin
 export async function POST() {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  // Admin impersonando é read-only — bloqueia regen mesmo que role=admin.
+  // Quando Admin precisar forçar run em org alheia legitimamente, expor um
+  // endpoint /api/admin/marketing-intelligence/run dedicado (out of scope
+  // dessa sprint).
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   // Super-admin check is on the JWT (app_metadata.role === 'admin'), not the
   // org-context role — owners of an org never satisfy this.

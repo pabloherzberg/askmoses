@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId, requireActiveSubscription } from '@/lib/auth'
+import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
 import { getCalls, createCall } from '@/lib/services/calls'
 import type { CreateCallInput } from '@/lib/services/calls'
 import { routing, type Locale } from '@/i18n/routing'
@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const role = await getRole()
   if (role === 'trainer') return forbidden()
