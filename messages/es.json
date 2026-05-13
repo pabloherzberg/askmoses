@@ -359,22 +359,6 @@
         "ctaPrefix": "Revisar en"
       },
       "ctaAria": "{prefix} {time} — no funcional en la demo"
-    },
-    "behavioralProfile": {
-      "title": "Perfil conductual de correlación",
-      "mockBadge": "solo datos mock",
-      "legend": {
-        "aboveAvg": "Puntuación del vendedor (sobre la media)",
-        "belowAvg": "Puntuación del vendedor (bajo la media)",
-        "teamAvgMarker": "Marcador del promedio del equipo"
-      },
-      "th": {
-        "scoreVsTeam": "Puntuación vs promedio del equipo",
-        "score": "Puntuación",
-        "delta": "Delta",
-        "teamAvg": "Promedio del equipo"
-      },
-      "mockFooter": "† todos los valores vienen de mock-data.ts · verde = sobre la media · naranja = bajo la media · marcador vertical = promedio del equipo · sin cálculo real"
     }
   },
   "Trainer": {

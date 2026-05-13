@@ -359,22 +359,6 @@
         "ctaPrefix": "Review at"
       },
       "ctaAria": "{prefix} {time} — non-functional in demo"
-    },
-    "behavioralProfile": {
-      "title": "Behavioral Correlation Profile",
-      "mockBadge": "mock data only",
-      "legend": {
-        "aboveAvg": "Trainer score (above avg)",
-        "belowAvg": "Trainer score (below avg)",
-        "teamAvgMarker": "Team avg marker"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs team avg",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Team avg"
-      },
-      "mockFooter": "† all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation"
     }
   },
   "Trainer": {
