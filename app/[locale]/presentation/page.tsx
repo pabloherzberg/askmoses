@@ -114,7 +114,7 @@ export default function PresentationPage() {
                 </div>
               </CardHeader>
               <CardContent className="text-muted-foreground">
-                Identify top improvement areas across all trainers. Focus team training on highest-impact gaps.
+                Identify top improvement areas across the sales team. Focus team training on highest-impact gaps.
               </CardContent>
             </Card>
 

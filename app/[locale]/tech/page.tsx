@@ -76,7 +76,7 @@ export default function TechPage() {
       phase: "Phase 3: Advanced Analytics",
       features: [
         "Team comparison dashboards",
-        "Trainer progress tracking",
+        "Sales team progress tracking",
         "A/B testing scripts",
         "Predictive coaching insights",
       ],
@@ -245,7 +245,7 @@ export default function TechPage() {
                 <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-semibold">1</div>
                 <div>
                   <p className="font-semibold">Upload Audio/Transcript</p>
-                  <p className="text-sm text-muted-foreground">Trainer submits call via dashboard</p>
+                  <p className="text-sm text-muted-foreground">Sales person submits call via dashboard</p>
                 </div>
               </div>
               <div className="h-8 flex justify-center">

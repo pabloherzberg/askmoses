@@ -25,7 +25,7 @@ interface BehavioralProfileProps {
   trainerName?: string
 }
 
-export function BehavioralProfile({ dimensions, trainerName = 'Trainer' }: BehavioralProfileProps) {
+export function BehavioralProfile({ dimensions, trainerName = 'Sales Person' }: BehavioralProfileProps) {
   const t = useTranslations('Shared.behavioralProfile')
   return (
     <div

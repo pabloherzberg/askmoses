@@ -199,7 +199,7 @@
       "orgSwitcher": {
         "label": "Switch organization",
         "owner": "Owner",
-        "trainer": "Trainer"
+        "trainer": "Sales Person"
       }
     },
     "pageTitles": {
@@ -244,7 +244,7 @@
       "showMore": "Show more ↓",
       "showLess": "Show less ↑",
       "coachingNotes": "Coaching Notes",
-      "coachingNotesSubtitle": "Internal notes — not visible to the trainer.",
+      "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
       "coachingNotesPlaceholder": "Add your coaching notes here...",
       "coachingNotesFooter": "Notes are not persisted in this demo."
     },
@@ -365,8 +365,8 @@
       "title": "Behavioral Correlation Profile",
       "mockBadge": "mock data only",
       "legend": {
-        "aboveAvg": "Trainer score (above avg)",
-        "belowAvg": "Trainer score (below avg)",
+        "aboveAvg": "Sales person score (above avg)",
+        "belowAvg": "Sales person score (below avg)",
         "teamAvgMarker": "Team avg marker"
       },
       "th": {
@@ -450,14 +450,14 @@
       "activeSalesPeopleOne": "{count} active sales person",
       "activeSalesPeopleOther": "{count} active sales people",
       "bestCloseRate": "Best Close Rate",
-      "noTrainers": "No trainers"
+      "noTrainers": "No sales people"
     },
     "teamHealth": {
       "title": "Team Health",
       "mockBadge": "mock data only",
       "subtitle": "Who's improving · who needs attention this week",
       "th": {
-        "trainer": "TRAINER",
+        "trainer": "SALES PERSON",
         "status": "STATUS",
         "closeRate": "CLOSE %",
         "delta": "DELTA"
@@ -491,7 +491,7 @@
       "callsAnalyzedOther": "{count} calls analyzed",
       "noCallsFound": "No calls found.",
       "filterAllSalesPeople": "All Sales People",
-      "thTrainer": "Trainer",
+      "thTrainer": "Sales Person",
       "thProspect": "Prospect",
       "thDate": "Date",
       "thScore": "Score",
@@ -656,7 +656,7 @@
       "title": "Call History",
       "subtitle": "Review all processed sales calls and coaching feedback",
       "searchCalls": "Search Calls",
-      "searchPlaceholder": "Search by trainer name or prospect...",
+      "searchPlaceholder": "Search by sales person name or prospect...",
       "allCalls": "All Calls",
       "callsFoundOne": "{count} call found",
       "callsFoundOther": "{count} calls found",
@@ -737,7 +737,7 @@
       "steps": {
         "script": {
           "title": "Configure Your Sales Script",
-          "description": "Set up your ideal sales process that trainers should follow",
+          "description": "Set up your ideal sales process that your sales team should follow",
           "location": "Rubric page",
           "details": [
             "Go to the Rubric page in the sidebar",
@@ -749,7 +749,7 @@
           ],
           "tips": [
             "Be specific in your section instructions for better AI analysis",
-            "Include tips that help trainers understand what good looks like",
+            "Include tips that help your sales team understand what good looks like",
             "You can create multiple scripts for different call types"
           ]
         },
@@ -759,7 +759,7 @@
           "location": "Upload Call page",
           "details": [
             "Navigate to Upload Call in the sidebar",
-            "Enter the trainer's name and email",
+            "Enter the sales person's name and email",
             "Select which sales script to evaluate against",
             "Choose upload method: Audio file or paste transcript",
             "For audio: Upload MP3, WAV, or M4A files (max 25MB)",
@@ -774,7 +774,7 @@
         },
         "review": {
           "title": "Review AI Analysis",
-          "description": "See detailed feedback on how well the trainer followed the script",
+          "description": "See detailed feedback on how well the sales person followed the script",
           "location": "After upload",
           "details": [
             "View the overall score (sections covered vs total)",
@@ -792,18 +792,18 @@
         },
         "email": {
           "title": "Send Coaching Email",
-          "description": "Deliver personalized feedback directly to the trainer",
+          "description": "Deliver personalized feedback directly to the sales person",
           "location": "Results page",
           "details": [
             "After analysis, click 'Send Coaching Email'",
-            "The email is sent to the trainer's email address",
+            "The email is sent to the sales person's email address",
             "Email includes score, summary, and detailed feedback",
-            "Trainers receive actionable tips for improvement",
+            "Sales people receive actionable tips for improvement",
             "Call is automatically saved to history"
           ],
           "tips": [
             "Emails are branded and professional",
-            "Trainers can review feedback at their own pace",
+            "Sales people can review feedback at their own pace",
             "Consider following up on areas needing improvement"
           ]
         },
@@ -813,7 +813,7 @@
           "location": "Calls page",
           "details": [
             "Calls: View all analyzed calls with search and filters",
-            "Filter by trainer name, date range, or score",
+            "Filter by sales person name, date range, or score",
             "Click any call to see full details and transcript",
             "Track pass rates by criteria across all calls",
             "Identify which script sections need more training"
@@ -821,7 +821,7 @@
           "tips": [
             "Regular review helps identify training patterns",
             "Low-performing criteria indicate coaching opportunities",
-            "Use filters to focus on specific trainers or periods"
+            "Use filters to focus on specific sales people or periods"
           ]
         },
         "insights": {
@@ -865,7 +865,7 @@
         },
         {
           "q": "How does the AI scoring work?",
-          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the trainer addressed the key points."
+          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the sales person addressed the key points."
         },
         {
           "q": "Can I use different AI models?",
@@ -889,7 +889,7 @@
         },
         {
           "q": "How many calls do I need to generate insights?",
-          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse trainer outcomes, patterns become more statistically significant."
+          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse sales team outcomes, patterns become more statistically significant."
         },
         {
           "q": "Can I customize the insights analysis?",
@@ -1162,7 +1162,7 @@
         "salesPersonInfoTitle": "Sales Person Information",
         "salesPersonInfoSubtitle": "Who should receive the coaching email?",
         "salesPersonLabel": "Sales Person",
-        "selectTrainerPlaceholder": "Select a trainer...",
+        "selectTrainerPlaceholder": "Select a sales person...",
         "clientNameLabel": "Client Name",
         "clientNamePlaceholder": "e.g., Jane Doe",
         "clientNameHint": "Name of the prospect or customer on the call",
@@ -1211,7 +1211,7 @@
     "Hero": {
       "poweredBy": "Powered by",
       "badge": "Rapid MVP Proposal",
-      "title": "AI Post-Call Sales Coaching for Dog Trainers",
+      "title": "AI Post-Call Sales Coaching for Your Sales Team",
       "subtitle": "Automate coaching feedback after every sales call. Turn your best sales methodology into an AI coach that scales with your team.",
       "timelineLabel": "Timeline",
       "timelineValue": "2 Weeks",
@@ -1227,7 +1227,7 @@
         "Ariel reviews calls manually — this doesn't scale",
         "Feedback is delayed, inconsistent, or never delivered",
         "No structured way to enforce sales methodology",
-        "Trainers miss coaching moments that affect close rates"
+        "Sales people miss coaching moments that affect close rates"
       ]
     },
     "Workflow": {
@@ -1248,7 +1248,7 @@
         },
         "email": {
           "title": "Coaching Email",
-          "description": "Personalized feedback sent to the dog trainer"
+          "description": "Personalized feedback sent to the sales person"
         },
         "summary": {
           "title": "Aggregate Summary",
@@ -1281,7 +1281,7 @@
             "Audio upload (.mp3, .wav, .m4a)",
             "Direct transcript paste",
             "Whisper AI transcription",
-            "Trainer selection"
+            "Sales person selection"
           ]
         },
         "aiAnalysis": {
@@ -1296,7 +1296,7 @@
         },
         "coachingEmail": {
           "title": "Post-Call Coaching Email",
-          "description": "Automated email delivery of personalized coaching feedback to the trainer.",
+          "description": "Automated email delivery of personalized coaching feedback to the sales person.",
           "details": [
             "Branded HTML template",
             "Score breakdown",
@@ -1318,7 +1318,7 @@
           "title": "Simple History Page",
           "description": "Searchable log of all past call analyses for reference and debugging.",
           "details": [
-            "Filter by trainer",
+            "Filter by sales person",
             "Filter by date",
             "View full analysis",
             "Basic search"
@@ -1335,7 +1335,7 @@
           "category": "CRM Integration",
           "items": [
             "GoHighLevel (Pepper) sync",
-            "Auto-pull trainer contacts",
+            "Auto-pull sales team contacts",
             "Sync results to CRM",
             "CRM workflow triggers"
           ]
@@ -1375,10 +1375,10 @@
       "items": {
         "usage": {
           "category": "Usage",
-          "title": "Do trainers engage?",
+          "title": "Does the sales team engage?",
           "items": [
             "Email open rate > 60%",
-            "Trainers reference feedback in calls",
+            "Sales people reference feedback in calls",
             "Ariel uses aggregate summaries weekly"
           ]
         },
@@ -1387,7 +1387,7 @@
           "title": "Is feedback helpful?",
           "items": [
             "Qualitative survey: 4+ out of 5",
-            "Trainers request more detail (good sign)",
+            "Sales people request more detail (good sign)",
             "Ariel saves 5+ hrs/week on manual review"
           ]
         },
@@ -1406,7 +1406,7 @@
           "items": [
             "Close rate improvement tracked",
             "Time-to-close reduction",
-            "Trainer confidence increases"
+            "Sales team confidence increases"
           ]
         }
       }
@@ -1432,7 +1432,7 @@
           "timeline": "Post-MVP",
           "items": [
             "GoHighLevel (Pepper) sync",
-            "Auto-pull trainer contacts",
+            "Auto-pull sales team contacts",
             "Sync coaching results to CRM",
             "Workflow triggers"
           ]
@@ -1443,7 +1443,7 @@
           "timeline": "Future",
           "items": [
             "Interactive coach dashboard",
-            "Trainer response tracking",
+            "Sales person response tracking",
             "Script A/B testing",
             "Detailed analytics"
           ]
@@ -1513,7 +1513,7 @@
           "mvp": "Branded HTML + tips",
           "phase15": "Auto-triggered on call end",
           "phase2": "GHL workflow triggers",
-          "phase3": "Trainer response tracking",
+          "phase3": "Sales person response tracking",
           "reusabilityReason": "Email templates, sending logic, and formatting are 100% reusable. Future phases only change when/how it's triggered."
         },
         "summary": {
@@ -1763,7 +1763,7 @@
                   "text": "Paste transcript text directly"
                 },
                 {
-                  "text": "Input trainer name and email manually"
+                  "text": "Input sales person name and email manually"
                 },
                 {
                   "text": "Upload progress indicator"
@@ -1823,7 +1823,7 @@
                   "text": "List of all processed calls"
                 },
                 {
-                  "text": "Search by trainer name or email"
+                  "text": "Search by sales person name or email"
                 },
                 {
                   "text": "View individual call details with full analysis"
@@ -1849,7 +1849,7 @@
                   "text": "Smart insights & performance summaries"
                 },
                 {
-                  "text": "Achievement badges & trainer recognition"
+                  "text": "Achievement badges & sales person recognition"
                 },
                 {
                   "text": "Real-time analytics dashboard"

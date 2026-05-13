@@ -44,7 +44,7 @@ const i18n: Record<string, Lang> = {
     fallbackHint:
       'If the button does not work, copy and paste the link below into your browser:',
     footer: 'Sent automatically by AskMoses.AI',
-    roleLabels: { trainer: 'Trainer', owner: 'Owner' },
+    roleLabels: { trainer: 'Sales Person', owner: 'Owner' },
   },
   pt: {
     subject: (orgName) =>
@@ -64,7 +64,7 @@ const i18n: Record<string, Lang> = {
     fallbackHint:
       'Se o botão não funcionar, copie e cole o link abaixo no seu navegador:',
     footer: 'Enviado automaticamente pelo AskMoses.AI',
-    roleLabels: { trainer: 'Trainer', owner: 'Owner' },
+    roleLabels: { trainer: 'Sales Person', owner: 'Owner' },
   },
   es: {
     subject: (orgName) =>
@@ -84,7 +84,7 @@ const i18n: Record<string, Lang> = {
     fallbackHint:
       'Si el botón no funciona, copia y pega el enlace abajo en tu navegador:',
     footer: 'Enviado automáticamente por AskMoses.AI',
-    roleLabels: { trainer: 'Trainer', owner: 'Owner' },
+    roleLabels: { trainer: 'Sales Person', owner: 'Owner' },
   },
   fr: {
     subject: (orgName) =>
@@ -104,7 +104,7 @@ const i18n: Record<string, Lang> = {
     fallbackHint:
       'Si le bouton ne fonctionne pas, copiez et collez le lien ci-dessous dans votre navigateur :',
     footer: 'Envoyé automatiquement par AskMoses.AI',
-    roleLabels: { trainer: 'Trainer', owner: 'Owner' },
+    roleLabels: { trainer: 'Sales Person', owner: 'Owner' },
   },
 }
 
