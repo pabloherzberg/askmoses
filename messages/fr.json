@@ -183,6 +183,7 @@
       "saasPanel": "Panneau SaaS",
       "rubricConfig": "Config de la grille",
       "createOrganization": "Nouvelle organisation",
+      "aiControls": "AI Controls",
       "tools": "Outils",
       "starterTier": "Palier Starter",
       "starterTierSubtitle": "Upload manuel",
@@ -554,6 +555,46 @@
       "saving": "Enregistrement...",
       "toastSavedTitle": "Enregistré",
       "toastSavedBody": "Critères de grille mis à jour avec succès.",
+      "toastErrorTitle": "Erreur",
+      "toastErrorBody": "Échec de l'enregistrement. Réessayez."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "Contrôles IA",
+      "subtitle": "Configurez la température et la limite de tokens par module IA. Visible uniquement par les admins.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "updatedBy": "Mis à jour par",
+      "logLabel": "Journal des modifications",
+      "logEmpty": "Aucune modification enregistrée.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Évalue les appels selon la grille",
+        "correlation_engine": "Génère des insights de corrélation sur le tableau de bord",
+        "marketing_intelligence": "Génère des titres et textes publicitaires"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Plage recommandée :",
+        "maxTokensRange": "Plage valide :"
+      },
+      "th": {
+        "logModule": "Module",
+        "logField": "Champ",
+        "logPrev": "Valeur précédente",
+        "logNew": "Nouvelle valeur",
+        "logUser": "Utilisateur",
+        "logDate": "Date"
+      },
+      "toastSavedTitle": "Enregistré",
+      "toastSavedBody": "Configuration de {module} mise à jour.",
       "toastErrorTitle": "Erreur",
       "toastErrorBody": "Échec de l'enregistrement. Réessayez."
     }

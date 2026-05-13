@@ -11,6 +11,8 @@ import type {
   Role,
   RevenueEstimatorItem,
   PerformanceTrendPoint,
+  AiModuleConfig,
+  AiModuleConfigLogEntry,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -1546,5 +1548,17 @@ export const demoCredentials = [
   { email: 'trainer4@demo.askmoses.ai', password: 'demo123', role: 'trainer' as Role, name: 'Taylor M.',      trainerId: '00000000-0000-0000-0000-000000000304' as string | null },
   { email: 'owner@demo.askmoses.ai',    password: 'demo123', role: 'owner'   as Role, name: 'Dog Wizard HQ',  trainerId: null },
   { email: 'admin@askmoses.ai',         password: 'demo123', role: 'admin'   as Role, name: 'AskMoses Admin', trainerId: null },
+]
+
+export const aiModuleConfigs: AiModuleConfig[] = [
+  { module_id: 'scoring_engine',         temperature: 0.2, max_tokens: 1000, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
+  { module_id: 'correlation_engine',     temperature: 0.5, max_tokens: 1200, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
+  { module_id: 'marketing_intelligence', temperature: 0.8, max_tokens: 2000, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
+]
+
+export const aiModuleConfigLog: AiModuleConfigLogEntry[] = [
+  { id: 'log-001', module_id: 'scoring_engine',         field: 'temperature', previous_value: 0.7, new_value: 0.2, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
+  { id: 'log-002', module_id: 'marketing_intelligence', field: 'max_tokens',  previous_value: 1000, new_value: 2000, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
+  { id: 'log-003', module_id: 'correlation_engine',     field: 'temperature', previous_value: 0.7, new_value: 0.5, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-09T09:11:00Z' },
 ]
 
