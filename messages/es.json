@@ -503,13 +503,18 @@
       "callsPerMonth": "Llamadas / mes",
       "avgScore": "Puntuación media",
       "mrr": "MRR",
-      "health": "Salud"
+      "health": "Salud",
+      "actions": "Acciones"
     },
     "health": {
       "healthy": "Saludable",
       "atRisk": "En riesgo",
       "churning": "Crítico"
     },
+    "ownerPending": "Esperando Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inactiva",
+    "subscriptionSettings": "Configurar plan de {name}",
     "impersonateTooltip": "Entrar como {name} (vista de solo lectura)",
     "impersonateError": "No se pudo entrar en esta organización. Inténtalo de nuevo.",
     "impersonateBanner": {

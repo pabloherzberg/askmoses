@@ -503,13 +503,18 @@
       "callsPerMonth": "Calls / mo",
       "avgScore": "Avg Score",
       "mrr": "MRR",
-      "health": "Health"
+      "health": "Health",
+      "actions": "Actions"
     },
     "health": {
       "healthy": "Healthy",
       "atRisk": "At Risk",
       "churning": "Critical"
     },
+    "ownerPending": "Awaiting Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inactive",
+    "subscriptionSettings": "Configure {name}'s plan",
     "impersonateTooltip": "Enter {name} (read-only view)",
     "impersonateError": "Could not enter this organization. Try again.",
     "impersonateBanner": {

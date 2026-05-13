@@ -125,6 +125,12 @@ export interface Client {
   mrr: number
   health: HealthStatus
   trainersCount: number
+  // false = nenhuma membership com role='owner' e invite_status='accepted'
+  // existe ainda. Painel Admin renderiza chip "Aguardando Owner" ao lado do
+  // nome, mesmo com subscription_status='active' (Admin já vendeu mas Owner
+  // não clicou no magic link).
+  ownerAccepted: boolean
+  subscriptionStatus: 'active' | 'inactive' | 'trial'
 }
 
 export interface TrendPoint {

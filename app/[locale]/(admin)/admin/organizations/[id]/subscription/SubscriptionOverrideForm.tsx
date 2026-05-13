@@ -112,7 +112,10 @@ export function SubscriptionOverrideForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
+    // w-full + max-w-xl: mobile ocupa largura toda (limitado pelo px-4 do
+    // wrapper da page), desktop trava em 576px — antes ficava em 448px (md)
+    // que era estreito demais com 7 campos.
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-xl">
       <div className="mb-2">
         <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--am-muted)' }}>
           {t('eyebrow')}

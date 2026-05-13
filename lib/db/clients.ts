@@ -32,6 +32,7 @@ interface DbOrgRow {
   mrr: number | null
   health: HealthStatus
   trainers_count: number | null
+  subscription_status: 'active' | 'inactive' | 'trial'
   plans: DbPlanNested | null
 }
 
@@ -50,7 +51,7 @@ function toPlan(row: DbPlanNested): Plan {
   }
 }
 
-function toClient(row: DbOrgRow): Client {
+function toClient(row: DbOrgRow, ownerAccepted: boolean): Client {
   if (!row.plans) {
     // Pós-merge: org pode existir sem plano (Owner em onboarding step-2).
     // Antes esse caso não existia (clients sempre tinha plan_id NOT NULL na
@@ -70,27 +71,48 @@ function toClient(row: DbOrgRow): Client {
     mrr: Number(row.mrr ?? 0),
     health: row.health,
     trainersCount: row.trainers_count ?? 0,
+    ownerAccepted,
+    subscriptionStatus: row.subscription_status,
   }
 }
 
 /**
- * Lista clientes (organizations) com plano embutido.
+ * Lista clientes (organizations) com plano embutido + flag ownerAccepted.
  * Filtra orgs sem plano (sub não-ativada / mid-onboarding).
+ *
+ * ownerAccepted = existe membership com role='owner' e invite_status='accepted'.
+ * Quando false, Admin criou a org+invite mas Owner ainda não clicou no magic
+ * link — UI mostra chip "Aguardando Owner" ao lado do nome.
  */
 export async function dbGetClients(): Promise<Client[]> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('organizations')
-    .select(
-      'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, plans(*)'
-    )
-    .not('plan_id', 'is', null)
-    .order('name', { ascending: true })
+  const [orgsRes, ownersRes] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select(
+        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, plans(*)'
+      )
+      .not('plan_id', 'is', null)
+      .order('name', { ascending: true }),
+    supabase
+      .from('memberships')
+      .select('org_id')
+      .eq('role', 'owner')
+      .eq('invite_status', 'accepted'),
+  ])
 
-  if (error) throw new Error(`dbGetClients: ${error.message}`)
+  if (orgsRes.error) throw new Error(`dbGetClients: ${orgsRes.error.message}`)
+  if (ownersRes.error) throw new Error(`dbGetClients (memberships): ${ownersRes.error.message}`)
 
-  return (data ?? []).map((row) => toClient(row as unknown as DbOrgRow))
+  // Set de org_ids que têm pelo menos 1 owner aceito. Lookup O(1) no map abaixo.
+  const ownerAcceptedSet = new Set(
+    (ownersRes.data ?? []).map((m: { org_id: string }) => m.org_id),
+  )
+
+  return (orgsRes.data ?? []).map((row) =>
+    toClient(row as unknown as DbOrgRow, ownerAcceptedSet.has((row as { id: string }).id)),
+  )
 }
 
 /**
@@ -100,25 +122,34 @@ export async function dbGetClients(): Promise<Client[]> {
 export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('organizations')
-    .select(
-      'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, plans(*)'
-    )
-    .eq('id', orgId)
-    .maybeSingle()
+  const [orgRes, ownerRes] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select(
+        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, plans(*)'
+      )
+      .eq('id', orgId)
+      .maybeSingle(),
+    supabase
+      .from('memberships')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .eq('role', 'owner')
+      .eq('invite_status', 'accepted'),
+  ])
 
-  if (error) {
-    if (error.code === 'PGRST116') return null
-    throw new Error(`dbGetClientByOrgId: ${error.message}`)
+  if (orgRes.error) {
+    if (orgRes.error.code === 'PGRST116') return null
+    throw new Error(`dbGetClientByOrgId: ${orgRes.error.message}`)
   }
 
-  if (!data) return null
+  if (!orgRes.data) return null
   // Org sem plano (onboarding mid-flight) não vira Client — caller decide
   // o que fazer (Admin views, métricas etc. tratam como "sem assinatura").
-  if (!(data as { plan_id: string | null }).plan_id) return null
+  if (!(orgRes.data as { plan_id: string | null }).plan_id) return null
 
-  return toClient(data as unknown as DbOrgRow)
+  const ownerAccepted = (ownerRes.count ?? 0) > 0
+  return toClient(orgRes.data as unknown as DbOrgRow, ownerAccepted)
 }
 
 /**

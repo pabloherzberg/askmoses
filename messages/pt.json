@@ -503,13 +503,18 @@
       "callsPerMonth": "Chamadas / mês",
       "avgScore": "Nota média",
       "mrr": "MRR",
-      "health": "Saúde"
+      "health": "Saúde",
+      "actions": "Ações"
     },
     "health": {
       "healthy": "Saudável",
       "atRisk": "Em risco",
       "churning": "Crítico"
     },
+    "ownerPending": "Aguardando Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inativa",
+    "subscriptionSettings": "Configurar plano de {name}",
     "impersonateTooltip": "Entrar como {name} (visualização apenas leitura)",
     "impersonateError": "Não foi possível entrar nessa organização. Tente novamente.",
     "impersonateBanner": {

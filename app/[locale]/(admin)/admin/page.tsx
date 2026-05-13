@@ -89,6 +89,11 @@ export default async function AdminPage() {
                     {tTh(k)}
                   </th>
                 ))}
+                <th
+                  className="text-[11px] font-medium text-right px-3 py-3"
+                  style={{ color: 'var(--am-muted)' }}
+                  aria-label={tTh('actions')}
+                />
               </tr>
             </thead>
             <tbody>

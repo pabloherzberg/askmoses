@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { Settings } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client } from '@/lib/types'
@@ -74,9 +76,44 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
       }}
     >
       <td className="px-5 py-4">
-        <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          {client.name}
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+            {client.name}
+          </p>
+          {!client.ownerAccepted && (
+            <span
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide"
+              style={{
+                background: 'var(--am-amber-bg, rgba(255,179,71,0.18))',
+                color: 'var(--am-amber, #d97706)',
+              }}
+            >
+              {t('ownerPending')}
+            </span>
+          )}
+          {client.subscriptionStatus === 'trial' && (
+            <span
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide"
+              style={{
+                background: 'var(--am-blue-bg)',
+                color: 'var(--am-blue)',
+              }}
+            >
+              {t('subTrial')}
+            </span>
+          )}
+          {client.subscriptionStatus === 'inactive' && (
+            <span
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide"
+              style={{
+                background: 'var(--am-red-bg)',
+                color: 'var(--am-red)',
+              }}
+            >
+              {t('subInactive')}
+            </span>
+          )}
+        </div>
         {error && (
           <p className="text-[11px] mt-1" style={{ color: 'var(--am-red)' }}>{error}</p>
         )}
@@ -126,6 +163,19 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
         >
           {healthLabel}
         </span>
+      </td>
+      <td className="px-3 py-4 text-right">
+        {/* stopPropagation pra não disparar o impersonate da row inteira */}
+        <Link
+          href={`/${locale}/admin/organizations/${client.id}/subscription`}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={t('subscriptionSettings', { name: client.name })}
+          title={t('subscriptionSettings', { name: client.name })}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
+          style={{ color: 'var(--am-muted)' }}
+        >
+          <Settings size={14} />
+        </Link>
       </td>
     </tr>
   )
