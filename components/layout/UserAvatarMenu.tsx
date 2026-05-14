@@ -50,6 +50,16 @@ export function UserAvatarMenu() {
   })()
 
   const handleSignOut = async () => {
+    // Se um admin sai no meio de um impersonate, o claim impersonating_org_id
+    // sobrevive ao signOut e a row de audit fica aberta — no próximo login ele
+    // volta "dentro" da org antiga. DELETE é idempotente (noOp se não estiver
+    // impersonando, 403 pra não-admin); ignoramos qualquer falha pra não
+    // travar o logout.
+    try {
+      await fetch('/api/admin/impersonate', { method: 'DELETE' })
+    } catch {
+      // best-effort — segue com o signOut de qualquer forma.
+    }
     const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = `/${locale}/login`

@@ -62,6 +62,15 @@ const TENANT_TABLES = [
 
 const PUBLIC_TABLES = ['plans']
 
+// Códigos de erro que SIM contam como TC-02 OK numa tabela tenant-scoped:
+// o banco rejeitou explicitamente o acesso anônimo (grants revogados / RLS).
+//   42501    → insufficient_privilege (Postgres)
+//   PGRST301 → JWT ausente/ inválido (PostgREST)
+//   401/403  → HTTP status quando o supabase-js expõe `status`
+// Qualquer outro erro (404 / tabela ausente / schema errado / rede) NÃO é
+// pass — mascararia uma migration incompleta, então tratamos como falha.
+const PERMISSION_ERROR_CODES = new Set(['42501', 'PGRST301', '401', '403'])
+
 const results = []
 let failures = 0
 
@@ -72,13 +81,21 @@ async function probe(table, expectEmpty) {
     .limit(1)
 
   // Possíveis comportamentos:
-  // 1) error com 401/403 → policy bloqueou — TC-02 OK
+  // 1) error de permissão (42501/PGRST301/401/403) → acesso negado — TC-02 OK
   // 2) data=[] count=0 → policy retornou vazio — TC-02 OK
   // 3) data com rows → VAZAMENTO — TC-02 FALHA
-  // 4) error com 404 → tabela não existe no schema público
+  // 4) error 404 / tabela ausente / rede → inconclusivo — TC-02 FALHA
+  //    (não pode contar como pass: esconderia migration incompleta)
   if (error) {
-    const ok = expectEmpty
-    results.push({ table, status: ok ? '✅' : '❌', detail: `error: ${error.message}` })
+    const code = String(error.code ?? error.status ?? '')
+    const isPermissionError =
+      PERMISSION_ERROR_CODES.has(code) || /permission denied/i.test(error.message ?? '')
+    const ok = expectEmpty && isPermissionError
+    results.push({
+      table,
+      status: ok ? '✅' : '❌',
+      detail: `error [${code || '?'}]: ${error.message}`,
+    })
     if (!ok) failures++
     return
   }

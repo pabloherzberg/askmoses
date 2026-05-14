@@ -60,8 +60,22 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
   return (
     <tr
       onClick={handleClick}
+      // A row é a ação primária (impersonate). Como <tr> não é focável nem
+      // acionável por teclado, expomos role=button + tabIndex + Enter/Espaço
+      // pra quem navega sem mouse. O guard target===currentTarget evita que
+      // teclas no <Link> de settings (que tem o próprio handler) disparem o
+      // impersonate por bubbling.
+      role="button"
+      tabIndex={loading ? -1 : 0}
       aria-disabled={loading}
       title={t('impersonateTooltip', { name: client.name })}
+      onKeyDown={(e) => {
+        if (loading || e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          void handleClick()
+        }
+      }}
       style={{
         borderBottom: isLast ? 'none' : '1px solid var(--am-border)',
         cursor: loading ? 'wait' : 'pointer',
@@ -72,6 +86,12 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
         if (!loading) e.currentTarget.style.background = 'var(--am-bg3)'
       }}
       onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent'
+      }}
+      onFocus={(e) => {
+        if (!loading && e.target === e.currentTarget) e.currentTarget.style.background = 'var(--am-bg3)'
+      }}
+      onBlur={(e) => {
         e.currentTarget.style.background = 'transparent'
       }}
     >

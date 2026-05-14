@@ -1,66 +1,25 @@
-import { type NextRequest } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { forbidden, getSession, ok, requireOwnerWrite, unauthorized } from '@/lib/auth'
+import { forbidden, getActiveOrgContext, getSession, ok, unauthorized } from '@/lib/auth'
 import { executeMarketingRun, NoClosedCallsError } from '@/lib/services/marketing-intelligence'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-interface RunBody {
-  orgId?: string
-}
 
 // POST /api/marketing-intelligence/run
 //   RUN NOW — restricted to AskMoses super-admins (TC-09). Owners read the
-//   latest cached run via GET /api/marketing-intelligence; só Admin força
-//   nova run.
-//
-//   Admin não-impersonado (operando do painel /admin): seleciona qual org
-//   rodar via body.orgId (admin não tem active_org_id próprio). Admin
-//   impersonando é bloqueado por requireOwnerWrite (read-only).
-export async function POST(request: NextRequest) {
+//   latest cached run via GET /api/marketing-intelligence; only admin can
+//   force a fresh LLM execution.
+export async function POST() {
   const session = await getSession()
   if (!session) return unauthorized()
 
-  // Admin impersonando é read-only.
-  const writeErr = await requireOwnerWrite()
-  if (writeErr) return writeErr
-
-  // Super-admin check é no JWT (app_metadata.role === 'admin').
+  // Super-admin check is on the JWT (app_metadata.role === 'admin'), not the
+  // org-context role — owners of an org never satisfy this.
   const isSuperAdmin = session.user.app_metadata?.role === 'admin'
   if (!isSuperAdmin) return forbidden()
 
-  // Admin sem impersonate não tem active_org_id — orgId vem no body.
-  let body: RunBody = {}
-  try {
-    body = (await request.json()) as RunBody
-  } catch {
-    // body opcional — segue sem orgId, vai cair em badRequest abaixo.
-  }
-  const orgId = body.orgId?.trim()
-  if (!orgId || !UUID_RE.test(orgId)) {
-    return Response.json(
-      { data: null, error: { message: 'orgId é obrigatório', code: 400 } },
-      { status: 400 },
-    )
-  }
-
-  // Valida que a org existe antes de mandar pro service (que assume orgId válido).
-  const admin = createAdminClient()
-  const { data: org } = await admin
-    .from('organizations')
-    .select('id')
-    .eq('id', orgId)
-    .maybeSingle()
-  if (!org) {
-    return Response.json(
-      { data: null, error: { message: 'Organização não encontrada', code: 404 } },
-      { status: 404 },
-    )
-  }
+  const ctx = await getActiveOrgContext()
+  if (!ctx?.activeOrgId) return forbidden()
 
   try {
     const data = await executeMarketingRun({
-      orgId,
+      orgId: ctx.activeOrgId,
       trigger: 'manual',
       createdBy: session.user.id,
     })

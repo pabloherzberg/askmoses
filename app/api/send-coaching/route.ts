@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { buildCoachingEmail, type CoachingEmailSection } from '@/lib/email/coaching-template'
-import { getActiveOrgContext, getSession, requireOwnerWrite, unauthorized, forbidden } from '@/lib/auth'
+import { getActiveOrgContext, getRole, getSession, requireOwnerWrite, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 interface SendCoachingBody {
@@ -16,7 +16,8 @@ interface SendCoachingBody {
 
 // POST /api/send-coaching
 //   Dispara email de coaching pro trainer após uma call ser analisada.
-//   Auth: logado + caller pertence à mesma org do trainer destinatário.
+//   Auth: logado + Owner (trainer não dispara coaching de outros trainers)
+//   + caller pertence à mesma org do trainer destinatário.
 //   trainerEmail deve corresponder a um user com trainers row em
 //   active_org_id do caller. Sem esse check, anyone-logged-in podia mandar
 //   email arbitrário pra qualquer email (spam / phishing vector).
@@ -27,6 +28,11 @@ export async function POST(request: Request) {
 
   const writeErr = await requireOwnerWrite()
   if (writeErr) return writeErr
+
+  // requireOwnerWrite só barra admin impersonando — trainer logado ainda
+  // passaria. Mesma checagem de papel das demais rotas de escrita.
+  const role = await getRole()
+  if (role === 'trainer') return forbidden()
 
   try {
     const body = (await request.json()) as SendCoachingBody

@@ -207,8 +207,7 @@
     "userMenu": {
       "triggerAria": "Menu utilisateur",
       "loading": "Chargement…",
-      "account": "Compte",
-      "setPassword": "Définir le mot de passe",
+      "password": "Mot de passe",
       "signOut": "Déconnexion"
     },
     "pageTitles": {
