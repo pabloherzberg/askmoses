@@ -1,4 +1,4 @@
-import type { CallResult } from '@/lib/types'
+import type { CallResult, LeadSource } from '@/lib/types'
 
 // ── CallOutcome is an alias of CallResult — single source of truth in lib/types.ts
 export type CallOutcome = CallResult
@@ -39,6 +39,23 @@ export function normaliseOutcome(raw: string): CallOutcome | null {
   if (CANONICAL_OUTCOMES.has(raw as CallOutcome)) return raw as CallOutcome
   return LEGACY_OUTCOME_MAP[raw] ?? null
 }
+
+// ── Lead source display labels ────────────────────────────────────────────────
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  facebook: 'Facebook',
+  google:   'Google',
+  organic:  'Organic',
+  referral: 'Referral',
+  other:    'Other',
+}
+
+export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'google',   label: 'Google' },
+  { value: 'organic',  label: 'Organic' },
+  { value: 'referral', label: 'Referral' },
+  { value: 'other',    label: 'Other' },
+]
 
 // ── Scoring caps applied to overallScore (1–5), keyed by outcome ─────────────
 // Section scores themselves are NEVER capped — only the rolled-up overall.
