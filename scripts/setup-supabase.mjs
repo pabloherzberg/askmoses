@@ -63,6 +63,9 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
+const ORG_DOG_WIZARD_HQ = '00000000-0000-0000-0000-000000000100'
+const TRAINER_DB_ID     = '00000000-0000-0000-0000-000000000301' // trainers.id do Marcus
+
 const DEMO_USERS = [
   {
     email: 'trainer@demo.askmoses.ai',
@@ -70,6 +73,8 @@ const DEMO_USERS = [
     role: 'trainer',
     name: 'Marcus Rivera',
     avatar: 'MR',
+    avatarColor: 'blue',
+    orgId: ORG_DOG_WIZARD_HQ,
   },
   {
     email: 'owner@demo.askmoses.ai',
@@ -77,6 +82,8 @@ const DEMO_USERS = [
     role: 'owner',
     name: 'Demo Owner',
     avatar: 'DO',
+    avatarColor: 'amber',
+    orgId: ORG_DOG_WIZARD_HQ,
   },
   {
     email: 'admin@askmoses.ai',
@@ -84,6 +91,8 @@ const DEMO_USERS = [
     role: 'admin',
     name: 'Admin',
     avatar: 'AD',
+    avatarColor: 'blue',
+    orgId: null, // admin não pertence a nenhuma org
   },
 ]
 
@@ -144,6 +153,72 @@ async function upsertProfile(userId, user) {
   throw error
 }
 
+async function upsertPublicUser(userId, user) {
+  if (!user.orgId && user.role === 'admin') {
+    // Admin não tem org — apenas garantir row em public.users
+    const { error } = await supabase
+      .from('users')
+      .upsert(
+        { id: userId, name: user.name, email: user.email, avatar: user.avatar, avatar_color: user.avatarColor ?? 'blue', role: user.role, invite_status: 'accepted' },
+        { onConflict: 'id' }
+      )
+    if (error && !error.message?.includes("Could not find the table")) {
+      console.warn(`  ⚠ public.users upsert (admin): ${error.message}`)
+    }
+    return
+  }
+
+  const { error } = await supabase
+    .from('users')
+    .upsert(
+      { id: userId, name: user.name, email: user.email, avatar: user.avatar, avatar_color: user.avatarColor ?? 'blue', role: user.role, invite_status: 'accepted', active_org_id: user.orgId },
+      { onConflict: 'id' }
+    )
+  if (error) {
+    if (error.message?.includes("Could not find the table 'public.users'") || error.code === '42P01') {
+      console.log(`  · public.users table ausente — pulando`)
+      return
+    }
+    throw error
+  }
+  console.log(`  ✓ public.users upsertado (active_org_id=${user.orgId})`)
+}
+
+async function upsertMembership(userId, user) {
+  if (!user.orgId) return
+
+  const { error } = await supabase
+    .from('memberships')
+    .upsert(
+      { user_id: userId, org_id: user.orgId, role: user.role, invite_status: 'accepted', invited_at: new Date().toISOString() },
+      { onConflict: 'user_id,org_id' }
+    )
+  if (error) {
+    if (error.message?.includes("Could not find the table 'public.memberships'") || error.code === '42P01') {
+      console.log(`  · memberships table ausente — pulando`)
+      return
+    }
+    throw error
+  }
+  console.log(`  ✓ membership upsertada (org=${user.orgId}, role=${user.role})`)
+}
+
+async function linkTrainerToAuth(userId) {
+  // Atualiza a row de trainers do Marcus (ID fixo 301) para usar o Auth user_id real
+  const { error } = await supabase
+    .from('trainers')
+    .update({ user_id: userId })
+    .eq('id', TRAINER_DB_ID)
+    .is('user_id', null) // só atualiza se ainda não foi vinculado
+
+  // Se já foi vinculado ou tabela não existe, ignora
+  if (error && !error.message?.includes('0 rows')) {
+    console.warn(`  ⚠ linkTrainerToAuth: ${error.message}`)
+  } else {
+    console.log(`  ✓ trainers.user_id → Auth user (ou já estava vinculado)`)
+  }
+}
+
 async function main() {
   console.log('=== AskMoses.AI — Supabase Setup ===\n')
   console.log('ATENÇÃO: certifique-se de ter rodado o SQL de criação da tabela')
@@ -155,6 +230,11 @@ async function main() {
     try {
       const userId = await createUser(user)
       await upsertProfile(userId, user)
+      await upsertPublicUser(userId, user)
+      await upsertMembership(userId, user)
+      if (user.role === 'trainer' && user.orgId) {
+        await linkTrainerToAuth(userId)
+      }
       results.push({ email: user.email, role: user.role, id: userId, ok: true })
     } catch (err) {
       console.error(`  ✗ ERRO para ${user.email}:`, err.message)

@@ -100,12 +100,19 @@ export async function getRubric(): Promise<{
   trainerSectionScores: TrainerSectionScore[];
 }> {
   const orgId = await getOrgId();
+  if (!orgId) {
+    console.warn('[getRubric] getOrgId() returned null — user has no active org. Returning empty rubric.')
+    return { sections: [], trend: [], trainerSectionScores: [] };
+  }
   const [result, calls] = await Promise.all([
-    orgId ? dbGetDefaultRubricWithCriteria(orgId) : Promise.resolve(null),
-    orgId ? getCalls({ limit: 200, orgId }) : Promise.resolve([]),
+    dbGetDefaultRubricWithCriteria(orgId),
+    getCalls({ limit: 200, orgId }),
   ]);
 
-  if (!result) return { sections: [], trend: [], trainerSectionScores: [] };
+  if (!result) {
+    console.warn(`[getRubric] No default rubric found for org=${orgId}. Check rubrics table: is_default=true, is_active=true, org_id set.`)
+    return { sections: [], trend: [], trainerSectionScores: [] };
+  }
 
   // ── Team averages ─────────────────────────────────────────────────────────
   const teamAvg = avgRubricScores(calls); // 0–5 scale
