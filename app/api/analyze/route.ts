@@ -23,8 +23,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   OUTCOME_OVERALL_CAP,
   normaliseOutcome,
+  LEAD_SOURCES,
   type CallOutcome,
 } from "@/lib/constants";
+import type { LeadSource } from "@/lib/types";
 import {
   LLM_TEMPERATURE_PRIMARY,
   LLM_TEMPERATURE_RETRY,
@@ -41,6 +43,8 @@ interface AnalyzeRequestBody {
   trainerId?: string;
   scriptId?: string;
   callOutcome?: string;
+  lead_name?: string | null;
+  lead_source?: string | null;
 }
 
 /** Accept canonical CallOutcome plus a few legacy aliases that older
@@ -513,6 +517,13 @@ export async function POST(request: NextRequest) {
     });
 
     // ── 6. Persist call ──────────────────────────────────────────────────
+    const validSourceValues = new Set<string>(LEAD_SOURCES.map((s) => s.value))
+    const rawLeadName = body.lead_name?.trim() || null
+    const rawLeadSource = body.lead_source?.trim().toLowerCase() || null
+    const normalisedLeadSource: LeadSource | null = rawLeadSource
+      ? (validSourceValues.has(rawLeadSource) ? (rawLeadSource as LeadSource) : 'other')
+      : null
+
     let savedCall: { id?: string } = {};
     try {
       savedCall = await dbCreateCall({
@@ -535,6 +546,8 @@ export async function POST(request: NextRequest) {
         outputTokens: totalOutputTokens,
         costUsd,
         promptVersion: PROMPT_VERSION,
+        leadName: rawLeadName,
+        leadSource: normalisedLeadSource,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);

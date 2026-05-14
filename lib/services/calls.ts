@@ -9,7 +9,7 @@ import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
-import type { Call, CallSection, RubricScores } from "@/lib/types";
+import type { Call, CallSection, RubricScores, LeadSource } from "@/lib/types";
 import type {
   DbCall,
   CreateCallInput,
@@ -89,6 +89,14 @@ function parseSections(raw: unknown): CallSection[] | undefined {
   return parsed;
 }
 
+const VALID_LEAD_SOURCES = new Set<LeadSource>(['facebook', 'google', 'organic', 'referral', 'other'])
+
+function parseLeadSource(raw: string | null | undefined): LeadSource | null {
+  if (!raw || raw.trim() === '') return null
+  const v = raw.trim().toLowerCase()
+  return VALID_LEAD_SOURCES.has(v as LeadSource) ? (v as LeadSource) : 'other'
+}
+
 function toCall(db: DbCall): Call {
   return {
     id: db.id,
@@ -99,6 +107,8 @@ function toCall(db: DbCall): Call {
     score: (() => { const s = db.overall_score ?? 0; return Math.round((s > 5 ? s / 20 : s) * 10) / 10; })(),
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
+    lead_name: db.lead_name?.trim() || null,
+    lead_source: parseLeadSource(db.lead_source),
     rubricScores: parseSectionsToRubricScores(db.sections),
     sections: parseSections(db.sections),
     feedback: db.summary ?? "",

@@ -121,6 +121,8 @@ export const calls: Call[] = [
     score: 4.7,
     result: 'closed',
     prospect: 'Bob W.',
+    lead_name: 'Robert Williams',
+    lead_source: 'facebook',
     rubricScores: { discovery: 4.8, problemAgitation: 4.5, offerPresentation: 4.8, objectionHandling: 4.2, closeAndNextSteps: 4.6 },
     sections: [
       { name: 'Discovery',           score: 4.8, feedback: 'Asked 4 open-ended questions before any presentation. Identified the escape problem and emotional stakes within 5 minutes.', critical: true },
@@ -149,6 +151,8 @@ export const calls: Call[] = [
     score: 4.6,
     result: 'closed',
     prospect: 'Sarah K.',
+    lead_name: 'Sarah Kowalski',
+    lead_source: 'google',
     rubricScores: { discovery: 4.8, problemAgitation: 4.4, offerPresentation: 4.7, objectionHandling: 4.0, closeAndNextSteps: 4.5 },
     sections: [
       { name: 'Discovery',           score: 4.8, feedback: 'Discovered the root cause (separation anxiety) in 3 questions. Solid use of follow-up questions to validate.', critical: true },
@@ -177,6 +181,8 @@ export const calls: Call[] = [
     score: 4.5,
     result: 'closed',
     prospect: 'Mike D.',
+    lead_name: 'Michael Davidson',
+    lead_source: 'referral',
     rubricScores: { discovery: 4.6, problemAgitation: 4.3, offerPresentation: 4.6, objectionHandling: 4.0, closeAndNextSteps: 4.4 },
     sections: [
       { name: 'Discovery',           score: 4.6, feedback: 'Uncovered the social embarrassment angle — a pain point the prospect hadn\'t explicitly stated.', critical: true },
@@ -204,6 +210,8 @@ export const calls: Call[] = [
     score: 4.4,
     result: 'closed',
     prospect: 'Linda P.',
+    lead_name: 'Linda Pereira',
+    lead_source: 'facebook',
     rubricScores: { discovery: 4.6, problemAgitation: 4.3, offerPresentation: 4.5, objectionHandling: 4.0, closeAndNextSteps: 4.4 },
     sections: [
       { name: 'Discovery',           score: 4.6, feedback: 'Kept prospect engaged with strategic questions across a longer call. Strong active listening.', critical: true },
@@ -229,6 +237,8 @@ export const calls: Call[] = [
     score: 4.3,
     result: 'closed',
     prospect: 'Tom R.',
+    lead_name: 'Thomas Rodriguez',
+    lead_source: 'organic',
     rubricScores: { discovery: 4.5, problemAgitation: 4.2, offerPresentation: 4.4, objectionHandling: 3.9, closeAndNextSteps: 4.3 },
     sections: [
       { name: 'Discovery',           score: 4.5, feedback: 'Correctly read that the prospect was pre-qualified and calibrated the depth accordingly.', critical: true },
@@ -254,6 +264,8 @@ export const calls: Call[] = [
     score: 4.3,
     result: 'partial',
     prospect: 'Amy C.',
+    lead_name: 'Amy Collins',
+    lead_source: 'google',
     rubricScores: { discovery: 4.6, problemAgitation: 4.4, offerPresentation: 4.5, objectionHandling: 3.8, closeAndNextSteps: 4.1 },
     sections: [
       { name: 'Discovery',           score: 4.6, feedback: 'Identified the co-decision maker before attempting a close. Strong situational awareness.', critical: true },
@@ -277,6 +289,8 @@ export const calls: Call[] = [
     date: '2026-03-06',
     duration: '40min',
     score: 4.1,
+    lead_name: null,
+    lead_source: null,
     result: 'closed',
     prospect: 'Chris B.',
     rubricScores: { discovery: 4.5, problemAgitation: 4.2, offerPresentation: 4.4, objectionHandling: 3.6, closeAndNextSteps: 4.1 },
@@ -306,6 +320,8 @@ export const calls: Call[] = [
     score: 4.5,
     result: 'closed',
     prospect: 'Diana M.',
+    lead_name: 'Diana Martinez',
+    lead_source: 'facebook',
     rubricScores: { discovery: 4.5, problemAgitation: 4.5, offerPresentation: 4.4, objectionHandling: 4.2, closeAndNextSteps: 4.3 },
     sections: [
       { name: 'Discovery',           score: 4.5, feedback: 'Good situational questions. Identified that the dog was restricting the prospect\'s social life.', critical: true },
@@ -331,6 +347,8 @@ export const calls: Call[] = [
     score: 4.2,
     result: 'closed',
     prospect: 'Robert L.',
+    lead_name: 'Robert Lopes',
+    lead_source: 'google',
     rubricScores: { discovery: 4.4, problemAgitation: 4.3, offerPresentation: 4.2, objectionHandling: 4.0, closeAndNextSteps: 4.1 },
     sections: [
       { name: 'Discovery',           score: 4.4, feedback: 'Specific situational question surfaced a concrete recent example. Good depth.', critical: true },
@@ -356,6 +374,8 @@ export const calls: Call[] = [
     score: 4.1,
     result: 'partial',
     prospect: 'Karen H.',
+    lead_name: 'Karen Hoffman',
+    lead_source: 'other',
     rubricScores: { discovery: 4.3, problemAgitation: 4.2, offerPresentation: 4.1, objectionHandling: 3.9, closeAndNextSteps: 4.0 },
     sections: [
       { name: 'Discovery',           score: 4.3, feedback: 'Found the co-decision maker mid-call. Would have been stronger if surfaced in opening questions.', critical: true },
@@ -381,6 +401,8 @@ export const calls: Call[] = [
     score: 4.0,
     result: 'closed',
     prospect: 'Steve N.',
+    lead_name: 'Steven Nguyen',
+    lead_source: 'referral',
     rubricScores: { discovery: 4.2, problemAgitation: 4.1, offerPresentation: 4.0, objectionHandling: 3.7, closeAndNextSteps: 3.9 },
     sections: [
       { name: 'Discovery',           score: 4.2, feedback: 'Used a future-pacing question to open. Solid but brief.', critical: true },
@@ -403,6 +425,8 @@ export const calls: Call[] = [
     score: 3.8,
     result: 'no_outcome',
     prospect: 'Nancy W.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 4.2, problemAgitation: 4.0, offerPresentation: 3.9, objectionHandling: 3.1, closeAndNextSteps: 3.5 },
     sections: [
       { name: 'Discovery',           score: 4.2, feedback: 'Good rapport. Real pain correctly identified. Opening was strong.', critical: true },
@@ -430,6 +454,8 @@ export const calls: Call[] = [
     score: 4.1,
     result: 'partial',
     prospect: 'Peter G.',
+    lead_name: 'Peter Grant',
+    lead_source: 'facebook',
     rubricScores: { discovery: 4.1, problemAgitation: 3.2, offerPresentation: 4.1, objectionHandling: 3.5, closeAndNextSteps: 3.4 },
     sections: [
       { name: 'Discovery',           score: 4.1, feedback: 'Problem identified early. Questions were surface-level — no follow-up depth.', critical: true },
@@ -455,6 +481,8 @@ export const calls: Call[] = [
     score: 3.8,
     result: 'closed',
     prospect: 'Donna F.',
+    lead_name: 'Donna Fletcher',
+    lead_source: 'organic',
     rubricScores: { discovery: 4.0, problemAgitation: 3.1, offerPresentation: 4.0, objectionHandling: 3.3, closeAndNextSteps: 3.2 },
     sections: [
       { name: 'Discovery',           score: 4.0, feedback: 'Functional discovery. Problems identified but not probed deeply.', critical: true },
@@ -480,6 +508,8 @@ export const calls: Call[] = [
     score: 3.7,
     result: 'no_outcome',
     prospect: 'Mark T.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 3.9, problemAgitation: 3.0, offerPresentation: 3.9, objectionHandling: 3.1, closeAndNextSteps: 3.1 },
     sections: [
       { name: 'Discovery',           score: 3.9, feedback: 'Good opening atmosphere. Only surface-level questions before pivoting to the pitch.', critical: true },
@@ -505,6 +535,8 @@ export const calls: Call[] = [
     score: 3.5,
     result: 'partial',
     prospect: 'Susan B.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 3.8, problemAgitation: 2.9, offerPresentation: 3.9, objectionHandling: 3.1, closeAndNextSteps: 3.0 },
     sections: [
       { name: 'Discovery',           score: 3.8, feedback: 'Only 2 questions before moving to the offer. Prospect\'s situation barely explored.', critical: true },
@@ -531,6 +563,8 @@ export const calls: Call[] = [
     score: 3.3,
     result: 'no_outcome',
     prospect: 'James R.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 3.4, problemAgitation: 2.7, offerPresentation: 3.6, objectionHandling: 3.0, closeAndNextSteps: 2.9 },
     sections: [
       { name: 'Discovery',           score: 3.4, feedback: 'Single question about the dog before pivoting to price. No situational context built.', critical: true },
@@ -559,6 +593,8 @@ export const calls: Call[] = [
     score: 3.7,
     result: 'no_outcome',
     prospect: 'Helen K.',
+    lead_name: 'Helen Kim',
+    lead_source: 'google',
     rubricScores: { discovery: 3.5, problemAgitation: 3.0, offerPresentation: 3.7, objectionHandling: 2.9, closeAndNextSteps: 3.2 },
     sections: [
       { name: 'Discovery',           score: 3.5, feedback: 'Discovery was technical (behavior-focused) rather than impact-focused. Did not explore how the problem affects the owner\'s life.', critical: true },
@@ -584,6 +620,8 @@ export const calls: Call[] = [
     score: 3.5,
     result: 'no_outcome',
     prospect: 'Paul M.',
+    lead_name: 'Paul Mendes',
+    lead_source: 'facebook',
     rubricScores: { discovery: 3.4, problemAgitation: 2.9, offerPresentation: 3.6, objectionHandling: 2.7, closeAndNextSteps: 3.1 },
     sections: [
       { name: 'Discovery',           score: 3.4, feedback: 'Functional but shallow. Prospect\'s urgency and emotional stakes not explored.', critical: true },
@@ -610,6 +648,8 @@ export const calls: Call[] = [
     score: 3.4,
     result: 'partial',
     prospect: 'Alice N.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 3.2, problemAgitation: 2.8, offerPresentation: 3.5, objectionHandling: 2.6, closeAndNextSteps: 3.0 },
     sections: [
       { name: 'Discovery',           score: 3.2, feedback: 'Only 2 timid questions before moving to the offer. Alice\'s real situation never explored.', critical: true },
@@ -636,6 +676,8 @@ export const calls: Call[] = [
     score: 3.2,
     result: 'no_outcome',
     prospect: 'George T.',
+    lead_name: null,
+    lead_source: null,
     rubricScores: { discovery: 3.1, problemAgitation: 2.7, offerPresentation: 3.5, objectionHandling: 2.6, closeAndNextSteps: 3.0 },
     sections: [
       { name: 'Discovery',           score: 3.1, feedback: 'Prospect led the conversation from the start. Taylor failed to take control and direct the discovery.', critical: true },
@@ -996,6 +1038,8 @@ export const supabaseCalls = calls.map((call) => ({
   trainer_name: call.trainerName,
   trainer_email: `${call.trainerName.toLowerCase().replace(/\s+/g, '').replace('.', '')}@demo.askmoses.ai`,
   client_name: call.prospect,
+  lead_name: call.lead_name ?? null,
+  lead_source: call.lead_source ?? null,
   transcript: call.transcript,
   overall_score: call.score,
   total_criteria: 6,

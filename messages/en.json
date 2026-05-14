@@ -254,7 +254,8 @@
       "coachingNotes": "Coaching Notes",
       "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
       "coachingNotesPlaceholder": "Add your coaching notes here...",
-      "coachingNotesFooter": "Notes are not persisted in this demo."
+      "coachingNotesFooter": "Notes are not persisted in this demo.",
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Overall Performance Trend",
@@ -510,6 +511,7 @@
       "callsAnalyzedOther": "{count} calls analyzed",
       "noCallsFound": "No calls found.",
       "filterAllSalesPeople": "All Sales People",
+      "filterAllSources": "All Sources",
       "thTrainer": "Sales Person",
       "thProspect": "Prospect",
       "thDate": "Date",

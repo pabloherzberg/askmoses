@@ -55,6 +55,8 @@ describe('TC-01 › DbCall interface', () => {
       closed: true,
       call_date: '2026-05-01',
       duration_seconds: null,
+      lead_name: null,
+      lead_source: null,
     }
 
     expect(Object.prototype.hasOwnProperty.call(row, 'closed')).toBe(true)

@@ -28,6 +28,9 @@ export interface DbCall {
   closed: boolean | null
   call_date: string | null
   duration_seconds: number | null
+  // GHL/Pepper CRM lead enrichment — added in migration 037
+  lead_name: string | null
+  lead_source: string | null
 }
 
 export interface CreateCallInput {
@@ -50,6 +53,8 @@ export interface CreateCallInput {
   costUsd?: number
   promptVersion?: string
   sections?: Record<string, unknown> | unknown[]
+  leadName?: string | null
+  leadSource?: string | null
 }
 
 export interface UpdateCallInput {
@@ -155,6 +160,8 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       prompt_version: input.promptVersion ?? null,
       sections: input.sections ?? null,
       email_sent: false,
+      lead_name: input.leadName ?? null,
+      lead_source: input.leadSource ?? null,
     })
     .select()
     .single()

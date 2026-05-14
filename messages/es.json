@@ -254,7 +254,8 @@
       "coachingNotes": "Notas de coaching",
       "coachingNotesSubtitle": "Notas internas — no visibles para el vendedor.",
       "coachingNotesPlaceholder": "Añade tus notas de coaching aquí...",
-      "coachingNotesFooter": "Las notas no se persisten en esta demo."
+      "coachingNotesFooter": "Las notas no se persisten en esta demo.",
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Tendencia de rendimiento",
@@ -510,6 +511,7 @@
       "callsAnalyzedOther": "{count} llamadas analizadas",
       "noCallsFound": "No se encontraron llamadas.",
       "filterAllSalesPeople": "Todos los vendedores",
+      "filterAllSources": "Todas las fuentes",
       "thTrainer": "Vendedor",
       "thProspect": "Prospecto",
       "thDate": "Fecha",

@@ -1,5 +1,6 @@
 export type Role = 'trainer' | 'owner' | 'admin'
 export type CallResult = 'closed' | 'not_closed' | 'partial' | 'no_outcome'
+export type LeadSource = 'facebook' | 'google' | 'organic' | 'referral' | 'other'
 export type HealthStatus = 'healthy' | 'at-risk' | 'churning'
 export type AvatarColor = 'blue' | 'purple' | 'green' | 'red' | 'amber'
 export type TagColor = 'red' | 'amber' | 'blue' | 'green'
@@ -61,6 +62,8 @@ export interface Call {
   score: number
   result: CallResult
   prospect: string
+  lead_name?: string | null
+  lead_source?: LeadSource | null
   rubricScores: RubricScores
   sections?: CallSection[]
   feedback: string
