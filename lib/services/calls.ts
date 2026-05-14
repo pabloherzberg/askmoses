@@ -141,7 +141,10 @@ export async function getCalls(
   filters?: GetCallsFilters & { locale?: Locale },
 ): Promise<Call[]> {
   const orgId = filters?.orgId ?? (await getOrgId());
-  if (!orgId) return [];
+  if (!orgId) {
+    console.warn('[getCalls] getOrgId() returned null — user has no active org. Returning [].')
+    return [];
+  }
 
   const rows = await dbGetCalls({
     orgId,
