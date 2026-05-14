@@ -1,7 +1,14 @@
 import { type NextRequest } from 'next/server'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
+import { requireSameOrigin } from '@/lib/auth/csrf'
 import type { Role } from '@/lib/types'
+
+// 20 starts/admin/min — burst razoável pra Ariel navegando entre orgs,
+// trava bot/script disparando impersonate em massa.
+const IMPERSONATE_RATE_MAX = 20
+const IMPERSONATE_RATE_WINDOW_SECONDS = 60
 
 interface StartBody {
   orgId?: string
@@ -46,11 +53,21 @@ function serverError(context: string, err?: unknown) {
 //   pra pegar o JWT novo — sem isso, current_org() ainda retorna NULL na
 //   próxima request.
 export async function POST(request: NextRequest) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 
   const role = session.user.app_metadata?.role as Role | undefined
   if (role !== 'admin') return forbidden()
+
+  const rl = await checkRateLimitDb(
+    `impersonate:${session.user.id}`,
+    IMPERSONATE_RATE_MAX,
+    IMPERSONATE_RATE_WINDOW_SECONDS,
+  )
+  if (!rl.allowed) return rateLimitedResponse(rl)
 
   let body: StartBody
   try {
@@ -74,6 +91,22 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
   if (orgErr) return serverError('Não foi possível validar a organização', orgErr)
   if (!org) return notFound('Organização não encontrada')
+
+  // Troca direta org→org (sem DELETE no meio) é fluxo esperado — Victor:
+  // "ao trocar para outra org, o contexto muda completamente". Sem fechar a
+  // sessão anterior, cada troca deixa uma row de audit órfã com ended_at=NULL
+  // pra sempre. Fecha a anterior aqui pra garantir no máximo 1 sessão aberta
+  // por Admin. Não-bloqueante: abrir a nova sessão é o objetivo principal.
+  const prevOrgId = session.user.app_metadata?.impersonating_org_id
+  if (typeof prevOrgId === 'string' && prevOrgId) {
+    const { error: closePrevErr } = await admin.rpc('close_admin_impersonation', {
+      p_admin_user_id: session.user.id,
+      p_target_org_id: prevOrgId,
+    })
+    if (closePrevErr) {
+      console.warn('[admin/impersonate] não foi possível fechar a sessão anterior — prosseguindo', closePrevErr)
+    }
+  }
 
   // Audit row primeiro — se a atualização do JWT falhar depois, sobrar uma
   // row "started" com ended_at=NULL é menos ruim que ter o claim setado sem
@@ -112,7 +145,10 @@ export async function POST(request: NextRequest) {
 //
 //   Idempotente: chamar sem estar impersonando retorna 200 com noOp=true.
 //   Cliente DEVE chamar supabase.auth.refreshSession() após receber 200.
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 

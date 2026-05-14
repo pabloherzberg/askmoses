@@ -1,13 +1,18 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
+import { requireSameOrigin } from '@/lib/auth/csrf'
+import { validatePassword } from '@/lib/auth/password'
 
 interface PasswordBody {
   password?: string
   confirm?: string
 }
 
-const MIN_PASSWORD_LENGTH = 8
+// 5 trocas/user/5min. Bloqueia automation sem atrapalhar quem digitou errado.
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_SECONDS = 300
 
 function badRequest(message: string, reason?: string) {
   return Response.json(
@@ -36,11 +41,24 @@ function serverError(context: string, err?: unknown) {
 //   Magic link continua funcionando depois (definir senha não invalida o
 //   método anterior — é uma alternativa, não substituição).
 export async function POST(request: NextRequest) {
+  // CSRF: state-changing endpoint com cookie auth — exige same-origin.
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const supabase = await createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
   if (!session) return unauthorized()
+
+  // Rate limit por user. Custom (DB-based, sobrevive multi-instance) em
+  // cima do throttle do Supabase Auth — segunda camada explícita.
+  const rl = await checkRateLimitDb(
+    `password:${session.user.id}`,
+    RATE_LIMIT_MAX,
+    RATE_LIMIT_WINDOW_SECONDS,
+  )
+  if (!rl.allowed) return rateLimitedResponse(rl)
 
   let body: PasswordBody
   try {
@@ -55,11 +73,9 @@ export async function POST(request: NextRequest) {
   if (!password || typeof password !== 'string') {
     return badRequest('Senha é obrigatória', 'PASSWORD_REQUIRED')
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return badRequest(
-      `Senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`,
-      'PASSWORD_TOO_SHORT',
-    )
+  const pw = validatePassword(password)
+  if (!pw.valid) {
+    return badRequest(pw.message ?? 'Senha inválida.', pw.reason)
   }
   if (confirm !== undefined && confirm !== password) {
     return badRequest('Confirmação não confere com a senha.', 'PASSWORD_MISMATCH')

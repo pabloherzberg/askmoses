@@ -25,8 +25,18 @@ export default async function SubscriptionPage({ params }: PageProps) {
 
   if (!org) notFound();
 
-  const plan =
-    (org as { plans?: { code: PlanCode } | null } | null)?.plans ?? null;
+  // Supabase nested select retorna array quando a relação é definida como
+  // hasMany no schema gerado. plans(code) pode vir como objeto OU array
+  // dependendo do TS gerado pelo Supabase — normalizamos via unknown cast.
+  const orgRow = org as unknown as {
+    id: string;
+    name: string;
+    subscription_status: SubStatus;
+    trial_ends_at: string | null;
+    plans: { code: PlanCode } | { code: PlanCode }[] | null;
+  };
+  const planRaw = orgRow.plans;
+  const plan = Array.isArray(planRaw) ? (planRaw[0] ?? null) : planRaw;
 
   return (
     // min-h-[70vh] preenche viewport sobrando espaço pro header (61px) +
@@ -34,15 +44,11 @@ export default async function SubscriptionPage({ params }: PageProps) {
     // centraliza vertical, justify-center centraliza horizontal.
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <SubscriptionOverrideForm
-        orgId={(org as { id: string }).id}
-        orgName={(org as { name: string }).name}
-        initialStatus={
-          (org as { subscription_status: SubStatus }).subscription_status
-        }
+        orgId={orgRow.id}
+        orgName={orgRow.name}
+        initialStatus={orgRow.subscription_status}
         initialPlanCode={plan?.code ?? null}
-        initialTrialEndsAt={
-          (org as { trial_ends_at: string | null }).trial_ends_at
-        }
+        initialTrialEndsAt={orgRow.trial_ends_at}
       />
     </div>
   );

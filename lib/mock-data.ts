@@ -846,6 +846,8 @@ export const clients: Client[] = [
     mrr: 1500,
     health: 'healthy',
     trainersCount: 4,
+    ownerAccepted: true,
+    subscriptionStatus: 'active',
   },
   {
     id: '00000000-0000-0000-0000-000000000803',
@@ -858,6 +860,8 @@ export const clients: Client[] = [
     mrr: 2500,
     health: 'healthy',
     trainersCount: 4,
+    ownerAccepted: true,
+    subscriptionStatus: 'active',
   },
   {
     id: '00000000-0000-0000-0000-000000000802',
@@ -870,6 +874,8 @@ export const clients: Client[] = [
     mrr: 500,
     health: 'at-risk',
     trainersCount: 4,
+    ownerAccepted: true,
+    subscriptionStatus: 'active',
   },
 ]
 

@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-
-const MIN_LENGTH = 8
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/auth/password'
 
 interface Props {
   // Quando setado, redireciona pra esse path após save bem sucedido.
@@ -28,8 +27,13 @@ export function PasswordForm({ welcomeRedirect }: Props = {}) {
     setSuccess(false)
     setError(null)
 
-    if (password.length < MIN_LENGTH) {
-      setError(t('errorTooShort', { min: MIN_LENGTH }))
+    // Mesmas regras do backend (lib/auth/password) — valida no client pra
+    // feedback imediato; o server revalida de qualquer forma.
+    const pw = validatePassword(password)
+    if (!pw.valid) {
+      if (pw.reason === 'PASSWORD_NO_UPPERCASE') setError(t('errorNoUppercase'))
+      else if (pw.reason === 'PASSWORD_NO_SPECIAL') setError(t('errorNoSpecial'))
+      else setError(t('errorTooShort', { min: PASSWORD_MIN_LENGTH }))
       return
     }
     if (password !== confirm) {
@@ -75,7 +79,7 @@ export function PasswordForm({ welcomeRedirect }: Props = {}) {
         <input
           type="password"
           required
-          minLength={MIN_LENGTH}
+          minLength={PASSWORD_MIN_LENGTH}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t('placeholder')}
@@ -85,7 +89,7 @@ export function PasswordForm({ welcomeRedirect }: Props = {}) {
           style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }}
         />
         <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-          {t('hint', { min: MIN_LENGTH })}
+          {t('hint', { min: PASSWORD_MIN_LENGTH })}
         </span>
       </label>
 

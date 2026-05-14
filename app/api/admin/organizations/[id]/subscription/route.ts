@@ -1,7 +1,13 @@
 import { type NextRequest } from 'next/server'
 import { getSession, ok, unauthorized, forbidden, notFound } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
+import { requireSameOrigin } from '@/lib/auth/csrf'
 import type { Role } from '@/lib/types'
+
+// 30 overrides/admin/min — sweetheart deal flow não é high-frequency.
+const RATE_LIMIT_MAX = 30
+const RATE_LIMIT_WINDOW_SECONDS = 60
 
 type SubStatus = 'active' | 'inactive' | 'trial'
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
@@ -54,11 +60,21 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 
   const role = session.user.app_metadata?.role as Role | undefined
   if (role !== 'admin') return forbidden()
+
+  const rl = await checkRateLimitDb(
+    `subscription_override:${session.user.id}`,
+    RATE_LIMIT_MAX,
+    RATE_LIMIT_WINDOW_SECONDS,
+  )
+  if (!rl.allowed) return rateLimitedResponse(rl)
 
   const { id: orgId } = await params
   if (!orgId || !UUID_RE.test(orgId)) return badRequest('orgId inválido')

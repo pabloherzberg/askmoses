@@ -4,7 +4,15 @@ import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
+import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
+import { requireSameOrigin } from '@/lib/auth/csrf'
 import type { Role } from '@/lib/types'
+
+// 10 orgs/admin/min. Cada criação dispara email (custa Resend) + auth user
+// (custa Supabase quota); aceitamos burst pra Ariel cadastrando vários
+// clientes seguidos, mas bot abusivo trava antes de gerar custo significativo.
+const CREATE_ORG_RATE_MAX = 10
+const CREATE_ORG_RATE_WINDOW_SECONDS = 60
 
 interface OrgOption {
   id: string
@@ -126,11 +134,21 @@ export async function GET() {
 //   Atomicidade: se qualquer step pós-org falhar, rollback completo
 //   incluindo a própria org. Ariel não fica com org-sem-owner pendurada.
 export async function POST(request: NextRequest) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 
   const role = session.user.app_metadata?.role as Role | undefined
   if (role !== 'admin') return forbidden()
+
+  const rl = await checkRateLimitDb(
+    `create_org:${session.user.id}`,
+    CREATE_ORG_RATE_MAX,
+    CREATE_ORG_RATE_WINDOW_SECONDS,
+  )
+  if (!rl.allowed) return rateLimitedResponse(rl)
 
   let body: CreateOrgBody
   try {
@@ -158,7 +176,7 @@ export async function POST(request: NextRequest) {
 
   const { data: plan, error: planErr } = await admin
     .from('plans')
-    .select('id, code')
+    .select('id, code, name')
     .eq('code', planCode)
     .maybeSingle()
   if (planErr) return serverError('Não foi possível resolver o plano', planErr)
@@ -216,7 +234,9 @@ export async function POST(request: NextRequest) {
       user_id: existingUser.id,
       org_id: org.id,
       company: org.name,
-      plan: 'Starter',
+      // owners.plan é o campo de display legado — usa o nome do plano que o
+      // Admin selecionou ('Starter' | 'Pro' | 'Pro + RAG'), não um fixo.
+      plan: plan.name,
     })
     if (ownerInsertErr) {
       await admin.from('memberships').delete()
@@ -336,7 +356,8 @@ export async function POST(request: NextRequest) {
     user_id: newUserId,
     org_id: org.id,
     company: org.name,
-    plan: 'Starter',
+    // owners.plan = nome de display do plano selecionado (ver branch 3A).
+    plan: plan.name,
   })
   if (ownerInsertErr) {
     await rollbackFull()

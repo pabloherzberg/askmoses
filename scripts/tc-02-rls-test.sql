@@ -70,7 +70,7 @@ UNION ALL SELECT 'anon → plans (public_read)', count(*)::bigint FROM public.pl
 ORDER BY scope;
 
 -- Lockdown total: invite_tokens + admin_impersonations têm REVOKE ALL
--- FROM anon/authenticated (migrations 034 e 041) — não é RLS filtrando,
+-- FROM anon/authenticated (migrations 034 e 040) — não é RLS filtrando,
 -- é GRANT negado no nível Postgres. Comportamento esperado é ERROR
 -- "42501: permission denied", mais forte que "0 rows".
 -- DO blocks capturam a exceção e logam como sucesso (ver aba "Messages").

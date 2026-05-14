@@ -3,11 +3,11 @@ import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildSignupEmail } from '@/lib/email/signup-template'
 import { checkRateLimit, pruneExpiredBuckets } from '@/lib/auth/rate-limit'
+import { validatePassword } from '@/lib/auth/password'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NAME_MIN = 2
 const NAME_MAX = 80
-const PASSWORD_MIN = 8
 
 // 5 signups por IP a cada 10 minutos. Suficiente pra reenvios manuais de
 // quem perdeu o email, restritivo o bastante pra travar bot signup.
@@ -87,8 +87,14 @@ export async function POST(request: NextRequest) {
   if (!email || !EMAIL_RE.test(email)) {
     return badRequest('email inválido', 'EMAIL_INVALID')
   }
-  if (!password || password.length < PASSWORD_MIN) {
-    return badRequest(`password deve ter ao menos ${PASSWORD_MIN} caracteres`, 'PASSWORD_INVALID')
+  if (!password || typeof password !== 'string') {
+    return badRequest('password é obrigatório', 'PASSWORD_INVALID')
+  }
+  const pw = validatePassword(password)
+  if (!pw.valid) {
+    // reason mantém 'PASSWORD_INVALID' (genérico) pra não quebrar o branch
+    // existente do frontend; a mensagem específica vai em `message`.
+    return badRequest(pw.message ?? 'password inválido', 'PASSWORD_INVALID')
   }
 
   // Rate limit em 2 buckets independentes:
