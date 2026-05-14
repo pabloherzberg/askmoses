@@ -51,7 +51,7 @@
     "emailPlaceholder": "seu@email.com",
     "passwordLabel": "Senha",
     "passwordPlaceholder": "••••••••",
-    "passwordHint": "Mínimo {min} caracteres",
+    "passwordHint": "Mínimo {min} caracteres, 1 maiúscula e 1 caractere especial",
     "submit": "Criar conta",
     "submitting": "Criando conta...",
     "haveAccount": "Já tem conta?",
@@ -60,6 +60,8 @@
     "nameRequired": "Informe seu nome",
     "emailInvalid": "Informe um e-mail válido",
     "passwordTooShort": "A senha precisa ter ao menos {min} caracteres",
+    "passwordNeedsUppercase": "A senha precisa ter ao menos 1 letra maiúscula",
+    "passwordNeedsSpecial": "A senha precisa ter ao menos 1 caractere especial",
     "emailAlreadyRegistered": "Este e-mail já está cadastrado. Faça login.",
     "genericError": "Não foi possível criar a conta. Tente novamente.",
     "verifyEmailTitle": "Confirme seu e-mail",
@@ -201,6 +203,12 @@
         "owner": "Owner",
         "trainer": "Vendedor"
       }
+    },
+    "userMenu": {
+      "triggerAria": "Menu do usuário",
+      "loading": "Carregando…",
+      "password": "Senha",
+      "signOut": "Sair"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -360,22 +368,33 @@
         "ctaPrefix": "Revisar em"
       },
       "ctaAria": "{prefix} {time} — não funcional na demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Segurança",
+    "title": "Senha",
+    "subtitle": "Defina ou troque sua senha. O magic link continua funcionando — a senha é uma alternativa.",
+    "welcome": {
+      "aria": "Bem-vindo",
+      "close": "Fechar",
+      "title": "Bem-vindo! Que tal definir uma senha agora?",
+      "body": "Você pode pular e continuar entrando por magic link. Se preferir, define uma senha aqui em segundos.",
+      "skip": "Pular por enquanto"
     },
-    "behavioralProfile": {
-      "title": "Perfil comportamental de correlação",
-      "mockBadge": "apenas dados mock",
-      "legend": {
-        "aboveAvg": "Nota do vendedor (acima da média)",
-        "belowAvg": "Nota do vendedor (abaixo da média)",
-        "teamAvgMarker": "Marcador da média do time"
-      },
-      "th": {
-        "scoreVsTeam": "Nota vs média do time",
-        "score": "Nota",
-        "delta": "Delta",
-        "teamAvg": "Média do time"
-      },
-      "mockFooter": "† todos os valores vêm de mock-data.ts · verde = acima da média · laranja = abaixo da média · marcador vertical = média do time · sem cálculo real"
+    "form": {
+      "newLabel": "Nova senha",
+      "confirmLabel": "Confirmar senha",
+      "placeholder": "••••••••",
+      "hint": "Mínimo de {min} caracteres, com 1 maiúscula e 1 caractere especial.",
+      "submit": "Salvar senha",
+      "submitting": "Salvando…",
+      "magicLinkNote": "Você pode continuar entrando por magic link também.",
+      "successDetail": "Senha atualizada com sucesso.",
+      "errorTooShort": "Senha deve ter pelo menos {min} caracteres.",
+      "errorNoUppercase": "A senha precisa ter ao menos uma letra maiúscula.",
+      "errorNoSpecial": "A senha precisa ter ao menos um caractere especial.",
+      "errorMismatch": "As senhas não conferem.",
+      "errorGeneric": "Não foi possível salvar a senha. Tente novamente."
     }
   },
   "Trainer": {
@@ -520,26 +539,74 @@
       "callsPerMonth": "Chamadas / mês",
       "avgScore": "Nota média",
       "mrr": "MRR",
-      "health": "Saúde"
+      "health": "Saúde",
+      "actions": "Ações"
     },
     "health": {
       "healthy": "Saudável",
       "atRisk": "Em risco",
       "churning": "Crítico"
     },
-    "createOrg": {
-      "eyebrow": "Provisionamento",
-      "title": "Nova organização",
-      "subtitle": "Crie um novo tenant e atribua seu plano.",
-      "nameLabel": "Nome da organização",
-      "namePlaceholder": "Acme Ltda.",
+    "ownerPending": "Aguardando Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inativa",
+    "subscriptionSettings": "Configurar plano de {name}",
+    "impersonateTooltip": "Entrar como {name} (visualização apenas leitura)",
+    "impersonateError": "Não foi possível entrar nessa organização. Tente novamente.",
+    "impersonateBanner": {
+      "label": "Visualizando como",
+      "readOnly": "Apenas leitura",
+      "exit": "Voltar ao painel admin",
+      "exiting": "Saindo…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Override de assinatura",
+      "statusLabel": "Status",
+      "status_active": "Ativa",
+      "status_inactive": "Inativa",
+      "status_trial": "Trial (brinde)",
       "planLabel": "Plano",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Criar organização",
+      "trialDurationLabel": "Duração do trial",
+      "preset_24h": "24 horas",
+      "preset_7d": "7 dias",
+      "preset_14d": "14 dias",
+      "preset_30d": "30 dias",
+      "preset_60d": "60 dias",
+      "preset_90d": "90 dias",
+      "preset_custom": "Personalizar",
+      "customDateLabel": "Data e hora de expiração",
+      "errorCustomDateRequired": "Informe a data de expiração do trial.",
+      "errorDateInFuture": "A data precisa estar no futuro.",
+      "submit": "Salvar override",
+      "submitting": "Salvando…",
+      "successDetail": "Assinatura atualizada. Admin override ativo.",
+      "genericError": "Não foi possível atualizar a assinatura. Tente novamente.",
+      "back": "← Voltar ao painel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionamento",
+      "title": "Nova organização",
+      "subtitle": "Crie um novo tenant, atribua seu plano e convide o Owner.",
+      "nameLabel": "Nome da organização",
+      "namePlaceholder": "Acme Ltda.",
+      "ownerNameLabel": "Nome do Owner",
+      "ownerNamePlaceholder": "Ex.: Maria Silva",
+      "ownerEmailLabel": "Email do Owner",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plano",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Criar organização e enviar convite",
       "submitting": "Criando…",
       "successDetail": "{name} provisionada no plano {plan}.",
+      "successInviteSent": "Convite enviado para {email}.",
+      "successInviteMocked": "Convite mockado (RESEND_API_KEY ausente) para {email}.",
+      "errorOwnerNameRequired": "Informe o nome do Owner.",
+      "errorOwnerEmailInvalid": "Email do Owner inválido.",
       "genericError": "Não foi possível criar a organização. Tente novamente."
     },
     "rubric": {

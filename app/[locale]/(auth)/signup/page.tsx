@@ -7,9 +7,9 @@ import { ArrowLeft } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/auth/password'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PASSWORD_MIN = 8
 
 export default function SignupPage() {
   const t = useTranslations('Signup')
@@ -28,7 +28,13 @@ export default function SignupPage() {
 
     if (!name.trim()) return setError(t('nameRequired'))
     if (!EMAIL_RE.test(email)) return setError(t('emailInvalid'))
-    if (password.length < PASSWORD_MIN) return setError(t('passwordTooShort', { min: PASSWORD_MIN }))
+    // Mesmas regras do backend (lib/auth/password).
+    const pw = validatePassword(password)
+    if (!pw.valid) {
+      if (pw.reason === 'PASSWORD_NO_UPPERCASE') return setError(t('passwordNeedsUppercase'))
+      if (pw.reason === 'PASSWORD_NO_SPECIAL') return setError(t('passwordNeedsSpecial'))
+      return setError(t('passwordTooShort', { min: PASSWORD_MIN_LENGTH }))
+    }
 
     setLoading(true)
     try {
@@ -58,7 +64,9 @@ export default function SignupPage() {
         if (reason === 'EMAIL_ALREADY_REGISTERED') setError(t('emailAlreadyRegistered'))
         else if (reason === 'EMAIL_INVALID') setError(t('emailInvalid'))
         else if (reason === 'PASSWORD_INVALID' || reason === 'PASSWORD_REJECTED') {
-          setError(t('passwordTooShort', { min: PASSWORD_MIN }))
+          // Mensagem específica do server (qual regra falhou) — o reason é
+          // genérico, mas `message` detalha. Fallback pro texto de tamanho.
+          setError(json.error?.message ?? t('passwordTooShort', { min: PASSWORD_MIN_LENGTH }))
         } else if (reason === 'RATE_LIMITED') {
           setError(json.error?.message ?? t('genericError'))
         } else {
@@ -167,13 +175,13 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="new-password"
-            minLength={PASSWORD_MIN}
+            minLength={PASSWORD_MIN_LENGTH}
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
             style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
             placeholder={t('passwordPlaceholder')}
           />
           <p className="text-[11px] mt-1.5" style={{ color: 'var(--am-muted)' }}>
-            {t('passwordHint', { min: PASSWORD_MIN })}
+            {t('passwordHint', { min: PASSWORD_MIN_LENGTH })}
           </p>
         </div>
 

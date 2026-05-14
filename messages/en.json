@@ -51,7 +51,7 @@
     "emailPlaceholder": "your@email.com",
     "passwordLabel": "Password",
     "passwordPlaceholder": "••••••••",
-    "passwordHint": "At least {min} characters",
+    "passwordHint": "At least {min} characters, 1 uppercase and 1 special character",
     "submit": "Create account",
     "submitting": "Creating account...",
     "haveAccount": "Already have an account?",
@@ -60,6 +60,8 @@
     "nameRequired": "Please enter your name",
     "emailInvalid": "Please enter a valid email",
     "passwordTooShort": "Password must be at least {min} characters",
+    "passwordNeedsUppercase": "Password must include at least 1 uppercase letter",
+    "passwordNeedsSpecial": "Password must include at least 1 special character",
     "emailAlreadyRegistered": "This email is already registered. Please sign in.",
     "genericError": "Could not create the account. Please try again.",
     "verifyEmailTitle": "Confirm your email",
@@ -201,6 +203,12 @@
         "owner": "Owner",
         "trainer": "Sales Person"
       }
+    },
+    "userMenu": {
+      "triggerAria": "User menu",
+      "loading": "Loading…",
+      "password": "Password",
+      "signOut": "Sign out"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -360,22 +368,33 @@
         "ctaPrefix": "Review at"
       },
       "ctaAria": "{prefix} {time} — non-functional in demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Security",
+    "title": "Password",
+    "subtitle": "Set or change your password. Magic link still works — password is an alternative.",
+    "welcome": {
+      "aria": "Welcome",
+      "close": "Close",
+      "title": "Welcome! Want to set a password now?",
+      "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
+      "skip": "Skip for now"
     },
-    "behavioralProfile": {
-      "title": "Behavioral Correlation Profile",
-      "mockBadge": "mock data only",
-      "legend": {
-        "aboveAvg": "Sales person score (above avg)",
-        "belowAvg": "Sales person score (below avg)",
-        "teamAvgMarker": "Team avg marker"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs team avg",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Team avg"
-      },
-      "mockFooter": "† all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation"
+    "form": {
+      "newLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} characters, with 1 uppercase and 1 special character.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "magicLinkNote": "You can still sign in via magic link.",
+      "successDetail": "Password updated successfully.",
+      "errorTooShort": "Password must be at least {min} characters.",
+      "errorNoUppercase": "Password must include at least one uppercase letter.",
+      "errorNoSpecial": "Password must include at least one special character.",
+      "errorMismatch": "Passwords do not match.",
+      "errorGeneric": "Could not save password. Try again."
     }
   },
   "Trainer": {
@@ -520,26 +539,74 @@
       "callsPerMonth": "Calls / mo",
       "avgScore": "Avg Score",
       "mrr": "MRR",
-      "health": "Health"
+      "health": "Health",
+      "actions": "Actions"
     },
     "health": {
       "healthy": "Healthy",
       "atRisk": "At Risk",
       "churning": "Critical"
     },
-    "createOrg": {
-      "eyebrow": "Provisioning",
-      "title": "New organization",
-      "subtitle": "Create a new tenant and assign its plan.",
-      "nameLabel": "Organization name",
-      "namePlaceholder": "Acme Inc.",
+    "ownerPending": "Awaiting Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inactive",
+    "subscriptionSettings": "Configure {name}'s plan",
+    "impersonateTooltip": "Enter {name} (read-only view)",
+    "impersonateError": "Could not enter this organization. Try again.",
+    "impersonateBanner": {
+      "label": "Viewing as",
+      "readOnly": "Read only",
+      "exit": "Back to admin panel",
+      "exiting": "Exiting…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Subscription override",
+      "statusLabel": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "status_trial": "Trial (comp)",
       "planLabel": "Plan",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Create organization",
+      "trialDurationLabel": "Trial duration",
+      "preset_24h": "24 hours",
+      "preset_7d": "7 days",
+      "preset_14d": "14 days",
+      "preset_30d": "30 days",
+      "preset_60d": "60 days",
+      "preset_90d": "90 days",
+      "preset_custom": "Custom",
+      "customDateLabel": "Expiration date and time",
+      "errorCustomDateRequired": "Enter the trial expiration date.",
+      "errorDateInFuture": "Date must be in the future.",
+      "submit": "Save override",
+      "submitting": "Saving…",
+      "successDetail": "Subscription updated. Admin override active.",
+      "genericError": "Could not update subscription. Try again.",
+      "back": "← Back to panel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisioning",
+      "title": "New organization",
+      "subtitle": "Create a new tenant, assign its plan and invite the Owner.",
+      "nameLabel": "Organization name",
+      "namePlaceholder": "Acme Inc.",
+      "ownerNameLabel": "Owner name",
+      "ownerNamePlaceholder": "e.g. Maria Silva",
+      "ownerEmailLabel": "Owner email",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Create organization and send invite",
       "submitting": "Creating…",
       "successDetail": "{name} provisioned on the {plan} plan.",
+      "successInviteSent": "Invite sent to {email}.",
+      "successInviteMocked": "Invite mocked (RESEND_API_KEY missing) for {email}.",
+      "errorOwnerNameRequired": "Owner name is required.",
+      "errorOwnerEmailInvalid": "Invalid Owner email.",
       "genericError": "Could not create the organization. Try again."
     },
     "rubric": {

@@ -51,7 +51,7 @@
     "emailPlaceholder": "votre@email.com",
     "passwordLabel": "Mot de passe",
     "passwordPlaceholder": "••••••••",
-    "passwordHint": "Au moins {min} caractères",
+    "passwordHint": "Au moins {min} caractères, 1 majuscule et 1 caractère spécial",
     "submit": "Créer un compte",
     "submitting": "Création du compte...",
     "haveAccount": "Vous avez déjà un compte ?",
@@ -60,6 +60,8 @@
     "nameRequired": "Veuillez saisir votre nom",
     "emailInvalid": "Veuillez saisir un e-mail valide",
     "passwordTooShort": "Le mot de passe doit contenir au moins {min} caractères",
+    "passwordNeedsUppercase": "Le mot de passe doit contenir au moins 1 lettre majuscule",
+    "passwordNeedsSpecial": "Le mot de passe doit contenir au moins 1 caractère spécial",
     "emailAlreadyRegistered": "Cet e-mail est déjà enregistré. Veuillez vous connecter.",
     "genericError": "Impossible de créer le compte. Veuillez réessayer.",
     "verifyEmailTitle": "Confirmez votre e-mail",
@@ -201,6 +203,12 @@
         "owner": "Propriétaire",
         "trainer": "Commercial"
       }
+    },
+    "userMenu": {
+      "triggerAria": "Menu utilisateur",
+      "loading": "Chargement…",
+      "password": "Mot de passe",
+      "signOut": "Déconnexion"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -360,22 +368,33 @@
         "ctaPrefix": "Revoir à"
       },
       "ctaAria": "{prefix} {time} — non fonctionnel en démo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Sécurité",
+    "title": "Mot de passe",
+    "subtitle": "Définissez ou changez votre mot de passe. Le magic link fonctionne toujours — le mot de passe est une alternative.",
+    "welcome": {
+      "aria": "Bienvenue",
+      "close": "Fermer",
+      "title": "Bienvenue ! Vous voulez définir un mot de passe maintenant ?",
+      "body": "Vous pouvez passer cette étape et continuer à vous connecter par magic link. Si vous préférez, définissez un mot de passe ici en quelques secondes.",
+      "skip": "Passer pour l'instant"
     },
-    "behavioralProfile": {
-      "title": "Profil comportemental de corrélation",
-      "mockBadge": "données mock uniquement",
-      "legend": {
-        "aboveAvg": "Score du commercial (au-dessus de la moyenne)",
-        "belowAvg": "Score du commercial (en dessous de la moyenne)",
-        "teamAvgMarker": "Marqueur de la moyenne équipe"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs moyenne équipe",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Moyenne équipe"
-      },
-      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts · vert = au-dessus de la moyenne · orange = en dessous de la moyenne · marqueur vertical = moyenne équipe · pas de calcul réel"
+    "form": {
+      "newLabel": "Nouveau mot de passe",
+      "confirmLabel": "Confirmer le mot de passe",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} caractères, avec 1 majuscule et 1 caractère spécial.",
+      "submit": "Enregistrer",
+      "submitting": "Enregistrement…",
+      "magicLinkNote": "Vous pouvez aussi continuer à vous connecter par magic link.",
+      "successDetail": "Mot de passe mis à jour.",
+      "errorTooShort": "Le mot de passe doit comporter au moins {min} caractères.",
+      "errorNoUppercase": "Le mot de passe doit contenir au moins une lettre majuscule.",
+      "errorNoSpecial": "Le mot de passe doit contenir au moins un caractère spécial.",
+      "errorMismatch": "Les mots de passe ne correspondent pas.",
+      "errorGeneric": "Impossible d'enregistrer le mot de passe. Réessayez."
     }
   },
   "Trainer": {
@@ -520,26 +539,74 @@
       "callsPerMonth": "Appels / mois",
       "avgScore": "Score moyen",
       "mrr": "MRR",
-      "health": "Santé"
+      "health": "Santé",
+      "actions": "Actions"
     },
     "health": {
       "healthy": "Sain",
       "atRisk": "À risque",
       "churning": "Critique"
     },
-    "createOrg": {
-      "eyebrow": "Provisionnement",
-      "title": "Nouvelle organisation",
-      "subtitle": "Créez un nouveau tenant et assignez son plan.",
-      "nameLabel": "Nom de l'organisation",
-      "namePlaceholder": "Acme SARL",
+    "ownerPending": "En attente Owner",
+    "subTrial": "Essai",
+    "subInactive": "Inactif",
+    "subscriptionSettings": "Configurer le plan de {name}",
+    "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
+    "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
+    "impersonateBanner": {
+      "label": "Vue en tant que",
+      "readOnly": "Lecture seule",
+      "exit": "Retour au panel admin",
+      "exiting": "Sortie…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Override d'abonnement",
+      "statusLabel": "Statut",
+      "status_active": "Actif",
+      "status_inactive": "Inactif",
+      "status_trial": "Essai (cadeau)",
       "planLabel": "Plan",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Créer l'organisation",
+      "trialDurationLabel": "Durée de l'essai",
+      "preset_24h": "24 heures",
+      "preset_7d": "7 jours",
+      "preset_14d": "14 jours",
+      "preset_30d": "30 jours",
+      "preset_60d": "60 jours",
+      "preset_90d": "90 jours",
+      "preset_custom": "Personnaliser",
+      "customDateLabel": "Date et heure d'expiration",
+      "errorCustomDateRequired": "Indiquez la date d'expiration de l'essai.",
+      "errorDateInFuture": "La date doit être dans le futur.",
+      "submit": "Enregistrer l'override",
+      "submitting": "Enregistrement…",
+      "successDetail": "Abonnement mis à jour. Admin override actif.",
+      "genericError": "Impossible de mettre à jour l'abonnement. Réessayez.",
+      "back": "← Retour au panel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionnement",
+      "title": "Nouvelle organisation",
+      "subtitle": "Créez un nouveau tenant, assignez son plan et invitez l'Owner.",
+      "nameLabel": "Nom de l'organisation",
+      "namePlaceholder": "Acme SARL",
+      "ownerNameLabel": "Nom de l'Owner",
+      "ownerNamePlaceholder": "Ex.: Maria Silva",
+      "ownerEmailLabel": "Email de l'Owner",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Créer l'organisation et envoyer l'invitation",
       "submitting": "Création…",
       "successDetail": "{name} provisionnée sur le plan {plan}.",
+      "successInviteSent": "Invitation envoyée à {email}.",
+      "successInviteMocked": "Invitation simulée (RESEND_API_KEY manquant) pour {email}.",
+      "errorOwnerNameRequired": "Le nom de l'Owner est requis.",
+      "errorOwnerEmailInvalid": "Email de l'Owner invalide.",
       "genericError": "Impossible de créer l'organisation. Réessayez."
     },
     "rubric": {

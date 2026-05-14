@@ -79,6 +79,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.app_metadata?.role as Role | undefined
+  // Admin impersonando uma org: app_metadata.impersonating_org_id setado por
+  // POST /api/admin/impersonate. Só Admin pode impersonar — claim em outras
+  // roles é ignorado defensivamente.
+  const impersonatingOrgId = role === 'admin' && typeof user?.app_metadata?.impersonating_org_id === 'string'
+    ? user.app_metadata.impersonating_org_id as string
+    : null
 
   // /onboarding é multi-step e semi-público — requer login mas permite
   // estados intermediários do fluxo de cadastro:
@@ -129,6 +135,28 @@ export async function middleware(request: NextRequest) {
 
   if (rawPath.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
+  }
+
+  // ── Admin impersonando: whitelist de paths read-only ─────────────────────
+  // Admin vê só /dashboard e /team-command-center (e drilldowns de call) quando
+  // está numa org cliente. Telas operacionais (upload, settings, marketing
+  // intelligence, etc.) redirecionam pra /admin pra não dar impressão de que
+  // ele pode operar a org. /admin continua acessível pra Admin sair do modo.
+  if (impersonatingOrgId) {
+    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls']
+    const isAllowed =
+      rawPath === '/' ||
+      rawPath.startsWith('/admin') ||
+      IMPERSONATE_ALLOWED.some((p) => rawPath === p || rawPath.startsWith(p + '/'))
+    // Bloqueia drilldowns que são operacionais mesmo dentro das rotas
+    // permitidas (upload, script-builder, settings).
+    const isOperational =
+      rawPath.startsWith('/dashboard/upload') ||
+      rawPath.startsWith('/dashboard/script-builder') ||
+      rawPath.startsWith('/dashboard/settings')
+    if (!isAllowed || isOperational) {
+      return NextResponse.redirect(localized('/admin', locale, request.url))
+    }
   }
 
   // Redirect legacy routes

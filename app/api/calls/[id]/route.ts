@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, forbidden, notFound } from '@/lib/auth'
-import { getSession, getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
+import { getSession, getRole, getOrgId, getTrainerDbId, requireOwnerWrite } from '@/lib/auth'
 import { getCallById, updateCall, deleteCall } from '@/lib/services/calls'
 import type { UpdateCallInput } from '@/lib/services/calls'
 
@@ -34,6 +34,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
   const session = await getSession()
   if (!session) return unauthorized()
 
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
+
   const role = await getRole()
   if (role === 'trainer') return forbidden()
 
@@ -53,6 +56,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
 export async function DELETE(_request: NextRequest, { params }: Params) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  // Admin impersonando é read-only — bloqueia DELETE de call mesmo que o
+  // Admin "real" tenha permissão. Admin operando do próprio painel (sem
+  // impersonate) também não chega aqui pq não tem getOrgId() válido —
+  // requireOwnerWrite só barra impersonate.
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const role = await getRole()
   if (role !== 'admin') return forbidden()
