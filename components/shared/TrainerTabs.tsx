@@ -198,25 +198,12 @@ export function TrainerTabs() {
             <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
               {t('bestCall')}
             </p>
-            <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-              style={{
-                color: 'var(--am-amber)',
-                borderColor: 'rgba(255,171,46,0.35)',
-                background: 'rgba(255,171,46,0.08)',
-              }}
-            >
-              {t('mockBadge')}
-            </span>
           </div>
           <div className="flex flex-col gap-3">
             {bestCalls.map((call) => (
               <CallCard key={call.prospect + call.date} call={call} variant="best" />
             ))}
           </div>
-          <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-            {t('mockFooterBest')}
-          </p>
         </div>
 
         <div
@@ -227,25 +214,12 @@ export function TrainerTabs() {
             <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
               {t('worstCall')}
             </p>
-            <span
-              className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-              style={{
-                color: 'var(--am-amber)',
-                borderColor: 'rgba(255,171,46,0.35)',
-                background: 'rgba(255,171,46,0.08)',
-              }}
-            >
-              {t('mockBadge')}
-            </span>
           </div>
           <div className="flex flex-col gap-3">
             {worstCalls.map((call) => (
               <CallCard key={call.prospect + call.date} call={call} variant="worst" />
             ))}
           </div>
-          <p className="mt-4 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-            {t('mockFooterWorst')}
-          </p>
         </div>
       </div>
     </div>

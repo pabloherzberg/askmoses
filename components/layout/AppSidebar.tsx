@@ -124,9 +124,10 @@ export function AdminNavItems() {
 export function ImpersonateNavItems() {
   const t = useTranslations('Shared.sidebar')
   const nav = [
-    { label: t('dashboard'),          href: '/dashboard',           icon: Home          },
-    { label: t('teamCommandCenter'),  href: '/team-command-center', icon: GraduationCap },
-    { label: t('calls'),              href: '/calls',               icon: Phone         },
+    { label: t('dashboard'),              href: '/dashboard',              icon: Home          },
+    { label: t('teamCommandCenter'),      href: '/team-command-center',    icon: GraduationCap },
+    { label: t('calls'),                  href: '/calls',                  icon: Phone         },
+    { label: t('marketingIntelligence'),  href: '/marketing-intelligence', icon: Megaphone     },
   ]
   return (
     <nav className="flex flex-col gap-1">
