@@ -115,6 +115,23 @@ export async function GET(request: NextRequest) {
     .eq('org_id', orgId)
     .maybeSingle()
   const role = (membership?.role as Role | undefined) ?? undefined
+
+  // Sync app_metadata.role com a role do membership aceito. Middleware roteia
+  // por JWT.role (rápido, sem DB hit). Sem o sync, dual-role (owner em A,
+  // trainer em B) cai em rota errada — mesma raiz que /api/me/active-org:65.
+  if (role) {
+    const { data: userAuth } = await admin.auth.admin.getUserById(userId)
+    const currentMeta = (userAuth.user?.app_metadata ?? {}) as Record<string, unknown>
+    const { org_id: _droppedOrgId, ...metaWithoutOrgId } = currentMeta
+    const { error: metaErr } = await admin.auth.admin.updateUserById(userId, {
+      app_metadata: { ...metaWithoutOrgId, role },
+    })
+    if (metaErr) {
+      console.error('[verify-invite-token] sync app_metadata.role falhou', metaErr, { userId, orgId })
+      // Não bloqueia: membership já aceita; user pode trocar de org pra forçar sync.
+    }
+  }
+
   const homePath = resolveDestination(role, nextRaw)
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({

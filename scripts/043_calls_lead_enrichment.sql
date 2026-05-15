@@ -28,7 +28,9 @@ ALTER TABLE public.calls
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'calls_lead_source_check'
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'calls_lead_source_check'
+      AND conrelid = 'public.calls'::regclass
   ) THEN
     ALTER TABLE public.calls
       ADD CONSTRAINT calls_lead_source_check
