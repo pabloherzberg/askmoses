@@ -1,40 +1,36 @@
-import { getTranslations } from "next-intl/server"
-import { HeroSection } from "@/components/hero-section"
-import { ProblemSection } from "@/components/problem-section"
-import { WorkflowSection } from "@/components/workflow-section"
-import { FeaturesSection } from "@/components/features-section"
-import { OutOfScopeSection } from "@/components/out-of-scope-section"
-import { MetricsSection } from "@/components/metrics-section"
-import { RoadmapSection } from "@/components/roadmap-section"
-import { ReusabilitySection } from "@/components/reusability-section"
-import { PricingSection } from "@/components/pricing-section"
-import { TeamSection } from "@/components/team-section"
-import { AppendixSection } from "@/components/appendix-section"
-import { Navigation } from "@/components/navigation"
+import { Navbar } from "@/components/landing/navbar"
+import { Hero } from "@/components/landing/hero"
+import { Problem } from "@/components/landing/problem"
+import { HowItWorks } from "@/components/landing/how-it-works"
+import { Benefits } from "@/components/landing/benefits"
+import { Industries } from "@/components/landing/industries"
+import { Pricing } from "@/components/landing/pricing"
+import { DemoForm } from "@/components/landing/demo-form"
+import { CtaBand } from "@/components/landing/cta-band"
+import { Footer } from "@/components/landing/footer"
+import { MobileCtaBar } from "@/components/landing/mobile-cta-bar"
+import { ForceLightTheme } from "@/components/landing/ForceLightTheme"
 
-export default async function ProposalPage() {
-  const t = await getTranslations("Landing.Footer")
+export default function LandingPage() {
+  // `className="light"` cobre filhos diretos via cascade; ForceLightTheme
+  // remove `dark` do <html> em runtime pra cobrir portais Radix (dropdown,
+  // sheet) que renderizam fora da tree. Decisão Vitor: LP sempre em light.
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main>
-        <HeroSection />
-        <ProblemSection />
-        <WorkflowSection />
-        <FeaturesSection />
-        <OutOfScopeSection />
-        <MetricsSection />
-        <RoadmapSection />
-        <ReusabilitySection />
-        <PricingSection />
-        <TeamSection />
-        <AppendixSection />
+    <div className="light flex min-h-screen flex-col bg-background pb-20 lg:pb-0">
+      <ForceLightTheme />
+      <Navbar />
+      <main className="flex-1">
+        <Hero />
+        <Problem />
+        <HowItWorks />
+        <Benefits />
+        <Industries />
+        <Pricing />
+        <DemoForm />
+        <CtaBand />
       </main>
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-6 text-center text-muted-foreground text-sm">
-          {t("text")}
-        </div>
-      </footer>
+      <Footer />
+      <MobileCtaBar />
     </div>
   )
 }

@@ -95,6 +95,13 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        {/* GHL form embed loader — usado pelo iframe na landing page (/) */}
+        <script
+          src="https://business.unleashedconsulting.com/js/form_embed.js"
+          async
+        />
+      </head>
       <body
         className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}
         style={{ ['--impersonate-banner-h' as string]: bannerHeight }}

@@ -13,7 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function LanguageSwitcher() {
+type LanguageSwitcherProps = {
+  variant?: "ghost" | "outline" | "secondary" | "default"
+}
+
+export function LanguageSwitcher({ variant = "ghost" }: LanguageSwitcherProps = {}) {
   const t = useTranslations("LanguageSwitcher")
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -31,7 +35,7 @@ export function LanguageSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
+          variant={variant}
           size="sm"
           className="gap-2"
           aria-label={t("label")}

@@ -2000,5 +2000,200 @@
     "Footer": {
       "text": "Propuesta de MVP de Ask Moses — Enero de 2026"
     }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "Inicio de AskMoses.AI",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Principal",
+      "howItWorks": "Cómo funciona",
+      "benefits": "Beneficios",
+      "industries": "Sectores",
+      "pricing": "Precios",
+      "dashboard": "Dashboard",
+      "bookDemo": "Reservar mi demo gratis",
+      "openMenu": "Abrir menú",
+      "closeMenu": "Cerrar menú",
+      "menuTitle": "Menú",
+      "toggleTheme": "Cambiar tema"
+    },
+    "Hero": {
+      "badge": "Coaching de ventas con IA, basado en ciencia de datos",
+      "titlePart1": "La mayoría de los negocios no tiene un problema de leads. Tiene un",
+      "titleHighlight": "problema de conversión.",
+      "subtitle": "Tu mejor vendedor tiene un secreto. AskMoses lo descubre, lo analiza y lo replica en todo tu equipo — automáticamente.",
+      "ctaPrimary": "Reservar mi demo gratis",
+      "ctaSecondary": "Ver cómo funciona",
+      "dashboardAlt": "Dashboard de AskMoses.AI mostrando métricas de conversión del equipo, tasa de cierre, ingresos mensuales y gráfico de tendencia de conversión",
+      "statCloseRateLabel": "Tasa de cierre promedio",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Aumento de ingresos",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "El Problema",
+      "title": "Estás pagando por leads. Y los estás perdiendo en el teléfono.",
+      "body": "Tu mejor closer gana negocios que tu vendedor promedio pierde. Mismos leads. Mismo script. Resultados diferentes. Sin datos, estás adivinando por qué — y tu inversión en marketing paga el precio.",
+      "cta": "Mira cómo AskMoses lo resuelve"
+    },
+    "HowItWorks": {
+      "eyebrow": "Cómo funciona",
+      "title": "De la conversación a la conversión en 4 pasos.",
+      "subtitle": "Sin herramientas nuevas que aprender. Sin interrumpir el flujo de trabajo. Solo mejores resultados.",
+      "steps": {
+        "listen": {
+          "title": "Escuchar",
+          "description": "AskMoses ingiere todas las llamadas entrantes y salientes del equipo, automáticamente."
+        },
+        "identify": {
+          "title": "Identificar",
+          "description": "Detecta los comportamientos, frases y patrones exactos que separan a los closers de los demás."
+        },
+        "evaluate": {
+          "title": "Evaluar",
+          "description": "Puntúa cada llamada contra tu rúbrica personalizada con correlación estadística a los resultados reales."
+        },
+        "scale": {
+          "title": "Escalar",
+          "description": "Replica lo que funciona en todo el equipo con coaching dirigido, scripts y dashboards por vendedor."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Por qué AskMoses",
+      "title": "Hecho para convertir conversaciones en negocios cerrados.",
+      "differentiator": {
+        "badge": "Diferencial clave",
+        "titlePart1": "Impulsado por",
+        "titleHighlight": "ciencia de datos",
+        "body": "AskMoses no solo graba llamadas — aplica ciencia de datos para identificar qué comportamientos específicos impulsan estadísticamente las conversiones en tu negocio.",
+        "bullets": [
+          "Nada de intuiciones.",
+          "Nada de buenas prácticas genéricas.",
+          "Solo matemáticas."
+        ],
+        "cta": "Velo en tus datos"
+      },
+      "items": {
+        "data": {
+          "title": "Datos reales, no suposiciones",
+          "description": "Cada decisión de coaching respaldada por análisis estadístico de cientos de llamadas reales."
+        },
+        "rubric": {
+          "title": "Rúbrica personalizada",
+          "description": "No consejos genéricos. Tu metodología de ventas, optimizada con IA."
+        },
+        "sellMore": {
+          "title": "Vende más sin gastar más",
+          "description": "Mismo presupuesto de marketing, mismo volumen de leads, mejor tasa de conversión."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Sectores",
+      "title": "Hecho para negocios que cierran por teléfono.",
+      "subtitle": "Si tus clientes llaman antes de comprar, AskMoses convierte esas llamadas en ingresos.",
+      "items": {
+        "dogTrainers": "Adiestradores Caninos",
+        "callCenters": "Call Centers",
+        "vet": "Clínicas Veterinarias",
+        "beauty": "Clínicas de Belleza y Medspas",
+        "homeServices": "Servicios para el Hogar",
+        "lawFirms": "Despachos de Abogados"
+      },
+      "cta": "Reservar mi demo gratis"
+    },
+    "Pricing": {
+      "eyebrow": "Precios",
+      "title": "Elige el plan que se adapta a tu forma de crecer.",
+      "popularBadge": "Más popular",
+      "footnote": "* Tarifa de uso de $2/llamada aplica a todos los planes. Facturación mensual basada en volumen real. Sin compromiso mínimo de llamadas.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "Coaching de ventas con IA para operadores independientes listos para cerrar más leads que ya tienen.",
+          "price": "$500",
+          "priceSuffix": "/mes",
+          "priceNote": "+ $2 por llamada analizada",
+          "features": [
+            "Puntuación por IA en cada llamada entrante",
+            "Rúbrica personalizada basada en tu método de entrenamiento",
+            "Dashboard de desempeño por vendedor",
+            "Seguimiento de objeciones y detección de patrones",
+            "Reporte semanal de insights de coaching",
+            "Integración con CRM"
+          ],
+          "cta": "Agendar una llamada de descubrimiento"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses más marketing full-service. El loop completo de ingresos para empresas de servicio listas para escalar.",
+          "price": "$1.250",
+          "priceSuffix": "/mes",
+          "priceNote": "+ $2 por llamada analizada",
+          "features": [
+            "Todo lo de Solo",
+            "Copy de anuncios generado por IA a partir de los datos de tus llamadas",
+            "Campañas de generación de leads en Google y Meta",
+            "Diseño y optimización de landing pages",
+            "Creación de contenido y redes sociales",
+            "Setup completo de CRM y automatización",
+            "Reporte closed-loop: de llamadas a ingresos",
+            "Estratega de cuenta dedicado"
+          ],
+          "cta": "Agendar una llamada de descubrimiento"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "Para grupos de franquicia, operadores multi-ubicación y redes de capacitación que necesitan inteligencia a nivel de portafolio.",
+          "price": "Precio personalizado",
+          "customNote": "Tarifas por volumen · SLA personalizado",
+          "features": [
+            "Todo lo de Pro",
+            "Ubicaciones y usuarios ilimitados",
+            "Analítica de llamadas a nivel de portafolio",
+            "Rúbricas personalizadas por ubicación",
+            "Benchmarking de desempeño entre franquicias",
+            "Account manager dedicado",
+            "Soporte y onboarding prioritarios"
+          ],
+          "cta": "Contáctanos →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Demo",
+      "titlePart1": "Mira AskMoses en",
+      "titleHighlight": "Acción.",
+      "subtitle": "Agenda una demo gratuita de 20 minutos. Sin compromiso.",
+      "bullets": [
+        "Recorrido con tus datos de llamadas reales",
+        "Mira una rúbrica de ejemplo puntuada en vivo",
+        "Estimación de ROI personalizada para tu equipo"
+      ],
+      "formTitle": "Formulario AskMoses",
+      "formId": "ADEpZV9ukkUoRuLJobxh",
+      "formUrl": "https://business.unleashedconsulting.com/widget/form/ADEpZV9ukkUoRuLJobxh",
+      "formName": "AskMoses Form"
+    },
+    "CtaBand": {
+      "title": "¿Listo para convertir más llamadas en clientes?",
+      "cta": "Reservar mi demo gratis"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Pie de página",
+      "howItWorks": "Cómo funciona",
+      "benefits": "Beneficios",
+      "pricing": "Precios",
+      "demo": "Demo",
+      "contact": "Contacto",
+      "copyright": "© {year} AskMoses.AI. Todos los derechos reservados.",
+      "privacy": "Privacidad",
+      "terms": "Términos"
+    },
+    "MobileCta": {
+      "label": "Reservar mi demo gratis"
+    }
   }
 }

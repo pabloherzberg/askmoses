@@ -2000,5 +2000,200 @@
     "Footer": {
       "text": "Proposition MVP Ask Moses — Janvier 2026"
     }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "Accueil AskMoses.AI",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Principal",
+      "howItWorks": "Comment ça marche",
+      "benefits": "Avantages",
+      "industries": "Secteurs",
+      "pricing": "Tarifs",
+      "dashboard": "Dashboard",
+      "bookDemo": "Réserver ma démo gratuite",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Changer de thème"
+    },
+    "Hero": {
+      "badge": "Coaching commercial IA, basé sur la science des données",
+      "titlePart1": "La plupart des entreprises n'ont pas un problème de leads. Elles ont un",
+      "titleHighlight": "problème de conversion.",
+      "subtitle": "Votre meilleur commercial a un secret. AskMoses le découvre, l'analyse et le reproduit dans toute votre équipe — automatiquement.",
+      "ctaPrimary": "Réserver ma démo gratuite",
+      "ctaSecondary": "Voir comment ça marche",
+      "dashboardAlt": "Dashboard AskMoses.AI affichant les métriques de conversion de l'équipe, le taux de closing, le revenu mensuel et la courbe du taux de conversion",
+      "statCloseRateLabel": "Taux de closing moyen",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Hausse de revenu",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "Le Problème",
+      "title": "Vous payez pour des leads. Vous les perdez au téléphone.",
+      "body": "Votre meilleur closer remporte des deals que votre commercial moyen perd. Mêmes leads. Même script. Résultats différents. Sans données, vous devinez pourquoi — et votre budget marketing en paie le prix.",
+      "cta": "Voir comment AskMoses résout ça"
+    },
+    "HowItWorks": {
+      "eyebrow": "Comment ça marche",
+      "title": "De la conversation à la conversion en 4 étapes.",
+      "subtitle": "Pas de nouvel outil à apprendre. Pas de rupture du workflow. Juste de meilleurs résultats.",
+      "steps": {
+        "listen": {
+          "title": "Écouter",
+          "description": "AskMoses ingère chaque appel entrant et sortant de votre équipe, automatiquement."
+        },
+        "identify": {
+          "title": "Identifier",
+          "description": "Repère les comportements, phrases et schémas précis qui distinguent les closers des autres."
+        },
+        "evaluate": {
+          "title": "Évaluer",
+          "description": "Note chaque appel selon votre grille personnalisée, avec une corrélation statistique aux résultats réels."
+        },
+        "scale": {
+          "title": "Faire grandir",
+          "description": "Reproduit ce qui marche dans toute l'équipe avec du coaching ciblé, des scripts et des dashboards par commercial."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Pourquoi AskMoses",
+      "title": "Conçu pour transformer les conversations en deals signés.",
+      "differentiator": {
+        "badge": "Différenciateur clé",
+        "titlePart1": "Propulsé par",
+        "titleHighlight": "la science des données",
+        "body": "AskMoses ne se contente pas d'enregistrer les appels — il applique la science des données pour identifier les comportements précis qui font statistiquement avancer les conversions dans votre entreprise.",
+        "bullets": [
+          "Pas d'intuitions.",
+          "Pas de bonnes pratiques génériques.",
+          "Juste des maths."
+        ],
+        "cta": "Voyez-le dans vos données"
+      },
+      "items": {
+        "data": {
+          "title": "Données réelles, pas des suppositions",
+          "description": "Chaque décision de coaching s'appuie sur l'analyse statistique de centaines d'appels réels."
+        },
+        "rubric": {
+          "title": "Grille personnalisée",
+          "description": "Pas de conseils génériques. Votre méthodologie de vente, optimisée par l'IA."
+        },
+        "sellMore": {
+          "title": "Vendez plus sans dépenser plus",
+          "description": "Même budget marketing, même volume de leads, meilleur taux de conversion."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Secteurs",
+      "title": "Conçu pour les entreprises qui closent au téléphone.",
+      "subtitle": "Si vos clients appellent avant d'acheter, AskMoses transforme ces appels en revenus.",
+      "items": {
+        "dogTrainers": "Éducateurs Canins",
+        "callCenters": "Centres d'Appels",
+        "vet": "Cliniques Vétérinaires",
+        "beauty": "Cliniques Esthétiques et Medspas",
+        "homeServices": "Services à Domicile",
+        "lawFirms": "Cabinets d'Avocats"
+      },
+      "cta": "Réserver ma démo gratuite"
+    },
+    "Pricing": {
+      "eyebrow": "Tarifs",
+      "title": "Choisissez le plan qui correspond à votre rythme de croissance.",
+      "popularBadge": "Le plus populaire",
+      "footnote": "* Frais d'usage de 2 $/appel applicables à tous les plans. Facturation mensuelle selon le volume réel. Aucun engagement minimum sur les appels.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "Coaching commercial IA pour les opérateurs indépendants prêts à closer davantage des leads qu'ils ont déjà.",
+          "price": "500 $",
+          "priceSuffix": "/mois",
+          "priceNote": "+ 2 $ par appel noté",
+          "features": [
+            "Scoring IA sur chaque appel entrant",
+            "Grille personnalisée selon votre méthode de formation",
+            "Dashboard de performance par commercial",
+            "Suivi des objections et détection de schémas",
+            "Rapport hebdomadaire d'insights de coaching",
+            "Intégration CRM"
+          ],
+          "cta": "Réserver un appel découverte"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses plus marketing full-service. La boucle de revenu complète pour les entreprises de services prêtes à scaler.",
+          "price": "1 250 $",
+          "priceSuffix": "/mois",
+          "priceNote": "+ 2 $ par appel noté",
+          "features": [
+            "Tout ce qui est dans Solo",
+            "Copies publicitaires générées par IA à partir de vos données d'appels",
+            "Campagnes d'acquisition Google et Meta",
+            "Conception et optimisation de landing pages",
+            "Création de contenu et réseaux sociaux",
+            "Setup CRM et automatisation complets",
+            "Reporting closed-loop : des appels au revenu",
+            "Account strategist dédié"
+          ],
+          "cta": "Réserver un appel découverte"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "Pour les groupes franchisés, les opérateurs multi-sites et les réseaux de formation qui ont besoin d'une intelligence au niveau du portefeuille.",
+          "price": "Tarif sur mesure",
+          "customNote": "Tarifs au volume · SLA sur mesure",
+          "features": [
+            "Tout ce qui est dans Pro",
+            "Sites et utilisateurs illimités",
+            "Analytics d'appels au niveau du portefeuille",
+            "Grilles personnalisées par site",
+            "Benchmarking de performance entre franchises",
+            "Success manager dédié",
+            "Support et onboarding prioritaires"
+          ],
+          "cta": "Nous contacter →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Démo",
+      "titlePart1": "Voyez AskMoses en",
+      "titleHighlight": "Action.",
+      "subtitle": "Réservez une démo gratuite de 20 minutes. Sans engagement.",
+      "bullets": [
+        "Démonstration sur vos vraies données d'appels",
+        "Voyez une grille type notée en direct",
+        "Estimation de ROI sur mesure pour votre équipe"
+      ],
+      "formTitle": "Formulaire AskMoses",
+      "formId": "ADEpZV9ukkUoRuLJobxh",
+      "formUrl": "https://business.unleashedconsulting.com/widget/form/ADEpZV9ukkUoRuLJobxh",
+      "formName": "AskMoses Form"
+    },
+    "CtaBand": {
+      "title": "Prêt à transformer plus d'appels en clients ?",
+      "cta": "Réserver ma démo gratuite"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Pied de page",
+      "howItWorks": "Comment ça marche",
+      "benefits": "Avantages",
+      "pricing": "Tarifs",
+      "demo": "Démo",
+      "contact": "Contact",
+      "copyright": "© {year} AskMoses.AI. Tous droits réservés.",
+      "privacy": "Confidentialité",
+      "terms": "Conditions"
+    },
+    "MobileCta": {
+      "label": "Réserver ma démo gratuite"
+    }
   }
 }
