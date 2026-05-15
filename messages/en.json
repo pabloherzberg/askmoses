@@ -2000,5 +2000,197 @@
     "Footer": {
       "text": "Ask Moses MVP Proposal — January 2026"
     }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "AskMoses.AI home",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Primary",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "industries": "Industries",
+      "pricing": "Pricing",
+      "dashboard": "Dashboard",
+      "bookDemo": "Book My Free Demo",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Toggle theme"
+    },
+    "Hero": {
+      "badge": "AI sales coaching, powered by data science",
+      "titlePart1": "Most businesses don't have a lead problem. They have a",
+      "titleHighlight": "conversion problem.",
+      "subtitle": "Your best sales rep has a secret. AskMoses finds it, analyzes it, and replicates it across your entire team automatically.",
+      "ctaPrimary": "Book My Free Demo",
+      "ctaSecondary": "See how it works",
+      "dashboardAlt": "AskMoses.AI dashboard showing team conversion metrics, close rate, monthly revenue, and conversion rate trend chart",
+      "statCloseRateLabel": "Avg Close Rate",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Revenue Lift",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "The Problem",
+      "title": "You're paying for leads. You're losing them on the phone.",
+      "body": "Your top closer wins deals your average rep blows. Same leads. Same script. Different outcomes. Without data, you're guessing why, and your marketing spend is paying the price.",
+      "cta": "See how AskMoses fixes this"
+    },
+    "HowItWorks": {
+      "eyebrow": "How it works",
+      "title": "From conversation to conversion in 4 steps.",
+      "subtitle": "No new tools to learn. No workflow disruption. Just better outcomes.",
+      "steps": {
+        "listen": {
+          "title": "Listen",
+          "description": "AskMoses ingests every inbound and outbound call across your entire team, automatically."
+        },
+        "identify": {
+          "title": "Identify",
+          "description": "Pinpoints the exact behaviors, phrases, and patterns that separate closers from coasters."
+        },
+        "evaluate": {
+          "title": "Evaluate",
+          "description": "Scores every call against your custom rubric with statistical correlation to real outcomes."
+        },
+        "scale": {
+          "title": "Scale",
+          "description": "Replicates what works across the team with targeted coaching, scripts, and rep dashboards."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Why AskMoses",
+      "title": "Built to turn conversations into closed deals.",
+      "differentiator": {
+        "badge": "Key differentiator",
+        "titlePart1": "Powered by",
+        "titleHighlight": "data science",
+        "body": "AskMoses doesn't just record calls, it applies data science to identify which specific behaviors statistically drive conversions in your business.",
+        "bullets": [
+          "No gut feelings.",
+          "No generic best practices.",
+          "Just math."
+        ],
+        "cta": "See it in your data"
+      },
+      "items": {
+        "data": {
+          "title": "Real data, not guesswork",
+          "description": "Every coaching decision backed by statistical analysis of hundreds of real calls."
+        },
+        "rubric": {
+          "title": "Custom rubric",
+          "description": "Not generic advice. Your sales methodology, optimized with AI."
+        },
+        "sellMore": {
+          "title": "Sell more without spending more",
+          "description": "Same marketing budget, same lead volume, better conversion rate."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Industries",
+      "title": "Built for businesses that close on the phone.",
+      "subtitle": "If your customers call before they buy, AskMoses turns those calls into revenue.",
+      "items": {
+        "dogTrainers": "Dog Trainers",
+        "callCenters": "Call Centers",
+        "vet": "Veterinary Clinics",
+        "beauty": "Beauty Clinics & Medspas",
+        "homeServices": "Home Services",
+        "lawFirms": "Law Firms"
+      },
+      "cta": "Book My Free Demo"
+    },
+    "Pricing": {
+      "eyebrow": "Pricing",
+      "title": "Pick the plan that fits how you grow.",
+      "popularBadge": "Most popular",
+      "footnote": "* $2/call usage fee applies to all plans. Billed monthly based on actual call volume. No minimum commitment on calls.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "AI sales coaching for independent operators ready to close more of the leads they already have.",
+          "price": "$500",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "AI call scoring on every inbound call",
+            "Custom rubric based on your training method",
+            "Rep performance dashboard",
+            "Objection tracking & pattern detection",
+            "Weekly coaching insights report",
+            "CRM integration"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses plus full-service marketing. The complete revenue loop for service businesses ready to scale.",
+          "price": "$1,250",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "Everything in Solo",
+            "AI-generated ad copy from your call data",
+            "Google & Meta lead generation campaigns",
+            "Landing page design & optimization",
+            "Content creation & social media",
+            "Full CRM setup & automation",
+            "Closed-loop reporting: calls to revenue",
+            "Dedicated account strategist"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "For franchise groups, multi-location operators, and training networks that need portfolio-level intelligence.",
+          "price": "Custom pricing",
+          "customNote": "Volume call rates · Custom SLA",
+          "features": [
+            "Everything in Pro",
+            "Unlimited locations & users",
+            "Portfolio-level call analytics",
+            "Custom rubrics per location",
+            "Franchise performance benchmarking",
+            "Dedicated success manager",
+            "Priority support & onboarding"
+          ],
+          "cta": "Contact us →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Demo",
+      "titlePart1": "See AskMoses in",
+      "titleHighlight": "Action.",
+      "subtitle": "Book a free 20-minute demo. No commitment.",
+      "bullets": [
+        "Walkthrough on your real call data",
+        "See a sample rubric scored live",
+        "Custom ROI estimate for your team"
+      ],
+      "formTitle": "AskMoses Form"
+    },
+    "CtaBand": {
+      "title": "Ready to turn more calls into customers?",
+      "cta": "Book My Free Demo"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Footer",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "pricing": "Pricing",
+      "demo": "Demo",
+      "contact": "Contact",
+      "copyright": "© {year} AskMoses.AI. All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "MobileCta": {
+      "label": "Book My Free Demo"
+    }
   }
 }
