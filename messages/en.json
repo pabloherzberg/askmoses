@@ -731,7 +731,7 @@
       "callsFoundOther": "{count} calls found",
       "noCallsFound": "No calls found",
       "th": {
-        "dogTrainers": "Dog Trainers",
+        "salesPerson": "Sales Person",
         "prospect": "Prospect",
         "date": "Date",
         "outcome": "Outcome",
@@ -2171,10 +2171,7 @@
         "See a sample rubric scored live",
         "Custom ROI estimate for your team"
       ],
-      "formTitle": "AskMoses Form",
-      "formId": "ADEpZV9ukkUoRuLJobxh",
-      "formUrl": "https://business.unleashedconsulting.com/widget/form/ADEpZV9ukkUoRuLJobxh",
-      "formName": "AskMoses Form"
+      "formTitle": "AskMoses Form"
     },
     "CtaBand": {
       "title": "Ready to turn more calls into customers?",

@@ -1,3 +1,4 @@
+import Script from "next/script"
 import { Navbar } from "@/components/landing/navbar"
 import { Hero } from "@/components/landing/hero"
 import { Problem } from "@/components/landing/problem"
@@ -18,6 +19,12 @@ export default function LandingPage() {
   return (
     <div className="light flex min-h-screen flex-col bg-background pb-20 lg:pb-0">
       <ForceLightTheme />
+      {/* GHL form embed loader — só carrega na LP (antes ficava no
+         LocaleLayout e era requisitado em todas as rotas autenticadas). */}
+      <Script
+        src="https://business.unleashedconsulting.com/js/form_embed.js"
+        strategy="afterInteractive"
+      />
       <Navbar />
       <main className="flex-1">
         <Hero />

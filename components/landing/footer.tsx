@@ -31,11 +31,19 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-sm text-foreground/50 sm:flex-row sm:items-center">
           <p>{t("copyright", { year: new Date().getFullYear() })}</p>
+          {/* Privacy/Terms ainda não existem como páginas dedicadas — apontam
+             pra mailto enquanto isso (LGPD/GDPR exige um caminho válido). */}
           <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground">
+            <a
+              href="mailto:hello@askmoses.ai?subject=Privacy%20Policy"
+              className="hover:text-foreground"
+            >
               {t("privacy")}
             </a>
-            <a href="#" className="hover:text-foreground">
+            <a
+              href="mailto:hello@askmoses.ai?subject=Terms%20of%20Service"
+              className="hover:text-foreground"
+            >
               {t("terms")}
             </a>
           </div>

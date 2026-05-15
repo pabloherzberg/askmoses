@@ -17,7 +17,7 @@ type LanguageSwitcherProps = {
   variant?: "ghost" | "outline" | "secondary" | "default"
 }
 
-export function LanguageSwitcher({ variant = "ghost" }: LanguageSwitcherProps = {}) {
+export function LanguageSwitcher({ variant = "ghost" }: LanguageSwitcherProps) {
   const t = useTranslations("LanguageSwitcher")
   const locale = useLocale() as Locale
   const router = useRouter()

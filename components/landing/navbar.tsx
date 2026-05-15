@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { LogoSVG } from "@/components/shared/LogoSVG";
 
+/**
+ * Navbar específica da landing page (`/`). Não é genérica — usa âncoras
+ * intra-página (#how-it-works, #demo, etc.) que só existem na LP. Se for
+ * preciso navbar em outra rota pública, criar outro componente ou tornar
+ * os links configuráveis via props.
+ */
 export function Navbar() {
   const t = useTranslations("LP.Nav");
   const [scrolled, setScrolled] = useState(false);
@@ -62,12 +68,7 @@ export function Navbar() {
 
         <div className="hidden lg:flex items-center gap-4">
           <LanguageSwitcher />
-          <Button
-            asChild
-            variant="outline"
-            className="btn-brand text-white hover:text-white"
-            size="sm"
-          >
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard">{t("dashboard")}</Link>
           </Button>
           <Button

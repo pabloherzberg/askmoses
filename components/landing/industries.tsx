@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-// "salesPerson" substitui "Dog Trainers" — copy genérico por decisão da PO (TC-05).
+// "Dog Trainers" mantido como nicho atendido (decisão revisada da PO — TC-05
+// original pedia copy genérico mas o time confirmou que reflete o segmento real).
 const industryKeys = [
   { id: "dogTrainers", icon: Dog },
   { id: "callCenters", icon: PhoneCall },
