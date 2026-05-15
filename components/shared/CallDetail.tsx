@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
+import { sectionFeedbackFallback } from '@/lib/mock-data'
 import type { Call, Role, RubricColor } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
-  { key: 'discovery',         labelKey: 'discovery',         color: 'blue' },
-  { key: 'problemAgitation',  labelKey: 'problemAgitation',  color: 'amber' },
+  { key: 'discovery', labelKey: 'discovery', color: 'blue' },
+  { key: 'problemAgitation', labelKey: 'problemAgitation', color: 'amber' },
   { key: 'offerPresentation', labelKey: 'offerPresentation', color: 'green' },
   { key: 'objectionHandling', labelKey: 'objectionHandling', color: 'red' },
   { key: 'closeAndNextSteps', labelKey: 'closeAndNextSteps', color: 'accent2' },
@@ -135,11 +136,15 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
                     <RubricBar
                       label={section.name}
                       value={section.score}
-                      max={5}
                       color={color}
                     />
                     <p className="text-[11px] mt-1 ml-[156px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
-                      {section.feedback}
+                      {section.feedback || (() => {
+                        const nameLower = section.name.toLowerCase()
+                        const tiers = Object.entries(sectionFeedbackFallback).find(([k]) => nameLower.includes(k))?.[1]
+                        if (!tiers) return null
+                        return section.score >= 80 ? tiers.high : section.score >= 60 ? tiers.mid : tiers.low
+                      })()}
                     </p>
                   </div>
                 )
