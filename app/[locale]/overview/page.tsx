@@ -46,7 +46,6 @@ export default async function OverviewPage() {
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score);
   const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
-  console.log('[overview] totalCalls por trainer:', trainers.map((t) => ({ name: t.name, calls: t.totalCalls })), '→ totalCalls=', totalCalls);
   const avgClose =
     trainers.length > 0
       ? Math.round(
