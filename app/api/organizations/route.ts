@@ -234,9 +234,10 @@ export async function POST(request: NextRequest) {
       user_id: existingUser.id,
       org_id: org.id,
       company: org.name,
-      // owners.plan é o campo de display legado — usa o nome do plano que o
-      // Admin selecionou ('Starter' | 'Pro' | 'Pro + RAG'), não um fixo.
-      plan: plan.name,
+      // owners.plan é campo legacy write-only; fonte canônica é
+      // organizations.plan_id. Setado fixo pra satisfazer o CHECK constraint
+      // em prod (alinhado com onboarding/organization, invites).
+      plan: 'Starter',
     })
     if (ownerInsertErr) {
       await admin.from('memberships').delete()
@@ -356,8 +357,8 @@ export async function POST(request: NextRequest) {
     user_id: newUserId,
     org_id: org.id,
     company: org.name,
-    // owners.plan = nome de display do plano selecionado (ver branch 3A).
-    plan: plan.name,
+    // owners.plan = campo legacy write-only (ver branch 3A).
+    plan: 'Starter',
   })
   if (ownerInsertErr) {
     await rollbackFull()
