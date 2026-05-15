@@ -1,120 +1,181 @@
-'use client'
+"use client";
 
-import { useLocale, useTranslations } from 'next-intl'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Phone, Upload,
-  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit, Megaphone,
-  Building2, PlusCircle, Wand2, SlidersHorizontal
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type React from 'react'
-import type { Role } from '@/lib/types'
+  LayoutDashboard,
+  Phone,
+  Upload,
+  HelpCircle,
+  Home,
+  GraduationCap,
+  UserPlus,
+  Settings,
+  BrainCircuit,
+  Megaphone,
+  Building2,
+  PlusCircle,
+  Wand2,
+  SlidersHorizontal,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type React from "react";
+import type { Role } from "@/lib/types";
 
 // Parent routes that should only match on exact path equality — otherwise they
 // would also match every nested child (e.g. /me would also highlight on /me/calls).
 const EXACT_ONLY = new Set([
-  '/dashboard',
-  '/team-command-center',
-  '/me',
-  '/admin',
+  "/dashboard",
+  "/team-command-center",
+  "/me",
+  "/admin",
   // /dashboard/settings é a página da Rubric; não pode "ativar" em /dashboard/settings/invite (Members)
-  '/dashboard/settings',
-])
+  "/dashboard/settings",
+]);
 
-export function NavItem({ label, href, icon: Icon }: { label: string; href: string; icon: React.ElementType }) {
-  const pathname = usePathname()
-  const locale = useLocale()
-  const localizedHref = `/${locale}${href}`
+export function NavItem({
+  label,
+  href,
+  icon: Icon,
+}: {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}) {
+  const pathname = usePathname();
+  const locale = useLocale();
+  const localizedHref = `/${locale}${href}`;
   // Strip locale prefix when comparing against pathname so "active" still works
-  const bareHref = href
-  const barePath = pathname.replace(`/${locale}`, '') || '/'
+  const bareHref = href;
+  const barePath = pathname.replace(`/${locale}`, "") || "/";
   const active =
     barePath === bareHref ||
-    (!EXACT_ONLY.has(bareHref) && barePath.startsWith(`${bareHref}/`))
+    (!EXACT_ONLY.has(bareHref) && barePath.startsWith(`${bareHref}/`));
 
   return (
     <Link
       href={localizedHref}
       className={cn(
-        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-        active ? 'text-white' : 'hover:opacity-80'
+        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+        active ? "text-white" : "hover:opacity-80",
       )}
       style={
         active
-          ? { background: 'var(--sidebar-primary)', color: 'white' }
-          : { color: 'var(--am-muted)' }
+          ? { background: "var(--sidebar-primary)", color: "white" }
+          : { color: "var(--am-muted)" }
       }
     >
       <Icon size={16} />
       {label}
     </Link>
-  )
+  );
 }
 
 export function TrainerNavItems() {
-  const t = useTranslations('Shared.sidebar')
+  const t = useTranslations("Shared.sidebar");
   const trainerNav = [
-    { label: t('myDashboard'), href: '/me', icon: LayoutDashboard },
-    { label: t('myCalls'), href: '/me/calls', icon: Phone },
-    { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
-  ]
+    { label: t("myDashboard"), href: "/me", icon: LayoutDashboard },
+    { label: t("myCalls"), href: "/me/calls", icon: Phone },
+    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+  ];
   return (
     <nav className="flex flex-col gap-1">
-      {trainerNav.map((item) => <NavItem key={item.href} {...item} />)}
+      {trainerNav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
     </nav>
-  )
+  );
 }
 
 export function OwnerNavItems() {
-  const t = useTranslations('Shared.sidebar')
+  const t = useTranslations("Shared.sidebar");
   const mainNav = [
-    { label: t('dashboard'), href: '/dashboard', icon: Home },
-    { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
-    { label: t('calls'), href: '/calls', icon: Phone },
-    { label: 'Script Intelligence', href: '/dashboard/script-builder', icon: BrainCircuit },
-    { label: t('marketingIntelligence'), href: '/marketing-intelligence', icon: Megaphone },
-  ]
+    { label: t("dashboard"), href: "/dashboard", icon: Home },
+    {
+      label: t("teamCommandCenter"),
+      href: "/team-command-center",
+      icon: GraduationCap,
+    },
+    { label: t("calls"), href: "/calls", icon: Phone },
+    {
+      label: "Script Intelligence",
+      href: "/dashboard/script-builder",
+      icon: BrainCircuit,
+    },
+    {
+      label: t("marketingIntelligence"),
+      href: "/marketing-intelligence",
+      icon: Megaphone,
+    },
+  ];
   const toolsNav = [
-    { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
-    { label: t('rubricConfig'), href: '/dashboard/settings', icon: Settings },
-    { label: t('members'), href: '/dashboard/settings/invite', icon: UserPlus },
-    { label: t('howToUse'), href: '/dashboard/guide', icon: HelpCircle },
-  ]
+    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    { label: t("rubricConfig"), href: "/dashboard/settings", icon: Settings },
+    { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
+    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
+  ];
   return (
     <nav className="flex flex-col gap-1">
-      {mainNav.map((item) => <NavItem key={item.href} {...item} />)}
+      {mainNav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
 
-      <div className="my-2 mx-3 h-px" style={{ background: 'var(--am-border)' }} />
+      <div
+        className="my-2 mx-3 h-px"
+        style={{ background: "var(--am-border)" }}
+      />
 
-      <p className="px-3 mb-1 text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>
-        {t('tools')}
+      <p
+        className="px-3 mb-1 text-[10px] font-medium uppercase tracking-widest"
+        style={{ color: "var(--am-muted)" }}
+      >
+        {t("tools")}
       </p>
 
-      {toolsNav.map((item) => <NavItem key={item.href} {...item} />)}
+      {toolsNav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
     </nav>
-  )
+  );
 }
 
 export function AdminNavItems() {
-  const t = useTranslations('Shared.sidebar')
+  const t = useTranslations("Shared.sidebar");
   const nav = [
-    { label: t('saasPanel'),             href: '/admin',                     icon: Building2         },
-    { label: t('createOrganization'),    href: '/admin/organizations/new',   icon: PlusCircle        },
-    { label: t('rubricConfig'),          href: '/admin/rubric',              icon: Settings          },
-    { label: t('aiControls'),            href: '/admin/ai-controls',         icon: SlidersHorizontal },
-    { label: t('scriptBuilder'),         href: '/dashboard/script-builder',  icon: Wand2             },
-    { label: t('marketingIntelligence'), href: '/marketing-intelligence',    icon: Megaphone         },
-    { label: t('uploadCall'),            href: '/dashboard/upload',          icon: Upload            },
-    { label: t('members'),               href: '/dashboard/settings/invite', icon: UserPlus          },
-    { label: t('howToUse'),              href: '/dashboard/guide',           icon: HelpCircle        },
-  ]
+    { label: t("saasPanel"), href: "/admin", icon: Building2 },
+    {
+      label: t("createOrganization"),
+      href: "/admin/organizations/new",
+      icon: PlusCircle,
+    },
+    { label: t("rubricConfig"), href: "/admin/rubric", icon: Settings },
+    {
+      label: t("aiControls"),
+      href: "/admin/ai-controls",
+      icon: SlidersHorizontal,
+    },
+    {
+      label: t("scriptBuilder"),
+      href: "/dashboard/script-builder",
+      icon: Wand2,
+    },
+    {
+      label: t("marketingIntelligence"),
+      href: "/marketing-intelligence",
+      icon: Megaphone,
+    },
+    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
+    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
+  ];
   return (
     <nav className="flex flex-col gap-1">
-      {nav.map((item) => <NavItem key={item.href} {...item} />)}
+      {nav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
     </nav>
-  )
+  );
 }
 
 // Sidebar mostrado quando Admin está impersonando uma org. Whitelist
@@ -122,31 +183,41 @@ export function AdminNavItems() {
 // Operacionais (upload, script-builder, rubric-config, marketing-intel,
 // members) ficam fora — banner global de impersonate cuida do exit.
 export function ImpersonateNavItems() {
-  const t = useTranslations('Shared.sidebar')
+  const t = useTranslations("Shared.sidebar");
   const nav = [
-    { label: t('dashboard'),              href: '/dashboard',              icon: Home          },
-    { label: t('teamCommandCenter'),      href: '/team-command-center',    icon: GraduationCap },
-    { label: t('calls'),                  href: '/calls',                  icon: Phone         },
-    { label: t('marketingIntelligence'),  href: '/marketing-intelligence', icon: Megaphone     },
-  ]
+    { label: t("dashboard"), href: "/dashboard", icon: Home },
+    {
+      label: t("teamCommandCenter"),
+      href: "/team-command-center",
+      icon: GraduationCap,
+    },
+    { label: t("calls"), href: "/calls", icon: Phone },
+    {
+      label: t("marketingIntelligence"),
+      href: "/marketing-intelligence",
+      icon: Megaphone,
+    },
+  ];
   return (
     <nav className="flex flex-col gap-1">
-      {nav.map((item) => <NavItem key={item.href} {...item} />)}
+      {nav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
     </nav>
-  )
+  );
 }
 
 export function NavItemsForRole({
   role,
   isImpersonating = false,
 }: {
-  role?: Role | null
-  isImpersonating?: boolean
+  role?: Role | null;
+  isImpersonating?: boolean;
 }) {
-  if (role === 'admin' && isImpersonating) return <ImpersonateNavItems />
-  if (role === 'admin') return <AdminNavItems />
-  if (role === 'trainer') return <TrainerNavItems />
-  return <OwnerNavItems />
+  if (role === "admin" && isImpersonating) return <ImpersonateNavItems />;
+  if (role === "admin") return <AdminNavItems />;
+  if (role === "trainer") return <TrainerNavItems />;
+  return <OwnerNavItems />;
 }
 
 export function AppSidebar({
@@ -154,30 +225,26 @@ export function AppSidebar({
   isImpersonating = false,
   children,
 }: {
-  role?: Role | null
-  isImpersonating?: boolean
-  children?: React.ReactNode
+  role?: Role | null;
+  isImpersonating?: boolean;
+  children?: React.ReactNode;
 }) {
-  const t = useTranslations('Shared.sidebar')
-  const nav = children ?? <NavItemsForRole role={role} isImpersonating={isImpersonating} />
+  const t = useTranslations("Shared.sidebar");
+  const nav = children ?? (
+    <NavItemsForRole role={role} isImpersonating={isImpersonating} />
+  );
 
   return (
     <aside
       className="fixed left-0 bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
       // top respeita --impersonate-banner-h (setada no body) + altura do header.
       style={{
-        top: 'calc(61px + var(--impersonate-banner-h, 0px))',
-        background: 'var(--sidebar)',
-        borderColor: 'var(--am-border)',
+        top: "calc(61px + var(--impersonate-banner-h, 0px))",
+        background: "var(--sidebar)",
+        borderColor: "var(--am-border)",
       }}
     >
       {nav}
-      <div className="mt-auto pb-4 px-3">
-        <div className="rounded-md border border-border bg-secondary/50 p-3">
-          <p className="text-xs text-muted-foreground">{t('starterTier')}</p>
-          <p className="text-sm font-medium">{t('starterTierSubtitle')}</p>
-        </div>
-      </div>
     </aside>
-  )
+  );
 }

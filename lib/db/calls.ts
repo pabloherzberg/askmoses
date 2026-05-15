@@ -28,7 +28,7 @@ export interface DbCall {
   closed: boolean | null
   call_date: string | null
   duration_seconds: number | null
-  // GHL/Pepper CRM lead enrichment — added in migration 037
+  // GHL/Pepper CRM lead enrichment — added in migration 043
   lead_name: string | null
   lead_source: string | null
 }
