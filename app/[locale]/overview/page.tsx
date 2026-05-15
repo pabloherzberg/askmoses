@@ -3,13 +3,13 @@ export const dynamic = "force-dynamic";
 import { getTranslations } from "next-intl/server";
 import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
-import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
+import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
+import { rubricGaps, activeAlerts } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
@@ -39,6 +39,8 @@ export default async function OverviewPage() {
     getTranslations("Owner.teamHealth"),
     getTranslations("Owner.activeAlerts"),
   ]);
+
+  const coachingDrivers = buildCoachingDrivers(rubric);
 
   const performanceTrends = await getPerformanceTrends(trainers);
 
@@ -105,7 +107,7 @@ export default async function OverviewPage() {
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={correlationEngine} />
+        <CorrelationEngine factors={coachingDrivers} totalCalls={totalCalls} />
       </div>
 
       {/* ── Rubric Gap Detection ───────────────────────────────── */}

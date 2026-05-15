@@ -8,8 +8,6 @@ export interface DbCall {
   trainer_email: string | null
   transcript: string | null
   overall_score: number | null
-  total_criteria: number | null
-  criteria: Record<string, unknown> | null
   summary: string | null
   strengths: string[] | null
   improvements: string[] | null
@@ -26,6 +24,13 @@ export interface DbCall {
   cost_usd: number | null
   prompt_version: string | null
   sections: unknown
+  // ML fields — added in migration 036
+  closed: boolean | null
+  call_date: string | null
+  duration_seconds: number | null
+  // GHL/Pepper CRM lead enrichment — added in migration 037
+  lead_name: string | null
+  lead_source: string | null
 }
 
 export interface CreateCallInput {
@@ -36,8 +41,6 @@ export interface CreateCallInput {
   trainerEmail?: string
   transcript?: string
   overallScore?: number
-  totalCriteria?: number
-  criteria?: Record<string, unknown>
   summary?: string
   strengths?: string[]
   improvements?: string[]
@@ -50,6 +53,8 @@ export interface CreateCallInput {
   costUsd?: number
   promptVersion?: string
   sections?: Record<string, unknown> | unknown[]
+  leadName?: string | null
+  leadSource?: string | null
 }
 
 export interface UpdateCallInput {
@@ -58,8 +63,6 @@ export interface UpdateCallInput {
   trainerEmail?: string
   transcript?: string
   overallScore?: number
-  totalCriteria?: number
-  criteria?: Record<string, unknown>
   summary?: string
   strengths?: string[]
   improvements?: string[]
@@ -144,8 +147,6 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       trainer_email: input.trainerEmail ?? '',
       transcript: input.transcript ?? null,
       overall_score: input.overallScore ?? null,
-      total_criteria: input.totalCriteria ?? null,
-      criteria: input.criteria ?? null,
       summary: input.summary ?? null,
       strengths: input.strengths ?? null,
       improvements: input.improvements ?? null,
@@ -159,6 +160,8 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       prompt_version: input.promptVersion ?? null,
       sections: input.sections ?? null,
       email_sent: false,
+      lead_name: input.leadName ?? null,
+      lead_source: input.leadSource ?? null,
     })
     .select()
     .single()
@@ -192,8 +195,6 @@ export async function dbUpdateCall(
   if (input.trainerEmail !== undefined) patch.trainer_email = input.trainerEmail
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.overallScore !== undefined) patch.overall_score = input.overallScore
-  if (input.totalCriteria !== undefined) patch.total_criteria = input.totalCriteria
-  if (input.criteria !== undefined) patch.criteria = input.criteria
   if (input.summary !== undefined) patch.summary = input.summary
   if (input.strengths !== undefined) patch.strengths = input.strengths
   if (input.improvements !== undefined) patch.improvements = input.improvements

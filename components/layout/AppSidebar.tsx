@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Phone, Upload,
-  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit
+  HelpCircle, Home, GraduationCap, UserPlus, Settings, BrainCircuit, Megaphone,
+  Building2, PlusCircle, Wand2, SlidersHorizontal
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type React from 'react'
@@ -73,6 +74,7 @@ export function OwnerNavItems() {
     { label: t('teamCommandCenter'), href: '/team-command-center', icon: GraduationCap },
     { label: t('calls'), href: '/calls', icon: Phone },
     { label: 'Script Intelligence', href: '/dashboard/script-builder', icon: BrainCircuit },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence', icon: Megaphone },
   ]
   const toolsNav = [
     { label: t('uploadCall'), href: '/dashboard/upload', icon: Upload },
@@ -95,14 +97,79 @@ export function OwnerNavItems() {
   )
 }
 
-export function AppSidebar({ role, children }: { role?: Role | null; children?: React.ReactNode }) {
+export function AdminNavItems() {
   const t = useTranslations('Shared.sidebar')
-  const nav = children ?? (role === 'trainer' ? <TrainerNavItems /> : <OwnerNavItems />)
+  const nav = [
+    { label: t('saasPanel'),             href: '/admin',                     icon: Building2         },
+    { label: t('createOrganization'),    href: '/admin/organizations/new',   icon: PlusCircle        },
+    { label: t('rubricConfig'),          href: '/admin/rubric',              icon: Settings          },
+    { label: t('aiControls'),            href: '/admin/ai-controls',         icon: SlidersHorizontal },
+    { label: t('scriptBuilder'),         href: '/dashboard/script-builder',  icon: Wand2             },
+    { label: t('marketingIntelligence'), href: '/marketing-intelligence',    icon: Megaphone         },
+    { label: t('uploadCall'),            href: '/dashboard/upload',          icon: Upload            },
+    { label: t('members'),               href: '/dashboard/settings/invite', icon: UserPlus          },
+    { label: t('howToUse'),              href: '/dashboard/guide',           icon: HelpCircle        },
+  ]
+  return (
+    <nav className="flex flex-col gap-1">
+      {nav.map((item) => <NavItem key={item.href} {...item} />)}
+    </nav>
+  )
+}
+
+// Sidebar mostrado quando Admin está impersonando uma org. Whitelist
+// alinhada com middleware.ts (IMPERSONATE_ALLOWED): só read-only paths.
+// Operacionais (upload, script-builder, rubric-config, marketing-intel,
+// members) ficam fora — banner global de impersonate cuida do exit.
+export function ImpersonateNavItems() {
+  const t = useTranslations('Shared.sidebar')
+  const nav = [
+    { label: t('dashboard'),              href: '/dashboard',              icon: Home          },
+    { label: t('teamCommandCenter'),      href: '/team-command-center',    icon: GraduationCap },
+    { label: t('calls'),                  href: '/calls',                  icon: Phone         },
+    { label: t('marketingIntelligence'),  href: '/marketing-intelligence', icon: Megaphone     },
+  ]
+  return (
+    <nav className="flex flex-col gap-1">
+      {nav.map((item) => <NavItem key={item.href} {...item} />)}
+    </nav>
+  )
+}
+
+export function NavItemsForRole({
+  role,
+  isImpersonating = false,
+}: {
+  role?: Role | null
+  isImpersonating?: boolean
+}) {
+  if (role === 'admin' && isImpersonating) return <ImpersonateNavItems />
+  if (role === 'admin') return <AdminNavItems />
+  if (role === 'trainer') return <TrainerNavItems />
+  return <OwnerNavItems />
+}
+
+export function AppSidebar({
+  role,
+  isImpersonating = false,
+  children,
+}: {
+  role?: Role | null
+  isImpersonating?: boolean
+  children?: React.ReactNode
+}) {
+  const t = useTranslations('Shared.sidebar')
+  const nav = children ?? <NavItemsForRole role={role} isImpersonating={isImpersonating} />
 
   return (
     <aside
-      className="fixed left-0 top-[61px] bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
-      style={{ background: 'var(--sidebar)', borderColor: 'var(--am-border)' }}
+      className="fixed left-0 bottom-0 w-56 hidden lg:flex flex-col border-r pt-6 px-3"
+      // top respeita --impersonate-banner-h (setada no body) + altura do header.
+      style={{
+        top: 'calc(61px + var(--impersonate-banner-h, 0px))',
+        background: 'var(--sidebar)',
+        borderColor: 'var(--am-border)',
+      }}
     >
       {nav}
       <div className="mt-auto pb-4 px-3">

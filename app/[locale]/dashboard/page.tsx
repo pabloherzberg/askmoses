@@ -1,20 +1,29 @@
 export const dynamic = "force-dynamic";
 
 import { getTranslations } from "next-intl/server";
-import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
+import {
+  getTrainers,
+  getPerformanceTrends,
+  getTeamHealth,
+} from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
-import { getRubric, getRevenueEstimator } from "@/lib/services/rubric";
+import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { correlationEngine, rubricGaps, activeAlerts } from "@/lib/mock-data";
+import {
+  rubricGaps,
+  activeAlerts,
+  estimatedRevenue,
+  revenueBaseline,
+  closeRateTrend,
+  closeRateTrendSummary,
+} from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
-import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
-
-
+import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
 
 export default async function DashboardPage() {
   const [
@@ -39,10 +48,13 @@ export default async function DashboardPage() {
     getTranslations("Owner.activeAlerts"),
   ]);
 
+  const coachingDrivers = buildCoachingDrivers(rubric);
+
   const performanceTrends = await getPerformanceTrends(trainers);
 
   const sorted = [...trainers].sort((a, b) => b.score - a.score);
   const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
+  console.log('[dashboard] totalCalls por trainer:', trainers.map((t) => ({ name: t.name, calls: t.totalCalls })), '→ totalCalls=', totalCalls);
   const avgClose =
     trainers.length > 0
       ? Math.round(
@@ -51,17 +63,21 @@ export default async function DashboardPage() {
       : 0;
   const avgScore =
     trainers.length > 0
-      ? Math.round((trainers.reduce((s, t) => s + t.score, 0) / trainers.length) * 10) / 10
+      ? Math.round(
+          (trainers.reduce((s, t) => s + t.score, 0) / trainers.length) * 10,
+        ) / 10
       : 0;
   const topTrainer = sorted[0] ?? null;
 
-  const activeSalesPeopleLabel = trainers.length === 1
-    ? tMetrics("activeSalesPeopleOne", { count: trainers.length })
-    : tMetrics("activeSalesPeopleOther", { count: trainers.length });
+  const activeSalesPeopleLabel =
+    trainers.length === 1
+      ? tMetrics("activeSalesPeopleOne", { count: trainers.length })
+      : tMetrics("activeSalesPeopleOther", { count: trainers.length });
 
-  const alertsCountLabel = activeAlerts.length === 1
-    ? tAlerts("itemsCountOne", { count: activeAlerts.length })
-    : tAlerts("itemsCountOther", { count: activeAlerts.length });
+  const alertsCountLabel =
+    activeAlerts.length === 1
+      ? tAlerts("itemsCountOne", { count: activeAlerts.length })
+      : tAlerts("itemsCountOther", { count: activeAlerts.length });
 
   return (
     <div>
@@ -79,9 +95,11 @@ export default async function DashboardPage() {
           deltaLabel={tMetrics("ptsSinceWeek1")}
           className="col-span-1"
           style={{
-            background: "linear-gradient(135deg, rgba(34,217,160,0.10) 0%, var(--card) 60%)",
+            background:
+              "linear-gradient(135deg, rgba(34,217,160,0.10) 0%, var(--card) 60%)",
             borderColor: "rgba(34,217,160,0.30)",
-            boxShadow: "0 0 0 1px rgba(34,217,160,0.10), 0 4px 24px rgba(34,217,160,0.08)",
+            boxShadow:
+              "0 0 0 1px rgba(34,217,160,0.10), 0 4px 24px rgba(34,217,160,0.08)",
           }}
         />
         <ScoreCard
@@ -92,34 +110,23 @@ export default async function DashboardPage() {
           deltaLabel={tMetrics("ptsSinceWeek1")}
         />
         <ScoreCard
-          label={tMetrics("monthlyRevenue")}
-          value="$18,200"
-          valueColor="var(--am-green)"
-          delta={12}
-          deltaLabel={tMetrics("vsBaseline")}
-        />
-        <ScoreCard
           label={tMetrics("totalCalls")}
           value={totalCalls}
           deltaLabel={activeSalesPeopleLabel}
         />
+        <ScoreCard
+          label={tMetrics("monthlyRevenue")}
+          value={`$${estimatedRevenue.toLocaleString("en-US")}`}
+          valueColor="var(--am-green)"
+          delta={estimatedRevenue - revenueBaseline}
+          deltaPrefix="$"
+          deltaLabel={tMetrics("vsBaselineCurrency")}
+        />
       </div>
-
-      {/* ── Conversion Rate Trend — destaque máximo ───────────── */}
-      <PerformanceTrend
-        trends={performanceTrends}
-        salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
-        chartHeight={280}
-      />
 
       {/* ── Correlation Engine ────────────────────────────────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={correlationEngine} />
-      </div>
-
-      {/* ── Rubric Gap Detection ───────────────────────────────── */}
-      <div className="mb-4">
-        <RubricGapDetection gaps={rubricGaps} />
+        <CorrelationEngine factors={coachingDrivers} totalCalls={totalCalls} />
       </div>
 
       {/* ── Main grid: team health + alerts ──────────────────── */}
@@ -131,7 +138,10 @@ export default async function DashboardPage() {
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
-            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+            <p
+              className="text-[13px] font-medium"
+              style={{ color: "var(--am-text)" }}
+            >
               {tHealth("title")}
             </p>
           </div>
@@ -144,37 +154,77 @@ export default async function DashboardPage() {
             className="grid mb-2"
             style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
           >
-            <span className="text-[10px] font-medium" style={{ color: "var(--am-muted)" }}>{tHealth("th.trainer")}</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.status")}</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.closeRate")}</span>
-            <span className="text-[10px] font-medium text-right pr-4 hidden sm:block" style={{ color: "var(--am-muted)" }}>{tHealth("th.delta")}</span>
-            <span className="text-[10px] font-medium text-right" style={{ color: "var(--am-muted)" }}>↑↓</span>
+            <span
+              className="text-[10px] font-medium"
+              style={{ color: "var(--am-muted)" }}
+            >
+              {tHealth("th.trainer")}
+            </span>
+            <span
+              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+              style={{ color: "var(--am-muted)" }}
+            >
+              {tHealth("th.status")}
+            </span>
+            <span
+              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+              style={{ color: "var(--am-muted)" }}
+            >
+              {tHealth("th.closeRate")}
+            </span>
+            <span
+              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+              style={{ color: "var(--am-muted)" }}
+            >
+              {tHealth("th.delta")}
+            </span>
+            <span
+              className="text-[10px] font-medium text-right"
+              style={{ color: "var(--am-muted)" }}
+            >
+              ↑↓
+            </span>
           </div>
 
           {/* Rows */}
           {teamHealth.map((entry, i) => {
-            const ringColor = entry.trend === 'up' ? 'var(--am-green)' : 'var(--am-red)'
+            const ringColor =
+              entry.trend === "up" ? "var(--am-green)" : "var(--am-red)";
             const dotColor =
-              entry.statusType === 'active' ? 'var(--am-green)'
-              : entry.statusType === 'away'   ? 'var(--am-red)'
-              : 'var(--am-muted)'
-            const deltaColor = entry.delta >= 0 ? 'var(--am-green)' : 'var(--am-red)'
-            const ptsLabel = Math.abs(entry.delta) === 1 ? tHealth('ptsOne') : tHealth('ptsOther')
-            const deltaLabel = entry.delta > 0
-              ? `+${entry.delta} ${ptsLabel}`
-              : `${entry.delta} ${ptsLabel}`
-            const callsLabel = entry.calls === 1
-              ? tHealth('callsLabelOne', { count: entry.calls })
-              : tHealth('callsLabelOther', { count: entry.calls })
+              entry.statusType === "active"
+                ? "var(--am-green)"
+                : entry.statusType === "away"
+                  ? "var(--am-red)"
+                  : "var(--am-muted)";
+            const deltaColor =
+              entry.delta >= 0 ? "var(--am-green)" : "var(--am-red)";
+            const ptsLabel =
+              Math.abs(entry.delta) === 1
+                ? tHealth("ptsOne")
+                : tHealth("ptsOther");
+            const deltaLabel =
+              entry.delta > 0
+                ? `+${entry.delta} ${ptsLabel}`
+                : `${entry.delta} ${ptsLabel}`;
+            const callsLabel =
+              entry.calls === 1
+                ? tHealth("callsLabelOne", { count: entry.calls })
+                : tHealth("callsLabelOther", { count: entry.calls });
 
             const avatarBg: Record<string, string> = {
-              blue: 'var(--am-blue-bg)', purple: 'rgba(110,86,255,0.15)',
-              green: 'var(--am-green-bg)', red: 'var(--am-red-bg)', amber: 'rgba(255,171,46,0.15)',
-            }
+              blue: "var(--am-blue-bg)",
+              purple: "rgba(110,86,255,0.15)",
+              green: "var(--am-green-bg)",
+              red: "var(--am-red-bg)",
+              amber: "rgba(255,171,46,0.15)",
+            };
             const avatarText: Record<string, string> = {
-              blue: 'var(--am-blue)', purple: 'var(--am-accent2)',
-              green: 'var(--am-green)', red: 'var(--am-red)', amber: 'var(--am-amber)',
-            }
+              blue: "var(--am-blue)",
+              purple: "var(--am-accent2)",
+              green: "var(--am-green)",
+              red: "var(--am-red)",
+              amber: "var(--am-amber)",
+            };
 
             return (
               <div
@@ -190,20 +240,32 @@ export default async function DashboardPage() {
                   <div className="relative flex-shrink-0">
                     <div
                       className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono"
-                      style={{ background: avatarBg[entry.avatarColor], color: avatarText[entry.avatarColor] }}
+                      style={{
+                        background: avatarBg[entry.avatarColor],
+                        color: avatarText[entry.avatarColor],
+                      }}
                     >
                       {entry.initials}
                     </div>
                     <span
                       className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
-                      style={{ background: ringColor, borderColor: "var(--card)" }}
+                      style={{
+                        background: ringColor,
+                        borderColor: "var(--card)",
+                      }}
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--am-text)" }}>
+                    <p
+                      className="text-[13px] font-medium truncate"
+                      style={{ color: "var(--am-text)" }}
+                    >
                       {entry.name}
                     </p>
-                    <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
+                    <p
+                      className="text-[11px]"
+                      style={{ color: "var(--am-muted)" }}
+                    >
                       {callsLabel}
                     </p>
                   </div>
@@ -211,30 +273,44 @@ export default async function DashboardPage() {
 
                 {/* Status */}
                 <div className="pr-4 hidden sm:flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
-                  <span className="text-[12px] whitespace-nowrap" style={{ color: dotColor }}>
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: dotColor }}
+                  />
+                  <span
+                    className="text-[12px] whitespace-nowrap"
+                    style={{ color: dotColor }}
+                  >
                     {entry.status}
                   </span>
                 </div>
 
                 {/* Close rate */}
-                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: "var(--am-text)" }}>
+                <span
+                  className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
+                  style={{ color: "var(--am-text)" }}
+                >
                   {entry.closeRate}%
                 </span>
 
                 {/* Delta */}
-                <span className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block" style={{ color: deltaColor }}>
+                <span
+                  className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
+                  style={{ color: deltaColor }}
+                >
                   {deltaLabel}
                 </span>
 
                 {/* Trend arrow */}
-                <span className="text-[16px] font-bold text-right" style={{ color: deltaColor }}>
-                  {entry.trend === 'up' ? '↑' : '↓'}
+                <span
+                  className="text-[16px] font-bold text-right"
+                  style={{ color: deltaColor }}
+                >
+                  {entry.trend === "up" ? "↑" : "↓"}
                 </span>
               </div>
-            )
+            );
           })}
-
         </div>
 
         {/* Active alerts */}
@@ -244,7 +320,10 @@ export default async function DashboardPage() {
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[13px] font-medium" style={{ color: "var(--am-text)" }}>
+            <p
+              className="text-[13px] font-medium"
+              style={{ color: "var(--am-text)" }}
+            >
               {tAlerts("title")}
             </p>
           </div>
@@ -294,15 +373,25 @@ export default async function DashboardPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ background: dotColor, boxShadow: `0 0 5px ${dotColor}` }}
+                      style={{
+                        background: dotColor,
+                        boxShadow: `0 0 5px ${dotColor}`,
+                      }}
                     />
-                    <span className="text-[12px] font-medium" style={{ color: "var(--am-text)" }}>
+                    <span
+                      className="text-[12px] font-medium"
+                      style={{ color: "var(--am-text)" }}
+                    >
                       {alert.message}
                     </span>
                   </div>
                   <button
                     className="text-[11px] font-medium px-3 py-1 rounded border ml-[18px]"
-                    style={{ color: ctaColor, borderColor: ctaBorder, background: ctaBg }}
+                    style={{
+                      color: ctaColor,
+                      borderColor: ctaBorder,
+                      background: ctaBg,
+                    }}
                   >
                     {alert.cta} →
                   </button>
@@ -310,7 +399,6 @@ export default async function DashboardPage() {
               );
             })}
           </div>
-
         </div>
       </div>
 
@@ -337,8 +425,17 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Revenue Impact Estimator ──────────────────────────── */}
+      {/* ── Bottom stack: Revenue → CloseRateTrend → RubricGap ── */}
       <RevenueEstimator items={revenueData.items} total={revenueData.total} />
+      <CloseRateTrend
+        data={closeRateTrend}
+        summary={closeRateTrendSummary}
+        trainerTrends={performanceTrends}
+        salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
+      />
+      <div className="mb-4">
+        <RubricGapDetection gaps={rubricGaps} />
+      </div>
 
       {/* ── Detailed rubric table ──────────────────────────────── */}
       <div

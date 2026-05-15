@@ -1,12 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { Role } from '@/lib/types'
-import { markInviteAccepted, resolveDestination } from '@/lib/auth/post-verify'
+import { resolveDestination } from '@/lib/auth/post-verify'
 
 // GET /api/auth/callback?code=…&next=…
-// Troca o `code` (PKCE) por uma sessão. Se o usuário tem convite pendente,
-// marca como aceito (idempotente). Por fim redireciona pelo destino seguro
-// — preferindo `next` quando válido, caindo na home do role do contrário.
+// Troca o `code` (PKCE) por uma sessão e redireciona pelo destino seguro —
+// preferindo `next` quando válido, caindo na home do role do contrário.
+// Aceitar convites pendentes NÃO acontece aqui: cada convite é per-org e
+// só vira accepted quando o user clica no link específico daquela org
+// (verify-invite-token ou verify-otp com orgId).
 export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin
   const { searchParams } = request.nextUrl
@@ -24,10 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login`)
   }
 
-  const userId = exchanged.session.user.id
   const role = exchanged.session.user.app_metadata?.role as Role | undefined
-
-  await markInviteAccepted(userId)
 
   return NextResponse.redirect(`${origin}${resolveDestination(role, nextRaw)}`)
 }

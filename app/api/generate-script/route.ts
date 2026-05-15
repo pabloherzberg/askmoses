@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
 import { getOpenAIModel } from '@/lib/openai'
-import { getSession, unauthorized } from '@/lib/auth'
+import { getSession, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { getRubricConfig } from '@/lib/services/rubric'
 
 const SYSTEM_PROMPT = `You are a sales script architect. Analyze the provided call transcripts and/or text and generate a structured sales script.
@@ -53,6 +53,9 @@ function buildUserPrompt(transcripts: string[], textInput: string | null): strin
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const body = await request.json() as { transcripts?: string[]; textInput?: string | null }
   const transcripts = body.transcripts ?? []

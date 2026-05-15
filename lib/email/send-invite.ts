@@ -3,12 +3,13 @@ import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from './invite-template'
 
-// Validade do token. 7 dias = folga pra fim de semana e timezone do convidado.
+// Validade do token. 48h conforme spec do email de convite — o ctaHint
+// no template informa explicitamente esse prazo.
 // O DB não impõe expiração — quem decide é este TTL (gravado em
 // invite_tokens.expires_at) + a checagem `expires_at > now()` dentro da RPC
-// `consume_invite_token` (migration 034). Mudou aqui? Confere se a janela
-// continua coerente com o fluxo de aceite.
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
+// `consume_invite_token` (migration 034). Mudou aqui? Atualizar também o
+// ctaHint em lib/email/invite-template.ts pra manter coerência com o usuário.
+const TOKEN_TTL_MS = 48 * 60 * 60 * 1000
 
 export type InviteEmailDelivery = 'sent' | 'mocked'
 

@@ -22,6 +22,7 @@
     "submitting": "Connexion...",
     "invalidCredentials": "E-mail ou mot de passe incorrect",
     "profileNotFound": "Profil utilisateur introuvable. Exécutez le script seed dans Supabase.",
+    "inviteExpired": "Ce lien d'invitation a expiré. Demandez à votre administrateur de renvoyer l'invitation.",
     "magicLinkSubmit": "Envoyer le lien",
     "magicLinkSubmitting": "Envoi...",
     "magicLinkSent": "Si cet e-mail est enregistré, vous recevrez un lien de connexion. Consultez votre boîte.",
@@ -37,7 +38,63 @@
     "roleManager": "Manager",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "backToHome": "Retour à l'accueil"
+    "backToHome": "Retour à l'accueil",
+    "noAccount": "Pas encore de compte ?",
+    "signupLink": "S'inscrire"
+  },
+  "Signup": {
+    "title": "Créez votre compte",
+    "subtitle": "Inscrivez-vous et configurez votre organisation en moins d'une minute.",
+    "nameLabel": "Votre nom",
+    "namePlaceholder": "Votre nom complet",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "votre@email.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "Au moins {min} caractères, 1 majuscule et 1 caractère spécial",
+    "submit": "Créer un compte",
+    "submitting": "Création du compte...",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "loginLink": "Se connecter",
+    "backToHome": "Retour à l'accueil",
+    "nameRequired": "Veuillez saisir votre nom",
+    "emailInvalid": "Veuillez saisir un e-mail valide",
+    "passwordTooShort": "Le mot de passe doit contenir au moins {min} caractères",
+    "passwordNeedsUppercase": "Le mot de passe doit contenir au moins 1 lettre majuscule",
+    "passwordNeedsSpecial": "Le mot de passe doit contenir au moins 1 caractère spécial",
+    "emailAlreadyRegistered": "Cet e-mail est déjà enregistré. Veuillez vous connecter.",
+    "genericError": "Impossible de créer le compte. Veuillez réessayer.",
+    "verifyEmailTitle": "Confirmez votre e-mail",
+    "verifyEmailBody": "Nous avons envoyé un lien de confirmation à {email}. Cliquez sur le lien pour activer votre compte et continuer.",
+    "backToLogin": "Retour à la connexion"
+  },
+  "Onboarding": {
+    "stepLabel": "Étape {current} sur {total}",
+    "stepSubtitle": "Configuration de l'organisation",
+    "title": "Nommez votre organisation",
+    "subtitle": "C'est le nom que votre équipe verra dans AskMoses.",
+    "orgNameLabel": "Nom de l'organisation",
+    "orgNamePlaceholder": "Ex : Acme Sales",
+    "submit": "Continuer",
+    "submitting": "Création de l'organisation...",
+    "nameInvalid": "Le nom doit comporter entre {min} et {max} caractères",
+    "alreadyHasOrg": "Vous êtes déjà associé à une organisation. Pour en créer une autre, contactez l'administrateur.",
+    "genericError": "Impossible de créer l'organisation. Veuillez réessayer."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Étape {current} sur {total}",
+    "stepSubtitle": "Choix du plan",
+    "title": "Choisissez votre plan",
+    "subtitle": "Sélectionnez le plan qui correspond le mieux à votre activité. Vous pourrez en changer à tout moment.",
+    "recommendedBadge": "Recommandé",
+    "perMonth": "/mois",
+    "seatsLimit": "Jusqu'à {count} commerciaux",
+    "seatsUnlimited": "Commerciaux illimités",
+    "selectPlan": "Choisir ce plan",
+    "subscribing": "Activation...",
+    "stubNotice": "Mode développement — abonnement activé sans facturation réelle. L'intégration Stripe arrive bientôt.",
+    "noPlansError": "Impossible de charger les plans. Veuillez recharger la page.",
+    "genericError": "Impossible d'activer le plan. Veuillez réessayer."
   },
   "LanguageSwitcher": {
     "label": "Langue",
@@ -112,6 +169,7 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "teamCommandCenter": "Centre de Commandement",
+      "marketingIntelligence": "Marketing Intelligence",
       "calls": "Appels",
       "myDashboard": "Mon tableau de bord",
       "myCalls": "Mes appels",
@@ -127,6 +185,7 @@
       "saasPanel": "Panneau SaaS",
       "rubricConfig": "Config de la grille",
       "createOrganization": "Nouvelle organisation",
+      "aiControls": "AI Controls",
       "tools": "Outils",
       "starterTier": "Palier Starter",
       "starterTierSubtitle": "Upload manuel",
@@ -144,6 +203,12 @@
         "owner": "Propriétaire",
         "trainer": "Commercial"
       }
+    },
+    "userMenu": {
+      "triggerAria": "Menu utilisateur",
+      "loading": "Chargement…",
+      "password": "Mot de passe",
+      "signOut": "Déconnexion"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -189,7 +254,8 @@
       "coachingNotes": "Notes de coaching",
       "coachingNotesSubtitle": "Notes internes — non visibles par le commercial.",
       "coachingNotesPlaceholder": "Ajoutez vos notes de coaching ici...",
-      "coachingNotesFooter": "Les notes ne sont pas persistées dans cette démo."
+      "coachingNotesFooter": "Les notes ne sont pas persistées dans cette démo.",
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Tendance de performance",
@@ -205,6 +271,13 @@
     "upsell": {
       "defaultCta": "Comparer les forfaits",
       "upgradeTo": "Passez à {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activez votre plan pour débloquer AskMoses",
+        "ownerBody": "Votre organisation n'a pas encore de plan actif. Choisissez un plan pour débloquer le tableau de bord, l'analyse des appels et tout ce qu'AskMoses propose.",
+        "ownerCta": "Activer le plan maintenant",
+        "trainerTitle": "L'abonnement de votre organisation est inactif",
+        "trainerBody": "Le propriétaire de votre organisation n'a pas encore activé de plan. Contactez-le pour réactiver l'accès. Vous n'avez rien à faire ici."
+      },
       "uploadTwilio": {
         "title": "Plus d'upload manuel — passez à l'automatique",
         "description": "Connectez Twilio ou GHL une seule fois et chaque appel est ingéré, transcrit et analysé sans que personne ait à cliquer sur 'Upload'."
@@ -220,6 +293,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — Ce qui mène aux closes",
+      "titleNoVolume": "Coaching Drivers — Moyennes de l'équipe par dimension",
       "mockBadge": "données mock uniquement",
       "legend": {
         "highCorrelation": "Corrélation élevée",
@@ -244,7 +318,18 @@
         "Rubric": "Grille",
         "Behavioral": "Comportemental"
       },
+      "disclaimer": "Lorsque le volume d'appels sera suffisant, AskMoses identifiera quelles dimensions sont les plus corrélées aux closes.",
       "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — pas de calcul réel côté frontend"
+    },
+    "behavioralProfile": {
+      "title": "Profil de corrélation comportementale",
+      "teamAvg": "Moyenne équipe"
+    },
+    "closeRateTrend": {
+      "title": "Tendance du taux de closing — 6 semaines",
+      "summary": "Semaine 1: {from}% → Semaine 6: {to}% {delta}pts",
+      "closeRate": "Taux de closing",
+      "teamPill": "Équipe"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes de la grille",
@@ -284,22 +369,33 @@
         "ctaPrefix": "Revoir à"
       },
       "ctaAria": "{prefix} {time} — non fonctionnel en démo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Sécurité",
+    "title": "Mot de passe",
+    "subtitle": "Définissez ou changez votre mot de passe. Le magic link fonctionne toujours — le mot de passe est une alternative.",
+    "welcome": {
+      "aria": "Bienvenue",
+      "close": "Fermer",
+      "title": "Bienvenue ! Vous voulez définir un mot de passe maintenant ?",
+      "body": "Vous pouvez passer cette étape et continuer à vous connecter par magic link. Si vous préférez, définissez un mot de passe ici en quelques secondes.",
+      "skip": "Passer pour l'instant"
     },
-    "behavioralProfile": {
-      "title": "Profil comportemental de corrélation",
-      "mockBadge": "données mock uniquement",
-      "legend": {
-        "aboveAvg": "Score du commercial (au-dessus de la moyenne)",
-        "belowAvg": "Score du commercial (en dessous de la moyenne)",
-        "teamAvgMarker": "Marqueur de la moyenne équipe"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs moyenne équipe",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Moyenne équipe"
-      },
-      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts · vert = au-dessus de la moyenne · orange = en dessous de la moyenne · marqueur vertical = moyenne équipe · pas de calcul réel"
+    "form": {
+      "newLabel": "Nouveau mot de passe",
+      "confirmLabel": "Confirmer le mot de passe",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} caractères, avec 1 majuscule et 1 caractère spécial.",
+      "submit": "Enregistrer",
+      "submitting": "Enregistrement…",
+      "magicLinkNote": "Vous pouvez aussi continuer à vous connecter par magic link.",
+      "successDetail": "Mot de passe mis à jour.",
+      "errorTooShort": "Le mot de passe doit comporter au moins {min} caractères.",
+      "errorNoUppercase": "Le mot de passe doit contenir au moins une lettre majuscule.",
+      "errorNoSpecial": "Le mot de passe doit contenir au moins un caractère spécial.",
+      "errorMismatch": "Les mots de passe ne correspondent pas.",
+      "errorGeneric": "Impossible d'enregistrer le mot de passe. Réessayez."
     }
   },
   "Trainer": {
@@ -365,6 +461,7 @@
     "metrics": {
       "monthlyRevenue": "Revenu mensuel estimé",
       "vsBaseline": "% vs base",
+      "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Taux de closing moyen",
       "ptsSinceWeek1": "pts depuis la semaine 1",
       "avgScore": "Score moyen",
@@ -414,6 +511,7 @@
       "callsAnalyzedOther": "{count} appels analysés",
       "noCallsFound": "Aucun appel trouvé.",
       "filterAllSalesPeople": "Tous les commerciaux",
+      "filterAllSources": "Toutes les sources",
       "thTrainer": "Commercial",
       "thProspect": "Prospect",
       "thDate": "Date",
@@ -443,26 +541,74 @@
       "callsPerMonth": "Appels / mois",
       "avgScore": "Score moyen",
       "mrr": "MRR",
-      "health": "Santé"
+      "health": "Santé",
+      "actions": "Actions"
     },
     "health": {
       "healthy": "Sain",
       "atRisk": "À risque",
       "churning": "Critique"
     },
-    "createOrg": {
-      "eyebrow": "Provisionnement",
-      "title": "Nouvelle organisation",
-      "subtitle": "Créez un nouveau tenant et assignez son plan.",
-      "nameLabel": "Nom de l'organisation",
-      "namePlaceholder": "Acme SARL",
+    "ownerPending": "En attente Owner",
+    "subTrial": "Essai",
+    "subInactive": "Inactif",
+    "subscriptionSettings": "Configurer le plan de {name}",
+    "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
+    "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
+    "impersonateBanner": {
+      "label": "Vue en tant que",
+      "readOnly": "Lecture seule",
+      "exit": "Retour au panel admin",
+      "exiting": "Sortie…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Override d'abonnement",
+      "statusLabel": "Statut",
+      "status_active": "Actif",
+      "status_inactive": "Inactif",
+      "status_trial": "Essai (cadeau)",
       "planLabel": "Plan",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Créer l'organisation",
+      "trialDurationLabel": "Durée de l'essai",
+      "preset_24h": "24 heures",
+      "preset_7d": "7 jours",
+      "preset_14d": "14 jours",
+      "preset_30d": "30 jours",
+      "preset_60d": "60 jours",
+      "preset_90d": "90 jours",
+      "preset_custom": "Personnaliser",
+      "customDateLabel": "Date et heure d'expiration",
+      "errorCustomDateRequired": "Indiquez la date d'expiration de l'essai.",
+      "errorDateInFuture": "La date doit être dans le futur.",
+      "submit": "Enregistrer l'override",
+      "submitting": "Enregistrement…",
+      "successDetail": "Abonnement mis à jour. Admin override actif.",
+      "genericError": "Impossible de mettre à jour l'abonnement. Réessayez.",
+      "back": "← Retour au panel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionnement",
+      "title": "Nouvelle organisation",
+      "subtitle": "Créez un nouveau tenant, assignez son plan et invitez l'Owner.",
+      "nameLabel": "Nom de l'organisation",
+      "namePlaceholder": "Acme SARL",
+      "ownerNameLabel": "Nom de l'Owner",
+      "ownerNamePlaceholder": "Ex.: Maria Silva",
+      "ownerEmailLabel": "Email de l'Owner",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Créer l'organisation et envoyer l'invitation",
       "submitting": "Création…",
       "successDetail": "{name} provisionnée sur le plan {plan}.",
+      "successInviteSent": "Invitation envoyée à {email}.",
+      "successInviteMocked": "Invitation simulée (RESEND_API_KEY manquant) pour {email}.",
+      "errorOwnerNameRequired": "Le nom de l'Owner est requis.",
+      "errorOwnerEmailInvalid": "Email de l'Owner invalide.",
       "genericError": "Impossible de créer l'organisation. Réessayez."
     },
     "rubric": {
@@ -478,6 +624,46 @@
       "saving": "Enregistrement...",
       "toastSavedTitle": "Enregistré",
       "toastSavedBody": "Critères de grille mis à jour avec succès.",
+      "toastErrorTitle": "Erreur",
+      "toastErrorBody": "Échec de l'enregistrement. Réessayez."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "Contrôles IA",
+      "subtitle": "Configurez la température et la limite de tokens par module IA. Visible uniquement par les admins.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "updatedBy": "Mis à jour par",
+      "logLabel": "Journal des modifications",
+      "logEmpty": "Aucune modification enregistrée.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Évalue les appels selon la grille",
+        "correlation_engine": "Génère des insights de corrélation sur le tableau de bord",
+        "marketing_intelligence": "Génère des titres et textes publicitaires"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Plage recommandée :",
+        "maxTokensRange": "Plage valide :"
+      },
+      "th": {
+        "logModule": "Module",
+        "logField": "Champ",
+        "logPrev": "Valeur précédente",
+        "logNew": "Nouvelle valeur",
+        "logUser": "Utilisateur",
+        "logDate": "Date"
+      },
+      "toastSavedTitle": "Enregistré",
+      "toastSavedBody": "Configuration de {module} mise à jour.",
       "toastErrorTitle": "Erreur",
       "toastErrorBody": "Échec de l'enregistrement. Réessayez."
     }
@@ -1813,6 +1999,198 @@
     },
     "Footer": {
       "text": "Proposition MVP Ask Moses — Janvier 2026"
+    }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "Accueil AskMoses.AI",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Principal",
+      "howItWorks": "Comment ça marche",
+      "benefits": "Avantages",
+      "industries": "Secteurs",
+      "pricing": "Tarifs",
+      "dashboard": "Dashboard",
+      "bookDemo": "Réserver ma démo gratuite",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Changer de thème"
+    },
+    "Hero": {
+      "badge": "Coaching commercial IA, basé sur la science des données",
+      "titlePart1": "La plupart des entreprises n'ont pas un problème de leads. Elles ont un",
+      "titleHighlight": "problème de conversion.",
+      "subtitle": "Votre meilleur commercial a un secret. AskMoses le découvre, l'analyse et le reproduit dans toute votre équipe — automatiquement.",
+      "ctaPrimary": "Réserver ma démo gratuite",
+      "ctaSecondary": "Voir comment ça marche",
+      "dashboardAlt": "Dashboard AskMoses.AI affichant les métriques de conversion de l'équipe, le taux de closing, le revenu mensuel et la courbe du taux de conversion",
+      "statCloseRateLabel": "Taux de closing moyen",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Hausse de revenu",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "Le Problème",
+      "title": "Vous payez pour des leads. Vous les perdez au téléphone.",
+      "body": "Votre meilleur closer remporte des deals que votre commercial moyen perd. Mêmes leads. Même script. Résultats différents. Sans données, vous devinez pourquoi — et votre budget marketing en paie le prix.",
+      "cta": "Voir comment AskMoses résout ça"
+    },
+    "HowItWorks": {
+      "eyebrow": "Comment ça marche",
+      "title": "De la conversation à la conversion en 4 étapes.",
+      "subtitle": "Pas de nouvel outil à apprendre. Pas de rupture du workflow. Juste de meilleurs résultats.",
+      "steps": {
+        "listen": {
+          "title": "Écouter",
+          "description": "AskMoses ingère chaque appel entrant et sortant de votre équipe, automatiquement."
+        },
+        "identify": {
+          "title": "Identifier",
+          "description": "Repère les comportements, phrases et schémas précis qui distinguent les closers des autres."
+        },
+        "evaluate": {
+          "title": "Évaluer",
+          "description": "Note chaque appel selon votre grille personnalisée, avec une corrélation statistique aux résultats réels."
+        },
+        "scale": {
+          "title": "Faire grandir",
+          "description": "Reproduit ce qui marche dans toute l'équipe avec du coaching ciblé, des scripts et des dashboards par commercial."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Pourquoi AskMoses",
+      "title": "Conçu pour transformer les conversations en deals signés.",
+      "differentiator": {
+        "badge": "Différenciateur clé",
+        "titlePart1": "Propulsé par",
+        "titleHighlight": "la science des données",
+        "body": "AskMoses ne se contente pas d'enregistrer les appels — il applique la science des données pour identifier les comportements précis qui font statistiquement avancer les conversions dans votre entreprise.",
+        "bullets": [
+          "Pas d'intuitions.",
+          "Pas de bonnes pratiques génériques.",
+          "Juste des maths."
+        ],
+        "cta": "Voyez-le dans vos données"
+      },
+      "items": {
+        "data": {
+          "title": "Données réelles, pas des suppositions",
+          "description": "Chaque décision de coaching s'appuie sur l'analyse statistique de centaines d'appels réels."
+        },
+        "rubric": {
+          "title": "Grille personnalisée",
+          "description": "Pas de conseils génériques. Votre méthodologie de vente, optimisée par l'IA."
+        },
+        "sellMore": {
+          "title": "Vendez plus sans dépenser plus",
+          "description": "Même budget marketing, même volume de leads, meilleur taux de conversion."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Secteurs",
+      "title": "Conçu pour les entreprises qui closent au téléphone.",
+      "subtitle": "Si vos clients appellent avant d'acheter, AskMoses transforme ces appels en revenus.",
+      "items": {
+        "dogTrainers": "Éducateurs Canins",
+        "callCenters": "Centres d'Appels",
+        "vet": "Cliniques Vétérinaires",
+        "beauty": "Cliniques Esthétiques et Medspas",
+        "homeServices": "Services à Domicile",
+        "lawFirms": "Cabinets d'Avocats"
+      },
+      "cta": "Réserver ma démo gratuite"
+    },
+    "Pricing": {
+      "eyebrow": "Tarifs",
+      "title": "Choisissez le plan qui correspond à votre rythme de croissance.",
+      "popularBadge": "Le plus populaire",
+      "footnote": "* Frais d'usage de 2 $/appel applicables à tous les plans. Facturation mensuelle selon le volume réel. Aucun engagement minimum sur les appels.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "Coaching commercial IA pour les opérateurs indépendants prêts à closer davantage des leads qu'ils ont déjà.",
+          "price": "500 $",
+          "priceSuffix": "/mois",
+          "priceNote": "+ 2 $ par appel noté",
+          "features": [
+            "Scoring IA sur chaque appel entrant",
+            "Grille personnalisée selon votre méthode de formation",
+            "Dashboard de performance par commercial",
+            "Suivi des objections et détection de schémas",
+            "Rapport hebdomadaire d'insights de coaching",
+            "Intégration CRM"
+          ],
+          "cta": "Réserver un appel découverte"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses plus marketing full-service. La boucle de revenu complète pour les entreprises de services prêtes à scaler.",
+          "price": "1 250 $",
+          "priceSuffix": "/mois",
+          "priceNote": "+ 2 $ par appel noté",
+          "features": [
+            "Tout ce qui est dans Solo",
+            "Copies publicitaires générées par IA à partir de vos données d'appels",
+            "Campagnes d'acquisition Google et Meta",
+            "Conception et optimisation de landing pages",
+            "Création de contenu et réseaux sociaux",
+            "Setup CRM et automatisation complets",
+            "Reporting closed-loop : des appels au revenu",
+            "Account strategist dédié"
+          ],
+          "cta": "Réserver un appel découverte"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "Pour les groupes franchisés, les opérateurs multi-sites et les réseaux de formation qui ont besoin d'une intelligence au niveau du portefeuille.",
+          "price": "Tarif sur mesure",
+          "customNote": "Tarifs au volume · SLA sur mesure",
+          "features": [
+            "Tout ce qui est dans Pro",
+            "Sites et utilisateurs illimités",
+            "Analytics d'appels au niveau du portefeuille",
+            "Grilles personnalisées par site",
+            "Benchmarking de performance entre franchises",
+            "Success manager dédié",
+            "Support et onboarding prioritaires"
+          ],
+          "cta": "Nous contacter →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Démo",
+      "titlePart1": "Voyez AskMoses en",
+      "titleHighlight": "Action.",
+      "subtitle": "Réservez une démo gratuite de 20 minutes. Sans engagement.",
+      "bullets": [
+        "Démonstration sur vos vraies données d'appels",
+        "Voyez une grille type notée en direct",
+        "Estimation de ROI sur mesure pour votre équipe"
+      ],
+      "formTitle": "Formulaire AskMoses"
+    },
+    "CtaBand": {
+      "title": "Prêt à transformer plus d'appels en clients ?",
+      "cta": "Réserver ma démo gratuite"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Pied de page",
+      "howItWorks": "Comment ça marche",
+      "benefits": "Avantages",
+      "pricing": "Tarifs",
+      "demo": "Démo",
+      "contact": "Contact",
+      "copyright": "© {year} AskMoses.AI. Tous droits réservés.",
+      "privacy": "Confidentialité",
+      "terms": "Conditions"
+    },
+    "MobileCta": {
+      "label": "Réserver ma démo gratuite"
     }
   }
 }

@@ -22,6 +22,7 @@
     "submitting": "Signing in...",
     "invalidCredentials": "Email or password incorrect",
     "profileNotFound": "User profile not found. Run the seed script in Supabase.",
+    "inviteExpired": "This invite link has expired. Please ask your admin to resend the invitation.",
     "magicLinkSubmit": "Send link",
     "magicLinkSubmitting": "Sending...",
     "magicLinkSent": "If this email is registered, you'll receive a sign-in link. Check your inbox.",
@@ -37,7 +38,63 @@
     "roleManager": "Manager",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "noAccount": "Don't have an account yet?",
+    "signupLink": "Sign up"
+  },
+  "Signup": {
+    "title": "Create your account",
+    "subtitle": "Sign up and set up your organization in under a minute.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Your full name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "At least {min} characters, 1 uppercase and 1 special character",
+    "submit": "Create account",
+    "submitting": "Creating account...",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Sign in",
+    "backToHome": "Back to home",
+    "nameRequired": "Please enter your name",
+    "emailInvalid": "Please enter a valid email",
+    "passwordTooShort": "Password must be at least {min} characters",
+    "passwordNeedsUppercase": "Password must include at least 1 uppercase letter",
+    "passwordNeedsSpecial": "Password must include at least 1 special character",
+    "emailAlreadyRegistered": "This email is already registered. Please sign in.",
+    "genericError": "Could not create the account. Please try again.",
+    "verifyEmailTitle": "Confirm your email",
+    "verifyEmailBody": "We've sent a confirmation link to {email}. Click the link to activate your account and continue.",
+    "backToLogin": "Back to login"
+  },
+  "Onboarding": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Organization setup",
+    "title": "Name your organization",
+    "subtitle": "This is the name your team will see inside AskMoses.",
+    "orgNameLabel": "Organization name",
+    "orgNamePlaceholder": "e.g. Acme Sales",
+    "submit": "Continue",
+    "submitting": "Creating organization...",
+    "nameInvalid": "Name must be between {min} and {max} characters",
+    "alreadyHasOrg": "You're already linked to an organization. To create another one, please contact the Admin.",
+    "genericError": "Could not create the organization. Please try again."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Choose your plan",
+    "title": "Pick the plan that fits",
+    "subtitle": "Select the plan that best matches your operation. You can switch any time later.",
+    "recommendedBadge": "Recommended",
+    "perMonth": "/month",
+    "seatsLimit": "Up to {count} sales people",
+    "seatsUnlimited": "Unlimited sales people",
+    "selectPlan": "Choose plan",
+    "subscribing": "Activating...",
+    "stubNotice": "Development mode — subscription activated without real charge. Stripe integration coming soon.",
+    "noPlansError": "Could not load plans. Please reload the page.",
+    "genericError": "Could not activate the plan. Please try again."
   },
   "LanguageSwitcher": {
     "label": "Language",
@@ -112,6 +169,7 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "teamCommandCenter": "Team Command Center",
+      "marketingIntelligence": "Marketing Intelligence",
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
@@ -127,6 +185,7 @@
       "saasPanel": "SaaS Panel",
       "rubricConfig": "Rubric Config",
       "createOrganization": "New Organization",
+      "aiControls": "AI Controls",
       "tools": "Tools",
       "starterTier": "Starter Tier",
       "starterTierSubtitle": "Manual Upload",
@@ -142,8 +201,14 @@
       "orgSwitcher": {
         "label": "Switch organization",
         "owner": "Owner",
-        "trainer": "Trainer"
+        "trainer": "Sales Person"
       }
+    },
+    "userMenu": {
+      "triggerAria": "User menu",
+      "loading": "Loading…",
+      "password": "Password",
+      "signOut": "Sign out"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -187,9 +252,10 @@
       "showMore": "Show more ↓",
       "showLess": "Show less ↑",
       "coachingNotes": "Coaching Notes",
-      "coachingNotesSubtitle": "Internal notes — not visible to the trainer.",
+      "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
       "coachingNotesPlaceholder": "Add your coaching notes here...",
-      "coachingNotesFooter": "Notes are not persisted in this demo."
+      "coachingNotesFooter": "Notes are not persisted in this demo.",
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Overall Performance Trend",
@@ -205,6 +271,13 @@
     "upsell": {
       "defaultCta": "Compare plans",
       "upgradeTo": "Upgrade to {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activate your plan to unlock AskMoses",
+        "ownerBody": "Your organization doesn't have an active plan yet. Pick a plan to unlock the dashboard, call analysis, and everything else AskMoses offers.",
+        "ownerCta": "Activate plan now",
+        "trainerTitle": "Your organization's subscription is inactive",
+        "trainerBody": "Your organization's owner hasn't activated a plan yet. Get in touch with them to reactivate access. You don't need to do anything here."
+      },
       "uploadTwilio": {
         "title": "Skip the manual upload — go automatic",
         "description": "Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
@@ -220,6 +293,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — What Drives Closes",
+      "titleNoVolume": "Coaching Drivers — Team Averages by Dimension",
       "mockBadge": "mock data only",
       "legend": {
         "highCorrelation": "High correlation",
@@ -244,7 +318,18 @@
         "Rubric": "Rubric",
         "Behavioral": "Behavioral"
       },
+      "disclaimer": "After sufficient call volume, AskMoses will identify which dimensions correlate most with closes.",
       "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "behavioralProfile": {
+      "title": "Behavioral Correlation Profile",
+      "teamAvg": "Team avg"
+    },
+    "closeRateTrend": {
+      "title": "6-Week Close Rate Trend",
+      "summary": "Week 1: {from}% → Week 6: {to}% {delta}pts",
+      "closeRate": "Close rate",
+      "teamPill": "Team"
     },
     "rubricGapDetection": {
       "title": "Rubric Gap Detection",
@@ -284,22 +369,33 @@
         "ctaPrefix": "Review at"
       },
       "ctaAria": "{prefix} {time} — non-functional in demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Security",
+    "title": "Password",
+    "subtitle": "Set or change your password. Magic link still works — password is an alternative.",
+    "welcome": {
+      "aria": "Welcome",
+      "close": "Close",
+      "title": "Welcome! Want to set a password now?",
+      "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
+      "skip": "Skip for now"
     },
-    "behavioralProfile": {
-      "title": "Behavioral Correlation Profile",
-      "mockBadge": "mock data only",
-      "legend": {
-        "aboveAvg": "Trainer score (above avg)",
-        "belowAvg": "Trainer score (below avg)",
-        "teamAvgMarker": "Team avg marker"
-      },
-      "th": {
-        "scoreVsTeam": "Score vs team avg",
-        "score": "Score",
-        "delta": "Delta",
-        "teamAvg": "Team avg"
-      },
-      "mockFooter": "† all values from mock-data.ts · green = above team avg · orange = below team avg · vertical marker = team avg · no real calculation"
+    "form": {
+      "newLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} characters, with 1 uppercase and 1 special character.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "magicLinkNote": "You can still sign in via magic link.",
+      "successDetail": "Password updated successfully.",
+      "errorTooShort": "Password must be at least {min} characters.",
+      "errorNoUppercase": "Password must include at least one uppercase letter.",
+      "errorNoSpecial": "Password must include at least one special character.",
+      "errorMismatch": "Passwords do not match.",
+      "errorGeneric": "Could not save password. Try again."
     }
   },
   "Trainer": {
@@ -365,6 +461,7 @@
     "metrics": {
       "monthlyRevenue": "Est. Monthly Revenue",
       "vsBaseline": "% vs baseline",
+      "vsBaselineCurrency": "vs baseline",
       "avgCloseRate": "Avg Close Rate",
       "ptsSinceWeek1": "pts since week 1",
       "avgScore": "Avg Score",
@@ -373,14 +470,14 @@
       "activeSalesPeopleOne": "{count} active sales person",
       "activeSalesPeopleOther": "{count} active sales people",
       "bestCloseRate": "Best Close Rate",
-      "noTrainers": "No trainers"
+      "noTrainers": "No sales people"
     },
     "teamHealth": {
       "title": "Team Health",
       "mockBadge": "mock data only",
       "subtitle": "Who's improving · who needs attention this week",
       "th": {
-        "trainer": "TRAINER",
+        "trainer": "SALES PERSON",
         "status": "STATUS",
         "closeRate": "CLOSE %",
         "delta": "DELTA"
@@ -414,7 +511,8 @@
       "callsAnalyzedOther": "{count} calls analyzed",
       "noCallsFound": "No calls found.",
       "filterAllSalesPeople": "All Sales People",
-      "thTrainer": "Trainer",
+      "filterAllSources": "All Sources",
+      "thTrainer": "Sales Person",
       "thProspect": "Prospect",
       "thDate": "Date",
       "thScore": "Score",
@@ -443,26 +541,74 @@
       "callsPerMonth": "Calls / mo",
       "avgScore": "Avg Score",
       "mrr": "MRR",
-      "health": "Health"
+      "health": "Health",
+      "actions": "Actions"
     },
     "health": {
       "healthy": "Healthy",
       "atRisk": "At Risk",
       "churning": "Critical"
     },
-    "createOrg": {
-      "eyebrow": "Provisioning",
-      "title": "New organization",
-      "subtitle": "Create a new tenant and assign its plan.",
-      "nameLabel": "Organization name",
-      "namePlaceholder": "Acme Inc.",
+    "ownerPending": "Awaiting Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inactive",
+    "subscriptionSettings": "Configure {name}'s plan",
+    "impersonateTooltip": "Enter {name} (read-only view)",
+    "impersonateError": "Could not enter this organization. Try again.",
+    "impersonateBanner": {
+      "label": "Viewing as",
+      "readOnly": "Read only",
+      "exit": "Back to admin panel",
+      "exiting": "Exiting…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Subscription override",
+      "statusLabel": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "status_trial": "Trial (comp)",
       "planLabel": "Plan",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Create organization",
+      "trialDurationLabel": "Trial duration",
+      "preset_24h": "24 hours",
+      "preset_7d": "7 days",
+      "preset_14d": "14 days",
+      "preset_30d": "30 days",
+      "preset_60d": "60 days",
+      "preset_90d": "90 days",
+      "preset_custom": "Custom",
+      "customDateLabel": "Expiration date and time",
+      "errorCustomDateRequired": "Enter the trial expiration date.",
+      "errorDateInFuture": "Date must be in the future.",
+      "submit": "Save override",
+      "submitting": "Saving…",
+      "successDetail": "Subscription updated. Admin override active.",
+      "genericError": "Could not update subscription. Try again.",
+      "back": "← Back to panel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisioning",
+      "title": "New organization",
+      "subtitle": "Create a new tenant, assign its plan and invite the Owner.",
+      "nameLabel": "Organization name",
+      "namePlaceholder": "Acme Inc.",
+      "ownerNameLabel": "Owner name",
+      "ownerNamePlaceholder": "e.g. Maria Silva",
+      "ownerEmailLabel": "Owner email",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Create organization and send invite",
       "submitting": "Creating…",
       "successDetail": "{name} provisioned on the {plan} plan.",
+      "successInviteSent": "Invite sent to {email}.",
+      "successInviteMocked": "Invite mocked (RESEND_API_KEY missing) for {email}.",
+      "errorOwnerNameRequired": "Owner name is required.",
+      "errorOwnerEmailInvalid": "Invalid Owner email.",
       "genericError": "Could not create the organization. Try again."
     },
     "rubric": {
@@ -480,6 +626,46 @@
       "toastSavedBody": "Rubric criteria updated successfully.",
       "toastErrorTitle": "Error",
       "toastErrorBody": "Failed to save rubric changes. Try again."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "AI Controls",
+      "subtitle": "Configure temperature and token limits per AI module. Visible to admins only.",
+      "save": "Save",
+      "saving": "Saving...",
+      "updatedBy": "Updated by",
+      "logLabel": "Change Log",
+      "logEmpty": "No changes recorded yet.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Evaluates calls based on the rubric",
+        "correlation_engine": "Generates correlation insights on the owner dashboard",
+        "marketing_intelligence": "Generates ad headlines and primary text"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Recommended range:",
+        "maxTokensRange": "Valid range:"
+      },
+      "th": {
+        "logModule": "Module",
+        "logField": "Field",
+        "logPrev": "Previous Value",
+        "logNew": "New Value",
+        "logUser": "User",
+        "logDate": "Date"
+      },
+      "toastSavedTitle": "Saved",
+      "toastSavedBody": "{module} configuration updated.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Failed to save. Try again."
     }
   },
   "Coaching": {
@@ -539,7 +725,7 @@
       "title": "Call History",
       "subtitle": "Review all processed sales calls and coaching feedback",
       "searchCalls": "Search Calls",
-      "searchPlaceholder": "Search by trainer name or prospect...",
+      "searchPlaceholder": "Search by sales person name or prospect...",
       "allCalls": "All Calls",
       "callsFoundOne": "{count} call found",
       "callsFoundOther": "{count} calls found",
@@ -620,7 +806,7 @@
       "steps": {
         "script": {
           "title": "Configure Your Sales Script",
-          "description": "Set up your ideal sales process that trainers should follow",
+          "description": "Set up your ideal sales process that your sales team should follow",
           "location": "Rubric page",
           "details": [
             "Go to the Rubric page in the sidebar",
@@ -632,7 +818,7 @@
           ],
           "tips": [
             "Be specific in your section instructions for better AI analysis",
-            "Include tips that help trainers understand what good looks like",
+            "Include tips that help your sales team understand what good looks like",
             "You can create multiple scripts for different call types"
           ]
         },
@@ -642,7 +828,7 @@
           "location": "Upload Call page",
           "details": [
             "Navigate to Upload Call in the sidebar",
-            "Enter the trainer's name and email",
+            "Enter the sales person's name and email",
             "Select which sales script to evaluate against",
             "Choose upload method: Audio file or paste transcript",
             "For audio: Upload MP3, WAV, or M4A files (max 25MB)",
@@ -657,7 +843,7 @@
         },
         "review": {
           "title": "Review AI Analysis",
-          "description": "See detailed feedback on how well the trainer followed the script",
+          "description": "See detailed feedback on how well the sales person followed the script",
           "location": "After upload",
           "details": [
             "View the overall score (sections covered vs total)",
@@ -675,18 +861,18 @@
         },
         "email": {
           "title": "Send Coaching Email",
-          "description": "Deliver personalized feedback directly to the trainer",
+          "description": "Deliver personalized feedback directly to the sales person",
           "location": "Results page",
           "details": [
             "After analysis, click 'Send Coaching Email'",
-            "The email is sent to the trainer's email address",
+            "The email is sent to the sales person's email address",
             "Email includes score, summary, and detailed feedback",
-            "Trainers receive actionable tips for improvement",
+            "Sales people receive actionable tips for improvement",
             "Call is automatically saved to history"
           ],
           "tips": [
             "Emails are branded and professional",
-            "Trainers can review feedback at their own pace",
+            "Sales people can review feedback at their own pace",
             "Consider following up on areas needing improvement"
           ]
         },
@@ -696,7 +882,7 @@
           "location": "Calls page",
           "details": [
             "Calls: View all analyzed calls with search and filters",
-            "Filter by trainer name, date range, or score",
+            "Filter by sales person name, date range, or score",
             "Click any call to see full details and transcript",
             "Track pass rates by criteria across all calls",
             "Identify which script sections need more training"
@@ -704,7 +890,7 @@
           "tips": [
             "Regular review helps identify training patterns",
             "Low-performing criteria indicate coaching opportunities",
-            "Use filters to focus on specific trainers or periods"
+            "Use filters to focus on specific sales people or periods"
           ]
         },
         "insights": {
@@ -748,7 +934,7 @@
         },
         {
           "q": "How does the AI scoring work?",
-          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the trainer addressed the key points."
+          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the sales person addressed the key points."
         },
         {
           "q": "Can I use different AI models?",
@@ -772,7 +958,7 @@
         },
         {
           "q": "How many calls do I need to generate insights?",
-          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse trainer outcomes, patterns become more statistically significant."
+          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse sales team outcomes, patterns become more statistically significant."
         },
         {
           "q": "Can I customize the insights analysis?",
@@ -1045,7 +1231,7 @@
         "salesPersonInfoTitle": "Sales Person Information",
         "salesPersonInfoSubtitle": "Who should receive the coaching email?",
         "salesPersonLabel": "Sales Person",
-        "selectTrainerPlaceholder": "Select a trainer...",
+        "selectTrainerPlaceholder": "Select a sales person...",
         "clientNameLabel": "Client Name",
         "clientNamePlaceholder": "e.g., Jane Doe",
         "clientNameHint": "Name of the prospect or customer on the call",
@@ -1094,7 +1280,7 @@
     "Hero": {
       "poweredBy": "Powered by",
       "badge": "Rapid MVP Proposal",
-      "title": "AI Post-Call Sales Coaching for Dog Trainers",
+      "title": "AI Post-Call Sales Coaching for Your Sales Team",
       "subtitle": "Automate coaching feedback after every sales call. Turn your best sales methodology into an AI coach that scales with your team.",
       "timelineLabel": "Timeline",
       "timelineValue": "2 Weeks",
@@ -1110,7 +1296,7 @@
         "Ariel reviews calls manually — this doesn't scale",
         "Feedback is delayed, inconsistent, or never delivered",
         "No structured way to enforce sales methodology",
-        "Trainers miss coaching moments that affect close rates"
+        "Sales people miss coaching moments that affect close rates"
       ]
     },
     "Workflow": {
@@ -1131,7 +1317,7 @@
         },
         "email": {
           "title": "Coaching Email",
-          "description": "Personalized feedback sent to the dog trainer"
+          "description": "Personalized feedback sent to the sales person"
         },
         "summary": {
           "title": "Aggregate Summary",
@@ -1164,7 +1350,7 @@
             "Audio upload (.mp3, .wav, .m4a)",
             "Direct transcript paste",
             "Whisper AI transcription",
-            "Trainer selection"
+            "Sales person selection"
           ]
         },
         "aiAnalysis": {
@@ -1179,7 +1365,7 @@
         },
         "coachingEmail": {
           "title": "Post-Call Coaching Email",
-          "description": "Automated email delivery of personalized coaching feedback to the trainer.",
+          "description": "Automated email delivery of personalized coaching feedback to the sales person.",
           "details": [
             "Branded HTML template",
             "Score breakdown",
@@ -1201,7 +1387,7 @@
           "title": "Simple History Page",
           "description": "Searchable log of all past call analyses for reference and debugging.",
           "details": [
-            "Filter by trainer",
+            "Filter by sales person",
             "Filter by date",
             "View full analysis",
             "Basic search"
@@ -1218,7 +1404,7 @@
           "category": "CRM Integration",
           "items": [
             "GoHighLevel (Pepper) sync",
-            "Auto-pull trainer contacts",
+            "Auto-pull sales team contacts",
             "Sync results to CRM",
             "CRM workflow triggers"
           ]
@@ -1258,10 +1444,10 @@
       "items": {
         "usage": {
           "category": "Usage",
-          "title": "Do trainers engage?",
+          "title": "Does the sales team engage?",
           "items": [
             "Email open rate > 60%",
-            "Trainers reference feedback in calls",
+            "Sales people reference feedback in calls",
             "Ariel uses aggregate summaries weekly"
           ]
         },
@@ -1270,7 +1456,7 @@
           "title": "Is feedback helpful?",
           "items": [
             "Qualitative survey: 4+ out of 5",
-            "Trainers request more detail (good sign)",
+            "Sales people request more detail (good sign)",
             "Ariel saves 5+ hrs/week on manual review"
           ]
         },
@@ -1289,7 +1475,7 @@
           "items": [
             "Close rate improvement tracked",
             "Time-to-close reduction",
-            "Trainer confidence increases"
+            "Sales team confidence increases"
           ]
         }
       }
@@ -1315,7 +1501,7 @@
           "timeline": "Post-MVP",
           "items": [
             "GoHighLevel (Pepper) sync",
-            "Auto-pull trainer contacts",
+            "Auto-pull sales team contacts",
             "Sync coaching results to CRM",
             "Workflow triggers"
           ]
@@ -1326,7 +1512,7 @@
           "timeline": "Future",
           "items": [
             "Interactive coach dashboard",
-            "Trainer response tracking",
+            "Sales person response tracking",
             "Script A/B testing",
             "Detailed analytics"
           ]
@@ -1396,7 +1582,7 @@
           "mvp": "Branded HTML + tips",
           "phase15": "Auto-triggered on call end",
           "phase2": "GHL workflow triggers",
-          "phase3": "Trainer response tracking",
+          "phase3": "Sales person response tracking",
           "reusabilityReason": "Email templates, sending logic, and formatting are 100% reusable. Future phases only change when/how it's triggered."
         },
         "summary": {
@@ -1646,7 +1832,7 @@
                   "text": "Paste transcript text directly"
                 },
                 {
-                  "text": "Input trainer name and email manually"
+                  "text": "Input sales person name and email manually"
                 },
                 {
                   "text": "Upload progress indicator"
@@ -1706,7 +1892,7 @@
                   "text": "List of all processed calls"
                 },
                 {
-                  "text": "Search by trainer name or email"
+                  "text": "Search by sales person name or email"
                 },
                 {
                   "text": "View individual call details with full analysis"
@@ -1732,7 +1918,7 @@
                   "text": "Smart insights & performance summaries"
                 },
                 {
-                  "text": "Achievement badges & trainer recognition"
+                  "text": "Achievement badges & sales person recognition"
                 },
                 {
                   "text": "Real-time analytics dashboard"
@@ -1813,6 +1999,198 @@
     },
     "Footer": {
       "text": "Ask Moses MVP Proposal — January 2026"
+    }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "AskMoses.AI home",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Primary",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "industries": "Industries",
+      "pricing": "Pricing",
+      "dashboard": "Dashboard",
+      "bookDemo": "Book My Free Demo",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Toggle theme"
+    },
+    "Hero": {
+      "badge": "AI sales coaching, powered by data science",
+      "titlePart1": "Most businesses don't have a lead problem. They have a",
+      "titleHighlight": "conversion problem.",
+      "subtitle": "Your best sales rep has a secret. AskMoses finds it, analyzes it, and replicates it across your entire team automatically.",
+      "ctaPrimary": "Book My Free Demo",
+      "ctaSecondary": "See how it works",
+      "dashboardAlt": "AskMoses.AI dashboard showing team conversion metrics, close rate, monthly revenue, and conversion rate trend chart",
+      "statCloseRateLabel": "Avg Close Rate",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Revenue Lift",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "The Problem",
+      "title": "You're paying for leads. You're losing them on the phone.",
+      "body": "Your top closer wins deals your average rep blows. Same leads. Same script. Different outcomes. Without data, you're guessing why, and your marketing spend is paying the price.",
+      "cta": "See how AskMoses fixes this"
+    },
+    "HowItWorks": {
+      "eyebrow": "How it works",
+      "title": "From conversation to conversion in 4 steps.",
+      "subtitle": "No new tools to learn. No workflow disruption. Just better outcomes.",
+      "steps": {
+        "listen": {
+          "title": "Listen",
+          "description": "AskMoses ingests every inbound and outbound call across your entire team, automatically."
+        },
+        "identify": {
+          "title": "Identify",
+          "description": "Pinpoints the exact behaviors, phrases, and patterns that separate closers from coasters."
+        },
+        "evaluate": {
+          "title": "Evaluate",
+          "description": "Scores every call against your custom rubric with statistical correlation to real outcomes."
+        },
+        "scale": {
+          "title": "Scale",
+          "description": "Replicates what works across the team with targeted coaching, scripts, and rep dashboards."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Why AskMoses",
+      "title": "Built to turn conversations into closed deals.",
+      "differentiator": {
+        "badge": "Key differentiator",
+        "titlePart1": "Powered by",
+        "titleHighlight": "data science",
+        "body": "AskMoses doesn't just record calls, it applies data science to identify which specific behaviors statistically drive conversions in your business.",
+        "bullets": [
+          "No gut feelings.",
+          "No generic best practices.",
+          "Just math."
+        ],
+        "cta": "See it in your data"
+      },
+      "items": {
+        "data": {
+          "title": "Real data, not guesswork",
+          "description": "Every coaching decision backed by statistical analysis of hundreds of real calls."
+        },
+        "rubric": {
+          "title": "Custom rubric",
+          "description": "Not generic advice. Your sales methodology, optimized with AI."
+        },
+        "sellMore": {
+          "title": "Sell more without spending more",
+          "description": "Same marketing budget, same lead volume, better conversion rate."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Industries",
+      "title": "Built for businesses that close on the phone.",
+      "subtitle": "If your customers call before they buy, AskMoses turns those calls into revenue.",
+      "items": {
+        "dogTrainers": "Dog Trainers",
+        "callCenters": "Call Centers",
+        "vet": "Veterinary Clinics",
+        "beauty": "Beauty Clinics & Medspas",
+        "homeServices": "Home Services",
+        "lawFirms": "Law Firms"
+      },
+      "cta": "Book My Free Demo"
+    },
+    "Pricing": {
+      "eyebrow": "Pricing",
+      "title": "Pick the plan that fits how you grow.",
+      "popularBadge": "Most popular",
+      "footnote": "* $2/call usage fee applies to all plans. Billed monthly based on actual call volume. No minimum commitment on calls.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "AI sales coaching for independent operators ready to close more of the leads they already have.",
+          "price": "$500",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "AI call scoring on every inbound call",
+            "Custom rubric based on your training method",
+            "Rep performance dashboard",
+            "Objection tracking & pattern detection",
+            "Weekly coaching insights report",
+            "CRM integration"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses plus full-service marketing. The complete revenue loop for service businesses ready to scale.",
+          "price": "$1,250",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "Everything in Solo",
+            "AI-generated ad copy from your call data",
+            "Google & Meta lead generation campaigns",
+            "Landing page design & optimization",
+            "Content creation & social media",
+            "Full CRM setup & automation",
+            "Closed-loop reporting: calls to revenue",
+            "Dedicated account strategist"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "For franchise groups, multi-location operators, and training networks that need portfolio-level intelligence.",
+          "price": "Custom pricing",
+          "customNote": "Volume call rates · Custom SLA",
+          "features": [
+            "Everything in Pro",
+            "Unlimited locations & users",
+            "Portfolio-level call analytics",
+            "Custom rubrics per location",
+            "Franchise performance benchmarking",
+            "Dedicated success manager",
+            "Priority support & onboarding"
+          ],
+          "cta": "Contact us →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Demo",
+      "titlePart1": "See AskMoses in",
+      "titleHighlight": "Action.",
+      "subtitle": "Book a free 20-minute demo. No commitment.",
+      "bullets": [
+        "Walkthrough on your real call data",
+        "See a sample rubric scored live",
+        "Custom ROI estimate for your team"
+      ],
+      "formTitle": "AskMoses Form"
+    },
+    "CtaBand": {
+      "title": "Ready to turn more calls into customers?",
+      "cta": "Book My Free Demo"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Footer",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "pricing": "Pricing",
+      "demo": "Demo",
+      "contact": "Contact",
+      "copyright": "© {year} AskMoses.AI. All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "MobileCta": {
+      "label": "Book My Free Demo"
     }
   }
 }

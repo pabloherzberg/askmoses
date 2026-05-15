@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -24,6 +25,7 @@ const PLAN_BADGE_STYLE: Record<PlanCode, { bg: string; color: string }> = {
 export default function LoginPage() {
   const t = useTranslations('Login')
   const locale = useLocale()
+  const searchParams = useSearchParams()
 
   const [activeClientId, setActiveClientId] = useState<string>(DEMO_CLIENTS[0].id)
   const [mode, setMode] = useState<'password' | 'magic'>('password')
@@ -33,6 +35,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [magicLoading, setMagicLoading] = useState(false)
   const [magicNotice, setMagicNotice] = useState('')
+
+  // Erros propagados via query param pelo callback /api/auth/verify-invite-token.
+  // Hoje só `invite_expired` (cobre token expirado, consumido ou invalidado).
+  useEffect(() => {
+    const errParam = searchParams.get('error')
+    if (errParam === 'invite_expired') {
+      setError(t('inviteExpired'))
+    }
+  }, [searchParams, t])
 
   const switchMode = (next: 'password' | 'magic') => {
     setMode(next)
@@ -50,7 +61,14 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      // Normaliza email pra bater com como foi gravado no signup (lowercase).
+      // signInWithPassword do Supabase costuma normalizar, mas explicitar
+      // aqui elimina qualquer ambiguidade de versão.
+      const normalizedEmail = email.trim().toLowerCase()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
       if (authError || !data.session) {
         setError(t('invalidCredentials'))
         return
@@ -218,6 +236,13 @@ export default function LoginPage() {
             : (magicLoading ? t('magicLinkSubmitting') : t('magicLinkSubmit'))}
         </button>
       </form>
+
+      <p className="text-xs text-center mt-4" style={{ color: 'var(--am-muted)' }}>
+        {t('noAccount')}{' '}
+        <Link href={`/${locale}/signup`} className="underline" style={{ color: 'var(--am-accent2)' }}>
+          {t('signupLink')}
+        </Link>
+      </p>
 
       {/* Demo shortcuts — Client tabs + per-client users */}
       <div

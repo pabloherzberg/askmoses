@@ -15,14 +15,18 @@ import {
   getOrgId,
   getSession,
   getTrainerDbId,
+  requireActiveSubscription,
+  requireOwnerWrite,
   unauthorized,
 } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   OUTCOME_OVERALL_CAP,
   normaliseOutcome,
+  LEAD_SOURCES,
   type CallOutcome,
 } from "@/lib/constants";
+import type { LeadSource } from "@/lib/types";
 import {
   LLM_TEMPERATURE_PRIMARY,
   LLM_TEMPERATURE_RETRY,
@@ -39,6 +43,8 @@ interface AnalyzeRequestBody {
   trainerId?: string;
   scriptId?: string;
   callOutcome?: string;
+  lead_name?: string | null;
+  lead_source?: string | null;
 }
 
 /** Accept canonical CallOutcome plus a few legacy aliases that older
@@ -50,13 +56,13 @@ function coerceOutcome(raw: string | null | undefined): CallOutcome {
 export interface CriterionScore {
   criterionId: string;
   criterionName: string;
-  score: number; // 1–5
+  score: number; // 0–100
   justification: string;
 }
 
 export interface SectionScore {
   name: string;
-  score: number; // 1–5
+  score: number; // 0–100
   feedback: string;
   critical: boolean;
   /** Section weight (0–100) from rubric_criteria.weight. Null when source
@@ -81,7 +87,6 @@ export interface AnalyzeResult {
   improvements: string[];
   criteriaScores: CriterionScore[];
   sections: SectionScore[];
-  criteria: SectionScore[]; // alias for backward compat
   transcript: string;
   cost: CallCostBreakdown;
 }
@@ -114,8 +119,7 @@ function tryParseJson(raw: string): unknown | null {
 function clampScore(value: unknown): number | null {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return null;
-  if (n < 1 || n > 5) return Math.max(1, Math.min(5, n));
-  return n;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 interface ValidationResult {
@@ -220,6 +224,16 @@ export async function POST(request: NextRequest) {
     // table, trainer stats sync), so we refuse anonymous calls outright.
     const session = await getSession();
     if (!session) return unauthorized();
+
+    // Admin impersonando é read-only — bloqueia antes de gastar LLM/DB.
+    const writeErr = await requireOwnerWrite();
+    if (writeErr) return writeErr;
+
+    // Subscription gate antes de gastar custo de LLM. Owner/trainer sub-inactive
+    // recebe 402; admin bypassa. Sem isso, sub-inactive podia drenar quota
+    // OpenAI via fetch direto na rota.
+    const subErr = await requireActiveSubscription();
+    if (subErr) return subErr;
 
     const orgId = await getOrgId();
     if (!orgId) return forbidden();
@@ -466,7 +480,7 @@ export async function POST(request: NextRequest) {
     const scores = parsed.sections.map((s) => s.score);
     const avg =
       scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
-    const rawScore = Math.round(avg * 10) / 10;
+    const rawScore = Math.round(avg);
     const reportedOutcome = coerceOutcome(
       body.callOutcome ?? parsed.detectedOutcome,
     );
@@ -502,6 +516,13 @@ export async function POST(request: NextRequest) {
     });
 
     // ── 6. Persist call ──────────────────────────────────────────────────
+    const validSourceValues = new Set<string>(LEAD_SOURCES.map((s) => s.value))
+    const rawLeadName = body.lead_name?.trim() || null
+    const rawLeadSource = body.lead_source?.trim().toLowerCase() || null
+    const normalisedLeadSource: LeadSource | null = rawLeadSource
+      ? (validSourceValues.has(rawLeadSource) ? (rawLeadSource as LeadSource) : 'other')
+      : null
+
     let savedCall: { id?: string } = {};
     try {
       savedCall = await dbCreateCall({
@@ -512,8 +533,6 @@ export async function POST(request: NextRequest) {
         trainerEmail: trainerEmail ?? undefined,
         transcript,
         overallScore,
-        totalCriteria: criteriaScores.length,
-        criteria: criteriaScores as unknown as Record<string, unknown>,
         sections: normalisedSections as unknown as Record<string, unknown>[],
         summary: parsed.summary,
         strengths: parsed.strengths,
@@ -526,6 +545,8 @@ export async function POST(request: NextRequest) {
         outputTokens: totalOutputTokens,
         costUsd,
         promptVersion: PROMPT_VERSION,
+        leadName: rawLeadName,
+        leadSource: normalisedLeadSource,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -557,7 +578,6 @@ export async function POST(request: NextRequest) {
       strengths: parsed.strengths,
       improvements: parsed.improvements,
       criteriaScores,
-      criteria: normalisedSections,
       sections: normalisedSections,
       transcript,
       cost: {
@@ -668,14 +688,14 @@ ${scoredList}
 
 You MUST evaluate every section listed above. You MUST NOT invent, rename, merge, or omit sections. The allowed names verbatim are: ${allowedJson}.
 
-## Scoring scale (1–5, half-step increments allowed)
-- 5.0 — Textbook execution. Use as a training example.
-- 4.0–4.5 — Strong. Solid with only minor gaps.
-- 3.0–3.5 — Adequate. Functional, room to improve.
-- 2.0–2.5 — Needs work. Weak or incomplete.
-- 1.0–1.5 — Poor or absent. Barely attempted.
+## Scoring scale (0–100, integers only)
+- 90–100 — Textbook execution. Use as a training example.
+- 75–89 — Strong. Solid with only minor gaps.
+- 60–74 — Adequate. Functional, room to improve.
+- 40–59 — Needs work. Weak or incomplete.
+- 0–39 — Poor or absent. Barely attempted.
 
-Default a reasonable attempt to ~3.0 and adjust based on transcript evidence. The outcome (closed/partial/not_closed/no_outcome) caps the FINAL overallScore — it does not cap individual section scores.
+Default a reasonable attempt to ~60 and adjust based on transcript evidence. The outcome (closed/partial/not_closed/no_outcome) caps the FINAL overallScore — it does not cap individual section scores.
 
 ## Outcome caps for overallScore (NOT for section scores)
 - closed → max 100 · partial → max 80 · not_closed → max 60 · no_outcome → max 50
@@ -684,7 +704,7 @@ Default a reasonable attempt to ~3.0 and adjust based on transcript evidence. Th
 For each section in "Sections to Score", in order:
   1. Quote 1–3 specific moments from the transcript that show how the salesperson handled this section.
   2. Compare against the framework (when relevant) and the scoring scale.
-  3. Decide on a score in [1, 5].
+  3. Decide on a score in [0, 100].
   4. Write 1–3 sentences of feedback that names the specific moment and what to do differently next time. Never return an empty feedback string.
 
 ## Call information
@@ -706,11 +726,11 @@ ${input.transcript}
   "summary": "<2–3 honest sentences naming the biggest reason the deal did or did not close>",
   "strengths": ["<specific strength with transcript context>", "..."],
   "improvements": ["<what went wrong → what to say/do instead → why it matters>", "..."],
-  "overallScore": <integer 0–100, computed as average(section scores) × 20, capped by outcome>,
+  "overallScore": <integer 0–100, computed as average(section scores), capped by outcome>,
   "sections": [
     {
       "name": "<EXACT name from the Sections to Score list above>",
-      "score": <number in [1, 5], 0.5 increments allowed>,
+      "score": <integer 0–100>,
       "feedback": "<non-empty, references specific transcript moments>",
       "reasoning": "<short chain-of-thought: the evidence you used to land on this score>"
     }
@@ -722,7 +742,7 @@ CRITICAL CONSTRAINTS:
 - sections[] MUST contain exactly these names (from "Sections to Score"), in this order: ${allowedJson}.
 - DO NOT include any rubric-framework names in sections[] — those are mental-model only.
 - Every section MUST have non-empty feedback.
-- Every score MUST be between 1 and 5 inclusive.
+- Every score MUST be an integer between 0 and 100 inclusive.
 `.trim();
 }
 

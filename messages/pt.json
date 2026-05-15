@@ -22,6 +22,7 @@
     "submitting": "Entrando...",
     "invalidCredentials": "E-mail ou senha incorretos",
     "profileNotFound": "Perfil de usuário não encontrado. Rode o script de seed no Supabase.",
+    "inviteExpired": "Este link de convite expirou. Peça ao seu admin para reenviar o convite.",
     "magicLinkSubmit": "Enviar link",
     "magicLinkSubmitting": "Enviando...",
     "magicLinkSent": "Se este e-mail estiver cadastrado, enviaremos um link de acesso. Verifique sua caixa de entrada.",
@@ -37,7 +38,63 @@
     "roleManager": "Gestor",
     "roleOwner": "Owner",
     "roleAdmin": "Admin",
-    "backToHome": "Voltar para o início"
+    "backToHome": "Voltar para o início",
+    "noAccount": "Ainda não tem conta?",
+    "signupLink": "Cadastre-se"
+  },
+  "Signup": {
+    "title": "Crie sua conta",
+    "subtitle": "Cadastre-se e crie sua organização em menos de 1 minuto.",
+    "nameLabel": "Seu nome",
+    "namePlaceholder": "Seu nome completo",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "Mínimo {min} caracteres, 1 maiúscula e 1 caractere especial",
+    "submit": "Criar conta",
+    "submitting": "Criando conta...",
+    "haveAccount": "Já tem conta?",
+    "loginLink": "Entrar",
+    "backToHome": "Voltar para o início",
+    "nameRequired": "Informe seu nome",
+    "emailInvalid": "Informe um e-mail válido",
+    "passwordTooShort": "A senha precisa ter ao menos {min} caracteres",
+    "passwordNeedsUppercase": "A senha precisa ter ao menos 1 letra maiúscula",
+    "passwordNeedsSpecial": "A senha precisa ter ao menos 1 caractere especial",
+    "emailAlreadyRegistered": "Este e-mail já está cadastrado. Faça login.",
+    "genericError": "Não foi possível criar a conta. Tente novamente.",
+    "verifyEmailTitle": "Confirme seu e-mail",
+    "verifyEmailBody": "Enviamos um link de confirmação para {email}. Clique no link para ativar sua conta e continuar.",
+    "backToLogin": "Voltar para o login"
+  },
+  "Onboarding": {
+    "stepLabel": "Passo {current} de {total}",
+    "stepSubtitle": "Configuração da organização",
+    "title": "Nomeie sua organização",
+    "subtitle": "Este será o nome exibido para sua equipe dentro do AskMoses.",
+    "orgNameLabel": "Nome da organização",
+    "orgNamePlaceholder": "Ex: Acme Sales",
+    "submit": "Continuar",
+    "submitting": "Criando organização...",
+    "nameInvalid": "O nome deve ter entre {min} e {max} caracteres",
+    "alreadyHasOrg": "Você já está vinculado a uma organização. Para criar outra, fale com o Admin.",
+    "genericError": "Não foi possível criar a organização. Tente novamente."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Passo {current} de {total}",
+    "stepSubtitle": "Escolha do plano",
+    "title": "Escolha seu plano",
+    "subtitle": "Selecione o plano que melhor se encaixa com sua operação. Você pode trocar a qualquer momento depois.",
+    "recommendedBadge": "Recomendado",
+    "perMonth": "/mês",
+    "seatsLimit": "Até {count} vendedores",
+    "seatsUnlimited": "Vendedores ilimitados",
+    "selectPlan": "Escolher plano",
+    "subscribing": "Ativando...",
+    "stubNotice": "Modo de desenvolvimento — assinatura ativada sem cobrança real. A integração com Stripe entra em breve.",
+    "noPlansError": "Não foi possível carregar os planos. Tente recarregar a página.",
+    "genericError": "Não foi possível ativar o plano. Tente novamente."
   },
   "LanguageSwitcher": {
     "label": "Idioma",
@@ -112,6 +169,7 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "teamCommandCenter": "Centro de Comando",
+      "marketingIntelligence": "Marketing Intelligence",
       "calls": "Chamadas",
       "myDashboard": "Meu painel",
       "myCalls": "Minhas chamadas",
@@ -127,6 +185,7 @@
       "saasPanel": "Painel SaaS",
       "rubricConfig": "Configuração da rubrica",
       "createOrganization": "Nova organização",
+      "aiControls": "AI Controls",
       "tools": "Ferramentas",
       "starterTier": "Plano Starter",
       "starterTierSubtitle": "Upload manual",
@@ -144,6 +203,12 @@
         "owner": "Owner",
         "trainer": "Vendedor"
       }
+    },
+    "userMenu": {
+      "triggerAria": "Menu do usuário",
+      "loading": "Carregando…",
+      "password": "Senha",
+      "signOut": "Sair"
     },
     "pageTitles": {
       "dashboard": "Dashboard",
@@ -189,7 +254,8 @@
       "coachingNotes": "Notas de coaching",
       "coachingNotesSubtitle": "Notas internas — não visíveis ao vendedor.",
       "coachingNotesPlaceholder": "Adicione suas notas de coaching aqui...",
-      "coachingNotesFooter": "As notas não são persistidas nesta demo."
+      "coachingNotesFooter": "As notas não são persistidas nesta demo.",
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Tendência de performance",
@@ -205,6 +271,13 @@
     "upsell": {
       "defaultCta": "Comparar planos",
       "upgradeTo": "Atualize para {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Ative seu plano para desbloquear o AskMoses",
+        "ownerBody": "Sua organização ainda não tem um plano ativo. Escolha um plano para liberar o dashboard, análise de calls e tudo mais que o AskMoses oferece.",
+        "ownerCta": "Ativar plano agora",
+        "trainerTitle": "Assinatura da sua organização inativa",
+        "trainerBody": "O dono da sua organização ainda não ativou um plano. Fale com ele para reativar o acesso. Você não precisa fazer nada nesse passo."
+      },
       "uploadTwilio": {
         "title": "Pule o upload manual — vá para o automático",
         "description": "Conecte Twilio ou GHL uma vez e cada call é ingerida, transcrita e analisada sem ninguém clicar em 'Upload'."
@@ -220,6 +293,7 @@
     },
     "correlationEngine": {
       "title": "Correlation Engine — O que leva ao fechamento",
+      "titleNoVolume": "Coaching Drivers — Médias do time por dimensão",
       "mockBadge": "apenas dados mock",
       "legend": {
         "highCorrelation": "Correlação alta",
@@ -244,7 +318,18 @@
         "Rubric": "Rubrica",
         "Behavioral": "Comportamental"
       },
+      "disclaimer": "Quando houver volume suficiente de calls, o AskMoses identificará quais dimensões mais correlacionam com fechamentos.",
       "mockFooter": "† todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+    },
+    "behavioralProfile": {
+      "title": "Perfil de correlação comportamental",
+      "teamAvg": "Média do time"
+    },
+    "closeRateTrend": {
+      "title": "Tendência de fechamento — 6 semanas",
+      "summary": "Semana 1: {from}% → Semana 6: {to}% {delta}pts",
+      "closeRate": "Taxa de fechamento",
+      "teamPill": "Time"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps na rubrica",
@@ -284,22 +369,33 @@
         "ctaPrefix": "Revisar em"
       },
       "ctaAria": "{prefix} {time} — não funcional na demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Segurança",
+    "title": "Senha",
+    "subtitle": "Defina ou troque sua senha. O magic link continua funcionando — a senha é uma alternativa.",
+    "welcome": {
+      "aria": "Bem-vindo",
+      "close": "Fechar",
+      "title": "Bem-vindo! Que tal definir uma senha agora?",
+      "body": "Você pode pular e continuar entrando por magic link. Se preferir, define uma senha aqui em segundos.",
+      "skip": "Pular por enquanto"
     },
-    "behavioralProfile": {
-      "title": "Perfil comportamental de correlação",
-      "mockBadge": "apenas dados mock",
-      "legend": {
-        "aboveAvg": "Nota do vendedor (acima da média)",
-        "belowAvg": "Nota do vendedor (abaixo da média)",
-        "teamAvgMarker": "Marcador da média do time"
-      },
-      "th": {
-        "scoreVsTeam": "Nota vs média do time",
-        "score": "Nota",
-        "delta": "Delta",
-        "teamAvg": "Média do time"
-      },
-      "mockFooter": "† todos os valores vêm de mock-data.ts · verde = acima da média · laranja = abaixo da média · marcador vertical = média do time · sem cálculo real"
+    "form": {
+      "newLabel": "Nova senha",
+      "confirmLabel": "Confirmar senha",
+      "placeholder": "••••••••",
+      "hint": "Mínimo de {min} caracteres, com 1 maiúscula e 1 caractere especial.",
+      "submit": "Salvar senha",
+      "submitting": "Salvando…",
+      "magicLinkNote": "Você pode continuar entrando por magic link também.",
+      "successDetail": "Senha atualizada com sucesso.",
+      "errorTooShort": "Senha deve ter pelo menos {min} caracteres.",
+      "errorNoUppercase": "A senha precisa ter ao menos uma letra maiúscula.",
+      "errorNoSpecial": "A senha precisa ter ao menos um caractere especial.",
+      "errorMismatch": "As senhas não conferem.",
+      "errorGeneric": "Não foi possível salvar a senha. Tente novamente."
     }
   },
   "Trainer": {
@@ -365,6 +461,7 @@
     "metrics": {
       "monthlyRevenue": "Receita mensal estimada",
       "vsBaseline": "% vs base",
+      "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Taxa média de fechamento",
       "ptsSinceWeek1": "pts desde a semana 1",
       "avgScore": "Nota média",
@@ -414,6 +511,7 @@
       "callsAnalyzedOther": "{count} chamadas analisadas",
       "noCallsFound": "Nenhuma chamada encontrada.",
       "filterAllSalesPeople": "Todos os vendedores",
+      "filterAllSources": "Todas as origens",
       "thTrainer": "Vendedor",
       "thProspect": "Prospect",
       "thDate": "Data",
@@ -443,26 +541,74 @@
       "callsPerMonth": "Chamadas / mês",
       "avgScore": "Nota média",
       "mrr": "MRR",
-      "health": "Saúde"
+      "health": "Saúde",
+      "actions": "Ações"
     },
     "health": {
       "healthy": "Saudável",
       "atRisk": "Em risco",
       "churning": "Crítico"
     },
-    "createOrg": {
-      "eyebrow": "Provisionamento",
-      "title": "Nova organização",
-      "subtitle": "Crie um novo tenant e atribua seu plano.",
-      "nameLabel": "Nome da organização",
-      "namePlaceholder": "Acme Ltda.",
+    "ownerPending": "Aguardando Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inativa",
+    "subscriptionSettings": "Configurar plano de {name}",
+    "impersonateTooltip": "Entrar como {name} (visualização apenas leitura)",
+    "impersonateError": "Não foi possível entrar nessa organização. Tente novamente.",
+    "impersonateBanner": {
+      "label": "Visualizando como",
+      "readOnly": "Apenas leitura",
+      "exit": "Voltar ao painel admin",
+      "exiting": "Saindo…"
+    },
+    "subscriptionOverride": {
+      "eyebrow": "Override de assinatura",
+      "statusLabel": "Status",
+      "status_active": "Ativa",
+      "status_inactive": "Inativa",
+      "status_trial": "Trial (brinde)",
       "planLabel": "Plano",
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
-      "submit": "Criar organização",
+      "trialDurationLabel": "Duração do trial",
+      "preset_24h": "24 horas",
+      "preset_7d": "7 dias",
+      "preset_14d": "14 dias",
+      "preset_30d": "30 dias",
+      "preset_60d": "60 dias",
+      "preset_90d": "90 dias",
+      "preset_custom": "Personalizar",
+      "customDateLabel": "Data e hora de expiração",
+      "errorCustomDateRequired": "Informe a data de expiração do trial.",
+      "errorDateInFuture": "A data precisa estar no futuro.",
+      "submit": "Salvar override",
+      "submitting": "Salvando…",
+      "successDetail": "Assinatura atualizada. Admin override ativo.",
+      "genericError": "Não foi possível atualizar a assinatura. Tente novamente.",
+      "back": "← Voltar ao painel"
+    },
+    "createOrg": {
+      "eyebrow": "Provisionamento",
+      "title": "Nova organização",
+      "subtitle": "Crie um novo tenant, atribua seu plano e convide o Owner.",
+      "nameLabel": "Nome da organização",
+      "namePlaceholder": "Acme Ltda.",
+      "ownerNameLabel": "Nome do Owner",
+      "ownerNamePlaceholder": "Ex.: Maria Silva",
+      "ownerEmailLabel": "Email do Owner",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plano",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "submit": "Criar organização e enviar convite",
       "submitting": "Criando…",
       "successDetail": "{name} provisionada no plano {plan}.",
+      "successInviteSent": "Convite enviado para {email}.",
+      "successInviteMocked": "Convite mockado (RESEND_API_KEY ausente) para {email}.",
+      "errorOwnerNameRequired": "Informe o nome do Owner.",
+      "errorOwnerEmailInvalid": "Email do Owner inválido.",
       "genericError": "Não foi possível criar a organização. Tente novamente."
     },
     "rubric": {
@@ -480,6 +626,46 @@
       "toastSavedBody": "Critérios da rubrica atualizados com sucesso.",
       "toastErrorTitle": "Erro",
       "toastErrorBody": "Falha ao salvar alterações da rubrica. Tente novamente."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "Controles de IA",
+      "subtitle": "Configure temperatura e limite de tokens por módulo de IA. Visível apenas para admins.",
+      "save": "Salvar",
+      "saving": "Salvando...",
+      "updatedBy": "Atualizado por",
+      "logLabel": "Log de alterações",
+      "logEmpty": "Nenhuma alteração registrada ainda.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Avalia chamadas com base na rubrica",
+        "correlation_engine": "Gera insights de correlação no painel do gestor",
+        "marketing_intelligence": "Gera headlines e textos de anúncios"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Range recomendado:",
+        "maxTokensRange": "Range válido:"
+      },
+      "th": {
+        "logModule": "Módulo",
+        "logField": "Campo",
+        "logPrev": "Valor anterior",
+        "logNew": "Novo valor",
+        "logUser": "Usuário",
+        "logDate": "Data"
+      },
+      "toastSavedTitle": "Salvo",
+      "toastSavedBody": "Configuração de {module} atualizada.",
+      "toastErrorTitle": "Erro",
+      "toastErrorBody": "Falha ao salvar. Tente novamente."
     }
   },
   "Coaching": {
@@ -1813,6 +1999,198 @@
     },
     "Footer": {
       "text": "Proposta de MVP do Ask Moses — Janeiro de 2026"
+    }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "Página inicial da AskMoses.AI",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Principal",
+      "howItWorks": "Como funciona",
+      "benefits": "Benefícios",
+      "industries": "Setores",
+      "pricing": "Preços",
+      "dashboard": "Dashboard",
+      "bookDemo": "Agendar minha demo grátis",
+      "openMenu": "Abrir menu",
+      "closeMenu": "Fechar menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Alternar tema"
+    },
+    "Hero": {
+      "badge": "Coaching de vendas com IA, baseado em ciência de dados",
+      "titlePart1": "A maioria dos negócios não tem problema de leads. Eles têm um",
+      "titleHighlight": "problema de conversão.",
+      "subtitle": "Seu melhor vendedor tem um segredo. A AskMoses descobre, analisa e replica isso pra toda a equipe — automaticamente.",
+      "ctaPrimary": "Agendar minha demo grátis",
+      "ctaSecondary": "Veja como funciona",
+      "dashboardAlt": "Dashboard da AskMoses.AI mostrando métricas de conversão da equipe, taxa de fechamento, receita mensal e tendência da taxa de conversão",
+      "statCloseRateLabel": "Taxa de fechamento média",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Crescimento de receita",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "O Problema",
+      "title": "Você paga por leads. E perde eles no telefone.",
+      "body": "Seu melhor closer fecha negócios que seu vendedor médio perde. Mesmos leads. Mesmo script. Resultados diferentes. Sem dados, você está chutando o motivo — e seu investimento em marketing paga o preço.",
+      "cta": "Veja como a AskMoses resolve isso"
+    },
+    "HowItWorks": {
+      "eyebrow": "Como funciona",
+      "title": "Da conversa à conversão em 4 passos.",
+      "subtitle": "Sem ferramentas novas pra aprender. Sem interromper o workflow. Só melhores resultados.",
+      "steps": {
+        "listen": {
+          "title": "Ouvir",
+          "description": "A AskMoses ingere todas as ligações de entrada e saída da equipe, automaticamente."
+        },
+        "identify": {
+          "title": "Identificar",
+          "description": "Mapeia os comportamentos, frases e padrões exatos que separam closers dos demais."
+        },
+        "evaluate": {
+          "title": "Avaliar",
+          "description": "Pontua cada ligação contra sua rubrica customizada com correlação estatística aos resultados reais."
+        },
+        "scale": {
+          "title": "Escalar",
+          "description": "Replica o que funciona pra toda a equipe com coaching direcionado, scripts e dashboards por vendedor."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Por que AskMoses",
+      "title": "Feito pra transformar conversas em negócios fechados.",
+      "differentiator": {
+        "badge": "Diferencial principal",
+        "titlePart1": "Movido por",
+        "titleHighlight": "ciência de dados",
+        "body": "A AskMoses não só grava ligações — ela aplica ciência de dados pra identificar quais comportamentos específicos estatisticamente impulsionam conversões no seu negócio.",
+        "bullets": [
+          "Sem achismos.",
+          "Sem boas práticas genéricas.",
+          "Só matemática."
+        ],
+        "cta": "Veja nos seus dados"
+      },
+      "items": {
+        "data": {
+          "title": "Dados reais, não achismo",
+          "description": "Toda decisão de coaching apoiada em análise estatística de centenas de ligações reais."
+        },
+        "rubric": {
+          "title": "Rubrica customizada",
+          "description": "Não conselho genérico. Sua metodologia de vendas, otimizada com IA."
+        },
+        "sellMore": {
+          "title": "Venda mais sem gastar mais",
+          "description": "Mesmo orçamento de marketing, mesmo volume de leads, melhor taxa de conversão."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Setores",
+      "title": "Feito pra negócios que fecham no telefone.",
+      "subtitle": "Se seus clientes ligam antes de comprar, a AskMoses transforma essas ligações em receita.",
+      "items": {
+        "dogTrainers": "Adestradores de Cães",
+        "callCenters": "Call Centers",
+        "vet": "Clínicas Veterinárias",
+        "beauty": "Clínicas de Beleza e Medspas",
+        "homeServices": "Serviços Domésticos",
+        "lawFirms": "Escritórios de Advocacia"
+      },
+      "cta": "Agendar minha demo grátis"
+    },
+    "Pricing": {
+      "eyebrow": "Preços",
+      "title": "Escolha o plano que combina com seu jeito de crescer.",
+      "popularBadge": "Mais popular",
+      "footnote": "* Taxa de uso de US$ 2/ligação aplicada a todos os planos. Cobrança mensal baseada no volume real. Sem compromisso mínimo de ligações.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "Coaching de vendas com IA pra operadores independentes prontos pra fechar mais dos leads que já têm.",
+          "price": "US$ 500",
+          "priceSuffix": "/mês",
+          "priceNote": "+ US$ 2 por ligação analisada",
+          "features": [
+            "Pontuação por IA em cada ligação de entrada",
+            "Rubrica customizada com base no seu método de treinamento",
+            "Dashboard de performance por vendedor",
+            "Rastreamento de objeções e detecção de padrões",
+            "Relatório semanal de insights de coaching",
+            "Integração com CRM"
+          ],
+          "cta": "Agendar uma conversa"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses mais marketing full-service. O loop completo de receita pra empresas de serviço prontas pra escalar.",
+          "price": "US$ 1.250",
+          "priceSuffix": "/mês",
+          "priceNote": "+ US$ 2 por ligação analisada",
+          "features": [
+            "Tudo do Solo",
+            "Copy de anúncios gerado por IA a partir dos seus dados de ligações",
+            "Campanhas de captação de leads no Google e Meta",
+            "Design e otimização de landing pages",
+            "Criação de conteúdo e gestão de redes sociais",
+            "Setup completo de CRM e automação",
+            "Relatório closed-loop: das ligações à receita",
+            "Estrategista de conta dedicado"
+          ],
+          "cta": "Agendar uma conversa"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "Pra grupos de franquia, operações multi-unidade e redes de treinamento que precisam de inteligência de portfólio.",
+          "price": "Preço sob consulta",
+          "customNote": "Tarifas de volume · SLA customizado",
+          "features": [
+            "Tudo do Pro",
+            "Unidades e usuários ilimitados",
+            "Analytics de ligações em nível de portfólio",
+            "Rubricas customizadas por unidade",
+            "Benchmarking de performance entre franquias",
+            "Gerente de sucesso dedicado",
+            "Suporte e onboarding prioritários"
+          ],
+          "cta": "Fale com a gente →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Demo",
+      "titlePart1": "Veja a AskMoses em",
+      "titleHighlight": "Ação.",
+      "subtitle": "Agende uma demo grátis de 20 minutos. Sem compromisso.",
+      "bullets": [
+        "Walkthrough com seus dados de ligação reais",
+        "Veja uma rubrica de exemplo pontuada ao vivo",
+        "Estimativa de ROI customizada pra sua equipe"
+      ],
+      "formTitle": "Formulário AskMoses"
+    },
+    "CtaBand": {
+      "title": "Pronto pra transformar mais ligações em clientes?",
+      "cta": "Agendar minha demo grátis"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Rodapé",
+      "howItWorks": "Como funciona",
+      "benefits": "Benefícios",
+      "pricing": "Preços",
+      "demo": "Demo",
+      "contact": "Contato",
+      "copyright": "© {year} AskMoses.AI. Todos os direitos reservados.",
+      "privacy": "Privacidade",
+      "terms": "Termos"
+    },
+    "MobileCta": {
+      "label": "Agendar minha demo grátis"
     }
   }
 }

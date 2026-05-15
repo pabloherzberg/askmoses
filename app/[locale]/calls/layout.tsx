@@ -1,22 +1,22 @@
 import type React from 'react'
 import { AppHeader } from '@/components/layout/AppHeader'
-import { AppSidebar, OwnerNavItems, TrainerNavItems } from '@/components/layout/AppSidebar'
-import { getRole } from '@/lib/auth'
+import { AppSidebar, NavItemsForRole } from '@/components/layout/AppSidebar'
+import { FeatureGate } from '@/components/shared/FeatureGate'
+import { getActiveOrgContext } from '@/lib/auth'
 
 export default async function CallsLayout({ children }: { children: React.ReactNode }) {
-  const role = await getRole()
-  const isTrainer = role === 'trainer'
-
-  const navItems = isTrainer ? <TrainerNavItems /> : <OwnerNavItems />
+  const ctx = await getActiveOrgContext()
+  const role = ctx?.role ?? null
+  const isImpersonating = ctx?.isImpersonating ?? false
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      <AppHeader mobileSidebar={navItems} />
+      <AppHeader mobileSidebar={<NavItemsForRole role={role} isImpersonating={isImpersonating} />} />
       <div className="flex">
-        <AppSidebar role={role ?? 'owner'} />
-        <main className="flex-1 min-w-0 lg:pl-56 pt-[61px]">
+        <AppSidebar role={role} isImpersonating={isImpersonating} />
+        <main className="flex-1 min-w-0 lg:pl-56 pt-[calc(61px+var(--impersonate-banner-h,0px))]">
           <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
-            {children}
+            <FeatureGate>{children}</FeatureGate>
           </div>
         </main>
       </div>

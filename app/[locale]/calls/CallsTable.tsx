@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, Phone } from 'lucide-react'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from '@/lib/constants'
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCES, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
 interface CallsTableProps {
@@ -23,6 +23,7 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
   const tOutcomes = useTranslations('Shared.outcomes')
   const [resultFilter, setResultFilter] = useState<string>('all')
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
+  const [sourceFilter, setSourceFilter] = useState<string>('all')
 
   const trainers = useMemo(() => {
     const map = new Map<string, string>()
@@ -36,9 +37,10 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
     () => calls.filter((c) => {
       if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
+      if (sourceFilter !== 'all' && (c.lead_source ?? null) !== sourceFilter) return false
       return true
     }),
-    [calls, resultFilter, trainerFilter]
+    [calls, resultFilter, trainerFilter, sourceFilter]
   )
 
   const selectClass = 'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
@@ -78,6 +80,12 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
             {trainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
           </select>
         )}
+        <select className={selectClass} style={selectStyle} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
+          <option value="all">{t('filterAllSources')}</option>
+          {LEAD_SOURCES.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="rounded-2xl border overflow-hidden shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
@@ -121,7 +129,17 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
                         </td>
                       )}
                       <td className="px-4 py-3">
-                        <span className="text-[13px]" style={{ color: 'var(--am-text)' }}>{call.prospect}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px]" style={{ color: 'var(--am-text)' }}>{call.prospect}</span>
+                          {call.lead_source && (
+                            <span
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                              style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
+                            >
+                              {LEAD_SOURCE_LABELS[call.lead_source]}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>

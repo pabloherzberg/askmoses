@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { getActiveOrgContext, getSession, ok, unauthorized, forbidden, notFound } from '@/lib/auth'
+import { getActiveOrgContext, getSession, ok, unauthorized, forbidden, notFound, requireOwnerWrite } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendInviteEmail } from '@/lib/email/send-invite'
 import type { Role } from '@/lib/types'
@@ -41,6 +41,9 @@ export async function POST(
 
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const callerRole = session.user.app_metadata?.role as Role | undefined
   if (callerRole !== 'owner' && callerRole !== 'admin') return forbidden()

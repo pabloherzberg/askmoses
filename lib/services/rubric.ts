@@ -21,6 +21,8 @@ import type {
   RubricScores,
   TrendPoint,
   RevenueEstimatorItem,
+  CorrelationFactor,
+  CorrelationLevel,
 } from "@/lib/types";
 
 const CRITERION_KEY_MAP: Record<string, keyof RubricScores> = {
@@ -98,12 +100,19 @@ export async function getRubric(): Promise<{
   trainerSectionScores: TrainerSectionScore[];
 }> {
   const orgId = await getOrgId();
+  if (!orgId) {
+    console.warn('[getRubric] getOrgId() returned null — user has no active org. Returning empty rubric.')
+    return { sections: [], trend: [], trainerSectionScores: [] };
+  }
   const [result, calls] = await Promise.all([
-    orgId ? dbGetDefaultRubricWithCriteria(orgId) : Promise.resolve(null),
-    orgId ? getCalls({ limit: 200, orgId }) : Promise.resolve([]),
+    dbGetDefaultRubricWithCriteria(orgId),
+    getCalls({ limit: 200, orgId }),
   ]);
 
-  if (!result) return { sections: [], trend: [], trainerSectionScores: [] };
+  if (!result) {
+    console.warn(`[getRubric] No default rubric found for org=${orgId}. Check rubrics table: is_default=true, is_active=true, org_id set.`)
+    return { sections: [], trend: [], trainerSectionScores: [] };
+  }
 
   // ── Team averages ─────────────────────────────────────────────────────────
   const teamAvg = avgRubricScores(calls); // 0–5 scale
@@ -151,6 +160,34 @@ export async function getRubric(): Promise<{
   const trend = buildWeeklyTrend(calls, 6);
 
   return { sections, trend, trainerSectionScores };
+}
+
+// Deriva o "nível" exibido nas colunas Corr./Impact a partir do score médio
+// do critério na rubrica. Enquanto não há volume para correlação estatística
+// real (ver disclaimer no CorrelationEngine), as badges refletem apenas a
+// força do score — não uma correlação validada.
+function levelFromScore(score: number): CorrelationLevel {
+  if (score >= 4) return 'High'
+  if (score >= 3) return 'Med'
+  return 'Low'
+}
+
+export function buildCoachingDrivers(sections: RubricSection[]): CorrelationFactor[] {
+  return sections.map((s) => {
+    const level = levelFromScore(s.teamAvg)
+    return {
+      label: s.name,
+      score: s.teamAvg,
+      correlation: level,
+      impact: level,
+      source: 'Rubric',
+    }
+  })
+}
+
+export async function getCoachingDrivers(): Promise<CorrelationFactor[]> {
+  const { sections } = await getRubric()
+  return buildCoachingDrivers(sections)
 }
 
 export async function getRevenueEstimator(): Promise<{

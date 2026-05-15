@@ -1,8 +1,8 @@
 import type { BehavioralTrendDimension } from '@/lib/mock-data'
 
 function barColor(score: number) {
-  if (score >= 3.75) return 'var(--am-green)'
-  if (score >= 3.0) return 'var(--am-amber)'
+  if (score >= 75) return 'var(--am-green)'
+  if (score >= 60) return 'var(--am-amber)'
   return 'var(--am-red)'
 }
 
@@ -93,7 +93,7 @@ export function BehavioralTrends({ dimensions }: Props) {
               className="text-[13px] font-mono font-semibold w-8 text-right flex-shrink-0"
               style={{ color: barColor(dim.currentScore) }}
             >
-              {dim.currentScore}
+              {(dim.currentScore / 20).toFixed(1)}
             </span>
           </div>
         ))}
@@ -101,7 +101,7 @@ export function BehavioralTrends({ dimensions }: Props) {
 
       {/* Footer */}
       <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † mock data · green ≥ 75 · amber ≥ 60 · red &lt; 60
+        † mock data · green ≥ 75 · amber ≥ 60 · red &lt; 60 (scale 0–100)
       </p>
     </div>
   )

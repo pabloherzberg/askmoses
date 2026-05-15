@@ -1,13 +1,14 @@
 export type Role = 'trainer' | 'owner' | 'admin'
 export type CallResult = 'closed' | 'not_closed' | 'partial' | 'no_outcome'
+export type LeadSource = 'facebook' | 'google' | 'organic' | 'referral' | 'other'
 export type HealthStatus = 'healthy' | 'at-risk' | 'churning'
 export type AvatarColor = 'blue' | 'purple' | 'green' | 'red' | 'amber'
 export type TagColor = 'red' | 'amber' | 'blue' | 'green'
 export type RubricColor = 'blue' | 'amber' | 'green' | 'red' | 'accent2'
 export type InviteStatus = 'pending' | 'accepted'
-export type OtpType = 'invite' | 'magiclink' | 'recovery' | 'email_change'
+export type OtpType = 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'signup'
 
-const OTP_TYPES: ReadonlySet<OtpType> = new Set(['invite', 'magiclink', 'recovery', 'email_change'])
+const OTP_TYPES: ReadonlySet<OtpType> = new Set(['invite', 'magiclink', 'recovery', 'email_change', 'signup'])
 
 export function isValidOtpType(value: string | null | undefined): value is OtpType {
   return typeof value === 'string' && OTP_TYPES.has(value as OtpType)
@@ -61,6 +62,8 @@ export interface Call {
   score: number
   result: CallResult
   prospect: string
+  lead_name?: string | null
+  lead_source?: LeadSource | null
   rubricScores: RubricScores
   sections?: CallSection[]
   feedback: string
@@ -125,6 +128,12 @@ export interface Client {
   mrr: number
   health: HealthStatus
   trainersCount: number
+  // false = nenhuma membership com role='owner' e invite_status='accepted'
+  // existe ainda. Painel Admin renderiza chip "Aguardando Owner" ao lado do
+  // nome, mesmo com subscription_status='active' (Admin já vendeu mas Owner
+  // não clicou no magic link).
+  ownerAccepted: boolean
+  subscriptionStatus: 'active' | 'inactive' | 'trial'
 }
 
 export interface TrendPoint {
@@ -182,4 +191,52 @@ export interface RevenueEstimatorItem {
   target: number
   monthlyImpact: number
   confidence: CorrelationLevel
+}
+
+export type MarketingCopyType = 'headline' | 'primary-text'
+export type ConfidenceLevel = 'high' | 'medium' | 'low'
+
+export interface MarketingCopySuggestion {
+  id: string
+  type: MarketingCopyType
+  text: string
+  confidence: number
+  basis: string
+  confidenceLevel: ConfidenceLevel
+}
+
+export interface MarketingSourceCall {
+  id: string
+  name: string
+  duration: string
+  score: number
+}
+
+export interface MarketingIntelligence {
+  lastRun: string
+  nextRun: string
+  sampleSize: number
+  headlines: MarketingCopySuggestion[]
+  primaryTexts: MarketingCopySuggestion[]
+  sourceCalls: MarketingSourceCall[]
+}
+
+export type AiModuleId = 'scoring_engine' | 'correlation_engine' | 'marketing_intelligence'
+
+export interface AiModuleConfig {
+  module_id: AiModuleId
+  temperature: number
+  max_tokens: number
+  updated_by: string
+  updated_at: string
+}
+
+export interface AiModuleConfigLogEntry {
+  id: string
+  module_id: AiModuleId
+  field: 'temperature' | 'max_tokens'
+  previous_value: number
+  new_value: number
+  updated_by: string
+  updated_at: string
 }

@@ -9,7 +9,7 @@ import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
-import type { Call, CallSection, RubricScores } from "@/lib/types";
+import type { Call, CallSection, RubricScores, LeadSource } from "@/lib/types";
 import type {
   DbCall,
   CreateCallInput,
@@ -27,9 +27,9 @@ export type {
   CallMutationScope,
 };
 
-// ─── Criteria parser: JSONB array → RubricScores (0–100) ─────────────────────
+// ─── Sections parser: JSONB array → RubricScores (0–5 scale) ─────────────────
 
-const CRITERIA_NAME_MAP: Record<string, keyof RubricScores> = {
+const SECTION_NAME_MAP: Record<string, keyof RubricScores> = {
   discovery: "discovery",
   "problem agitation": "problemAgitation",
   "offer presentation": "offerPresentation",
@@ -38,7 +38,7 @@ const CRITERIA_NAME_MAP: Record<string, keyof RubricScores> = {
   "close and next steps": "closeAndNextSteps",
 };
 
-function parseCriteria(criteria: unknown): RubricScores {
+function parseSectionsToRubricScores(sections: unknown): RubricScores {
   const defaults: RubricScores = {
     discovery: 0,
     problemAgitation: 0,
@@ -46,15 +46,13 @@ function parseCriteria(criteria: unknown): RubricScores {
     objectionHandling: 0,
     closeAndNextSteps: 0,
   };
-  if (!Array.isArray(criteria)) return defaults;
+  if (!Array.isArray(sections)) return defaults;
 
-  type Item = { criterionName?: string; name?: string; score?: number };
+  type Item = { name?: string; score?: number };
   const result = { ...defaults };
-  for (const item of criteria as Item[]) {
-    const rawName = (item.criterionName ?? item.name ?? "")
-      .toLowerCase()
-      .trim();
-    const key = CRITERIA_NAME_MAP[rawName];
+  for (const item of sections as Item[]) {
+    const rawName = (item.name ?? "").toLowerCase().trim();
+    const key = SECTION_NAME_MAP[rawName];
     if (key) {
       const raw = item.score ?? 0;
       const normalised = raw > 5 ? raw / 20 : raw;
@@ -91,6 +89,14 @@ function parseSections(raw: unknown): CallSection[] | undefined {
   return parsed;
 }
 
+const VALID_LEAD_SOURCES = new Set<LeadSource>(['facebook', 'google', 'organic', 'referral', 'other'])
+
+function parseLeadSource(raw: string | null | undefined): LeadSource | null {
+  if (!raw || raw.trim() === '') return null
+  const v = raw.trim().toLowerCase()
+  return VALID_LEAD_SOURCES.has(v as LeadSource) ? (v as LeadSource) : 'other'
+}
+
 function toCall(db: DbCall): Call {
   return {
     id: db.id,
@@ -101,9 +107,9 @@ function toCall(db: DbCall): Call {
     score: (() => { const s = db.overall_score ?? 0; return Math.round((s > 5 ? s / 20 : s) * 10) / 10; })(),
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
-    rubricScores: parseCriteria(db.criteria),
-    // sections (Prompt v2) preserves the rubric/script section names exactly.
-    // CallDetail prefers this over the legacy hardcoded rubricScores fallback.
+    lead_name: db.lead_name?.trim() || null,
+    lead_source: parseLeadSource(db.lead_source),
+    rubricScores: parseSectionsToRubricScores(db.sections),
     sections: parseSections(db.sections),
     feedback: db.summary ?? "",
     strengths: db.strengths ?? [],
@@ -145,7 +151,10 @@ export async function getCalls(
   filters?: GetCallsFilters & { locale?: Locale },
 ): Promise<Call[]> {
   const orgId = filters?.orgId ?? (await getOrgId());
-  if (!orgId) return [];
+  if (!orgId) {
+    console.warn('[getCalls] getOrgId() returned null — user has no active org. Returning [].')
+    return [];
+  }
 
   const rows = await dbGetCalls({
     orgId,

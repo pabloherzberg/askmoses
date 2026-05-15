@@ -6,12 +6,13 @@ interface ScoreCardProps {
   value: string | number
   valueColor?: string
   delta?: number
+  deltaPrefix?: string
   deltaLabel?: string
   className?: string
   style?: React.CSSProperties
 }
 
-export function ScoreCard({ label, value, valueColor, delta, deltaLabel, className, style }: ScoreCardProps) {
+export function ScoreCard({ label, value, valueColor, delta, deltaPrefix, deltaLabel, className, style }: ScoreCardProps) {
   const isPositive = delta !== undefined && delta > 0
   const isNegative = delta !== undefined && delta < 0
 
@@ -53,7 +54,11 @@ export function ScoreCard({ label, value, valueColor, delta, deltaLabel, classNa
           {delta !== undefined && (
             <>
               {isPositive ? '↑' : isNegative ? '↓' : ''}{' '}
-              {isPositive ? `+${delta}` : delta}
+              {deltaPrefix
+                ? `${isPositive ? '+' : isNegative ? '-' : ''}${deltaPrefix}${Math.abs(delta).toLocaleString('en-US')}`
+                : isPositive
+                  ? `+${delta}`
+                  : delta}
               {deltaLabel ? ' ' : ''}
             </>
           )}

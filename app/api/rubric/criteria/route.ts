@@ -1,11 +1,14 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, forbidden } from '@/lib/auth'
-import { getSession, getRole } from '@/lib/auth'
+import { getSession, getRole, requireOwnerWrite } from '@/lib/auth'
 import { createCriterion, bulkReplaceCriteria } from '@/lib/services/rubric'
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const role = await getRole()
   if (role === 'trainer') return forbidden()
@@ -26,6 +29,9 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
+
+  const writeErr = await requireOwnerWrite()
+  if (writeErr) return writeErr
 
   const role = await getRole()
   if (role === 'trainer') return forbidden()

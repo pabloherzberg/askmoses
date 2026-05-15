@@ -467,6 +467,28 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 
 ---
 
+## TASK-019B — Painel `/admin/ai-controls` — AI Controls
+
+**Tipo**: Frontend · **Depende de**: TASK-012, TASK-007
+
+### Descrição
+Painel exclusivo para admin configurar temperatura e limite de tokens por módulo de IA. Os módulos configuráveis são: `scoring_engine`, `correlation_engine`, `marketing_intelligence`. Configuração é global (não por organização). Log de alterações registra todas as mudanças com módulo, campo, valor anterior, novo valor, usuário e timestamp.
+
+### Critérios de aceite
+- [x] Painel `/admin/ai-controls` acessível apenas por admins AskMoses
+- [x] Três módulos configuráveis: `scoring_engine`, `correlation_engine`, `marketing_intelligence`
+- [x] Campos configuráveis por módulo: `temperature` (0.0–1.0) e `max_tokens` (100–4000)
+- [x] Hint de range recomendado exibido ao lado de cada campo
+- [x] Valores salvos via `PUT /api/ai-module-configs` (MSW mock)
+- [x] Configuração mais recente lida antes de cada execução do módulo (mock data)
+- [x] Log de alterações com: módulo, campo, valor anterior, novo valor, usuário e timestamp
+- [x] Owners não visualizam nem acessam essas configurações (acesso protegido pelo middleware + auth)
+- [x] Link "AI Controls" adicionado ao `AdminNavItems` no sidebar
+
+> **STATUS: ✅ CONCLUÍDA** — 3 cards de módulo com sliders de temperature e max_tokens, hints de range recomendado, botão save por módulo, log de alterações em tabela. Rota `/api/ai-module-configs` GET/PUT criada. MSW handler registra mudanças em memória durante a demo. Dados mock em `lib/mock-data.ts` com 3 configs e 3 entradas de log.
+
+---
+
 ---
 
 # ÉPICO 4 — Polish, Deploy & Entrega
@@ -584,6 +606,7 @@ Dashboard pessoal com foco em melhoria individual. Tom motivacional. Trainer vê
 | TASK-017 | `/me/calls/[id]` | ✅ |
 | TASK-018 | `/admin` | ✅ |
 | TASK-019 | `/admin/rubric` | ✅ |
+| TASK-019B | `/admin/ai-controls` | ✅ |
 | TASK-020 | Loading states | ⬜ Não iniciada |
 | TASK-021 | Responsividade | 🟡 Parcial — falta /me e /admin |
 | TASK-022 | Deploy Vercel | ⬜ Não iniciada |
