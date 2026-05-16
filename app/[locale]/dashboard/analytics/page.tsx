@@ -2,6 +2,7 @@
 
 import type { Call } from "@/lib/types";
 import { useLocale, useTranslations } from "next-intl";
+import { PERFECT_CALL_THRESHOLD, toDisplay5 } from "@/lib/score-display";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -130,7 +131,7 @@ export default function AnalyticsPage() {
         const s = trainerStats.get(call.trainerName)!;
         s.total += call.score;
         s.count += 1;
-        if (call.score >= 4.75) s.perfect += 1;
+        if (call.score >= PERFECT_CALL_THRESHOLD) s.perfect += 1;
       });
 
       const achievementsList: Achievement[] = [];
@@ -146,7 +147,7 @@ export default function AnalyticsPage() {
             badgeKey: 'masterCoach',
             icon: "👑",
             reasonKey: 'masterCoachReason',
-            reasonVars: { score: (topStats.total / topStats.count).toFixed(1) },
+            reasonVars: { score: toDisplay5(topStats.total / topStats.count) },
           });
         }
       }

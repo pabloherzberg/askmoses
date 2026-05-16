@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { toDisplay5 } from '@/lib/score-display'
 import type { RevenueEstimatorItem } from '@/lib/types'
 
 interface RevenueEstimatorProps {
@@ -56,9 +57,9 @@ export function RevenueEstimator({ items, total }: RevenueEstimatorProps) {
             {item.section}
           </p>
           <p className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
-            {item.current}{' '}
+            {toDisplay5(item.current)}{' '}
             <span style={{ color: 'var(--am-muted)' }}>→</span>{' '}
-            <span className="font-semibold" style={{ color: 'var(--am-text)' }}>{item.target}</span>
+            <span className="font-semibold" style={{ color: 'var(--am-text)' }}>{toDisplay5(item.target)}</span>
           </p>
           <p className="text-sm font-semibold font-mono" style={{ color: 'var(--am-green)' }}>
             {formatImpact(item.monthlyImpact)}

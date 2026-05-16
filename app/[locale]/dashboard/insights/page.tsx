@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { UpsellCard } from "@/components/shared/UpsellCard"
 import { useCurrentClient } from "@/lib/hooks/use-current-client"
+import { scoreColorVar, scoreLevel, toBarWidth, toDisplay5 } from "@/lib/score-display"
 import type { ScriptIntelligenceResult } from "@/lib/mocks/data/script-intelligence"
 
 interface Script {
@@ -38,7 +39,7 @@ function SectionBar({ sections }: { sections: ScriptIntelligenceResult["sections
       {sections.map((s) => (
         <div
           key={s.id}
-          title={`${s.name}: ${s.score.toFixed(1)}/5`}
+          title={`${s.name}: ${toDisplay5(s.score)}/5`}
           style={{ flex: 1, background: colors[s.id] ?? "var(--am-muted)" }}
         />
       ))}
@@ -77,16 +78,10 @@ function StatusBadge({ status, t }: { status: "strong" | "weak" | "missing"; t: 
   )
 }
 
-function scoreColor(score: number) {
-  if (score >= 4.25) return "var(--am-green)"
-  if (score >= 3.75) return "var(--am-amber)"
-  return "var(--am-red)"
-}
-
 function ScorePill({ score }: { score: number }) {
   return (
-    <span className="text-sm font-bold font-mono" style={{ color: scoreColor(score) }}>
-      {score.toFixed(1)}/5
+    <span className="text-sm font-bold font-mono" style={{ color: scoreColorVar(score) }}>
+      {toDisplay5(score)}/5
     </span>
   )
 }
@@ -96,7 +91,7 @@ function SectionScoreBar({ score }: { score: number }) {
     <div className="w-full rounded-full h-1.5" style={{ background: "var(--am-bg4)" }}>
       <div
         className="h-1.5 rounded-full transition-all"
-        style={{ width: `${score}%`, background: scoreColor(score) }}
+        style={{ width: `${toBarWidth(score)}%`, background: scoreColorVar(score) }}
       />
     </div>
   )
@@ -253,8 +248,8 @@ export default function InsightsPage() {
                 <div className="shrink-0">
                   <p className="text-xs mb-1" style={{ color: "var(--am-muted)" }}>{t("playbook.healthScore")}</p>
                   <p className="font-bold">
-                    <span className="text-4xl font-mono" style={{ color: scoreColor(scriptResult.healthScore) }}>
-                      {scriptResult.healthScore.toFixed(1)}
+                    <span className="text-4xl font-mono" style={{ color: scoreColorVar(scriptResult.healthScore) }}>
+                      {toDisplay5(scriptResult.healthScore)}
                     </span>
                     <span className="text-xl ml-0.5" style={{ color: "var(--am-muted)" }}>/5</span>
                   </p>
@@ -266,8 +261,8 @@ export default function InsightsPage() {
                   <SectionBar sections={scriptResult.sections} />
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                     {scriptResult.sections.map((s) => (
-                      <span key={s.id} className="text-xs font-mono" style={{ color: s.score < 3.25 ? "var(--am-red)" : s.score < 3.75 ? "var(--am-amber)" : "var(--am-muted)" }}>
-                        {s.name}: {s.score.toFixed(1)}
+                      <span key={s.id} className="text-xs font-mono" style={{ color: scoreLevel(s.score) === 'low' ? "var(--am-red)" : scoreLevel(s.score) === 'mid' ? "var(--am-amber)" : "var(--am-muted)" }}>
+                        {s.name}: {toDisplay5(s.score)}
                       </span>
                     ))}
                   </div>

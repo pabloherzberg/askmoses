@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { scoreColorVar, toDisplay5 } from '@/lib/score-display'
 import type { Client } from '@/lib/types'
 
 interface Props {
@@ -159,16 +160,9 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
       <td className="px-5 py-4">
         <span
           className="text-sm font-semibold font-mono"
-          style={{
-            color:
-              client.avgScore >= 4.25
-                ? 'var(--am-green)'
-                : client.avgScore >= 3.75
-                ? 'var(--am-amber)'
-                : 'var(--am-red)',
-          }}
+          style={{ color: scoreColorVar(client.avgScore) }}
         >
-          {client.avgScore.toFixed(1)}
+          {toDisplay5(client.avgScore)}
         </span>
       </td>
       <td className="px-5 py-4">

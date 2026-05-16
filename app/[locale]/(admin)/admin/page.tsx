@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { getClients } from '@/lib/services/clients'
 import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
+import { toDisplay5 } from '@/lib/score-display'
 import { AdminOrgRow } from './AdminOrgRow'
 import type { HealthStatus, PlanCode } from '@/lib/types'
 
@@ -63,7 +64,7 @@ export default async function AdminPage() {
         />
         <ScoreCard
           label={tMetrics('avgScore')}
-          value={metrics.avgScore}
+          value={toDisplay5(metrics.avgScore)}
           valueColor="var(--am-accent2)"
           delta={4}
           deltaLabel={tMetrics('ptsVsLastMonth')}

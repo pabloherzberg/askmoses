@@ -1,10 +1,5 @@
+import { scoreColorVar, toDisplay5 } from '@/lib/score-display'
 import type { BehavioralTrendDimension } from '@/lib/mock-data'
-
-function barColor(score: number) {
-  if (score >= 75) return 'var(--am-green)'
-  if (score >= 60) return 'var(--am-amber)'
-  return 'var(--am-red)'
-}
 
 function BarSparkline({ trend }: { trend: number[] }) {
   const max = Math.max(...trend) + 4
@@ -22,7 +17,7 @@ function BarSparkline({ trend }: { trend: number[] }) {
     >
       {trend.map((v, i) => {
         const barH = Math.max(2, ((v - min) / range) * H)
-        const color = barColor(v)
+        const color = scoreColorVar(v)
         return (
           <rect
             key={i}
@@ -91,9 +86,9 @@ export function BehavioralTrends({ dimensions }: Props) {
             {/* Current score */}
             <span
               className="text-[13px] font-mono font-semibold w-8 text-right flex-shrink-0"
-              style={{ color: barColor(dim.currentScore) }}
+              style={{ color: scoreColorVar(dim.currentScore) }}
             >
-              {(dim.currentScore / 20).toFixed(1)}
+              {toDisplay5(dim.currentScore)}
             </span>
           </div>
         ))}
@@ -101,7 +96,7 @@ export function BehavioralTrends({ dimensions }: Props) {
 
       {/* Footer */}
       <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † mock data · green ≥ 75 · amber ≥ 60 · red &lt; 60 (scale 0–100)
+        † mock data · green ≥ 85 · amber ≥ 70 · red &lt; 70 (scale 0–100)
       </p>
     </div>
   )
