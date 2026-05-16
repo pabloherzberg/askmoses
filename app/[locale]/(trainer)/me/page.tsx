@@ -10,6 +10,7 @@ import { RubricBar } from "@/components/shared/RubricBar";
 import { ScorePill } from "@/components/shared/ScorePill";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
+import { toDisplay5, toDisplay5Delta } from "@/lib/score-display";
 import { getSession, getTrainerDbId } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE } from "@/lib/constants";
@@ -75,7 +76,7 @@ export default async function TrainerDashboardPage() {
     ...s,
     value:   myRubric[s.key],
     teamAvg: teamRubric[s.key],
-    delta:   myRubric[s.key] - teamRubric[s.key],
+    delta:   Math.round((myRubric[s.key] - teamRubric[s.key]) * 10) / 10,
   }));
 
   const countLabel = totalCalls === 1
@@ -97,7 +98,7 @@ export default async function TrainerDashboardPage() {
 
       {/* ── Personal metrics ──────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <ScoreCard label={t("myScore")}   value={myScore}      valueColor="var(--am-accent2)" />
+        <ScoreCard label={t("myScore")}   value={toDisplay5(myScore)} valueColor="var(--am-accent2)" />
         <ScoreCard label={t("closeRate")} value={`${closeRate}%`} valueColor="var(--am-green)" />
       </div>
 
@@ -122,8 +123,8 @@ export default async function TrainerDashboardPage() {
                     style={{ color: row.delta >= 0 ? "var(--am-green)" : "var(--am-red)" }}
                   >
                     {t("deltaVsTeam", {
-                      delta: row.delta > 0 ? `+${row.delta}` : row.delta,
-                      teamAvg: row.teamAvg,
+                      delta: toDisplay5Delta(row.delta),
+                      teamAvg: toDisplay5(row.teamAvg),
                     })}
                   </span>
                 </div>

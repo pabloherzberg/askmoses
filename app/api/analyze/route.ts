@@ -131,7 +131,7 @@ interface ValidationResult {
 /**
  * Enforce DoD: sections must match the rubric exactly (no inventions, no
  * missing entries — see FB-003), every section must carry non-empty
- * feedback, scores must be in [1, 5].
+ * feedback, scores must be in [0, 100].
  */
 function validateAnalysis(
   raw: unknown,
@@ -476,7 +476,8 @@ export async function POST(request: NextRequest) {
 
     const parsed = reorderSectionsToRubric(validation.data, allowedSections);
 
-    // ── 4. Compute overallScore: average rounded to 1 decimal, capped by outcome ─
+    // ── 4. Compute overallScore (0–100, integer): average of section scores,
+    //       rounded and capped by outcome ─
     const scores = parsed.sections.map((s) => s.score);
     const avg =
       scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;

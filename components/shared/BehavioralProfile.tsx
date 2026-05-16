@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { toBarWidth, toCorrelationLevel, toDisplay5, toDisplay5Delta } from '@/lib/score-display'
 import type { BehavioralDimension } from '@/lib/mock-data'
 
 const levelStyle = {
@@ -13,12 +14,6 @@ const sourceStyle = {
   Rubric:     { color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
   Behavioral: { color: '#059669', bg: 'rgba(5,150,105,0.12)' },
 } as const
-
-function levelFromScore(score: number): 'High' | 'Med' | 'Low' {
-  if (score >= 85) return 'High'
-  if (score >= 70) return 'Med'
-  return 'Low'
-}
 
 interface BehavioralProfileProps {
   dimensions: BehavioralDimension[]
@@ -45,8 +40,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Sales Person' }: 
         {dimensions.map((dim, i) => {
           const isAbove = dim.delta >= 0
           const barColor = isAbove ? 'var(--am-green)' : 'var(--am-amber)'
-          const markerPct = `${dim.teamAvg}%`
-          const level = levelFromScore(dim.score)
+          const level = toCorrelationLevel(dim.score)
           const source = dim.source
           const lvlStyle = levelStyle[level]
           const srcStyle = sourceStyle[source]
@@ -70,17 +64,17 @@ export function BehavioralProfile({ dimensions, trainerName = 'Sales Person' }: 
                 <div className="relative h-[10px] rounded-full col-span-2 sm:col-span-1" style={{ background: 'var(--am-bg4)' }}>
                   <div
                     className="absolute left-0 top-0 h-full rounded-full"
-                    style={{ width: `${dim.score}%`, background: barColor }}
+                    style={{ width: `${toBarWidth(dim.score)}%`, background: barColor }}
                   />
                   <div
                     className="absolute top-0 h-full w-[2px] rounded-full"
-                    style={{ left: `${dim.teamAvg}%`, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
+                    style={{ left: `${toBarWidth(dim.teamAvg)}%`, background: 'rgba(255,255,255,0.5)', zIndex: 1 }}
                   />
                 </div>
 
                 {/* Score */}
                 <span className="text-[12px] font-mono font-semibold" style={{ color: 'var(--am-text)' }}>
-                  {(dim.score / 20).toFixed(1)}
+                  {toDisplay5(dim.score)}
                 </span>
 
                 {/* Delta */}
@@ -88,7 +82,7 @@ export function BehavioralProfile({ dimensions, trainerName = 'Sales Person' }: 
                   className="text-[11px] font-mono font-semibold text-right sm:text-right"
                   style={{ color: isAbove ? 'var(--am-green)' : 'var(--am-red)' }}
                 >
-                  {isAbove ? `+${(dim.delta / 20).toFixed(1)}` : (dim.delta / 20).toFixed(1)}
+                  {toDisplay5Delta(dim.delta)}
                 </span>
 
                 {/* Level + Source badges */}

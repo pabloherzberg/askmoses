@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { Info } from 'lucide-react'
+import { toBarWidth, toDisplay5Suffixed } from '@/lib/score-display'
 import type { CorrelationFactor, CorrelationLevel, CorrelationSource } from '@/lib/types'
 
 const barColor: Record<CorrelationLevel, string> = {
@@ -143,7 +144,7 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${(f.score / 5) * 100}%`,
+                      width: `${toBarWidth(f.score)}%`,
                       background: barColor[f.correlation],
                       transition: 'width 0.4s ease',
                     }}
@@ -153,7 +154,7 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
 
               {/* Score */}
               <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
-                {f.score.toFixed(1)}/5
+                {toDisplay5Suffixed(f.score)}
               </span>
 
               {/* Correlation badge */}

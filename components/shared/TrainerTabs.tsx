@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { scoreLevel, toDisplay5, toDisplay5Delta } from '@/lib/score-display'
 import type { Trainer, BestCall, CallsByTrainerMap, PerformanceTrendPoint } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
@@ -102,7 +103,7 @@ export function TrainerTabs() {
               </p>
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
                 {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
-                {trainer.score >= 4.25 && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
+                {scoreLevel(trainer.score) === 'high' && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
               </p>
             </div>
           </div>
@@ -127,14 +128,14 @@ export function TrainerTabs() {
 
           <div className="flex flex-col min-w-[72px]">
             <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-text)' }}>
-              {trainer.score}
+              {toDisplay5(trainer.score)}
             </span>
             <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
               {t('avgScore')}
             </span>
             {trainer.scoreDelta !== 0 && (
               <span className="text-[11px] font-mono" style={{ color: 'var(--am-green)' }}>
-                {trainer.scoreDelta > 0 ? '+' : ''}{trainer.scoreDelta}pts
+                {toDisplay5Delta(trainer.scoreDelta)}
               </span>
             )}
           </div>

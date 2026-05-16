@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { toDisplay5Suffixed } from '@/lib/score-display'
 import type { BestCall } from '@/lib/types'
 
 interface Props {
@@ -65,7 +66,7 @@ export function CallCard({ call, variant = 'best' }: Props) {
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-[12px] font-mono font-semibold" style={{ color: p.scoreFg }}>
-            {(call.score / 20).toFixed(1)}/5
+            {toDisplay5Suffixed(call.score)}
           </span>
           <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>·</span>
           <span className="text-[11px] font-semibold" style={{ color: p.resultFg }}>

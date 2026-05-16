@@ -35,7 +35,7 @@ describe('TC-01 › DbCall interface', () => {
       trainer_name: 'Marcus',
       trainer_email: null,
       transcript: null,
-      overall_score: 4.6,
+      overall_score: 92,
       summary: null,
       strengths: null,
       improvements: null,

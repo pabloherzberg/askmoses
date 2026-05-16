@@ -6,6 +6,7 @@ import { getInsights } from "@/lib/services/insights";
 import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
+import { scoreLevel, toDisplay5 } from "@/lib/score-display";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
@@ -87,7 +88,7 @@ export default async function OverviewPage() {
         />
         <ScoreCard
           label={tMetrics("avgScore")}
-          value={avgScore}
+          value={toDisplay5(avgScore)}
           valueColor="var(--am-accent2)"
           delta={11}
           deltaLabel={tMetrics("ptsSinceWeek1")}
@@ -434,13 +435,13 @@ export default async function OverviewPage() {
                     className="text-xs text-right font-mono px-2 py-2.5"
                     style={{
                       color:
-                        section.teamAvg < 3.25
+                        scoreLevel(section.teamAvg) === 'low'
                           ? "var(--am-red)"
                           : "var(--am-text)",
                       borderBottom: "1px solid var(--am-border)",
                     }}
                   >
-                    {section.teamAvg.toFixed(1)}
+                    {toDisplay5(section.teamAvg)}
                   </td>
                   {trainerScores.map((s, idx) => (
                     <td
@@ -450,14 +451,14 @@ export default async function OverviewPage() {
                         color:
                           s === maxScore
                             ? "var(--am-green)"
-                            : s < 3.25
+                            : scoreLevel(s) === 'low'
                               ? "var(--am-red)"
                               : "var(--am-text)",
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: "1px solid var(--am-border)",
                       }}
                     >
-                      {s.toFixed(1)}
+                      {toDisplay5(s)}
                     </td>
                   ))}
                 </tr>

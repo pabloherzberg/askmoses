@@ -16,13 +16,13 @@ import type {
 } from "@/lib/db/rubric";
 import { getOrgId } from "@/lib/auth";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
+import { toCorrelationLevel } from "@/lib/score-display";
 import type {
   RubricSection,
   RubricScores,
   TrendPoint,
   RevenueEstimatorItem,
   CorrelationFactor,
-  CorrelationLevel,
 } from "@/lib/types";
 
 const CRITERION_KEY_MAP: Record<string, keyof RubricScores> = {
@@ -45,7 +45,7 @@ const SECTION_COLORS: RubricSection["color"][] = [
 export interface TrainerSectionScore {
   trainerId: string;
   trainerName: string;
-  scores: Record<string, number>; // criterionName → avg score 0–5
+  scores: Record<string, number>; // criterionName → avg score 0–100
 }
 
 // ─── Trend computation ───────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export async function getRubric(): Promise<{
   }
 
   // ── Team averages ─────────────────────────────────────────────────────────
-  const teamAvg = avgRubricScores(calls); // 0–5 scale
+  const teamAvg = avgRubricScores(calls); // 0–100 scale
 
   // ── Per-trainer averages ──────────────────────────────────────────────────
   const trainerCallsMap = new Map<string, typeof calls>();
@@ -166,15 +166,9 @@ export async function getRubric(): Promise<{
 // do critério na rubrica. Enquanto não há volume para correlação estatística
 // real (ver disclaimer no CorrelationEngine), as badges refletem apenas a
 // força do score — não uma correlação validada.
-function levelFromScore(score: number): CorrelationLevel {
-  if (score >= 4) return 'High'
-  if (score >= 3) return 'Med'
-  return 'Low'
-}
-
 export function buildCoachingDrivers(sections: RubricSection[]): CorrelationFactor[] {
   return sections.map((s) => {
-    const level = levelFromScore(s.teamAvg)
+    const level = toCorrelationLevel(s.teamAvg)
     return {
       label: s.name,
       score: s.teamAvg,

@@ -57,11 +57,11 @@ export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
   { value: 'other',    label: 'Other' },
 ]
 
-// ── Scoring caps applied to overallScore (1–5), keyed by outcome ─────────────
+// ── Scoring caps applied to overallScore (0–100), keyed by outcome ───────────
 // Section scores themselves are NEVER capped — only the rolled-up overall.
 export const OUTCOME_OVERALL_CAP: Record<CallOutcome, number> = {
-  closed:     5.0,
-  partial:    4.0,
-  not_closed: 3.0,
-  no_outcome: 2.5,
+  closed:     100,
+  partial:    80,
+  not_closed: 60,
+  no_outcome: 50,
 }
