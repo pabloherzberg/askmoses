@@ -147,6 +147,10 @@
   --am-muted: #7A849A;
   --am-accent: #6E56FF;
   --am-accent2: #9B87FF;
+  /* Texto sobre fundo --am-accent. Branco fixo em ambos os temas pq o
+     accent é uma cor saturada que precisa de contraste alto. Antes o code
+     usava --am-text, que vira escuro no tema claro e ficava ilegível. */
+  --am-on-accent: #FFFFFF;
   --am-green: #22D9A0;
   --am-green-bg: rgba(34, 217, 160, 0.1);
   --am-red: #FF5E5E;
@@ -204,6 +208,7 @@
   --am-muted: #5A6478;
   --am-accent: #0055FF;
   --am-accent2: #00AAFF;
+  --am-on-accent: #FFFFFF;
   --am-green: #12A371;
   --am-green-bg: rgba(18, 163, 113, 0.1);
   --am-red: #D93030;

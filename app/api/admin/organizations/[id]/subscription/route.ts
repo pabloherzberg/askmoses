@@ -19,8 +19,7 @@ interface PatchBody {
   // limpado (set NULL). Frontend computa o timestamp a partir do select de
   // duração (24h, 7d, 14d, 30d, 60d, 90d, custom).
   trialEndsAt?: string | null
-  // Renomeia organizations.name. Pablo (2026-05-19): permitir corrigir
-  // nome da empresa nessa mesma tela sem precisar de nova rota.
+  // Renomeia organizations.name na mesma tela onde se altera plano/status.
   name?: string
   // Override de MRR — sweetheart deals onde o valor não bate com plan.price_cents.
   mrr?: number
@@ -109,11 +108,19 @@ export async function PATCH(
   if (planCode !== undefined && !PLANS.includes(planCode)) {
     return badRequest('planCode deve ser "starter", "pro" ou "pro_rag"')
   }
-  if (nextName !== undefined && nextName.length === 0) {
-    return badRequest('name não pode ser vazio')
+  if (nextName !== undefined) {
+    if (nextName.length === 0) return badRequest('name não pode ser vazio')
+    // Cap arbitrário pra impedir abuse / payloads enormes. 200 cobre os
+    // nomes corporativos longos sem trazer DoS via campo livre.
+    if (nextName.length > 200) return badRequest('name muito longo (máx 200)')
   }
-  if (mrr !== undefined && (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0)) {
-    return badRequest('mrr deve ser um número >= 0')
+  if (mrr !== undefined) {
+    if (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0) {
+      return badRequest('mrr deve ser um número >= 0')
+    }
+    // Cap defensivo — MRR em USD/mês. 10M é absurdamente alto pro mercado
+    // alvo (sales coaching); valores acima sugerem typo ou abuso.
+    if (mrr > 10_000_000) return badRequest('mrr muito alto')
   }
 
   // Resolve trialEndsAt efetivo. Regra: se status='trial', exige data futura;

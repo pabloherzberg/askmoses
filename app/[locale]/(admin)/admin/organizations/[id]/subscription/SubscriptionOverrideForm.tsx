@@ -262,7 +262,7 @@ export function SubscriptionOverrideForm({
         type="submit"
         disabled={submitting}
         className="mt-2 px-4 py-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50"
-        style={{ background: 'var(--am-accent)', color: 'var(--am-text)' }}
+        style={{ background: 'var(--am-accent)', color: 'var(--am-on-accent)' }}
       >
         {submitting ? t('submitting') : t('submit')}
       </button>

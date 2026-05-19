@@ -168,13 +168,18 @@ export async function POST(request: NextRequest) {
   const mrr = body.mrr
 
   if (!name) return badRequest('name é obrigatório')
+  if (name.length > 200) return badRequest('name muito longo (máx 200)')
   if (!planCode || !PLAN_CODES.includes(planCode)) {
     return badRequest('planCode deve ser "starter", "pro" ou "pro_rag"')
   }
   if (!ownerName) return badRequest('ownerName é obrigatório')
+  if (ownerName.length > 200) return badRequest('ownerName muito longo (máx 200)')
   if (!ownerEmail || !EMAIL_RE.test(ownerEmail)) return badRequest('ownerEmail inválido')
-  if (mrr !== undefined && (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0)) {
-    return badRequest('mrr deve ser um número >= 0')
+  if (mrr !== undefined) {
+    if (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0) {
+      return badRequest('mrr deve ser um número >= 0')
+    }
+    if (mrr > 10_000_000) return badRequest('mrr muito alto')
   }
 
   const admin = createAdminClient()

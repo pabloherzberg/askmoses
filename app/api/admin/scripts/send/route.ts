@@ -12,7 +12,10 @@ const RATE_LIMIT_MAX = 30
 const RATE_LIMIT_WINDOW_SECONDS = 60
 
 interface SendBody {
+  // EITHER scriptId OU rubricId. Quando rubricId é informado, o backend
+  // resolve o script mais recente (maior major+minor) dessa rubric e envia.
   scriptId?: string
+  rubricId?: string
   orgIds?: string[]
 }
 
@@ -71,9 +74,14 @@ export async function POST(request: NextRequest) {
     return badRequest('Body inválido')
   }
 
-  const { scriptId, orgIds } = body
+  const { scriptId, rubricId, orgIds } = body
 
-  if (!scriptId || !UUID_RE.test(scriptId)) return badRequest('scriptId inválido')
+  // XOR: exatamente um entre scriptId e rubricId.
+  if (!scriptId && !rubricId) return badRequest('Forneça scriptId ou rubricId')
+  if (scriptId && rubricId) return badRequest('Forneça apenas scriptId OU rubricId, não ambos')
+  if (scriptId && !UUID_RE.test(scriptId)) return badRequest('scriptId inválido')
+  if (rubricId && !UUID_RE.test(rubricId)) return badRequest('rubricId inválido')
+
   if (!Array.isArray(orgIds) || orgIds.length === 0) {
     return badRequest('orgIds precisa ser um array com pelo menos 1 elemento')
   }
@@ -88,16 +96,46 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Valida script existe e é template — Admin não deve poder enviar scripts
-  // locais de uma org pra outras (vazamento de dados).
-  const { data: script, error: scriptErr } = await admin
-    .from('scripts')
-    .select('id, is_template')
-    .eq('id', scriptId)
-    .maybeSingle()
-  if (scriptErr) return serverError('Não foi possível validar o script', scriptErr)
-  if (!script) return badRequest('Script não encontrado')
-  if (!script.is_template) return badRequest('Apenas scripts do catálogo podem ser enviados')
+  // Pré-valida que todos os orgIds existem — sem isso, a UPSERT falha por
+  // FK violation com mensagem genérica de "erro interno", confundindo o
+  // admin. Custo: 1 query extra com IN (orgIds), ainda barato pra <= 100.
+  const { data: existingOrgs, error: orgsErr } = await admin
+    .from('organizations')
+    .select('id')
+    .in('id', orgIds)
+  if (orgsErr) return serverError('Não foi possível validar orgIds', orgsErr)
+  const foundIds = new Set((existingOrgs ?? []).map((o: { id: string }) => o.id))
+  const missing = orgIds.filter((id) => !foundIds.has(id))
+  if (missing.length > 0) {
+    return badRequest(`Organização não encontrada: ${missing.join(', ')}`)
+  }
+
+  // Resolve o script alvo. Quando rubricId é informado, pegamos o script
+  // mais recente dessa rubric (maior major+minor). Quando scriptId, só
+  // validamos que existe.
+  let effectiveScriptId: string
+  if (rubricId) {
+    const { data: latest, error: latestErr } = await admin
+      .from('scripts')
+      .select('id, rubric_version_snapshot, minor_version')
+      .eq('rubric_id', rubricId)
+      .order('rubric_version_snapshot', { ascending: false, nullsFirst: false })
+      .order('minor_version', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle()
+    if (latestErr) return serverError('Não foi possível resolver script da rubric', latestErr)
+    if (!latest) return badRequest('Rubric não tem nenhum script associado')
+    effectiveScriptId = latest.id
+  } else {
+    const { data: script, error: scriptErr } = await admin
+      .from('scripts')
+      .select('id')
+      .eq('id', scriptId!)
+      .maybeSingle()
+    if (scriptErr) return serverError('Não foi possível validar o script', scriptErr)
+    if (!script) return badRequest('Script não encontrado')
+    effectiveScriptId = script.id
+  }
 
   // Encerra qualquer linha 'active' anterior das orgs alvo (mesmo script ou
   // não). started_at do novo registro = now; o anterior fica como histórico
@@ -116,7 +154,7 @@ export async function POST(request: NextRequest) {
   // reseta pra pending e renova started_at/sent_by.
   const rows = orgIds.map((orgId) => ({
     org_id: orgId,
-    script_id: scriptId,
+    script_id: effectiveScriptId,
     status: 'pending' as const,
     started_at: now,
     ended_at: null,
@@ -131,7 +169,8 @@ export async function POST(request: NextRequest) {
   if (upsertErr) return serverError('Não foi possível registrar o envio', upsertErr)
 
   return ok({
-    scriptId,
+    scriptId: effectiveScriptId,
+    rubricResolved: rubricId ? true : false,
     sentTo: orgIds.length,
     rows: (upserted ?? []).map((r) => ({
       id: r.id,

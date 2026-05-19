@@ -17,6 +17,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
+import { PendingScriptBadge } from '@/components/layout/PendingScriptBadge'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -103,6 +104,10 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
 
       {/* ── Right ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 md:gap-4">
+        {/* Badge de aprovação pendente — visível só pra Owner quando há
+            um script pending na org ativa. */}
+        <PendingScriptBadge />
+
         {!resolvedTitle && (
           <>
             <span

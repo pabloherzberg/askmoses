@@ -4,7 +4,7 @@
 -- Adiciona versionamento a scripts/rubrics e cria a tabela
 -- org_scripts pra associar scripts a organizações com status.
 --
--- Modelo (Mateus 2026-05-19, alinhado com Lucas):
+-- Modelo:
 --   - Rubric = "major version" (ex: 1, 2, 3) — mudança grande de critérios
 --   - Script = "minor version" dentro de uma rubric (ex: 1.0, 1.1, 1.2,
 --     2.0) — refinamento sobre a mesma rubric base
