@@ -15,7 +15,6 @@ interface DbScriptRow {
   rubric_id: string
   rubric_version_snapshot: number | null
   minor_version: number | null
-  is_template: boolean | null
   created_at: string
   rubrics: DbRubricNested | DbRubricNested[] | null
 }
@@ -36,7 +35,7 @@ export async function GET() {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('scripts')
-    .select('id, name, description, rubric_id, rubric_version_snapshot, minor_version, is_template, created_at, rubrics(id, name, version)')
+    .select('id, name, description, rubric_id, rubric_version_snapshot, minor_version, created_at, rubrics(id, name, version)')
     // Ordem natural: rubric primeiro (pra agrupar visualmente), depois
     // versão crescente.
     .order('rubric_id', { ascending: true })
@@ -70,7 +69,6 @@ export async function GET() {
         majorVersion: major,
         minorVersion: minor,
         version: `${major}.${minor}`,
-        isTemplate: row.is_template ?? false,
         createdAt: row.created_at,
       }
     }),

@@ -600,7 +600,14 @@
       "sendScript": "Enviar script",
       "editOrg": "Editar org",
       "selectAll": "Seleccionar todas",
-      "selectRow": "Seleccionar {name}"
+      "selectRow": "Seleccionar {name}",
+      "loading": "Cargando…",
+      "noResults": "Ninguna organización encontrada.",
+      "pageOf": "Página {page} de {total}",
+      "itemsTotal": "{count} resultado(s)",
+      "prevPage": "Anterior",
+      "nextPage": "Siguiente",
+      "fetchError": "No se pudo cargar. Inténtalo de nuevo."
     },
     "sendScriptModal": {
       "title": "Enviar script",

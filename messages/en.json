@@ -600,7 +600,14 @@
       "sendScript": "Send script",
       "editOrg": "Edit org",
       "selectAll": "Select all",
-      "selectRow": "Select {name}"
+      "selectRow": "Select {name}",
+      "loading": "Loading…",
+      "noResults": "No organizations found.",
+      "pageOf": "Page {page} of {total}",
+      "itemsTotal": "{count} result(s)",
+      "prevPage": "Previous",
+      "nextPage": "Next",
+      "fetchError": "Could not load. Try again."
     },
     "sendScriptModal": {
       "title": "Send script",

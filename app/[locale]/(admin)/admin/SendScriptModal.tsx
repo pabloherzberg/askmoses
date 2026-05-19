@@ -16,7 +16,6 @@ interface CatalogScript {
   rubricId: string
   rubricName: string | null
   rubricVersion: number | null
-  isTemplate: boolean
 }
 
 interface CatalogRubric {
@@ -66,23 +65,32 @@ export function SendScriptModal({ open, orgIds, orgNames, onClose, onSent }: Pro
       setSelectedId(null)
       setSending(false)
       setError(null)
-      return
+      setScripts(null)
+      setRubrics(null)
     }
-    let cancelled = false
-    setScripts(null)
-    setRubrics(null)
+  }, [open])
 
-    // Carrega scripts + rubrics em paralelo — o usuário pode trocar de modo
-    // sem precisar de novo round trip.
-    Promise.all([
-      fetch('/api/admin/scripts/catalog').then((r) => r.json()),
-      fetch('/api/admin/rubrics/catalog').then((r) => r.json()),
-    ])
-      .then(([scriptsJson, rubricsJson]) => {
+  // Lazy-load: só busca o catálogo do mode visível, não os dois sempre.
+  // Mode trocado dispara segunda fetch se for a primeira vez. Cache vive
+  // dentro do componente — fechar/abrir o modal limpa.
+  useEffect(() => {
+    if (!open) return
+    if (mode === 'scripts' && scripts !== null) return
+    if (mode === 'rubrics' && rubrics !== null) return
+
+    let cancelled = false
+    const url =
+      mode === 'scripts' ? '/api/admin/scripts/catalog' : '/api/admin/rubrics/catalog'
+    fetch(url)
+      .then((r) => r.json())
+      .then((json) => {
         if (cancelled) return
-        if (scriptsJson?.data) setScripts(scriptsJson.data)
-        if (rubricsJson?.data) setRubrics(rubricsJson.data)
-        if (!scriptsJson?.data && !rubricsJson?.data) setError(t('genericError'))
+        if (!json?.data) {
+          setError(t('genericError'))
+          return
+        }
+        if (mode === 'scripts') setScripts(json.data)
+        else setRubrics(json.data)
       })
       .catch(() => {
         if (!cancelled) setError(t('genericError'))
@@ -90,7 +98,7 @@ export function SendScriptModal({ open, orgIds, orgNames, onClose, onSent }: Pro
     return () => {
       cancelled = true
     }
-  }, [open, t])
+  }, [open, mode, scripts, rubrics, t])
 
   // ESC pra fechar — padrão de modal acessível.
   useEffect(() => {

@@ -3,11 +3,8 @@ import { getSession, ok, unauthorized, forbidden, notFound } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { MAX_ORG_NAME_LENGTH, MAX_MRR_USD, RATE_LIMITS } from '@/lib/constants/limits'
 import type { Role } from '@/lib/types'
-
-// 30 overrides/admin/min — sweetheart deal flow não é high-frequency.
-const RATE_LIMIT_MAX = 30
-const RATE_LIMIT_WINDOW_SECONDS = 60
 
 type SubStatus = 'active' | 'inactive' | 'trial'
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
@@ -75,8 +72,8 @@ export async function PATCH(
 
   const rl = await checkRateLimitDb(
     `subscription_override:${session.user.id}`,
-    RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW_SECONDS,
+    RATE_LIMITS.subscriptionOverride.max,
+    RATE_LIMITS.subscriptionOverride.windowSeconds,
   )
   if (!rl.allowed) return rateLimitedResponse(rl)
 
@@ -110,17 +107,15 @@ export async function PATCH(
   }
   if (nextName !== undefined) {
     if (nextName.length === 0) return badRequest('name não pode ser vazio')
-    // Cap arbitrário pra impedir abuse / payloads enormes. 200 cobre os
-    // nomes corporativos longos sem trazer DoS via campo livre.
-    if (nextName.length > 200) return badRequest('name muito longo (máx 200)')
+    if (nextName.length > MAX_ORG_NAME_LENGTH) {
+      return badRequest(`name muito longo (máx ${MAX_ORG_NAME_LENGTH})`)
+    }
   }
   if (mrr !== undefined) {
     if (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0) {
       return badRequest('mrr deve ser um número >= 0')
     }
-    // Cap defensivo — MRR em USD/mês. 10M é absurdamente alto pro mercado
-    // alvo (sales coaching); valores acima sugerem typo ou abuso.
-    if (mrr > 10_000_000) return badRequest('mrr muito alto')
+    if (mrr > MAX_MRR_USD) return badRequest('mrr muito alto')
   }
 
   // Resolve trialEndsAt efetivo. Regra: se status='trial', exige data futura;

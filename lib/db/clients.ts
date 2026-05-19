@@ -11,9 +11,7 @@ import type {
 
 // Após migration 038 a tabela `clients` foi mesclada em `organizations`.
 // O tipo TS `Client` continua existindo como shape lida pelas telas Admin
-// — só a fonte de dados mudou. As funções abaixo lêem direto de
-// organizations + plans e remontam o shape `Client` pra não impactar
-// callers (admin pages, métricas globais, etc.).
+// — só a fonte de dados mudou.
 //
 // Conceitualmente: 1 organization == 1 client. O `orgId` no shape é
 // redundante com o `id`, mas mantido pra preservar a API pública.
@@ -67,11 +65,6 @@ function toClient(
   lastCallAt: string | null,
 ): Client {
   if (!row.plans) {
-    // Pós-merge: org pode existir sem plano (Owner em onboarding step-2).
-    // Antes esse caso não existia (clients sempre tinha plan_id NOT NULL na
-    // prática). Quem consome essa função em listagens deve filtrar por
-    // plan_id NOT NULL ou tratar org-sem-plano explicitamente. Aqui
-    // levantamos pra não silenciosamente retornar shape inconsistente.
     throw new Error(`Organization ${row.id} has no plan (plan_id=${row.plan_id ?? 'null'})`)
   }
   return {
@@ -93,177 +86,165 @@ function toClient(
   }
 }
 
-// Row do view org_scripts_current criado na migration 044.
-interface DbOrgScriptRow {
+// ── Listagem paginada via RPC ────────────────────────────────────────────
+
+export interface ClientsQuery {
+  search?: string
+  planCode?: PlanCode
+  planStatus?: 'active' | 'inactive' | 'trial'
+  scriptStatus?: OrgScriptStatus // inclui 'none'
+  scriptVersion?: string // "1.2"
+  mrrMin?: number
+  mrrMax?: number
+  lastActivityFrom?: string // ISO
+  lastActivityTo?: string
+  page: number
+  limit: number
+}
+
+export interface ClientsPage {
+  rows: Client[]
+  total: number
+  page: number
+  limit: number
+}
+
+// Row achatada vinda da RPC list_admin_organizations.
+interface RpcRow {
   org_id: string
-  script_id: string
-  script_name: string
-  rubric_version_snapshot: number
-  minor_version: number
-  effective_status: 'pending' | 'active' | 'deprecated' | 'rejected'
-  started_at: string | null
-  ended_at: string | null
+  org_name: string
+  org_created_at: string
+  org_subscription_status: 'active' | 'inactive' | 'trial'
+  org_mrr: number | string
+  org_health: HealthStatus
+  org_trainers_count: number
+  org_calls_this_month: number
+  org_avg_score: number
+  plan_id: string
+  plan_code: PlanCode
+  plan_name: string
+  plan_price_cents: number
+  plan_timeline_weeks: number
+  plan_has_rag: boolean
+  plan_has_twilio: boolean
+  plan_has_manual_upload: boolean
+  plan_max_sales_people: number | null
+  plan_features: string[]
+  owner_accepted: boolean
+  script_id: string | null
+  script_name: string | null
+  script_major_version: number | null
+  script_minor_version: number | null
+  script_status: OrgScriptStatus
+  script_started_at: string | null
+  prev_script_major: number | null
+  prev_script_minor: number | null
+  last_call_at: string | null
+  total: number | string
 }
 
-/**
- * Busca o script "atual" de cada org. Critério: linha mais recente em
- * org_scripts_current onde ended_at IS NULL (ou seja, ainda associada).
- * Quando o Admin envia um novo script, o anterior recebe ended_at — só o
- * mais recente sem ended_at é a associação corrente.
- *
- * Quando o status atual é 'pending', também resolve a previousVersion (o
- * script anterior aceito, ended_at NOT NULL mais recente) pra UI poder
- * renderizar a transição "v_old → v_new".
- *
- * Retorna Map<orgId, OrgScriptInfo>. Orgs sem script associado ficam
- * fora do map (caller renderiza como status='none').
- *
- * Se a view não existir ainda (migration 044 não aplicada), retorna map
- * vazio em vez de quebrar — permite o app rodar enquanto a migration está
- * pendente em algum ambiente.
- */
-async function getCurrentScriptsByOrg(
-  supabase: ReturnType<typeof createAdminClient>,
-): Promise<Map<string, OrgScriptInfo>> {
-  // Uma query única ordenada por org_id + started_at desc nos dá tanto a
-  // linha atual (primeira por org) quanto a previousVersion (segunda).
-  // Ignora ended_at no filtro pra incluir o anterior (que TEM ended_at).
-  const { data, error } = await supabase
-    .from('org_scripts_current')
-    .select('org_id, script_id, script_name, rubric_version_snapshot, minor_version, effective_status, started_at, ended_at')
-    .order('org_id', { ascending: true })
-    .order('started_at', { ascending: false })
-
-  if (error) {
-    // 42P01 = relation does not exist. Permite o painel admin funcionar
-    // mesmo se a migration 044 ainda não rodou no ambiente.
-    if (error.code === '42P01') {
-      console.warn('[clients] org_scripts_current view ausente — script status indisponível')
-      return new Map()
-    }
-    throw new Error(`getCurrentScriptsByOrg: ${error.message}`)
+function rpcRowToClient(row: RpcRow): Client {
+  const plan: Plan = {
+    id: row.plan_id,
+    code: row.plan_code,
+    name: row.plan_name,
+    priceCents: row.plan_price_cents,
+    timelineWeeks: row.plan_timeline_weeks,
+    hasRag: row.plan_has_rag,
+    hasTwilio: row.plan_has_twilio,
+    hasManualUpload: row.plan_has_manual_upload,
+    maxSalesPeople: row.plan_max_sales_people,
+    features: row.plan_features ?? [],
   }
 
-  // Agrupa por org_id; a primeira linha é a atual (ended_at IS NULL ou a
-  // mais recente), as seguintes formam o histórico.
-  const byOrg = new Map<string, DbOrgScriptRow[]>()
-  for (const row of (data ?? []) as DbOrgScriptRow[]) {
-    const list = byOrg.get(row.org_id) ?? []
-    list.push(row)
-    byOrg.set(row.org_id, list)
-  }
-
-  const result = new Map<string, OrgScriptInfo>()
-  for (const [orgId, rows] of byOrg.entries()) {
-    // Procura a linha "current" = primeira sem ended_at. Se todas têm
-    // ended_at (caso edge: org teve scripts e todos foram fechados sem
-    // novo), pula essa org — não tem script corrente.
-    const current = rows.find((r) => r.ended_at === null)
-    if (!current) continue
-
-    // previousVersion só faz sentido quando o atual é 'pending'. Buscamos a
-    // entrada imediatamente anterior (mais recente com ended_at NOT NULL).
-    let previousVersion: string | null = null
-    if (current.effective_status === 'pending') {
-      const previous = rows.find((r) => r.ended_at !== null)
-      if (previous) {
-        previousVersion = `${previous.rubric_version_snapshot}.${previous.minor_version}`
-      }
-    }
-
-    result.set(orgId, {
-      scriptId: current.script_id,
-      scriptName: current.script_name,
-      version: `${current.rubric_version_snapshot}.${current.minor_version}`,
+  let currentScript: OrgScriptInfo | null = null
+  if (row.script_id && row.script_status !== 'none') {
+    const previousVersion =
+      row.script_status === 'pending' &&
+      row.prev_script_major !== null &&
+      row.prev_script_minor !== null
+        ? `${row.prev_script_major}.${row.prev_script_minor}`
+        : null
+    currentScript = {
+      scriptId: row.script_id,
+      scriptName: row.script_name ?? '',
+      version: `${row.script_major_version ?? 1}.${row.script_minor_version ?? 0}`,
       previousVersion,
-      status: current.effective_status as OrgScriptStatus,
-      startedAt: current.started_at,
-    })
-  }
-  return result
-}
-
-// MAX(calls.created_at) agrupado por org_id. Usado pra coluna "Last Activity"
-// na tabela admin. Pode falhar silenciosamente se a tabela calls não tem
-// nenhuma linha — retorna map vazio nesse caso.
-async function getLastCallByOrg(
-  supabase: ReturnType<typeof createAdminClient>,
-): Promise<Map<string, string>> {
-  const { data, error } = await supabase
-    .from('calls')
-    .select('org_id, created_at')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.warn('[clients] não foi possível buscar last_call_at:', error.message)
-    return new Map()
+      status: row.script_status,
+      startedAt: row.script_started_at,
+    }
   }
 
-  // Como veio ordenado desc, a primeira ocorrência de cada org_id é a mais
-  // recente. Skip subsequentes.
-  const map = new Map<string, string>()
-  for (const row of (data ?? []) as Array<{ org_id: string | null; created_at: string }>) {
-    if (!row.org_id || map.has(row.org_id)) continue
-    map.set(row.org_id, row.created_at)
+  return {
+    id: row.org_id,
+    name: row.org_name,
+    planId: row.plan_id,
+    plan,
+    orgId: row.org_id,
+    callsThisMonth: row.org_calls_this_month,
+    avgScore: row.org_avg_score,
+    mrr: Number(row.org_mrr ?? 0),
+    health: row.org_health,
+    trainersCount: row.org_trainers_count,
+    ownerAccepted: row.owner_accepted,
+    subscriptionStatus: row.org_subscription_status,
+    currentScript,
+    lastCallAt: row.last_call_at,
+    createdAt: row.org_created_at,
   }
-  return map
 }
 
 /**
- * Lista clientes (organizations) com plano embutido + flag ownerAccepted.
- * Filtra orgs sem plano (sub não-ativada / mid-onboarding).
+ * Listagem paginada + filtrada via RPC list_admin_organizations
+ * (migration 048). Substitui o dbGetClients() antigo que carregava tudo.
  *
- * ownerAccepted = existe membership com role='owner' e invite_status='accepted'.
- * Quando false, Admin criou a org+invite mas Owner ainda não clicou no magic
- * link — UI mostra chip "Aguardando Owner" ao lado do nome.
+ * Filtros opcionais — qualquer combinação. Pagination obrigatória
+ * (default page=1, limit=25 no SQL, mas caller deve passar explicitamente).
+ *
+ * Retorna { rows, total, page, limit }. total é o count pré-paginação
+ * (mesmo valor em todas as linhas da RPC; só pegamos da primeira).
  */
-export async function dbGetClients(): Promise<Client[]> {
+export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const supabase = createAdminClient()
 
-  const [orgsRes, ownersRes, scriptsByOrg, lastCallByOrg] = await Promise.all([
-    supabase
-      .from('organizations')
-      .select(
-        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)'
-      )
-      .not('plan_id', 'is', null)
-      .order('name', { ascending: true }),
-    supabase
-      .from('memberships')
-      .select('org_id')
-      .eq('role', 'owner')
-      .eq('invite_status', 'accepted'),
-    getCurrentScriptsByOrg(supabase),
-    getLastCallByOrg(supabase),
-  ])
-
-  if (orgsRes.error) throw new Error(`dbGetClients: ${orgsRes.error.message}`)
-  if (ownersRes.error) throw new Error(`dbGetClients (memberships): ${ownersRes.error.message}`)
-
-  // Set de org_ids que têm pelo menos 1 owner aceito. Lookup O(1) no map abaixo.
-  const ownerAcceptedSet = new Set(
-    (ownersRes.data ?? []).map((m: { org_id: string }) => m.org_id),
-  )
-
-  return (orgsRes.data ?? []).map((row) => {
-    const orgId = (row as { id: string }).id
-    return toClient(
-      row as unknown as DbOrgRow,
-      ownerAcceptedSet.has(orgId),
-      scriptsByOrg.get(orgId) ?? null,
-      lastCallByOrg.get(orgId) ?? null,
-    )
+  const { data, error } = await supabase.rpc('list_admin_organizations', {
+    p_search: query.search ?? null,
+    p_plan_code: query.planCode ?? null,
+    p_plan_status: query.planStatus ?? null,
+    p_script_status: query.scriptStatus ?? null,
+    p_script_version: query.scriptVersion ?? null,
+    p_mrr_min: query.mrrMin ?? null,
+    p_mrr_max: query.mrrMax ?? null,
+    p_last_activity_from: query.lastActivityFrom ?? null,
+    p_last_activity_to: query.lastActivityTo ?? null,
+    p_page: query.page,
+    p_limit: query.limit,
   })
+
+  if (error) throw new Error(`dbListClients: ${error.message}`)
+
+  const rows = (data ?? []) as RpcRow[]
+  const total = rows.length > 0 ? Number(rows[0].total) : 0
+
+  return {
+    rows: rows.map(rpcRowToClient),
+    total,
+    page: query.page,
+    limit: query.limit,
+  }
 }
+
+// ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
 
 /**
  * Retorna o client (com plano embutido) vinculado a um org_id.
- * Pós-merge: orgId === clientId. Mantém a assinatura antiga.
+ * Pós-merge: orgId === clientId. Usa as queries originais (sem paginação)
+ * porque é lookup pontual.
  */
 export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
   const supabase = createAdminClient()
 
-  const [orgRes, ownerRes, scriptsByOrg, lastCallByOrg] = await Promise.all([
+  const [orgRes, ownerRes] = await Promise.all([
     supabase
       .from('organizations')
       .select(
@@ -277,8 +258,6 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
       .eq('org_id', orgId)
       .eq('role', 'owner')
       .eq('invite_status', 'accepted'),
-    getCurrentScriptsByOrg(supabase),
-    getLastCallByOrg(supabase),
   ])
 
   if (orgRes.error) {
@@ -287,23 +266,64 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
   }
 
   if (!orgRes.data) return null
-  // Org sem plano (onboarding mid-flight) não vira Client — caller decide
-  // o que fazer (Admin views, métricas etc. tratam como "sem assinatura").
   if (!(orgRes.data as { plan_id: string | null }).plan_id) return null
 
   const ownerAccepted = (ownerRes.count ?? 0) > 0
-  return toClient(
-    orgRes.data as unknown as DbOrgRow,
-    ownerAccepted,
-    scriptsByOrg.get(orgId) ?? null,
-    lastCallByOrg.get(orgId) ?? null,
-  )
+
+  // currentScript + lastCallAt: queries dedicadas pra esse único org
+  // (sem reuse da RPC que é otimizada pra batch).
+  const [scriptRes, lastCallRes] = await Promise.all([
+    supabase
+      .from('org_scripts_current')
+      .select('script_id, script_name, rubric_version_snapshot, minor_version, effective_status, started_at, ended_at')
+      .eq('org_id', orgId)
+      .is('ended_at', null)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('calls')
+      .select('created_at')
+      .eq('org_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  let currentScript: OrgScriptInfo | null = null
+  if (scriptRes.data) {
+    const s = scriptRes.data as {
+      script_id: string
+      script_name: string
+      rubric_version_snapshot: number
+      minor_version: number
+      effective_status: OrgScriptStatus
+      started_at: string | null
+    }
+    currentScript = {
+      scriptId: s.script_id,
+      scriptName: s.script_name,
+      version: `${s.rubric_version_snapshot}.${s.minor_version}`,
+      previousVersion: null,
+      status: s.effective_status,
+      startedAt: s.started_at,
+    }
+  }
+
+  const lastCallAt = (lastCallRes.data as { created_at: string } | null)?.created_at ?? null
+
+  return toClient(orgRes.data as unknown as DbOrgRow, ownerAccepted, currentScript, lastCallAt)
 }
+
+// ── Métricas globais (não paginadas — agregação direta) ──────────────────
 
 /**
  * Métricas globais (MRR, total calls, avg score) agregadas pelas
  * organizations com plano ativo. Orgs sem plano ficam de fora pra não
  * contaminar o avg_score / MRR com zeros do estado de onboarding.
+ *
+ * Continua agregando em JS — pra ~milhares de orgs ainda é OK, mas se
+ * passar de 10k vale migrar pra um SQL aggregation.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
   const supabase = createAdminClient()

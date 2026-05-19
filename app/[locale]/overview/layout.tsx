@@ -1,6 +1,7 @@
 import type React from 'react'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { AppSidebar, NavItemsForRole } from '@/components/layout/AppSidebar'
+import { PendingScriptBadgeServer } from '@/components/layout/PendingScriptBadgeServer'
 import { FeatureGate } from '@/components/shared/FeatureGate'
 import { getActiveOrgContext } from '@/lib/auth'
 
@@ -11,7 +12,10 @@ export default async function OverviewLayout({ children }: { children: React.Rea
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      <AppHeader mobileSidebar={<NavItemsForRole role={role} isImpersonating={isImpersonating} />} />
+      <AppHeader
+        mobileSidebar={<NavItemsForRole role={role} isImpersonating={isImpersonating} />}
+        pendingBadge={<PendingScriptBadgeServer />}
+      />
       <div className="flex">
         <AppSidebar role={role} isImpersonating={isImpersonating} />
         <main className="flex-1 min-w-0 lg:pl-56 pt-[calc(61px+var(--impersonate-banner-h,0px))]">

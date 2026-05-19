@@ -3,13 +3,8 @@ import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { MAX_BULK_ORG_IDS, RATE_LIMITS } from '@/lib/constants/limits'
 import type { Role } from '@/lib/types'
-
-// 30 sends/admin/min — bulk sends pra dezenas de orgs em sequência são
-// previstos durante release de nova versão, então o teto fica mais alto
-// do que outros endpoints admin.
-const RATE_LIMIT_MAX = 30
-const RATE_LIMIT_WINDOW_SECONDS = 60
 
 interface SendBody {
   // EITHER scriptId OU rubricId. Quando rubricId é informado, o backend
@@ -62,8 +57,8 @@ export async function POST(request: NextRequest) {
 
   const rl = await checkRateLimitDb(
     `script_send:${session.user.id}`,
-    RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW_SECONDS,
+    RATE_LIMITS.scriptSend.max,
+    RATE_LIMITS.scriptSend.windowSeconds,
   )
   if (!rl.allowed) return rateLimitedResponse(rl)
 
@@ -85,8 +80,8 @@ export async function POST(request: NextRequest) {
   if (!Array.isArray(orgIds) || orgIds.length === 0) {
     return badRequest('orgIds precisa ser um array com pelo menos 1 elemento')
   }
-  if (orgIds.length > 100) {
-    return badRequest('Máximo de 100 orgs por send')
+  if (orgIds.length > MAX_BULK_ORG_IDS) {
+    return badRequest(`Máximo de ${MAX_BULK_ORG_IDS} orgs por send`)
   }
   for (const id of orgIds) {
     if (typeof id !== 'string' || !UUID_RE.test(id)) {
@@ -137,16 +132,15 @@ export async function POST(request: NextRequest) {
     effectiveScriptId = script.id
   }
 
-  // Encerra qualquer linha 'active' anterior das orgs alvo (mesmo script ou
-  // não). started_at do novo registro = now; o anterior fica como histórico
-  // com ended_at=now. Necessário pra UI: a row corrente da org é a mais
-  // recente; as antigas viram parte do histórico via started_at desc.
+  // Encerra QUALQUER associação aberta (ended_at IS NULL) das orgs alvo,
+  // independente de status. Pending não-aceitos também são fechados — caso
+  // contrário ficavam pendurados e violavam o partial unique index criado
+  // na migration 046 (uniq_org_scripts_open_per_org).
   const now = new Date().toISOString()
   const { error: closeErr } = await admin
     .from('org_scripts')
     .update({ ended_at: now })
     .in('org_id', orgIds)
-    .eq('status', 'active')
     .is('ended_at', null)
   if (closeErr) return serverError('Não foi possível encerrar associações ativas', closeErr)
 
@@ -166,7 +160,24 @@ export async function POST(request: NextRequest) {
     .upsert(rows, { onConflict: 'org_id,script_id' })
     .select('id, org_id, script_id, status, started_at')
 
-  if (upsertErr) return serverError('Não foi possível registrar o envio', upsertErr)
+  if (upsertErr) {
+    // 23505 = unique_violation. Com o partial unique uniq_org_scripts_open_per_org
+    // (migration 046), envios concorrentes pra mesma org colidem aqui — só um
+    // ganha, o outro retorna 409 pra o admin tentar de novo.
+    if (upsertErr.code === '23505') {
+      return Response.json(
+        {
+          data: null,
+          error: {
+            message: 'Envio concorrente detectado — recarregue a página e tente novamente.',
+            code: 409,
+          },
+        },
+        { status: 409 },
+      )
+    }
+    return serverError('Não foi possível registrar o envio', upsertErr)
+  }
 
   return ok({
     scriptId: effectiveScriptId,

@@ -1,25 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Search, Filter as FilterIcon, Send } from "lucide-react";
-import { useTranslations } from "next-intl";
-import type { Client, OrgScriptStatus } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Filter as FilterIcon, Send, ChevronLeft, ChevronRight } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { Client, OrgScriptStatus, PlanCode } from "@/lib/types";
 import { AdminOrgRow } from "./AdminOrgRow";
 import { SendScriptModal } from "./SendScriptModal";
 import {
   FiltersModal,
   EMPTY_FILTERS,
   countActiveFilters,
-  applyFiltersToClient,
   type FilterValues,
 } from "./FiltersModal";
 
 interface Props {
-  clients: Client[];
-  // Filtro inicial de script status vindo da URL (?filter=pending) — usado
-  // quando o card "Pending Approvals" foi clicado.
-  initialScriptFilter: OrgScriptStatus | "all";
+  initialRows: Client[];
+  initialTotal: number;
+  initialPageSize: number;
 }
 
 function formatDate(iso: string | null, locale: string): string {
@@ -35,84 +33,137 @@ function formatDate(iso: string | null, locale: string): string {
   }
 }
 
-export function AdminPanelClient({ clients, initialScriptFilter }: Props) {
+// Body do POST /api/admin/organizations/list — mantém em sync com o tipo do
+// endpoint. Campos undefined são omitidos no fetch.
+interface ListRequestBody {
+  search?: string;
+  planCode?: PlanCode;
+  planStatus?: "active" | "inactive" | "trial";
+  scriptStatus?: OrgScriptStatus;
+  scriptVersion?: string;
+  mrrMin?: number;
+  mrrMax?: number;
+  lastActivityFrom?: string;
+  lastActivityTo?: string;
+  page: number;
+  limit: number;
+}
+
+// filtersToBody converte o state do FiltersModal pro body da API. Trata
+// "all" como ausência de filtro e converte strings numéricas pra Number.
+function filtersToBody(
+  filters: FilterValues,
+  search: string,
+  page: number,
+  limit: number,
+): ListRequestBody {
+  const body: ListRequestBody = { page, limit };
+  const trimmed = search.trim();
+  if (trimmed.length > 0) body.search = trimmed;
+  if (filters.scriptStatus !== "all") body.scriptStatus = filters.scriptStatus;
+  if (filters.planCode !== "all") body.planCode = filters.planCode;
+  if (filters.planStatus !== "all") body.planStatus = filters.planStatus;
+  if (filters.scriptVersion !== "all") body.scriptVersion = filters.scriptVersion;
+  if (filters.mrrMin !== "") {
+    const n = Number(filters.mrrMin);
+    if (isFinite(n) && n >= 0) body.mrrMin = n;
+  }
+  if (filters.mrrMax !== "") {
+    const n = Number(filters.mrrMax);
+    if (isFinite(n) && n >= 0) body.mrrMax = n;
+  }
+  if (filters.lastActivityFrom !== "") body.lastActivityFrom = filters.lastActivityFrom;
+  if (filters.lastActivityTo !== "") body.lastActivityTo = filters.lastActivityTo;
+  return body;
+}
+
+export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }: Props) {
   const t = useTranslations("Admin.tableTools");
   const router = useRouter();
-  const pathname = usePathname();
+  const locale = useLocale();
+
+  const [rows, setRows] = useState<Client[]>(initialRows);
+  const [total, setTotal] = useState(initialTotal);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<FilterValues>({
-    ...EMPTY_FILTERS,
-    scriptStatus: initialScriptFilter,
-  });
+  const [filters, setFilters] = useState<FilterValues>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(initialPageSize);
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [modalOrgIds, setModalOrgIds] = useState<string[] | null>(null);
 
-  // Sincroniza o filtro de scriptStatus com a URL — necessário pq useState
-  // só roda a inicialização uma vez. Quando o card "Pending Approvals" no
-  // topo é clicado, o <Link> navega via client-side, a página server
-  // re-renderiza com novo initialScriptFilter, mas o useState aqui
-  // preserva o valor antigo. Esse effect propaga a mudança da URL pro state.
+  // Cancellable fetch — guarda o request mais recente pra ignorar respostas
+  // out-of-order (ex: user digita rápido, request 1 chega depois de request 2).
+  const fetchSeqRef = useRef(0);
+
+  const doFetch = useCallback(
+    async (body: ListRequestBody) => {
+      const seq = ++fetchSeqRef.current;
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch("/api/admin/organizations/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        // Ignora resposta stale (outro fetch já disparou e é mais novo).
+        if (seq !== fetchSeqRef.current) return;
+        if (!res.ok || !json?.data) {
+          setFetchError(json?.error?.message ?? t("fetchError"));
+          return;
+        }
+        setRows(json.data.rows as Client[]);
+        setTotal(json.data.total as number);
+      } catch {
+        if (seq !== fetchSeqRef.current) return;
+        setFetchError(t("fetchError"));
+      } finally {
+        if (seq === fetchSeqRef.current) setLoading(false);
+      }
+    },
+    [t],
+  );
+
+  // Debounced fetch — dispara 250ms após o último change de filtro/search.
+  // Não dispara no mount inicial (já temos initialRows do server).
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    setFilters((f) =>
-      f.scriptStatus === initialScriptFilter
-        ? f
-        : { ...f, scriptStatus: initialScriptFilter },
-    );
-  }, [initialScriptFilter]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const handle = setTimeout(() => {
+      void doFetch(filtersToBody(filters, search, page, limit));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [filters, search, page, limit, doFetch]);
 
-  // syncUrlFilter mantém o URL coerente com o filtro de scriptStatus do
-  // state. Usado quando o user aplica/limpa filtros via modal — sem isso, o
-  // URL fica com ?filter=pending grudado mesmo depois de limpar, e clicar
-  // novamente no card "Pending Approvals" vira no-op (URL já bate).
-  // router.replace sem scroll evita pollution do history e flicker.
-  const syncUrlFilter = (status: FilterValues["scriptStatus"]) => {
-    const params = new URLSearchParams(
-      typeof window !== "undefined" ? window.location.search : "",
-    );
-    if (status === "all") params.delete("filter");
-    else params.set("filter", status);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
+  // Quando filtros mudam, volta pra página 1 (senão pode estar pedindo
+  // uma página que não existe mais com o novo filtro).
+  useEffect(() => {
+    setPage(1);
+  }, [filters, search]);
 
-  const orgNames = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const c of clients) map[c.id] = c.name;
-    return map;
-  }, [clients]);
+  // ── Bulk selection ─────────────────────────────────────────────────
 
-  // Versões de script únicas presentes nos dados — alimenta o select do modal.
-  const availableScriptVersions = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of clients)
-      if (c.currentScript) set.add(c.currentScript.version);
-    return Array.from(set).sort();
-  }, [clients]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return clients.filter((c) => {
-      if (q && !c.name.toLowerCase().includes(q)) return false;
-      return applyFiltersToClient(c, filters);
-    });
-  }, [clients, search, filters]);
-
-  const activeCount = countActiveFilters(filters);
-
-  const allFilteredIds = filtered.map((c) => c.id);
-  const allSelected =
-    allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
+  const allRowIds = rows.map((c) => c.id);
+  const allSelectedOnPage =
+    allRowIds.length > 0 && allRowIds.every((id) => selected.has(id));
 
   const toggleAll = () => {
-    if (allSelected) {
+    if (allSelectedOnPage) {
       const next = new Set(selected);
-      for (const id of allFilteredIds) next.delete(id);
+      for (const id of allRowIds) next.delete(id);
       setSelected(next);
     } else {
       const next = new Set(selected);
-      for (const id of allFilteredIds) next.add(id);
+      for (const id of allRowIds) next.add(id);
       setSelected(next);
     }
   };
@@ -124,27 +175,51 @@ export function AdminPanelClient({ clients, initialScriptFilter }: Props) {
     setSelected(next);
   };
 
-  const handleSent = (count: number) => {
+  // ── Modal callbacks ─────────────────────────────────────────────────
+
+  const orgNames = useMemo(() => {
+    // Map dos org names visíveis (página corrente) — pro subtítulo do modal
+    // single-send. Bulk modal mostra count, então não precisa do map completo.
+    const map: Record<string, string> = {};
+    for (const c of rows) map[c.id] = c.name;
+    return map;
+  }, [rows]);
+
+  const handleSent = (_count: number) => {
     setModalOrgIds(null);
     setSelected(new Set());
-    router.refresh();
-    return count;
+    // Refetcha a página atual pra refletir o novo status (pending) das orgs.
+    void doFetch(filtersToBody(filters, search, page, limit));
+    router.refresh(); // garante que os metric cards também atualizam
   };
+
+  // ── Versões únicas (pro filtro) ─────────────────────────────────────
+  // Como só temos a página corrente, esse set é incompleto. Trade-off: pra
+  // ter todas as versões precisaria de outra query. Pra demo aceitável.
+
+  const availableScriptVersions = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of rows) if (c.currentScript) set.add(c.currentScript.version);
+    return Array.from(set).sort();
+  }, [rows]);
+
+  // ── Pagination math ─────────────────────────────────────────────────
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+  const activeCount = countActiveFilters(filters);
 
   return (
     <>
       {/* ── Search + filter + bulk action bar ──────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          {/* Selected counter aparece só quando há seleção; libera bulk send. */}
           {selected.size > 0 && (
             <>
               <span
                 className="text-xs font-mono px-2 py-1 rounded"
-                style={{
-                  background: "var(--am-bg4)",
-                  color: "var(--am-muted)",
-                }}
+                style={{ background: "var(--am-bg4)", color: "var(--am-muted)" }}
               >
                 {t("selectedCount", { count: selected.size })}
               </span>
@@ -224,7 +299,7 @@ export function AdminPanelClient({ clients, initialScriptFilter }: Props) {
                 <th className="w-8 px-3 py-3">
                   <input
                     type="checkbox"
-                    checked={allSelected}
+                    checked={allSelectedOnPage}
                     onChange={toggleAll}
                     aria-label={t("selectAll")}
                     style={{ accentColor: "var(--am-accent)" }}
@@ -253,38 +328,95 @@ export function AdminPanelClient({ clients, initialScriptFilter }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((client, i) => (
+              {rows.length === 0 && !loading && (
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="text-center py-10 text-sm"
+                    style={{ color: "var(--am-muted)" }}
+                  >
+                    {fetchError ?? t("noResults")}
+                  </td>
+                </tr>
+              )}
+              {rows.map((client, i) => (
                 <AdminOrgRow
                   key={client.id}
                   client={client}
-                  isLast={i === filtered.length - 1}
+                  isLast={i === rows.length - 1}
                   isSelected={selected.has(client.id)}
                   onToggleSelected={() => toggleOne(client.id)}
                   onSendScript={() => setModalOrgIds([client.id])}
                   lastActivityDate={formatDate(
                     client.lastCallAt ?? client.createdAt,
-                    "en-US",
+                    locale,
                   )}
                 />
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Loading overlay sutil — mantém a tabela mas indica refresh em andamento */}
+        {loading && (
+          <div
+            className="px-5 py-2 text-[11px] font-mono"
+            style={{ borderTop: "1px solid var(--am-border)", color: "var(--am-muted)" }}
+          >
+            {t("loading")}
+          </div>
+        )}
       </div>
 
-      {/* ── Filters modal ──────────────────────────────────────── */}
+      {/* ── Pagination footer ──────────────────────────────────── */}
+      <div className="flex items-center justify-between mt-3 text-xs" style={{ color: "var(--am-muted)" }}>
+        <span className="font-mono">
+          {t("itemsTotal", { count: total })}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono">
+            {t("pageOf", { page, total: totalPages })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={!canPrev || loading}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md border disabled:opacity-40"
+            style={{
+              borderColor: "var(--am-border)",
+              background: "var(--am-bg3)",
+              color: "var(--am-text)",
+            }}
+            aria-label={t("prevPage")}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={!canNext || loading}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md border disabled:opacity-40"
+            style={{
+              borderColor: "var(--am-border)",
+              background: "var(--am-bg3)",
+              color: "var(--am-text)",
+            }}
+            aria-label={t("nextPage")}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Modals ─────────────────────────────────────────────── */}
       <FiltersModal
         open={filtersOpen}
         current={filters}
         availableScriptVersions={availableScriptVersions}
-        onApply={(next) => {
-          setFilters(next);
-          syncUrlFilter(next.scriptStatus);
-        }}
+        onApply={setFilters}
         onClose={() => setFiltersOpen(false)}
       />
 
-      {/* ── Send Script modal ──────────────────────────────────── */}
       <SendScriptModal
         open={modalOrgIds !== null}
         orgIds={modalOrgIds ?? []}
@@ -296,9 +428,6 @@ export function AdminPanelClient({ clients, initialScriptFilter }: Props) {
   );
 }
 
-// Th + ThActions extraídos pra reduzir JSX e usar useTranslations apenas
-// uma vez por header — alternativa seria passar as labels via props mas
-// fica mais verbose.
 function Th({ translationKey }: { translationKey: string }) {
   const tTh = useTranslations("Admin.th");
   return (

@@ -17,7 +17,6 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
-import { PendingScriptBadge } from '@/components/layout/PendingScriptBadge'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -28,9 +27,15 @@ interface AppHeaderProps {
    * can resolve the active title automatically (used by /dashboard/*).
    */
   pageTitle?: string | Record<string, string>
+  /**
+   * Slot pra notificações server-rendered (ex: PendingScriptBadgeServer).
+   * Renderizado no extremo esquerdo da seção direita. Passar via prop em
+   * vez de hardcoded permite layouts diferentes injetarem badges diferentes.
+   */
+  pendingBadge?: React.ReactNode
 }
 
-export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
+export function AppHeader({ mobileSidebar, pageTitle, pendingBadge }: AppHeaderProps) {
   const pathname = usePathname()
   const locale = useLocale()
   const t = useTranslations('Shared.header')
@@ -104,9 +109,9 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
 
       {/* ── Right ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 md:gap-4">
-        {/* Badge de aprovação pendente — visível só pra Owner quando há
-            um script pending na org ativa. */}
-        <PendingScriptBadge />
+        {/* Slot pra badge de aprovação pendente — só renderiza pra Owner
+            com script pending. Server-rendered via prop. */}
+        {pendingBadge}
 
         {!resolvedTitle && (
           <>
