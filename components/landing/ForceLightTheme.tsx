@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef } from "react"
-import { useTheme } from "next-themes"
+import { useEffect, useLayoutEffect } from "react"
 
 /**
  * Força a LP em light mode mesmo se o user tiver dark preference em outras
@@ -15,26 +14,30 @@ import { useTheme } from "next-themes"
  * localStorage e quebra a preferência do user nas outras rotas.
  *
  * Estratégia:
- * - useLayoutEffect (isomorphic) → roda antes do paint, reduz flash em hydrate
+ * - Snapshot do estado da classe ANTES de mexer — guarda a "verdade" inicial
+ *   sem depender do useTheme (que pode não ter resolvido em nav rápida).
+ * - useLayoutEffect (isomorphic) → roda antes do paint, reduz flash em hydrate.
  * - MutationObserver no <html class> → se next-themes reaplicar `dark`
- *   (ex: storage listener disparado por outra aba que toggleou tema),
- *   reforçamos light imediatamente
- * - Cleanup lê o estado FRESCO de useTheme via ref → restaura corretamente
- *   o tema atual quando o user sai da LP, mesmo que tenha mudado durante
- *   a visita
+ *   (ex: storage listener disparado por outra aba), reforçamos light.
+ * - Cleanup garante que html sempre termina com EXATAMENTE uma classe
+ *   ("light" ou "dark"). Sem essa garantia, html pode ficar sem nenhuma
+ *   classe → CSS vars do dashboard ficam indefinidas e o logo (que usa
+ *   `.dark` na cascata pra escolher fill) renderiza com cor errada.
  */
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect
 
 export function ForceLightTheme() {
-  const { theme, resolvedTheme } = useTheme()
-
-  // Ref atualizada a cada render — cleanup lê valor atual, não snapshot.
-  const themeStateRef = useRef({ theme, resolvedTheme })
-  themeStateRef.current = { theme, resolvedTheme }
-
   useIsomorphicLayoutEffect(() => {
     const html = document.documentElement
+
+    // Snapshot ANTES de qualquer mutação — fonte da verdade pro cleanup.
+    // Lê localStorage como fallback porque o user pode ter aberto a LP
+    // diretamente (sem ter passado por uma rota dark antes), caso em que
+    // html.classList ainda não tem theme aplicado pelo next-themes.
+    const hadDark =
+      html.classList.contains("dark") ||
+      (typeof window !== "undefined" && localStorage.getItem("theme") === "dark")
 
     const forceLight = () => {
       if (html.classList.contains("dark")) html.classList.remove("dark")
@@ -43,24 +46,17 @@ export function ForceLightTheme() {
 
     forceLight()
 
-    // Observa mudanças em <html class>. Se next-themes (ou outro listener)
-    // reaplicar `dark` enquanto estamos na LP, reverte de volta.
     const observer = new MutationObserver(forceLight)
     observer.observe(html, { attributes: true, attributeFilter: ["class"] })
 
     return () => {
       observer.disconnect()
 
-      // Lê estado atual do tema (ref garante valor fresco). Fallback pra
-      // localStorage se useTheme ainda não tiver settled.
-      const current = themeStateRef.current
-      const target =
-        current.resolvedTheme ??
-        current.theme ??
-        (typeof window !== "undefined" ? localStorage.getItem("theme") : null)
-
+      // Sempre remove ambas antes de adicionar — evita estado intermediário
+      // sem classe de tema (que é o que quebrava o logo do dashboard).
       html.classList.remove("light")
-      if (target === "dark") html.classList.add("dark")
+      html.classList.remove("dark")
+      html.classList.add(hadDark ? "dark" : "light")
     }
   }, [])
 
