@@ -532,16 +532,6 @@ const MAX_PAGE_SIZE = 100
 type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
 const SORT_KEYS: readonly SortKey[] = ['name', 'email', 'role', 'org', 'invited_at']
 
-// Mapa sort key → (coluna, foreignTable). Foreign table é necessário pro
-// supabase-js ordenar por coluna de join (users.name, organizations.name).
-const SORT_FIELD: Record<SortKey, { column: string; foreignTable?: string }> = {
-  name:        { column: 'name',        foreignTable: 'users' },
-  email:       { column: 'email',       foreignTable: 'users' },
-  role:        { column: 'role' },
-  org:         { column: 'name',        foreignTable: 'organizations' },
-  invited_at:  { column: 'invited_at' },
-}
-
 interface MembershipRow {
   user_id: string
   org_id: string
@@ -624,33 +614,21 @@ export async function GET(request: NextRequest) {
   // memberships tem 2 FKs pra users (user_id e invited_by) — sem o hint
   // !user_id, supabase-js não consegue desambiguar e a query retorna vazia
   // silenciosamente. Forçamos a relação explícita pelo nome da FK column.
+  //
+  // Ordenação + paginação em JS: PostgREST não ordena o pai por coluna de
+  // tabela embed (`?order=users.name.asc` ordena o embed, não o pai). Para
+  // sort por name/email/org precisaríamos de uma RPC/view dedicada. Como o
+  // dataset é bounded (Owner = sua org; Admin = todas, capado em 1000),
+  // puxa tudo e ordena em memória. Quando passar de ~500 memberships totais
+  // em prod, migrar pra RPC fica trivial — mantém o shape de resposta igual.
   let query = admin
     .from('memberships')
-    .select(
-      `
+    .select(`
       user_id, org_id, role, invite_status, invited_by, invited_at, created_at,
       users!user_id (id, name, email, avatar, avatar_color),
       organizations (id, name)
-    `,
-      { count: 'exact' }
-    )
-
-  const sortField = SORT_FIELD[sortKey]
-  // referencedTable (não `foreignTable`) é o nome correto pra ordenar o pai
-  // por coluna de tabela embed em relação many-to-one — postgrest-js 1.5+
-  // gera `?order=users.name.asc` (sort pai) em vez de `?users.order=name.asc`
-  // (sort do embed, que não tem efeito quando o embed é 1-1).
-  query = query.order(sortField.column, {
-    ascending,
-    nullsFirst: false,
-    ...(sortField.foreignTable ? { referencedTable: sortField.foreignTable } : {}),
-  })
-  // Tie-breaker estável: created_at desc — sem isso, ordenações por
-  // campos com empates (ex: role) ficam não-determinísticas entre requests.
-  if (sortKey !== 'invited_at') {
-    query = query.order('created_at', { ascending: false })
-  }
-  query = query.range(from, to)
+    `)
+    .limit(1000)
 
   if (callerRole === 'owner') {
     const { data: callerUser } = await admin
@@ -667,10 +645,40 @@ export async function GET(request: NextRequest) {
   if (role) query = query.eq('role', role)
   if (searchUserIds) query = query.in('user_id', searchUserIds)
 
-  const { data, error, count } = await query
+  const { data, error } = await query
   if (error) return serverError('Não foi possível listar os convites', error)
 
-  const rows = (data ?? []) as unknown as MembershipRow[]
+  // ─── Sort em memória ────────────────────────────────────────────────────
+  const allRows = (data ?? []) as unknown as MembershipRow[]
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base' })
+  const dirMul = ascending ? 1 : -1
+  const sortValue = (r: MembershipRow): string | number => {
+    switch (sortKey) {
+      case 'name':       return r.users?.name ?? ''
+      case 'email':      return r.users?.email ?? ''
+      case 'org':        return r.organizations?.name ?? ''
+      case 'role':       return r.role
+      case 'invited_at': return r.invited_at ? Date.parse(r.invited_at) : 0
+    }
+  }
+  allRows.sort((a, b) => {
+    const av = sortValue(a)
+    const bv = sortValue(b)
+    let cmp: number
+    if (typeof av === 'number' && typeof bv === 'number') {
+      cmp = av - bv
+    } else {
+      cmp = collator.compare(String(av), String(bv))
+    }
+    if (cmp !== 0) return cmp * dirMul
+    // Tie-breaker determinístico — sem isso ordenações com empates
+    // (ex: dois trainers com nome igual) ficam não-determinísticas
+    // entre requests, com efeito visual em quem aparece em qual página.
+    return Date.parse(b.created_at) - Date.parse(a.created_at)
+  })
+
+  const total = allRows.length
+  const rows = allRows.slice(from, to + 1)
   const inviterIds = Array.from(new Set(rows.map((r) => r.invited_by).filter((v): v is string => !!v)))
 
   const invitersRes = inviterIds.length > 0
@@ -701,5 +709,5 @@ export async function GET(request: NextRequest) {
     invitedBy: r.invited_by ? inviterById.get(r.invited_by) ?? null : null,
   }))
 
-  return ok({ items, page, pageSize, total: count ?? items.length })
+  return ok({ items, page, pageSize, total })
 }
