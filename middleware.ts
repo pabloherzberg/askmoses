@@ -144,7 +144,7 @@ export async function middleware(request: NextRequest) {
   // intelligence, etc.) redirecionam pra /admin pra não dar impressão de que
   // ele pode operar a org. /admin continua acessível pra Admin sair do modo.
   if (impersonatingOrgId) {
-    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls']
+    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls', '/marketing-intelligence']
     const isAllowed =
       rawPath === '/' ||
       rawPath.startsWith('/admin') ||
