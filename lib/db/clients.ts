@@ -1,5 +1,13 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Client, GlobalMetrics, HealthStatus, Plan, PlanCode } from '@/lib/types'
+import type {
+  Client,
+  GlobalMetrics,
+  HealthStatus,
+  OrgScriptInfo,
+  OrgScriptStatus,
+  Plan,
+  PlanCode,
+} from '@/lib/types'
 
 // Após migration 038 a tabela `clients` foi mesclada em `organizations`.
 // O tipo TS `Client` continua existindo como shape lida pelas telas Admin
@@ -33,6 +41,7 @@ interface DbOrgRow {
   health: HealthStatus
   trainers_count: number | null
   subscription_status: 'active' | 'inactive' | 'trial'
+  created_at: string | null
   plans: DbPlanNested | null
 }
 
@@ -51,7 +60,12 @@ function toPlan(row: DbPlanNested): Plan {
   }
 }
 
-function toClient(row: DbOrgRow, ownerAccepted: boolean): Client {
+function toClient(
+  row: DbOrgRow,
+  ownerAccepted: boolean,
+  currentScript: OrgScriptInfo | null,
+  lastCallAt: string | null,
+): Client {
   if (!row.plans) {
     // Pós-merge: org pode existir sem plano (Owner em onboarding step-2).
     // Antes esse caso não existia (clients sempre tinha plan_id NOT NULL na
@@ -73,7 +87,126 @@ function toClient(row: DbOrgRow, ownerAccepted: boolean): Client {
     trainersCount: row.trainers_count ?? 0,
     ownerAccepted,
     subscriptionStatus: row.subscription_status,
+    currentScript,
+    lastCallAt,
+    createdAt: row.created_at ?? new Date().toISOString(),
   }
+}
+
+// Row do view org_scripts_current criado na migration 044.
+interface DbOrgScriptRow {
+  org_id: string
+  script_id: string
+  script_name: string
+  rubric_version_snapshot: number
+  minor_version: number
+  effective_status: 'pending' | 'active' | 'deprecated' | 'rejected'
+  started_at: string | null
+  ended_at: string | null
+}
+
+/**
+ * Busca o script "atual" de cada org. Critério: linha mais recente em
+ * org_scripts_current onde ended_at IS NULL (ou seja, ainda associada).
+ * Quando o Admin envia um novo script, o anterior recebe ended_at — só o
+ * mais recente sem ended_at é a associação corrente.
+ *
+ * Quando o status atual é 'pending', também resolve a previousVersion (o
+ * script anterior aceito, ended_at NOT NULL mais recente) pra UI poder
+ * renderizar a transição "v_old → v_new".
+ *
+ * Retorna Map<orgId, OrgScriptInfo>. Orgs sem script associado ficam
+ * fora do map (caller renderiza como status='none').
+ *
+ * Se a view não existir ainda (migration 044 não aplicada), retorna map
+ * vazio em vez de quebrar — permite o app rodar enquanto a migration está
+ * pendente em algum ambiente.
+ */
+async function getCurrentScriptsByOrg(
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<Map<string, OrgScriptInfo>> {
+  // Uma query única ordenada por org_id + started_at desc nos dá tanto a
+  // linha atual (primeira por org) quanto a previousVersion (segunda).
+  // Ignora ended_at no filtro pra incluir o anterior (que TEM ended_at).
+  const { data, error } = await supabase
+    .from('org_scripts_current')
+    .select('org_id, script_id, script_name, rubric_version_snapshot, minor_version, effective_status, started_at, ended_at')
+    .order('org_id', { ascending: true })
+    .order('started_at', { ascending: false })
+
+  if (error) {
+    // 42P01 = relation does not exist. Permite o painel admin funcionar
+    // mesmo se a migration 044 ainda não rodou no ambiente.
+    if (error.code === '42P01') {
+      console.warn('[clients] org_scripts_current view ausente — script status indisponível')
+      return new Map()
+    }
+    throw new Error(`getCurrentScriptsByOrg: ${error.message}`)
+  }
+
+  // Agrupa por org_id; a primeira linha é a atual (ended_at IS NULL ou a
+  // mais recente), as seguintes formam o histórico.
+  const byOrg = new Map<string, DbOrgScriptRow[]>()
+  for (const row of (data ?? []) as DbOrgScriptRow[]) {
+    const list = byOrg.get(row.org_id) ?? []
+    list.push(row)
+    byOrg.set(row.org_id, list)
+  }
+
+  const result = new Map<string, OrgScriptInfo>()
+  for (const [orgId, rows] of byOrg.entries()) {
+    // Procura a linha "current" = primeira sem ended_at. Se todas têm
+    // ended_at (caso edge: org teve scripts e todos foram fechados sem
+    // novo), pula essa org — não tem script corrente.
+    const current = rows.find((r) => r.ended_at === null)
+    if (!current) continue
+
+    // previousVersion só faz sentido quando o atual é 'pending'. Buscamos a
+    // entrada imediatamente anterior (mais recente com ended_at NOT NULL).
+    let previousVersion: string | null = null
+    if (current.effective_status === 'pending') {
+      const previous = rows.find((r) => r.ended_at !== null)
+      if (previous) {
+        previousVersion = `${previous.rubric_version_snapshot}.${previous.minor_version}`
+      }
+    }
+
+    result.set(orgId, {
+      scriptId: current.script_id,
+      scriptName: current.script_name,
+      version: `${current.rubric_version_snapshot}.${current.minor_version}`,
+      previousVersion,
+      status: current.effective_status as OrgScriptStatus,
+      startedAt: current.started_at,
+    })
+  }
+  return result
+}
+
+// MAX(calls.created_at) agrupado por org_id. Usado pra coluna "Last Activity"
+// na tabela admin. Pode falhar silenciosamente se a tabela calls não tem
+// nenhuma linha — retorna map vazio nesse caso.
+async function getLastCallByOrg(
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<Map<string, string>> {
+  const { data, error } = await supabase
+    .from('calls')
+    .select('org_id, created_at')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.warn('[clients] não foi possível buscar last_call_at:', error.message)
+    return new Map()
+  }
+
+  // Como veio ordenado desc, a primeira ocorrência de cada org_id é a mais
+  // recente. Skip subsequentes.
+  const map = new Map<string, string>()
+  for (const row of (data ?? []) as Array<{ org_id: string | null; created_at: string }>) {
+    if (!row.org_id || map.has(row.org_id)) continue
+    map.set(row.org_id, row.created_at)
+  }
+  return map
 }
 
 /**
@@ -87,11 +220,11 @@ function toClient(row: DbOrgRow, ownerAccepted: boolean): Client {
 export async function dbGetClients(): Promise<Client[]> {
   const supabase = createAdminClient()
 
-  const [orgsRes, ownersRes] = await Promise.all([
+  const [orgsRes, ownersRes, scriptsByOrg, lastCallByOrg] = await Promise.all([
     supabase
       .from('organizations')
       .select(
-        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, plans(*)'
+        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)'
       )
       .not('plan_id', 'is', null)
       .order('name', { ascending: true }),
@@ -100,6 +233,8 @@ export async function dbGetClients(): Promise<Client[]> {
       .select('org_id')
       .eq('role', 'owner')
       .eq('invite_status', 'accepted'),
+    getCurrentScriptsByOrg(supabase),
+    getLastCallByOrg(supabase),
   ])
 
   if (orgsRes.error) throw new Error(`dbGetClients: ${orgsRes.error.message}`)
@@ -110,9 +245,15 @@ export async function dbGetClients(): Promise<Client[]> {
     (ownersRes.data ?? []).map((m: { org_id: string }) => m.org_id),
   )
 
-  return (orgsRes.data ?? []).map((row) =>
-    toClient(row as unknown as DbOrgRow, ownerAcceptedSet.has((row as { id: string }).id)),
-  )
+  return (orgsRes.data ?? []).map((row) => {
+    const orgId = (row as { id: string }).id
+    return toClient(
+      row as unknown as DbOrgRow,
+      ownerAcceptedSet.has(orgId),
+      scriptsByOrg.get(orgId) ?? null,
+      lastCallByOrg.get(orgId) ?? null,
+    )
+  })
 }
 
 /**
@@ -122,11 +263,11 @@ export async function dbGetClients(): Promise<Client[]> {
 export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
   const supabase = createAdminClient()
 
-  const [orgRes, ownerRes] = await Promise.all([
+  const [orgRes, ownerRes, scriptsByOrg, lastCallByOrg] = await Promise.all([
     supabase
       .from('organizations')
       .select(
-        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, plans(*)'
+        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)'
       )
       .eq('id', orgId)
       .maybeSingle(),
@@ -136,6 +277,8 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
       .eq('org_id', orgId)
       .eq('role', 'owner')
       .eq('invite_status', 'accepted'),
+    getCurrentScriptsByOrg(supabase),
+    getLastCallByOrg(supabase),
   ])
 
   if (orgRes.error) {
@@ -149,7 +292,12 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
   if (!(orgRes.data as { plan_id: string | null }).plan_id) return null
 
   const ownerAccepted = (ownerRes.count ?? 0) > 0
-  return toClient(orgRes.data as unknown as DbOrgRow, ownerAccepted)
+  return toClient(
+    orgRes.data as unknown as DbOrgRow,
+    ownerAccepted,
+    scriptsByOrg.get(orgId) ?? null,
+    lastCallByOrg.get(orgId) ?? null,
+  )
 }
 
 /**
