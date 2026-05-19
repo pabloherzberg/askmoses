@@ -168,7 +168,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin-only pages — owner and trainer are redirected out
-  if (rawPath.startsWith('/dashboard/script-builder') && role !== 'admin' && role !== 'owner') {
+  if (rawPath.startsWith('/dashboard/script-builder') && role !== 'admin') {
     return NextResponse.redirect(redirectByRole(role!, locale, request.url))
   }
 

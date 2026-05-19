@@ -12,7 +12,6 @@ import {
   GraduationCap,
   UserPlus,
   Settings,
-  BrainCircuit,
   Megaphone,
   Building2,
   PlusCircle,
@@ -98,11 +97,6 @@ export function OwnerNavItems() {
       icon: GraduationCap,
     },
     { label: t("calls"), href: "/calls", icon: Phone },
-    {
-      label: "Script Intelligence",
-      href: "/dashboard/script-builder",
-      icon: BrainCircuit,
-    },
     {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",
