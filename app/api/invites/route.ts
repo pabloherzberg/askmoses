@@ -521,11 +521,26 @@ export async function POST(request: NextRequest) {
 //   Owner: vê todos da própria org ativa
 //   Admin: vê todos; pode filtrar por org via ?orgId=…
 //   Filtros opcionais: ?status=pending|accepted, ?role=trainer|owner
+//   Busca:     ?q=texto  → ilike em users.name OR users.email
+//   Ordenação: ?sort=name|email|role|org|invited_at  &  ?dir=asc|desc
 //   Paginação: ?page=1&pageSize=20 (max 100)
 //   Lista é montada via memberships (canônica), com user e org resolvidos.
 
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
+
+type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
+const SORT_KEYS: readonly SortKey[] = ['name', 'email', 'role', 'org', 'invited_at']
+
+// Mapa sort key → (coluna, foreignTable). Foreign table é necessário pro
+// supabase-js ordenar por coluna de join (users.name, organizations.name).
+const SORT_FIELD: Record<SortKey, { column: string; foreignTable?: string }> = {
+  name:        { column: 'name',        foreignTable: 'users' },
+  email:       { column: 'email',       foreignTable: 'users' },
+  role:        { column: 'role' },
+  org:         { column: 'name',        foreignTable: 'organizations' },
+  invited_at:  { column: 'invited_at' },
+}
 
 interface MembershipRow {
   user_id: string
@@ -554,6 +569,9 @@ export async function GET(request: NextRequest) {
   const orgIdParam = searchParams.get('orgId')
   const pageRaw = searchParams.get('page')
   const pageSizeRaw = searchParams.get('pageSize')
+  const qRaw = searchParams.get('q')
+  const sortRaw = searchParams.get('sort')
+  const dirRaw = searchParams.get('dir')
 
   if (status && status !== 'pending' && status !== 'accepted') {
     return badRequest('status inválido')
@@ -561,6 +579,21 @@ export async function GET(request: NextRequest) {
   if (role && role !== 'trainer' && role !== 'owner') {
     return badRequest('role inválido')
   }
+  if (sortRaw && !SORT_KEYS.includes(sortRaw as SortKey)) {
+    return badRequest('sort inválido')
+  }
+  if (dirRaw && dirRaw !== 'asc' && dirRaw !== 'desc') {
+    return badRequest('dir inválido')
+  }
+
+  const sortKey: SortKey = (sortRaw as SortKey) ?? 'invited_at'
+  const ascending = dirRaw === 'asc'
+
+  // Sanitiza q: corta espaços e remove chars que quebrariam a sintaxe do
+  // .or() do PostgREST (vírgula separa cláusulas, parens são agrupamento).
+  // % e _ continuam permitidos — funcionam como wildcards no ilike, o que
+  // é OK pra UX de busca.
+  const q = qRaw?.trim().replace(/[,()]/g, '') ?? ''
 
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1)
   const pageSize = Math.min(
@@ -571,6 +604,22 @@ export async function GET(request: NextRequest) {
   const to = from + pageSize - 1
 
   const admin = createAdminClient()
+
+  // ─── Filtro de busca: resolve user_ids antes de filtrar memberships ─────
+  // 2-query approach é mais previsível que .or() com foreignTable, e o set
+  // de user_ids é bounded (users globais é da ordem de centenas em prod).
+  let searchUserIds: string[] | null = null
+  if (q.length > 0) {
+    const { data: matchingUsers, error: searchErr } = await admin
+      .from('users')
+      .select('id')
+      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+    if (searchErr) return serverError('Não foi possível buscar usuários', searchErr)
+    searchUserIds = (matchingUsers ?? []).map((u: { id: string }) => u.id)
+    if (searchUserIds.length === 0) {
+      return ok({ items: [], page: 1, pageSize, total: 0 })
+    }
+  }
 
   // memberships tem 2 FKs pra users (user_id e invited_by) — sem o hint
   // !user_id, supabase-js não consegue desambiguar e a query retorna vazia
@@ -585,9 +634,23 @@ export async function GET(request: NextRequest) {
     `,
       { count: 'exact' }
     )
-    .order('invited_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .range(from, to)
+
+  const sortField = SORT_FIELD[sortKey]
+  // referencedTable (não `foreignTable`) é o nome correto pra ordenar o pai
+  // por coluna de tabela embed em relação many-to-one — postgrest-js 1.5+
+  // gera `?order=users.name.asc` (sort pai) em vez de `?users.order=name.asc`
+  // (sort do embed, que não tem efeito quando o embed é 1-1).
+  query = query.order(sortField.column, {
+    ascending,
+    nullsFirst: false,
+    ...(sortField.foreignTable ? { referencedTable: sortField.foreignTable } : {}),
+  })
+  // Tie-breaker estável: created_at desc — sem isso, ordenações por
+  // campos com empates (ex: role) ficam não-determinísticas entre requests.
+  if (sortKey !== 'invited_at') {
+    query = query.order('created_at', { ascending: false })
+  }
+  query = query.range(from, to)
 
   if (callerRole === 'owner') {
     const { data: callerUser } = await admin
@@ -602,6 +665,7 @@ export async function GET(request: NextRequest) {
 
   if (status) query = query.eq('invite_status', status)
   if (role) query = query.eq('role', role)
+  if (searchUserIds) query = query.in('user_id', searchUserIds)
 
   const { data, error, count } = await query
   if (error) return serverError('Não foi possível listar os convites', error)
