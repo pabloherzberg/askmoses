@@ -37,6 +37,10 @@ interface CreateOrgBody {
   ownerName?: string
   ownerEmail?: string
   locale?: string
+  // MRR opcional informado pelo Ariel no momento da criação (sweetheart
+  // deals, valores customizados que não batem com o price_cents do plano).
+  // Se omitido, fica 0 e o Admin pode ajustar depois via subscription override.
+  mrr?: number
 }
 
 const PLAN_CODES = ['starter', 'pro', 'pro_rag'] as const
@@ -161,6 +165,7 @@ export async function POST(request: NextRequest) {
   const planCode = body.planCode
   const ownerName = body.ownerName?.trim()
   const ownerEmail = body.ownerEmail?.trim().toLowerCase()
+  const mrr = body.mrr
 
   if (!name) return badRequest('name é obrigatório')
   if (!planCode || !PLAN_CODES.includes(planCode)) {
@@ -168,6 +173,9 @@ export async function POST(request: NextRequest) {
   }
   if (!ownerName) return badRequest('ownerName é obrigatório')
   if (!ownerEmail || !EMAIL_RE.test(ownerEmail)) return badRequest('ownerEmail inválido')
+  if (mrr !== undefined && (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0)) {
+    return badRequest('mrr deve ser um número >= 0')
+  }
 
   const admin = createAdminClient()
   const origin = request.nextUrl.origin
@@ -191,6 +199,7 @@ export async function POST(request: NextRequest) {
       plan_id: plan.id,
       subscription_status: 'active',
       health: 'healthy',
+      ...(mrr !== undefined ? { mrr } : {}),
     })
     .select('id, name')
     .single()

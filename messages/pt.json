@@ -539,15 +539,22 @@
       "ptsVsLastMonth": "pts vs mês passado"
     },
     "clientsLabel": "Clientes",
+    "allOrganizationsLabel": "Todas as organizações",
     "th": {
-      "client": "Cliente",
+      "client": "Organização",
       "plan": "Plano",
+      "status": "Status",
       "salesPeople": "Vendedores",
       "callsPerMonth": "Chamadas / mês",
       "avgScore": "Nota média",
       "mrr": "MRR",
       "health": "Saúde",
       "actions": "Ações"
+    },
+    "statusBadge": {
+      "active": "Ativa",
+      "trial": "Trial",
+      "inactive": "Inativa"
     },
     "health": {
       "healthy": "Saudável",
@@ -587,6 +594,11 @@
       "customDateLabel": "Data e hora de expiração",
       "errorCustomDateRequired": "Informe a data de expiração do trial.",
       "errorDateInFuture": "A data precisa estar no futuro.",
+      "orgNameLabel": "Nome da organização",
+      "mrrLabel": "MRR (USD/mês)",
+      "mrrPlaceholder": "Ex: 1500",
+      "errorOrgNameRequired": "Nome da organização não pode ficar vazio.",
+      "errorMrrInvalid": "MRR deve ser um número positivo.",
       "submit": "Salvar override",
       "submitting": "Salvando…",
       "successDetail": "Assinatura atualizada. Admin override ativo.",
@@ -607,6 +619,9 @@
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
+      "mrrLabel": "MRR (USD/mês) — opcional",
+      "mrrPlaceholder": "Ex: 1500",
+      "errorMrrInvalid": "MRR deve ser um número positivo.",
       "submit": "Criar organização e enviar convite",
       "submitting": "Criando…",
       "successDetail": "{name} provisionada no plano {plan}.",

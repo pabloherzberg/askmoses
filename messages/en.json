@@ -539,15 +539,22 @@
       "ptsVsLastMonth": "pts vs last month"
     },
     "clientsLabel": "Clients",
+    "allOrganizationsLabel": "All Organizations",
     "th": {
-      "client": "Client",
+      "client": "Organization",
       "plan": "Plan",
+      "status": "Status",
       "salesPeople": "Sales People",
       "callsPerMonth": "Calls / mo",
       "avgScore": "Avg Score",
       "mrr": "MRR",
       "health": "Health",
       "actions": "Actions"
+    },
+    "statusBadge": {
+      "active": "Active",
+      "trial": "Trial",
+      "inactive": "Inactive"
     },
     "health": {
       "healthy": "Healthy",
@@ -587,6 +594,11 @@
       "customDateLabel": "Expiration date and time",
       "errorCustomDateRequired": "Enter the trial expiration date.",
       "errorDateInFuture": "Date must be in the future.",
+      "orgNameLabel": "Organization name",
+      "mrrLabel": "MRR (USD/month)",
+      "mrrPlaceholder": "e.g. 1500",
+      "errorOrgNameRequired": "Organization name cannot be empty.",
+      "errorMrrInvalid": "MRR must be a positive number.",
       "submit": "Save override",
       "submitting": "Saving…",
       "successDetail": "Subscription updated. Admin override active.",
@@ -607,6 +619,9 @@
       "plan_starter": "Starter",
       "plan_pro": "Pro",
       "plan_pro_rag": "Pro + RAG",
+      "mrrLabel": "MRR (USD/month) — optional",
+      "mrrPlaceholder": "e.g. 1500",
+      "errorMrrInvalid": "MRR must be a positive number.",
       "submit": "Create organization and send invite",
       "submitting": "Creating…",
       "successDetail": "{name} provisioned on the {plan} plan.",

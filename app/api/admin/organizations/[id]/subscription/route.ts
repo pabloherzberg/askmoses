@@ -19,6 +19,11 @@ interface PatchBody {
   // limpado (set NULL). Frontend computa o timestamp a partir do select de
   // duração (24h, 7d, 14d, 30d, 60d, 90d, custom).
   trialEndsAt?: string | null
+  // Renomeia organizations.name. Pablo (2026-05-19): permitir corrigir
+  // nome da empresa nessa mesma tela sem precisar de nova rota.
+  name?: string
+  // Override de MRR — sweetheart deals onde o valor não bate com plan.price_cents.
+  mrr?: number
 }
 
 const STATUSES: readonly SubStatus[] = ['active', 'inactive', 'trial']
@@ -86,16 +91,29 @@ export async function PATCH(
     return badRequest('Body inválido')
   }
 
-  const { status, planCode, trialEndsAt } = body
+  const { status, planCode, trialEndsAt, name: rawName, mrr } = body
+  const nextName = typeof rawName === 'string' ? rawName.trim() : undefined
 
-  if (status === undefined && planCode === undefined && trialEndsAt === undefined) {
-    return badRequest('Forneça pelo menos um campo: status, planCode ou trialEndsAt')
+  if (
+    status === undefined &&
+    planCode === undefined &&
+    trialEndsAt === undefined &&
+    nextName === undefined &&
+    mrr === undefined
+  ) {
+    return badRequest('Forneça pelo menos um campo: status, planCode, trialEndsAt, name ou mrr')
   }
   if (status !== undefined && !STATUSES.includes(status)) {
     return badRequest('status deve ser "active", "inactive" ou "trial"')
   }
   if (planCode !== undefined && !PLANS.includes(planCode)) {
     return badRequest('planCode deve ser "starter", "pro" ou "pro_rag"')
+  }
+  if (nextName !== undefined && nextName.length === 0) {
+    return badRequest('name não pode ser vazio')
+  }
+  if (mrr !== undefined && (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0)) {
+    return badRequest('mrr deve ser um número >= 0')
   }
 
   // Resolve trialEndsAt efetivo. Regra: se status='trial', exige data futura;
@@ -154,12 +172,14 @@ export async function PATCH(
   if (status !== undefined) patch.subscription_status = status
   if (nextPlanId !== undefined) patch.plan_id = nextPlanId
   if (nextTrialEndsAt !== undefined) patch.trial_ends_at = nextTrialEndsAt
+  if (nextName !== undefined) patch.name = nextName
+  if (mrr !== undefined) patch.mrr = mrr
 
   const { data: updated, error: updateErr } = await admin
     .from('organizations')
     .update(patch)
     .eq('id', orgId)
-    .select('id, name, subscription_status, plan_id, trial_ends_at, admin_override')
+    .select('id, name, subscription_status, plan_id, trial_ends_at, admin_override, mrr')
     .single()
   if (updateErr || !updated) return serverError('Não foi possível atualizar subscription', updateErr)
 
@@ -170,5 +190,6 @@ export async function PATCH(
     planId: updated.plan_id,
     trialEndsAt: updated.trial_ends_at,
     adminOverride: updated.admin_override,
+    mrr: Number(updated.mrr ?? 0),
   })
 }

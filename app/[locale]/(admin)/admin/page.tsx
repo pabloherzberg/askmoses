@@ -6,13 +6,7 @@ import { ScoreCard } from '@/components/shared/ScoreCard'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { toDisplay5 } from '@/lib/score-display'
 import { AdminOrgRow } from './AdminOrgRow'
-import type { HealthStatus, PlanCode } from '@/lib/types'
-
-const healthStyles: Record<HealthStatus, { bg: string; color: string; key: 'healthy' | 'atRisk' | 'churning' }> = {
-  healthy:  { bg: 'var(--am-green-bg)', color: 'var(--am-green)', key: 'healthy' },
-  'at-risk':{ bg: 'var(--am-amber-bg)', color: 'var(--am-amber)', key: 'atRisk' },
-  churning: { bg: 'var(--am-red-bg)',   color: 'var(--am-red)',   key: 'churning' },
-}
+import type { PlanCode } from '@/lib/types'
 
 const planStyles: Record<PlanCode, { bg: string; color: string }> = {
   starter: { bg: 'var(--am-blue-bg)',                            color: 'var(--am-blue)'    },
@@ -20,13 +14,19 @@ const planStyles: Record<PlanCode, { bg: string; color: string }> = {
   pro_rag: { bg: 'var(--am-green-bg)',                           color: 'var(--am-green)'   },
 }
 
+const statusStyles: Record<'active' | 'inactive' | 'trial', { bg: string; color: string }> = {
+  active:   { bg: 'var(--am-green-bg)', color: 'var(--am-green)' },
+  trial:    { bg: 'var(--am-blue-bg)',  color: 'var(--am-blue)'  },
+  inactive: { bg: 'var(--am-red-bg)',   color: 'var(--am-red)'   },
+}
+
 export default async function AdminPage() {
-  const [{ clients, metrics }, t, tMetrics, tTh, tHealth] = await Promise.all([
+  const [{ clients, metrics }, t, tMetrics, tTh, tStatus] = await Promise.all([
     getClients(),
     getTranslations('Admin'),
     getTranslations('Admin.metrics'),
     getTranslations('Admin.th'),
-    getTranslations('Admin.health'),
+    getTranslations('Admin.statusBadge'),
   ])
 
   return (
@@ -71,8 +71,8 @@ export default async function AdminPage() {
         />
       </div>
 
-      {/* ── Clients table ─────────────────────────────────────── */}
-      <SectionLabel>{t('clientsLabel')}</SectionLabel>
+      {/* ── All organizations table ───────────────────────────── */}
+      <SectionLabel>{t('allOrganizationsLabel')}</SectionLabel>
       <div
         className="rounded-2xl border overflow-hidden"
         style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
@@ -81,7 +81,7 @@ export default async function AdminPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--am-border)' }}>
-                {(['client', 'plan', 'salesPeople', 'callsPerMonth', 'avgScore', 'mrr', 'health'] as const).map((k) => (
+                {(['client', 'status', 'plan', 'salesPeople', 'mrr'] as const).map((k) => (
                   <th
                     key={k}
                     className="text-[11px] font-medium text-left px-5 py-3"
@@ -99,15 +99,15 @@ export default async function AdminPage() {
             </thead>
             <tbody>
               {clients.map((client, i) => {
-                const health = healthStyles[client.health]
-                const plan   = planStyles[client.plan.code] ?? planStyles.starter
+                const plan = planStyles[client.plan.code] ?? planStyles.starter
+                const status = statusStyles[client.subscriptionStatus]
                 return (
                   <AdminOrgRow
                     key={client.id}
                     client={client}
                     isLast={i === clients.length - 1}
-                    styles={{ health, plan }}
-                    healthLabel={tHealth(health.key)}
+                    styles={{ plan, status }}
+                    statusLabel={tStatus(client.subscriptionStatus)}
                   />
                 )
               })}
