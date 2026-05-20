@@ -193,8 +193,7 @@ export async function getRevenueEstimator(): Promise<{
 }
 
 export async function getRubricConfig() {
-  const orgId = await getOrgId();
-  if (!orgId) return null;
+  const orgId = await getOrgId(); // null → admin sem org → rubric global
   return dbGetDefaultRubricWithCriteria(orgId);
 }
 
@@ -203,8 +202,7 @@ export async function getRubricConfig() {
 export async function updateRubricConfig(
   input: UpdateRubricInput,
 ): Promise<DbRubric> {
-  const orgId = await getOrgId();
-  if (!orgId) throw new Error("No org in session");
+  const orgId = await getOrgId(); // null → admin → rubric global
   const rubric = await dbGetDefaultRubric(orgId);
   if (!rubric) throw new Error("No default rubric found for org");
   return dbUpdateRubric(rubric.id, input);

@@ -32,6 +32,10 @@ export function scorePalette(s100: number): { fg: string; bg: string } {
   return { fg: 'var(--am-red)', bg: 'var(--am-red-bg)' }
 }
 
+export function toNumber5(s100: number): number {
+  return s100 / 20
+}
+
 export function toDisplay5(s100: number): string {
   return (s100 / 20).toFixed(1)
 }

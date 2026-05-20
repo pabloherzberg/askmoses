@@ -34,7 +34,7 @@ export interface DbScript {
 
 export interface CreateScriptInput {
   orgId?: string
-  rubricId: string
+  rubricId?: string
   name: string
   description?: string
   sections: ScriptSection[]
@@ -53,7 +53,7 @@ export interface UpdateScriptInput {
 }
 
 export async function dbGetScripts(filters?: {
-  orgId?: string
+  orgId?: string | null  // null = scripts globais (admin), undefined = sem filtro
   rubricId?: string
   active?: boolean
 }): Promise<DbScript[]> {
@@ -68,7 +68,10 @@ export async function dbGetScripts(filters?: {
     .order('is_active', { ascending: false })
     .order('created_at', { ascending: false })
 
-  if (filters?.orgId) query = query.eq('org_id', filters.orgId)
+  if (filters?.orgId !== undefined) {
+    if (filters.orgId === null) query = query.is('org_id', null)
+    else query = query.eq('org_id', filters.orgId)
+  }
   if (filters?.rubricId) query = query.eq('rubric_id', filters.rubricId)
   if (filters?.active !== undefined) query = query.eq('is_active', filters.active)
 
@@ -109,7 +112,7 @@ export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript
     .from('scripts')
     .insert({
       org_id: input.orgId ?? null,
-      rubric_id: input.rubricId,
+      rubric_id: input.rubricId ?? null,
       name: input.name,
       description: input.description ?? null,
       sections: input.sections,
