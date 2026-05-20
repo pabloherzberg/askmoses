@@ -36,10 +36,15 @@ interface CreateOrgBody {
   // deals, valores customizados que não batem com o price_cents do plano).
   // Se omitido, fica 0 e o Admin pode ajustar depois via subscription override.
   mrr?: number
+  // Script ativo obrigatório — toda org nasce com 1 script ativo (e logo
+  // uma rubric, derivada via scripts.rubric_id). Ambos fundamentais pra
+  // análise. O scriptId vem do catálogo (/api/admin/scripts/catalog).
+  scriptId?: string
 }
 
 const PLAN_CODES = ['starter', 'pro', 'pro_rag'] as const
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Avatar helpers — duplicados de app/api/invites/route.ts pra manter o
 // patch local. Se aparecer um 3º endpoint que precisa, extrair pra lib/.
@@ -161,6 +166,7 @@ export async function POST(request: NextRequest) {
   const ownerName = body.ownerName?.trim()
   const ownerEmail = body.ownerEmail?.trim().toLowerCase()
   const mrr = body.mrr
+  const scriptId = body.scriptId?.trim()
 
   if (!name) return badRequest('name é obrigatório')
   if (name.length > MAX_ORG_NAME_LENGTH) {
@@ -180,6 +186,10 @@ export async function POST(request: NextRequest) {
     }
     if (mrr > MAX_MRR_USD) return badRequest('mrr muito alto')
   }
+  // Script ativo é obrigatório — toda org nasce com um script.
+  if (!scriptId || !UUID_RE.test(scriptId)) {
+    return badRequest('scriptId é obrigatório')
+  }
 
   const admin = createAdminClient()
   const origin = request.nextUrl.origin
@@ -193,6 +203,16 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
   if (planErr) return serverError('Não foi possível resolver o plano', planErr)
   if (!plan) return badRequest('plano não encontrado')
+
+  // ─── 1b. Valida script ───────────────────────────────────────────────────
+
+  const { data: scriptRow, error: scriptErr } = await admin
+    .from('scripts')
+    .select('id')
+    .eq('id', scriptId)
+    .maybeSingle()
+  if (scriptErr) return serverError('Não foi possível validar o script', scriptErr)
+  if (!scriptRow) return badRequest('script não encontrado')
 
   // ─── 2. Cria org ─────────────────────────────────────────────────────────
 
@@ -210,9 +230,26 @@ export async function POST(request: NextRequest) {
   if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
 
   // Rollback da org (usado por todos os caminhos de erro abaixo). Defina
-  // antes de qualquer step que possa falhar.
+  // antes de qualquer step que possa falhar. org_scripts tem FK
+  // ON DELETE CASCADE → deletar a org já limpa a linha de script.
   const rollbackOrg = async () => {
     await admin.from('organizations').delete().eq('id', org.id)
+  }
+
+  // ─── 2b. Vincula o script ativo ──────────────────────────────────────────
+  // Toda org nasce com 1 script ativo. status='active' direto (não pending) —
+  // pending é só pra updates posteriores via Script Intelligence.
+
+  const { error: orgScriptErr } = await admin.from('org_scripts').insert({
+    org_id: org.id,
+    script_id: scriptId,
+    status: 'active',
+    started_at: new Date().toISOString(),
+    sent_by: session.user.id,
+  })
+  if (orgScriptErr) {
+    await rollbackOrg()
+    return serverError('Não foi possível vincular o script à organização', orgScriptErr)
   }
 
   // ─── 3. Owner: branch por estado do email ────────────────────────────────

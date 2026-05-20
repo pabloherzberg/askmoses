@@ -203,7 +203,6 @@
       "clientName": "Unleashed Consulting",
       "weekProgress": "Week 6 / 6",
       "live": "Live",
-      "pendingApprovalShort": "pending approval",
       "orgSwitcher": {
         "label": "Switch organization",
         "owner": "Owner",
@@ -751,6 +750,10 @@
       "mrrLabel": "MRR (USD/month) — optional",
       "mrrPlaceholder": "e.g. 1500",
       "errorMrrInvalid": "MRR must be a positive number.",
+      "scriptLabel": "Active script",
+      "scriptPlaceholder": "Select a script",
+      "scriptLoading": "Loading scripts…",
+      "errorScriptRequired": "Select an active script.",
       "submit": "Create organization and send invite",
       "submitting": "Creating…",
       "successDetail": "{name} provisioned on the {plan} plan.",

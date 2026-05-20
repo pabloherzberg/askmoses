@@ -1,7 +1,6 @@
 import type React from 'react'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { AppSidebar, NavItemsForRole } from '@/components/layout/AppSidebar'
-import { PendingScriptBadgeServer } from '@/components/layout/PendingScriptBadgeServer'
 import { getActiveOrgContext } from '@/lib/auth'
 
 export default async function MarketingIntelligenceLayout({ children }: { children: React.ReactNode }) {
@@ -11,10 +10,7 @@ export default async function MarketingIntelligenceLayout({ children }: { childr
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      <AppHeader
-        mobileSidebar={<NavItemsForRole role={role} isImpersonating={isImpersonating} />}
-        pendingBadge={<PendingScriptBadgeServer />}
-      />
+      <AppHeader mobileSidebar={<NavItemsForRole role={role} isImpersonating={isImpersonating} />} />
       <div className="flex">
         <AppSidebar role={role} isImpersonating={isImpersonating} />
         <main className="flex-1 min-w-0 lg:pl-56 pt-[61px]">
