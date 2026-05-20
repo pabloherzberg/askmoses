@@ -210,6 +210,11 @@
         "trainer": "Commercial"
       }
     },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "Aucune notification pour le moment",
+      "sentBy": "De {name}"
+    },
     "userMenu": {
       "triggerAria": "Menu utilisateur",
       "loading": "Chargement…",
@@ -911,7 +916,8 @@
       "sending": "Envoi…",
       "sentTitle": "Recommandation envoyée",
       "sentBody": "{name} la verra dans son fil de coaching.",
-      "close": "Fermer"
+      "close": "Fermer",
+      "error": "Impossible d'envoyer la recommandation. Réessayez."
     }
   },
   "Dashboard": {

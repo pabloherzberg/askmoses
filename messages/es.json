@@ -210,6 +210,11 @@
         "trainer": "Vendedor"
       }
     },
+    "notifications": {
+      "title": "Notificaciones",
+      "empty": "Sin notificaciones todavía",
+      "sentBy": "De {name}"
+    },
     "userMenu": {
       "triggerAria": "Menú de usuario",
       "loading": "Cargando…",
@@ -911,7 +916,8 @@
       "sending": "Enviando…",
       "sentTitle": "Recomendación enviada",
       "sentBody": "{name} la verá en su feed de coaching.",
-      "close": "Cerrar"
+      "close": "Cerrar",
+      "error": "No se pudo enviar la recomendación. Inténtalo de nuevo."
     }
   },
   "Dashboard": {

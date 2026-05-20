@@ -19,17 +19,20 @@ type Phase = 'review' | 'sending' | 'sent'
  * Modal de revisão de uma recomendação de coaching. O owner abre, revisa o
  * conteúdo e confirma o envio para o sales person.
  *
- * Fase 1 é demo — não há e-mail nem persistência real (ver CLAUDE.md). O
- * "envio" é apenas uma confirmação de UI: simula latência e mostra o estado
- * de sucesso. O parent marca a rec como enviada via `onSent`.
+ * O envio cria uma notificação real (POST /api/coaching/notifications) que o
+ * sales person vê no sino do header. Sem e-mail — a entrega é in-app.
  */
 export function CoachingReviewModal({ open, rec, trainerName, onClose, onSent }: Props) {
   const t = useTranslations('Coaching.reviewModal')
   const [phase, setPhase] = useState<Phase>('review')
+  const [error, setError] = useState<string | null>(null)
 
   // Reset ao fechar pra não vazar estado entre invocações.
   useEffect(() => {
-    if (!open) setPhase('review')
+    if (!open) {
+      setPhase('review')
+      setError(null)
+    }
   }, [open])
 
   // ESC fecha — bloqueado durante o envio.
@@ -46,13 +49,32 @@ export function CoachingReviewModal({ open, rec, trainerName, onClose, onSent }:
 
   const firstName = trainerName.split(' ')[0]
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (phase !== 'review') return
     setPhase('sending')
-    window.setTimeout(() => {
+    setError(null)
+    try {
+      const res = await fetch('/api/coaching/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientName: trainerName,
+          title: rec.title,
+          body: rec.text,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || json?.error) {
+        setError(json?.error?.message ?? t('error'))
+        setPhase('review')
+        return
+      }
       setPhase('sent')
       onSent(rec.order)
-    }, 700)
+    } catch {
+      setError(t('error'))
+      setPhase('review')
+    }
   }
 
   return (
@@ -139,6 +161,20 @@ export function CoachingReviewModal({ open, rec, trainerName, onClose, onSent }:
                 </p>
               </div>
             </div>
+
+            {error && (
+              <p
+                role="alert"
+                className="text-xs mt-3 px-3 py-2 rounded-md border"
+                style={{
+                  background: 'var(--am-red-bg)',
+                  borderColor: 'var(--am-red)',
+                  color: 'var(--am-red)',
+                }}
+              >
+                {error}
+              </p>
+            )}
           </div>
         )}
 

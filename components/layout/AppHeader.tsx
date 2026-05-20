@@ -17,6 +17,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -134,6 +135,8 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
         )}
 
         <div className="flex items-center gap-1.5">
+          {/* Sino de notificações de coaching — só renderiza para o sales person */}
+          <NotificationBell />
           <OrgSwitcher />
           <LanguageSwitcher />
           <ThemeToggle />

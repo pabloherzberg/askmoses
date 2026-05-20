@@ -210,6 +210,11 @@
         "trainer": "Sales Person"
       }
     },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No notifications yet",
+      "sentBy": "From {name}"
+    },
     "userMenu": {
       "triggerAria": "User menu",
       "loading": "Loading…",
@@ -911,7 +916,8 @@
       "sending": "Sending…",
       "sentTitle": "Recommendation sent",
       "sentBody": "{name} will see this in their coaching feed.",
-      "close": "Close"
+      "close": "Close",
+      "error": "Couldn't send the recommendation. Please try again."
     }
   },
   "Dashboard": {
