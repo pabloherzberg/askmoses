@@ -553,6 +553,7 @@
     "subTrial": "Essai",
     "subInactive": "Inactif",
     "subscriptionSettings": "Configurer le plan de {name}",
+    "ghlSettings": "Configurer l'intégration GHL de {name}",
     "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
     "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
     "impersonateBanner": {
@@ -586,7 +587,8 @@
       "submitting": "Enregistrement…",
       "successDetail": "Abonnement mis à jour. Admin override actif.",
       "genericError": "Impossible de mettre à jour l'abonnement. Réessayez.",
-      "back": "← Retour au panel"
+      "back": "← Retour au panel",
+      "goToGhl": "Intégration GHL →"
     },
     "ghlIntegration": {
       "eyebrow": "Intégration GHL / Pepper",
@@ -615,7 +617,8 @@
       "setupModalClose": "Fermer",
       "copy": "Copier",
       "copied": "Copié",
-      "back": "← Retour au panel"
+      "back": "← Retour au panel",
+      "goToSubscription": "Override d'abonnement →"
     },
     "createOrg": {
       "eyebrow": "Provisionnement",

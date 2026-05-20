@@ -553,6 +553,7 @@
     "subTrial": "Trial",
     "subInactive": "Inativa",
     "subscriptionSettings": "Configurar plano de {name}",
+    "ghlSettings": "Configurar integração GHL de {name}",
     "impersonateTooltip": "Entrar como {name} (visualização apenas leitura)",
     "impersonateError": "Não foi possível entrar nessa organização. Tente novamente.",
     "impersonateBanner": {
@@ -586,7 +587,8 @@
       "submitting": "Salvando…",
       "successDetail": "Assinatura atualizada. Admin override ativo.",
       "genericError": "Não foi possível atualizar a assinatura. Tente novamente.",
-      "back": "← Voltar ao painel"
+      "back": "← Voltar ao painel",
+      "goToGhl": "Integração GHL →"
     },
     "ghlIntegration": {
       "eyebrow": "Integração GHL / Pepper",
@@ -615,7 +617,8 @@
       "setupModalClose": "Fechar",
       "copy": "Copiar",
       "copied": "Copiado",
-      "back": "← Voltar ao painel"
+      "back": "← Voltar ao painel",
+      "goToSubscription": "Override de assinatura →"
     },
     "createOrg": {
       "eyebrow": "Provisionamento",

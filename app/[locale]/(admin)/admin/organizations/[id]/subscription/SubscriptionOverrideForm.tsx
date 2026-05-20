@@ -231,13 +231,23 @@ export function SubscriptionOverrideForm({
         </div>
       )}
 
-      <a
-        href={`/${locale}/admin`}
-        className="text-xs underline opacity-60 hover:opacity-100 mt-2"
-        style={{ color: 'var(--am-muted)' }}
-      >
-        {t('back')}
-      </a>
+      <div className="flex items-center gap-4 mt-2">
+        <a
+          href={`/${locale}/admin`}
+          className="text-xs underline opacity-60 hover:opacity-100"
+          style={{ color: 'var(--am-muted)' }}
+        >
+          {t('back')}
+        </a>
+        <span style={{ color: 'var(--am-muted)' }} className="text-xs opacity-40">·</span>
+        <a
+          href={`/${locale}/admin/organizations/${orgId}/integrations/ghl`}
+          className="text-xs underline opacity-60 hover:opacity-100"
+          style={{ color: 'var(--am-muted)' }}
+        >
+          {t('goToGhl')}
+        </a>
+      </div>
     </form>
   )
 }

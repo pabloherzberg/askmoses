@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings } from 'lucide-react'
+import { Settings, Webhook } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { scoreColorVar, toDisplay5 } from '@/lib/score-display'
@@ -180,16 +180,28 @@ export function AdminOrgRow({ client, isLast, styles, healthLabel }: Props) {
       </td>
       <td className="px-3 py-4 text-right">
         {/* stopPropagation pra não disparar o impersonate da row inteira */}
-        <Link
-          href={`/${locale}/admin/organizations/${client.id}/subscription`}
-          onClick={(e) => e.stopPropagation()}
-          aria-label={t('subscriptionSettings', { name: client.name })}
-          title={t('subscriptionSettings', { name: client.name })}
-          className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
-          style={{ color: 'var(--am-muted)' }}
-        >
-          <Settings size={14} />
-        </Link>
+        <div className="inline-flex items-center gap-1">
+          <Link
+            href={`/${locale}/admin/organizations/${client.id}/integrations/ghl`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={t('ghlSettings', { name: client.name })}
+            title={t('ghlSettings', { name: client.name })}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--am-muted)' }}
+          >
+            <Webhook size={14} />
+          </Link>
+          <Link
+            href={`/${locale}/admin/organizations/${client.id}/subscription`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={t('subscriptionSettings', { name: client.name })}
+            title={t('subscriptionSettings', { name: client.name })}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--am-muted)' }}
+          >
+            <Settings size={14} />
+          </Link>
+        </div>
       </td>
     </tr>
   )
