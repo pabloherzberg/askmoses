@@ -562,6 +562,20 @@
     "clientsLabel": "Clients",
     "allOrganizationsLabel": "All Organizations",
     "subtitleScriptIntel": "Script Intelligence Organization Management",
+    "tabs": {
+      "organizations": "Organizations",
+      "scripts": "Scripts"
+    },
+    "scripts": {
+      "searchPlaceholder": "Search by name, description, section or version…",
+      "thName": "Name",
+      "thRubric": "Rubric",
+      "thVersion": "Version",
+      "thSections": "Sections",
+      "thCreated": "Created",
+      "improve": "Improve",
+      "noResults": "No scripts found."
+    },
     "th": {
       "client": "Organization",
       "plan": "Plan",

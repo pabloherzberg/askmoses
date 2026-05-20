@@ -59,7 +59,7 @@ export function ScriptReviewDetailClient({ review }: Props) {
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-6">
         <div>
           <Link
-            href={`/${locale}/admin/script-review`}
+            href={`/${locale}/admin`}
             className="inline-flex items-center gap-1.5 text-xs mb-2 hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >
@@ -100,7 +100,7 @@ export function ScriptReviewDetailClient({ review }: Props) {
           </button>
           {/* Discard — volta pra listagem sem salvar. */}
           <Link
-            href={`/${locale}/admin/script-review`}
+            href={`/${locale}/admin`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium"
             style={{
               background: 'transparent',

@@ -17,7 +17,6 @@ import {
   PlusCircle,
   Wand2,
   SlidersHorizontal,
-  GitCompare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -150,11 +149,6 @@ export function AdminNavItems() {
       label: t("scriptBuilder"),
       href: "/dashboard/script-builder",
       icon: Wand2,
-    },
-    {
-      label: t("scriptIntelligence"),
-      href: "/admin/script-review",
-      icon: GitCompare,
     },
     {
       label: t("marketingIntelligence"),

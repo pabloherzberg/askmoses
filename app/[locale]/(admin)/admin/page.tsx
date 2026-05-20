@@ -4,7 +4,7 @@ import { Building2, AlertCircle, Phone, BarChart3 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { getClientsPage, getGlobalMetrics } from '@/lib/services/clients'
 import { toDisplay5 } from '@/lib/score-display'
-import { AdminPanelClient } from './AdminPanelClient'
+import { AdminPanelTabs } from './AdminPanelTabs'
 
 // Page size default. Coordenar com o limit que AdminPanelClient usa quando
 // (re)fetcha — manter consistente pra paginação não pular itens.
@@ -72,12 +72,8 @@ export default async function AdminPage() {
         />
       </div>
 
-      {/* ── All organizations table + tools (client-side state) ─── */}
-      <h2 className="text-[15px] font-semibold tracking-tight mb-3" style={{ color: 'var(--am-text)' }}>
-        {t('allOrganizationsLabel')}
-      </h2>
-
-      <AdminPanelClient
+      {/* ── Tabs: Organizations | Scripts ─────────────────────── */}
+      <AdminPanelTabs
         initialRows={initialPage.rows}
         initialTotal={initialPage.total}
         initialPageSize={INITIAL_PAGE_SIZE}
