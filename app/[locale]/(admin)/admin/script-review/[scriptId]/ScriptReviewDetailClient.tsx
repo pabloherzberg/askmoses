@@ -49,9 +49,35 @@ export function ScriptReviewDetailClient({ review }: Props) {
   const t = useTranslations('Admin.scriptReview')
   const locale = useLocale()
   const [tab, setTab] = useState<Tab>('editor')
-  // Fase 1 demo: salvar não persiste (sem POST). Só alterna o estado visual
-  // do botão pra "Script salvo". Persistência real entra na Fase 2.
   const [saved, setSaved] = useState(false)
+
+  async function handleSave() {
+    const criteria = review.sections.flatMap((s) =>
+      s.criteria.map((c) => ({ name: c.name, description: c.description })),
+    )
+    const res = await fetch('/api/admin/scripts/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceScriptId: review.scriptId,
+        name: review.scriptName,
+        sections: review.sections.map((s) => ({
+          name: s.name,
+          instructions: s.instructions,
+          tips: s.tips,
+          weight: s.weight,
+          critical: s.critical,
+        })),
+        criteria,
+      }),
+    })
+    const json = await res.json()
+    if (!res.ok || json.error) {
+      alert(json.error?.message ?? 'Failed to save script')
+      return
+    }
+    setSaved(true)
+  }
 
   return (
     <div>
@@ -111,10 +137,9 @@ export function ScriptReviewDetailClient({ review }: Props) {
             <X size={13} />
             {t('discard')}
           </Link>
-          {/* Save — Fase 1: apenas estado visual, sem persistência. */}
           <button
             type="button"
-            onClick={() => setSaved(true)}
+            onClick={handleSave}
             disabled={saved}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-70"
             style={{

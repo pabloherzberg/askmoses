@@ -87,12 +87,12 @@ export async function POST(request: NextRequest) {
   const role = session.user.app_metadata?.role as Role | undefined
   if (role !== 'admin') return forbidden()
 
-  const body = await request.json() as { scriptId?: string; orgId?: string }
-  const { scriptId, orgId } = body
+  const body = await request.json() as { scriptId?: string; orgId?: string | null }
+  const { scriptId } = body
 
-  if (!scriptId || !orgId) {
+  if (!scriptId) {
     return Response.json(
-      { data: null, error: { message: 'scriptId and orgId are required', code: 400 } },
+      { data: null, error: { message: 'scriptId is required', code: 400 } },
       { status: 400 },
     )
   }
@@ -113,11 +113,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Fetch up to 5 recent closed calls from the org (with transcripts)
+  // Fetch up to 5 recent calls globally (any org) — transcripts used for context only
   const { data: callsData } = await admin
     .from('calls')
     .select('transcript, overall_score')
-    .eq('org_id', orgId)
     .not('transcript', 'is', null)
     .order('created_at', { ascending: false })
     .limit(5)
@@ -150,7 +149,6 @@ export async function POST(request: NextRequest) {
   return ok({
     ...result,
     sourceScriptId: scriptId,
-    orgId,
     callsAnalyzed: recentCalls.length,
   })
 }
