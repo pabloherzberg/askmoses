@@ -71,6 +71,13 @@ export interface Call {
   improvements: string[]
   transcript: string
   orgId?: string
+  // Script usado na análise da call (migration 056). `scriptId` vem do DB;
+  // `scriptName`/`scriptIsActive` são resolvidos pela página /calls a partir
+  // da lista de scripts da org. Todos opcionais — calls sem script (rubric)
+  // ou consumidores que não enriquecem deixam undefined.
+  scriptId?: string | null
+  scriptName?: string | null
+  scriptIsActive?: boolean
 }
 
 export interface TrainerScore {

@@ -443,7 +443,7 @@ function Th({ translationKey }: { translationKey: string }) {
   const tTh = useTranslations("Admin.th");
   return (
     <th
-      className="text-[11px] font-medium text-left px-5 py-3 whitespace-nowrap"
+      className="text-[11px] font-medium text-left px-3 py-3 whitespace-nowrap"
       style={{ color: "var(--am-muted)" }}
     >
       {tTh(translationKey)}

@@ -139,7 +139,7 @@ export function AdminOrgRow({
         />
       </td>
 
-      <td className="px-5 py-4">
+      <td className="px-3 py-4">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
             {client.name}
@@ -162,7 +162,7 @@ export function AdminOrgRow({
       </td>
 
       {/* Script Version: mostra "v1.5" ou "v2.0 → v2.1" quando pending com previous */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap">
         {script ? (
           <div className="inline-flex items-center gap-1.5 font-mono text-[11px] whitespace-nowrap">
             {script.previousVersion && (
@@ -189,7 +189,7 @@ export function AdminOrgRow({
       </td>
 
       {/* Status do script */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap">
         <span
           className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
           style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
@@ -199,7 +199,7 @@ export function AdminOrgRow({
       </td>
 
       {/* Plan */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap">
         <span
           className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono whitespace-nowrap"
           style={{ background: planStyle.bg, color: planStyle.color }}
@@ -209,7 +209,7 @@ export function AdminOrgRow({
       </td>
 
       {/* Plan Status (active/trial/inactive) */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap">
         <span
           className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
           style={{ background: planStatusStyle.bg, color: planStatusStyle.color }}
@@ -219,21 +219,21 @@ export function AdminOrgRow({
       </td>
 
       {/* Sales people */}
-      <td className="px-5 py-4">
+      <td className="px-3 py-4">
         <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
           {client.trainersCount}
         </span>
       </td>
 
       {/* MRR */}
-      <td className="px-5 py-4">
+      <td className="px-3 py-4">
         <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
           ${client.mrr.toLocaleString()}
         </span>
       </td>
 
       {/* Last Activity */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap">
         <span className="text-[12px] font-mono" style={{ color: 'var(--am-muted)' }}>
           {lastActivityDate}
         </span>

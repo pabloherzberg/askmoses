@@ -210,6 +210,11 @@
         "trainer": "Vendedor"
       }
     },
+    "notifications": {
+      "title": "Notificações",
+      "empty": "Nenhuma notificação ainda",
+      "sentBy": "De {name}"
+    },
     "userMenu": {
       "triggerAria": "Menu do usuário",
       "loading": "Carregando…",
@@ -544,7 +549,10 @@
       "thDate": "Data",
       "thScore": "Nota",
       "thResult": "Resultado",
-      "forbidden": "Você não tem acesso a esta chamada."
+      "forbidden": "Você não tem acesso a esta chamada.",
+      "thScript": "Script",
+      "filterAllScripts": "Todos os scripts",
+      "activeScriptTag": "Script ativo: {name}"
     }
   },
   "Admin": {
@@ -894,7 +902,23 @@
     "worstCall": "Precisa Melhorar",
     "mockBadge": "apenas dados mock",
     "mockFooterBest": "† todos os valores vêm de mock-data.ts — Ouvir em X:XX → não funciona nesta demo",
-    "mockFooterWorst": "† todos os valores vêm de mock-data.ts — Revisar em X:XX → não funciona nesta demo"
+    "mockFooterWorst": "† todos os valores vêm de mock-data.ts — Revisar em X:XX → não funciona nesta demo",
+    "recsTitle": "Recomendações de Coaching IA",
+    "recsReview": "Revisar e enviar",
+    "recsSentBadge": "Enviado",
+    "reviewModal": {
+      "title": "Revisar recomendação de coaching",
+      "subtitle": "Revise antes de enviar para {name}.",
+      "recipient": "Destinatário",
+      "recommendation": "Recomendação",
+      "cancel": "Cancelar",
+      "send": "Enviar para {name}",
+      "sending": "Enviando…",
+      "sentTitle": "Recomendação enviada",
+      "sentBody": "{name} verá isto no feed de coaching.",
+      "close": "Fechar",
+      "error": "Não foi possível enviar a recomendação. Tente novamente."
+    }
   },
   "Dashboard": {
     "home": {
