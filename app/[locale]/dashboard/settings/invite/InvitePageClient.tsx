@@ -23,8 +23,41 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ChevronLeft, ChevronRight, Loader2, Send, MailPlus, Trash2, UserPlus } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, Send, MailPlus, Trash2, UserPlus, X } from 'lucide-react'
 import type { Role } from '@/lib/types'
+
+type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
+type SortDir = 'asc' | 'desc'
+
+// Header de coluna clicável. Bota o ícone na própria direção (asc=up, desc=down)
+// quando ativa; ArrowUpDown opaco em colunas não-ordenadas pra sinalizar
+// affordance sem destacar.
+function SortableHeader({
+  label,
+  sortKey,
+  currentSort,
+  onSort,
+  icon,
+}: {
+  label: string
+  sortKey: SortKey
+  currentSort: SortKey
+  onSort: (key: SortKey) => void
+  icon: React.ReactNode
+}) {
+  const isActive = currentSort === sortKey
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKey)}
+      className="flex items-center gap-1.5 text-left -ml-1 px-1 py-0.5 rounded hover:bg-muted/50 transition-colors"
+      aria-sort={isActive ? undefined : 'none'}
+    >
+      <span className={isActive ? 'text-foreground' : ''}>{label}</span>
+      {icon}
+    </button>
+  )
+}
 
 interface OrgRef {
   id: string
@@ -100,6 +133,12 @@ export function InvitePageClient({ role: callerRole }: Props) {
   const [activeTotal, setActiveTotal] = useState(0)
   const [activePage, setActivePage] = useState(1)
   const [orgFilter, setOrgFilter] = useState<string>('') // só admin
+  // searchInput é o que o user digita; debouncedSearch é o que dispara o fetch
+  // (300ms após parar de digitar). Sem o debounce, cada keystroke gera request.
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('invited_at')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   const [orgs, setOrgs] = useState<OrgOption[]>([])
   const [loadingPending, setLoadingPending] = useState(true)
@@ -119,9 +158,10 @@ export function InvitePageClient({ role: callerRole }: Props) {
         qs.set(k, String(v))
       }
       if (isAdmin && orgFilter) qs.set('orgId', orgFilter)
+      if (debouncedSearch) qs.set('q', debouncedSearch)
       return qs.toString()
     },
-    [isAdmin, orgFilter]
+    [isAdmin, orgFilter, debouncedSearch]
   )
 
   const fetchPending = useCallback(async () => {
@@ -141,7 +181,13 @@ export function InvitePageClient({ role: callerRole }: Props) {
     async (page: number) => {
       setLoadingActive(true)
       try {
-        const qs = buildQuery({ status: 'accepted', page, pageSize: ACTIVE_PAGE_SIZE })
+        const qs = buildQuery({
+          status: 'accepted',
+          page,
+          pageSize: ACTIVE_PAGE_SIZE,
+          sort: sortKey,
+          dir: sortDir,
+        })
         const res = await fetch(`/api/invites?${qs}`)
         const json = (await res.json()) as { data: PaginatedResponse | null; error: { message: string } | null }
         if (res.ok && json.data) {
@@ -156,7 +202,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
         setLoadingActive(false)
       }
     },
-    [buildQuery]
+    [buildQuery, sortKey, sortDir]
   )
 
   const fetchOrgs = useCallback(async () => {
@@ -169,11 +215,38 @@ export function InvitePageClient({ role: callerRole }: Props) {
     if (isAdmin) void fetchOrgs()
   }, [fetchOrgs, isAdmin])
 
-  // Recarrega listas sempre que o filtro de org mudar
+  // Debounce do search input — 300ms é o sweet spot entre responsividade
+  // perceptível e poupar requests enquanto o user ainda está digitando.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  // Recarrega listas sempre que o filtro de org, busca ou ordenação mudar.
+  // fetchActive sempre volta pra page 1 — sem isso, pode ficar numa página
+  // que não existe mais depois do filtro reduzir o total.
   useEffect(() => {
     void fetchPending()
     void fetchActive(1)
   }, [fetchPending, fetchActive])
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      // Mesma coluna: toggle de direção.
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      // Coluna nova: começa em asc (UX padrão de tabelas).
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  const sortIcon = (key: SortKey) => {
+    if (sortKey !== key) return <ArrowUpDown className="h-3 w-3 opacity-40" />
+    return sortDir === 'asc'
+      ? <ArrowUp className="h-3 w-3" />
+      : <ArrowDown className="h-3 w-3" />
+  }
 
   // Trocar org limpa o owner selecionado (lista de owners muda)
   const handleOrgChange = (orgId: string) => {
@@ -441,9 +514,38 @@ export function InvitePageClient({ role: callerRole }: Props) {
         </CardContent>
       </Card>
 
-      {/* ─── Filtro de org (admin) ─────────────────────────────────── */}
-      {isAdmin && (
-        <div className="flex items-end gap-3">
+      {/* ─── Filtros: busca (sempre) + org (admin) ─────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-end gap-3">
+        <div className="space-y-2 flex-1 max-w-md">
+          <Label htmlFor="filter-search">{t('searchLabel')}</Label>
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"
+              aria-hidden="true"
+            />
+            <Input
+              id="filter-search"
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('searchPlaceholder')}
+              className="pl-9 pr-9"
+              autoComplete="off"
+              role="searchbox"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted transition-colors"
+                aria-label={t('searchClear')}
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+        {isAdmin && (
           <div className="space-y-2 max-w-xs flex-1">
             <Label htmlFor="filter-org">{t('filterOrgLabel')}</Label>
             <select
@@ -458,8 +560,8 @@ export function InvitePageClient({ role: callerRole }: Props) {
               ))}
             </select>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ─── Lista de pendentes ────────────────────────────────────── */}
       <div className="space-y-3">
@@ -471,7 +573,13 @@ export function InvitePageClient({ role: callerRole }: Props) {
             </CardContent>
           </Card>
         ) : pending.length === 0 ? (
-          isAdmin && orgFilter ? (
+          debouncedSearch ? (
+            <Card>
+              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                {t('emptyPendingSearch', { q: debouncedSearch })}
+              </CardContent>
+            </Card>
+          ) : isAdmin && orgFilter ? (
             <Card>
               <CardContent className="py-6 text-center text-sm text-muted-foreground">
                 {t('emptyPendingFiltered')}
@@ -564,16 +672,54 @@ export function InvitePageClient({ role: callerRole }: Props) {
               </div>
             ) : active.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                {isAdmin && orgFilter ? t('emptyActiveFiltered') : t('emptyActive')}
+                {debouncedSearch
+                  ? t('emptyActiveSearch', { q: debouncedSearch })
+                  : isAdmin && orgFilter
+                    ? t('emptyActiveFiltered')
+                    : t('emptyActive')}
               </div>
             ) : (
               <Table className="[&_tr>*:first-child]:pl-6 [&_tr>*:last-child]:pr-6">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('form.nameLabel')}</TableHead>
-                    <TableHead>{t('form.emailLabel')}</TableHead>
-                    <TableHead>{t('form.roleLabel')}</TableHead>
-                    {isAdmin && <TableHead>{t('orgLabel')}</TableHead>}
+                    <TableHead>
+                      <SortableHeader
+                        label={t('form.nameLabel')}
+                        sortKey="name"
+                        currentSort={sortKey}
+                        onSort={handleSort}
+                        icon={sortIcon('name')}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label={t('form.emailLabel')}
+                        sortKey="email"
+                        currentSort={sortKey}
+                        onSort={handleSort}
+                        icon={sortIcon('email')}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortableHeader
+                        label={t('form.roleLabel')}
+                        sortKey="role"
+                        currentSort={sortKey}
+                        onSort={handleSort}
+                        icon={sortIcon('role')}
+                      />
+                    </TableHead>
+                    {isAdmin && (
+                      <TableHead>
+                        <SortableHeader
+                          label={t('orgLabel')}
+                          sortKey="org"
+                          currentSort={sortKey}
+                          onSort={handleSort}
+                          icon={sortIcon('org')}
+                        />
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>

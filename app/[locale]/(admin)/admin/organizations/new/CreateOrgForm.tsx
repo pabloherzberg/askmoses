@@ -26,6 +26,7 @@ export function CreateOrgForm() {
   const [planCode, setPlanCode] = useState<PlanCode>('starter')
   const [ownerName, setOwnerName] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
+  const [mrr, setMrr] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<{
     name: string
@@ -46,6 +47,16 @@ export function CreateOrgForm() {
       setError(t('errorOwnerEmailInvalid'))
       return
     }
+    // MRR é opcional; quando preenchido tem que ser número >= 0.
+    let parsedMrr: number | undefined
+    if (mrr.trim() !== '') {
+      const n = Number(mrr)
+      if (!isFinite(n) || n < 0) {
+        setError(t('errorMrrInvalid'))
+        return
+      }
+      parsedMrr = n
+    }
 
     setSubmitting(true)
     setError(null)
@@ -60,6 +71,7 @@ export function CreateOrgForm() {
           planCode,
           ownerName: ownerName.trim(),
           ownerEmail: ownerEmail.trim().toLowerCase(),
+          ...(parsedMrr !== undefined ? { mrr: parsedMrr } : {}),
         }),
       })
       const json = (await res.json()) as CreateResponse
@@ -79,6 +91,7 @@ export function CreateOrgForm() {
       setPlanCode('starter')
       setOwnerName('')
       setOwnerEmail('')
+      setMrr('')
     } catch {
       setError(t('genericError'))
     } finally {
@@ -171,13 +184,35 @@ export function CreateOrgForm() {
         </select>
       </label>
 
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
+          {t('mrrLabel')}
+        </span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step="0.01"
+          value={mrr}
+          onChange={(e) => setMrr(e.target.value)}
+          placeholder={t('mrrPlaceholder')}
+          disabled={submitting}
+          className="px-3 py-2 rounded-md border outline-none text-sm font-mono"
+          style={{
+            background: 'var(--am-bg3)',
+            borderColor: 'var(--am-border2)',
+            color: 'var(--am-text)',
+          }}
+        />
+      </label>
+
       <button
         type="submit"
         disabled={submitting || !name.trim()}
         className="mt-2 px-4 py-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50"
         style={{
           background: 'var(--am-accent)',
-          color: 'var(--am-text)',
+          color: 'var(--am-on-accent)',
         }}
       >
         {submitting ? t('submitting') : t('submit')}

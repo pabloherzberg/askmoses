@@ -890,6 +890,9 @@ export const clients: Client[] = [
     trainersCount: 4,
     ownerAccepted: true,
     subscriptionStatus: 'active',
+    currentScript: null,
+    lastCallAt: null,
+    createdAt: '2026-01-01T00:00:00Z',
   },
   {
     id: '00000000-0000-0000-0000-000000000803',
@@ -904,6 +907,9 @@ export const clients: Client[] = [
     trainersCount: 4,
     ownerAccepted: true,
     subscriptionStatus: 'active',
+    currentScript: null,
+    lastCallAt: null,
+    createdAt: '2026-01-01T00:00:00Z',
   },
   {
     id: '00000000-0000-0000-0000-000000000802',
@@ -918,6 +924,9 @@ export const clients: Client[] = [
     trainersCount: 4,
     ownerAccepted: true,
     subscriptionStatus: 'active',
+    currentScript: null,
+    lastCallAt: null,
+    createdAt: '2026-01-01T00:00:00Z',
   },
 ]
 

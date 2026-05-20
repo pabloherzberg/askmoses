@@ -14,6 +14,7 @@ interface Props {
   initialStatus: SubStatus
   initialPlanCode: PlanCode | null
   initialTrialEndsAt: string | null
+  initialMrr: number
 }
 
 const PLAN_OPTIONS: PlanCode[] = ['starter', 'pro', 'pro_rag']
@@ -48,6 +49,7 @@ export function SubscriptionOverrideForm({
   initialStatus,
   initialPlanCode,
   initialTrialEndsAt,
+  initialMrr,
 }: Props) {
   const t = useTranslations('Admin.subscriptionOverride')
   const router = useRouter()
@@ -59,6 +61,8 @@ export function SubscriptionOverrideForm({
   const [customDate, setCustomDate] = useState<string>(
     initialTrialEndsAt ? isoToLocalInput(initialTrialEndsAt) : '',
   )
+  const [name, setName] = useState<string>(orgName)
+  const [mrr, setMrr] = useState<string>(String(initialMrr ?? 0))
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,11 +95,30 @@ export function SubscriptionOverrideForm({
       }
     }
 
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      setError(t('errorOrgNameRequired'))
+      setSubmitting(false)
+      return
+    }
+    const parsedMrr = Number(mrr)
+    if (!isFinite(parsedMrr) || parsedMrr < 0) {
+      setError(t('errorMrrInvalid'))
+      setSubmitting(false)
+      return
+    }
+
     try {
       const res = await fetch(`/api/admin/organizations/${orgId}/subscription`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, planCode, trialEndsAt }),
+        body: JSON.stringify({
+          status,
+          planCode,
+          trialEndsAt,
+          name: trimmedName,
+          mrr: parsedMrr,
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -124,6 +147,21 @@ export function SubscriptionOverrideForm({
           {orgName}
         </h2>
       </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
+          {t('orgNameLabel')}
+        </span>
+        <input
+          type="text"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={submitting}
+          className="px-3 py-2 rounded-md border outline-none text-sm"
+          style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }}
+        />
+      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
@@ -161,6 +199,24 @@ export function SubscriptionOverrideForm({
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
+          {t('mrrLabel')}
+        </span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step="0.01"
+          value={mrr}
+          onChange={(e) => setMrr(e.target.value)}
+          placeholder={t('mrrPlaceholder')}
+          disabled={submitting}
+          className="px-3 py-2 rounded-md border outline-none text-sm font-mono"
+          style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }}
+        />
       </label>
 
       {status === 'trial' && (
@@ -206,7 +262,7 @@ export function SubscriptionOverrideForm({
         type="submit"
         disabled={submitting}
         className="mt-2 px-4 py-2 rounded-md text-sm font-medium transition-opacity disabled:opacity-50"
-        style={{ background: 'var(--am-accent)', color: 'var(--am-text)' }}
+        style={{ background: 'var(--am-accent)', color: 'var(--am-on-accent)' }}
       >
         {submitting ? t('submitting') : t('submit')}
       </button>

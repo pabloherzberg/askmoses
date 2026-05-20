@@ -117,6 +117,22 @@ export interface Plan {
   features: string[]
 }
 
+// Status efetivo do script associado a uma org. 'none' = org nunca recebeu
+// script via Admin. 'deprecated' é derivado: status='active' + existe script
+// mais novo na mesma rubric (ver view org_scripts_current na migration 044).
+export type OrgScriptStatus = 'none' | 'pending' | 'active' | 'deprecated' | 'rejected'
+
+export interface OrgScriptInfo {
+  scriptId: string
+  scriptName: string
+  version: string // ex: "1.2", "2.0"
+  // Quando status='pending' e havia um script anterior aceito, populamos o
+  // previousVersion pra UI poder mostrar "v2.0 → v2.1". Null em outros casos.
+  previousVersion: string | null
+  status: OrgScriptStatus
+  startedAt: string | null
+}
+
 export interface Client {
   id: string
   name: string
@@ -134,6 +150,14 @@ export interface Client {
   // não clicou no magic link).
   ownerAccepted: boolean
   subscriptionStatus: 'active' | 'inactive' | 'trial'
+  // Script ativo associado à org (mais recente em org_scripts via started_at
+  // desc, ended_at IS NULL). null quando a org nunca recebeu script.
+  currentScript: OrgScriptInfo | null
+  // ISO timestamp da última atividade na org (max(calls.created_at)).
+  // Usado na coluna Last Activity da tabela admin. null se nunca teve calls
+  // — cai pra organizations.created_at no caller.
+  lastCallAt: string | null
+  createdAt: string
 }
 
 export interface TrendPoint {

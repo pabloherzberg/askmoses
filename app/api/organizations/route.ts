@@ -6,13 +6,8 @@ import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { MAX_ORG_NAME_LENGTH, MAX_MRR_USD, RATE_LIMITS } from '@/lib/constants/limits'
 import type { Role } from '@/lib/types'
-
-// 10 orgs/admin/min. Cada criação dispara email (custa Resend) + auth user
-// (custa Supabase quota); aceitamos burst pra Ariel cadastrando vários
-// clientes seguidos, mas bot abusivo trava antes de gerar custo significativo.
-const CREATE_ORG_RATE_MAX = 10
-const CREATE_ORG_RATE_WINDOW_SECONDS = 60
 
 interface OrgOption {
   id: string
@@ -37,6 +32,10 @@ interface CreateOrgBody {
   ownerName?: string
   ownerEmail?: string
   locale?: string
+  // MRR opcional informado pelo Ariel no momento da criação (sweetheart
+  // deals, valores customizados que não batem com o price_cents do plano).
+  // Se omitido, fica 0 e o Admin pode ajustar depois via subscription override.
+  mrr?: number
 }
 
 const PLAN_CODES = ['starter', 'pro', 'pro_rag'] as const
@@ -145,8 +144,8 @@ export async function POST(request: NextRequest) {
 
   const rl = await checkRateLimitDb(
     `create_org:${session.user.id}`,
-    CREATE_ORG_RATE_MAX,
-    CREATE_ORG_RATE_WINDOW_SECONDS,
+    RATE_LIMITS.createOrg.max,
+    RATE_LIMITS.createOrg.windowSeconds,
   )
   if (!rl.allowed) return rateLimitedResponse(rl)
 
@@ -161,13 +160,26 @@ export async function POST(request: NextRequest) {
   const planCode = body.planCode
   const ownerName = body.ownerName?.trim()
   const ownerEmail = body.ownerEmail?.trim().toLowerCase()
+  const mrr = body.mrr
 
   if (!name) return badRequest('name é obrigatório')
+  if (name.length > MAX_ORG_NAME_LENGTH) {
+    return badRequest(`name muito longo (máx ${MAX_ORG_NAME_LENGTH})`)
+  }
   if (!planCode || !PLAN_CODES.includes(planCode)) {
     return badRequest('planCode deve ser "starter", "pro" ou "pro_rag"')
   }
   if (!ownerName) return badRequest('ownerName é obrigatório')
+  if (ownerName.length > MAX_ORG_NAME_LENGTH) {
+    return badRequest(`ownerName muito longo (máx ${MAX_ORG_NAME_LENGTH})`)
+  }
   if (!ownerEmail || !EMAIL_RE.test(ownerEmail)) return badRequest('ownerEmail inválido')
+  if (mrr !== undefined) {
+    if (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0) {
+      return badRequest('mrr deve ser um número >= 0')
+    }
+    if (mrr > MAX_MRR_USD) return badRequest('mrr muito alto')
+  }
 
   const admin = createAdminClient()
   const origin = request.nextUrl.origin
@@ -191,6 +203,7 @@ export async function POST(request: NextRequest) {
       plan_id: plan.id,
       subscription_status: 'active',
       health: 'healthy',
+      ...(mrr !== undefined ? { mrr } : {}),
     })
     .select('id, name')
     .single()
