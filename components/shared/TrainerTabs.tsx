@@ -186,7 +186,13 @@ export function TrainerTabs() {
 
       {/* ── Coaching Recs (largura total) ── */}
       <div className="mb-4">
-        <CoachingRecommendations recs={recs[trainerKey] ?? []} />
+        {/* key={activeId} remonta o componente ao trocar de sales person —
+            zera o estado "enviado" das recomendações entre abas. */}
+        <CoachingRecommendations
+          key={activeId}
+          recs={recs[trainerKey] ?? []}
+          trainerName={trainer.name}
+        />
       </div>
 
       {/* ── Best (esq) + Needs Improvement (dir) ─────────────── */}

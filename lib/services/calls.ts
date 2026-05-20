@@ -114,6 +114,7 @@ function toCall(db: DbCall): Call {
     strengths: db.strengths ?? [],
     improvements: db.improvements ?? [],
     transcript: db.transcript ?? "",
+    scriptId: db.script_id ?? null,
   };
 }
 

@@ -14,7 +14,7 @@ interface PageProps {
 // versão "melhorada pela IA" (mock na Fase 1, ver lib/scripts/mock-improvement).
 // Layout (admin) já garante role=admin via middleware.
 export default async function ScriptReviewDetailPage({ params }: PageProps) {
-  const { scriptId } = await params
+  const { scriptId, locale } = await params
 
   const admin = createAdminClient()
   const { data: script } = await admin
@@ -31,7 +31,7 @@ export default async function ScriptReviewDetailPage({ params }: PageProps) {
   }
   const baseVersion = `${row.rubric_version_snapshot ?? 1}.${row.minor_version ?? 0}`
 
-  const review = buildMockImprovement(row, baseVersion)
+  const review = buildMockImprovement(row, baseVersion, locale)
 
   return <ScriptReviewDetailClient review={review} />
 }

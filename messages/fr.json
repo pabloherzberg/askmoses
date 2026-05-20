@@ -544,7 +544,10 @@
       "thDate": "Date",
       "thScore": "Score",
       "thResult": "Résultat",
-      "forbidden": "Vous n'avez pas accès à cet appel."
+      "forbidden": "Vous n'avez pas accès à cet appel.",
+      "thScript": "Script",
+      "filterAllScripts": "Tous les scripts",
+      "activeScriptTag": "Script actif : {name}"
     }
   },
   "Admin": {
@@ -894,7 +897,22 @@
     "worstCall": "À Améliorer",
     "mockBadge": "données mock uniquement",
     "mockFooterBest": "† toutes les valeurs proviennent de mock-data.ts — Écouter à X:XX → ne fonctionne pas dans cette démo",
-    "mockFooterWorst": "† toutes les valeurs proviennent de mock-data.ts — Revoir à X:XX → ne fonctionne pas dans cette démo"
+    "mockFooterWorst": "† toutes les valeurs proviennent de mock-data.ts — Revoir à X:XX → ne fonctionne pas dans cette démo",
+    "recsTitle": "Recommandations de Coaching IA",
+    "recsReview": "Vérifier et envoyer",
+    "recsSentBadge": "Envoyé",
+    "reviewModal": {
+      "title": "Vérifier la recommandation de coaching",
+      "subtitle": "Vérifiez-la avant de la partager avec {name}.",
+      "recipient": "Destinataire",
+      "recommendation": "Recommandation",
+      "cancel": "Annuler",
+      "send": "Envoyer à {name}",
+      "sending": "Envoi…",
+      "sentTitle": "Recommandation envoyée",
+      "sentBody": "{name} la verra dans son fil de coaching.",
+      "close": "Fermer"
+    }
   },
   "Dashboard": {
     "home": {

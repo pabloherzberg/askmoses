@@ -544,7 +544,10 @@
       "thDate": "Fecha",
       "thScore": "Puntuación",
       "thResult": "Resultado",
-      "forbidden": "No tienes acceso a esta llamada."
+      "forbidden": "No tienes acceso a esta llamada.",
+      "thScript": "Script",
+      "filterAllScripts": "Todos los scripts",
+      "activeScriptTag": "Script activo: {name}"
     }
   },
   "Admin": {
@@ -894,7 +897,22 @@
     "worstCall": "Necesita Mejorar",
     "mockBadge": "solo datos mock",
     "mockFooterBest": "† todos los valores vienen de mock-data.ts — Escuchar en X:XX → no funciona en esta demo",
-    "mockFooterWorst": "† todos los valores vienen de mock-data.ts — Revisar en X:XX → no funciona en esta demo"
+    "mockFooterWorst": "† todos los valores vienen de mock-data.ts — Revisar en X:XX → no funciona en esta demo",
+    "recsTitle": "Recomendaciones de Coaching IA",
+    "recsReview": "Revisar y enviar",
+    "recsSentBadge": "Enviado",
+    "reviewModal": {
+      "title": "Revisar recomendación de coaching",
+      "subtitle": "Revísala antes de enviarla a {name}.",
+      "recipient": "Destinatario",
+      "recommendation": "Recomendación",
+      "cancel": "Cancelar",
+      "send": "Enviar a {name}",
+      "sending": "Enviando…",
+      "sentTitle": "Recomendación enviada",
+      "sentBody": "{name} la verá en su feed de coaching.",
+      "close": "Cerrar"
+    }
   },
   "Dashboard": {
     "home": {

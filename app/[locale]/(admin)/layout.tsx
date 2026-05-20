@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="flex">
         <AppSidebar role="admin" isImpersonating={isImpersonating} />
         <main className="flex-1 min-w-0 lg:pl-56 pt-[calc(61px+var(--impersonate-banner-h,0px))]">
-          <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-7">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-7">
             {children}
           </div>
         </main>
