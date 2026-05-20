@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Client,
   GlobalMetrics,
@@ -7,7 +7,7 @@ import type {
   OrgScriptStatus,
   Plan,
   PlanCode,
-} from '@/lib/types'
+} from "@/lib/types";
 
 // Após migration 038 a tabela `clients` foi mesclada em `organizations`.
 // O tipo TS `Client` continua existindo como shape lida pelas telas Admin
@@ -17,30 +17,30 @@ import type {
 // redundante com o `id`, mas mantido pra preservar a API pública.
 
 interface DbPlanNested {
-  id: string
-  code: PlanCode
-  name: string
-  price_cents: number
-  timeline_weeks: number
-  has_rag: boolean
-  has_twilio: boolean
-  has_manual_upload: boolean
-  max_sales_people: number | null
-  features: string[] | null
+  id: string;
+  code: PlanCode;
+  name: string;
+  price_cents: number;
+  timeline_weeks: number;
+  has_rag: boolean;
+  has_twilio: boolean;
+  has_manual_upload: boolean;
+  max_sales_people: number | null;
+  features: string[] | null;
 }
 
 interface DbOrgRow {
-  id: string
-  name: string
-  plan_id: string | null
-  calls_this_month: number | null
-  avg_score: number | null
-  mrr: number | null
-  health: HealthStatus
-  trainers_count: number | null
-  subscription_status: 'active' | 'inactive' | 'trial'
-  created_at: string | null
-  plans: DbPlanNested | null
+  id: string;
+  name: string;
+  plan_id: string | null;
+  calls_this_month: number | null;
+  avg_score: number | null;
+  mrr: number | null;
+  health: HealthStatus;
+  trainers_count: number | null;
+  subscription_status: "active" | "inactive" | "trial";
+  created_at: string | null;
+  plans: DbPlanNested | null;
 }
 
 function toPlan(row: DbPlanNested): Plan {
@@ -55,7 +55,7 @@ function toPlan(row: DbPlanNested): Plan {
     hasManualUpload: row.has_manual_upload,
     maxSalesPeople: row.max_sales_people,
     features: row.features ?? [],
-  }
+  };
 }
 
 function toClient(
@@ -65,12 +65,14 @@ function toClient(
   lastCallAt: string | null,
 ): Client {
   if (!row.plans) {
-    throw new Error(`Organization ${row.id} has no plan (plan_id=${row.plan_id ?? 'null'})`)
+    throw new Error(
+      `Organization ${row.id} has no plan (plan_id=${row.plan_id ?? "null"})`,
+    );
   }
   return {
     id: row.id,
     name: row.name,
-    planId: row.plan_id ?? '',
+    planId: row.plan_id ?? "",
     plan: toPlan(row.plans),
     orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
@@ -83,67 +85,74 @@ function toClient(
     currentScript,
     lastCallAt,
     createdAt: row.created_at ?? new Date().toISOString(),
-  }
+  };
 }
 
 // ── Listagem paginada via RPC ────────────────────────────────────────────
 
 export interface ClientsQuery {
-  search?: string
-  planCode?: PlanCode
-  planStatus?: 'active' | 'inactive' | 'trial'
-  scriptStatus?: OrgScriptStatus // inclui 'none'
-  scriptVersion?: string // "1.2"
-  mrrMin?: number
-  mrrMax?: number
-  lastActivityFrom?: string // ISO
-  lastActivityTo?: string
-  page: number
-  limit: number
+  search?: string;
+  planCode?: PlanCode;
+  planStatus?: "active" | "inactive" | "trial";
+  scriptStatus?: OrgScriptStatus; // inclui 'none'
+  scriptVersion?: string; // "1.2"
+  mrrMin?: number;
+  mrrMax?: number;
+  lastActivityFrom?: string; // ISO
+  lastActivityTo?: string;
+  page: number;
+  limit: number;
 }
 
 export interface ClientsPage {
-  rows: Client[]
-  total: number
-  page: number
-  limit: number
+  rows: Client[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 // Row achatada vinda da RPC list_admin_organizations.
 interface RpcRow {
-  org_id: string
-  org_name: string
-  org_created_at: string
-  org_subscription_status: 'active' | 'inactive' | 'trial'
-  org_mrr: number | string
-  org_health: HealthStatus
-  org_trainers_count: number
-  org_calls_this_month: number
-  org_avg_score: number
-  plan_id: string
-  plan_code: PlanCode
-  plan_name: string
-  plan_price_cents: number
-  plan_timeline_weeks: number
-  plan_has_rag: boolean
-  plan_has_twilio: boolean
-  plan_has_manual_upload: boolean
-  plan_max_sales_people: number | null
-  plan_features: string[]
-  owner_accepted: boolean
-  script_id: string | null
-  script_name: string | null
-  script_major_version: number | null
-  script_minor_version: number | null
-  script_status: OrgScriptStatus
-  script_started_at: string | null
-  prev_script_major: number | null
-  prev_script_minor: number | null
-  last_call_at: string | null
-  total: number | string
+  org_id: string;
+  org_name: string;
+  org_created_at: string;
+  org_subscription_status: "active" | "inactive" | "trial";
+  org_mrr: number | string;
+  org_health: HealthStatus;
+  org_trainers_count: number;
+  org_calls_this_month: number;
+  org_avg_score: number;
+  plan_id: string;
+  plan_code: PlanCode;
+  plan_name: string;
+  plan_price_cents: number;
+  plan_timeline_weeks: number;
+  plan_has_rag: boolean;
+  plan_has_twilio: boolean;
+  plan_has_manual_upload: boolean;
+  plan_max_sales_people: number | null;
+  plan_features: unknown;
+  owner_accepted: boolean;
+  script_id: string | null;
+  script_name: string | null;
+  script_major_version: number | null;
+  script_minor_version: number | null;
+  script_status: OrgScriptStatus;
+  script_started_at: string | null;
+  prev_script_major: number | null;
+  prev_script_minor: number | null;
+  last_call_at: string | null;
+  total: number | string;
 }
 
 function rpcRowToClient(row: RpcRow): Client {
+  // plans.features vem como JSONB array. Defensive: aceita array de strings,
+  // ignora outros formatos pra não quebrar a UI.
+  const featuresRaw = row.plan_features;
+  const features = Array.isArray(featuresRaw)
+    ? featuresRaw.filter((f): f is string => typeof f === "string")
+    : [];
+
   const plan: Plan = {
     id: row.plan_id,
     code: row.plan_code,
@@ -154,25 +163,25 @@ function rpcRowToClient(row: RpcRow): Client {
     hasTwilio: row.plan_has_twilio,
     hasManualUpload: row.plan_has_manual_upload,
     maxSalesPeople: row.plan_max_sales_people,
-    features: row.plan_features ?? [],
-  }
+    features,
+  };
 
-  let currentScript: OrgScriptInfo | null = null
-  if (row.script_id && row.script_status !== 'none') {
+  let currentScript: OrgScriptInfo | null = null;
+  if (row.script_id && row.script_status !== "none") {
     const previousVersion =
-      row.script_status === 'pending' &&
+      row.script_status === "pending" &&
       row.prev_script_major !== null &&
       row.prev_script_minor !== null
         ? `${row.prev_script_major}.${row.prev_script_minor}`
-        : null
+        : null;
     currentScript = {
       scriptId: row.script_id,
-      scriptName: row.script_name ?? '',
+      scriptName: row.script_name ?? "",
       version: `${row.script_major_version ?? 1}.${row.script_minor_version ?? 0}`,
       previousVersion,
       status: row.script_status,
       startedAt: row.script_started_at,
-    }
+    };
   }
 
   return {
@@ -191,7 +200,7 @@ function rpcRowToClient(row: RpcRow): Client {
     currentScript,
     lastCallAt: row.last_call_at,
     createdAt: row.org_created_at,
-  }
+  };
 }
 
 /**
@@ -205,9 +214,9 @@ function rpcRowToClient(row: RpcRow): Client {
  * (mesmo valor em todas as linhas da RPC; só pegamos da primeira).
  */
 export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
-  const supabase = createAdminClient()
+  const supabase = createAdminClient();
 
-  const { data, error } = await supabase.rpc('list_admin_organizations', {
+  const { data, error } = await supabase.rpc("list_admin_organizations", {
     p_search: query.search ?? null,
     p_plan_code: query.planCode ?? null,
     p_plan_status: query.planStatus ?? null,
@@ -219,19 +228,19 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
     p_last_activity_to: query.lastActivityTo ?? null,
     p_page: query.page,
     p_limit: query.limit,
-  })
+  });
 
-  if (error) throw new Error(`dbListClients: ${error.message}`)
+  if (error) throw new Error(`dbListClients: ${error.message}`);
 
-  const rows = (data ?? []) as RpcRow[]
-  const total = rows.length > 0 ? Number(rows[0].total) : 0
+  const rows = (data ?? []) as RpcRow[];
+  const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
   return {
     rows: rows.map(rpcRowToClient),
     total,
     page: query.page,
     limit: query.limit,
-  }
+  };
 }
 
 // ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
@@ -241,65 +250,69 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
  * Pós-merge: orgId === clientId. Usa as queries originais (sem paginação)
  * porque é lookup pontual.
  */
-export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> {
-  const supabase = createAdminClient()
+export async function dbGetClientByOrgId(
+  orgId: string,
+): Promise<Client | null> {
+  const supabase = createAdminClient();
 
   const [orgRes, ownerRes] = await Promise.all([
     supabase
-      .from('organizations')
+      .from("organizations")
       .select(
-        'id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)'
+        "id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)",
       )
-      .eq('id', orgId)
+      .eq("id", orgId)
       .maybeSingle(),
     supabase
-      .from('memberships')
-      .select('user_id', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('role', 'owner')
-      .eq('invite_status', 'accepted'),
-  ])
+      .from("memberships")
+      .select("user_id", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("role", "owner")
+      .eq("invite_status", "accepted"),
+  ]);
 
   if (orgRes.error) {
-    if (orgRes.error.code === 'PGRST116') return null
-    throw new Error(`dbGetClientByOrgId: ${orgRes.error.message}`)
+    if (orgRes.error.code === "PGRST116") return null;
+    throw new Error(`dbGetClientByOrgId: ${orgRes.error.message}`);
   }
 
-  if (!orgRes.data) return null
-  if (!(orgRes.data as { plan_id: string | null }).plan_id) return null
+  if (!orgRes.data) return null;
+  if (!(orgRes.data as { plan_id: string | null }).plan_id) return null;
 
-  const ownerAccepted = (ownerRes.count ?? 0) > 0
+  const ownerAccepted = (ownerRes.count ?? 0) > 0;
 
   // currentScript + lastCallAt: queries dedicadas pra esse único org
   // (sem reuse da RPC que é otimizada pra batch).
   const [scriptRes, lastCallRes] = await Promise.all([
     supabase
-      .from('org_scripts_current')
-      .select('script_id, script_name, rubric_version_snapshot, minor_version, effective_status, started_at, ended_at')
-      .eq('org_id', orgId)
-      .is('ended_at', null)
-      .order('started_at', { ascending: false })
+      .from("org_scripts_current")
+      .select(
+        "script_id, script_name, rubric_version_snapshot, minor_version, effective_status, started_at, ended_at",
+      )
+      .eq("org_id", orgId)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
-      .from('calls')
-      .select('created_at')
-      .eq('org_id', orgId)
-      .order('created_at', { ascending: false })
+      .from("calls")
+      .select("created_at")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-  ])
+  ]);
 
-  let currentScript: OrgScriptInfo | null = null
+  let currentScript: OrgScriptInfo | null = null;
   if (scriptRes.data) {
     const s = scriptRes.data as {
-      script_id: string
-      script_name: string
-      rubric_version_snapshot: number
-      minor_version: number
-      effective_status: OrgScriptStatus
-      started_at: string | null
-    }
+      script_id: string;
+      script_name: string;
+      rubric_version_snapshot: number;
+      minor_version: number;
+      effective_status: OrgScriptStatus;
+      started_at: string | null;
+    };
     currentScript = {
       scriptId: s.script_id,
       scriptName: s.script_name,
@@ -307,12 +320,18 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
       previousVersion: null,
       status: s.effective_status,
       startedAt: s.started_at,
-    }
+    };
   }
 
-  const lastCallAt = (lastCallRes.data as { created_at: string } | null)?.created_at ?? null
+  const lastCallAt =
+    (lastCallRes.data as { created_at: string } | null)?.created_at ?? null;
 
-  return toClient(orgRes.data as unknown as DbOrgRow, ownerAccepted, currentScript, lastCallAt)
+  return toClient(
+    orgRes.data as unknown as DbOrgRow,
+    ownerAccepted,
+    currentScript,
+    lastCallAt,
+  );
 }
 
 // ── Métricas globais (não paginadas — agregação direta) ──────────────────
@@ -326,22 +345,31 @@ export async function dbGetClientByOrgId(orgId: string): Promise<Client | null> 
  * passar de 10k vale migrar pra um SQL aggregation.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
-  const supabase = createAdminClient()
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
-    .from('organizations')
-    .select('mrr, calls_this_month, avg_score')
-    .not('plan_id', 'is', null)
+    .from("organizations")
+    .select("mrr, calls_this_month, avg_score")
+    .not("plan_id", "is", null);
 
-  if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`)
+  if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`);
 
-  const rows = (data ?? []) as Array<{ mrr: number; calls_this_month: number; avg_score: number }>
+  const rows = (data ?? []) as Array<{
+    mrr: number;
+    calls_this_month: number;
+    avg_score: number;
+  }>;
   return {
     totalClients: rows.length,
-    totalCallsThisMonth: rows.reduce((s, r) => s + (r.calls_this_month ?? 0), 0),
+    totalCallsThisMonth: rows.reduce(
+      (s, r) => s + (r.calls_this_month ?? 0),
+      0,
+    ),
     totalMRR: rows.reduce((s, r) => s + Number(r.mrr ?? 0), 0),
     avgScore: rows.length
-      ? Math.round(rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length)
+      ? Math.round(
+          rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length,
+        )
       : 0,
-  }
+  };
 }
