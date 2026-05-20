@@ -180,9 +180,11 @@ export async function PATCH(
     const finalLocation =
       updates.locationId !== undefined ? updates.locationId : view.locationId
     const finalHasToken =
-      updates.accessToken !== undefined && updates.accessToken !== null
-        ? true
-        : view.hasAccessToken
+      updates.accessToken === null
+        ? false
+        : updates.accessToken !== undefined
+          ? true
+          : view.hasAccessToken
     if (!finalLocation) {
       return badRequest('locationId é obrigatório para habilitar a integração')
     }
