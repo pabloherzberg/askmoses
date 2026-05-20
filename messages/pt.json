@@ -592,6 +592,7 @@
       "anyOption": "Todos",
       "clearFilters": "Limpar filtros",
       "applyFilters": "Aplicar filtros",
+      "cancel": "Cancelar",
       "activeFiltersCount": "{count} ativo(s)",
       "filtersTitle": "Filtros",
       "filtersSubtitle": "Refine a lista por status, plano e atividade.",

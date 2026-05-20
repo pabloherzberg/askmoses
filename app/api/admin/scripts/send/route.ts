@@ -132,39 +132,20 @@ export async function POST(request: NextRequest) {
     effectiveScriptId = script.id
   }
 
-  // Encerra QUALQUER associação aberta (ended_at IS NULL) das orgs alvo,
-  // independente de status. Pending não-aceitos também são fechados — caso
-  // contrário ficavam pendurados e violavam o partial unique index criado
-  // na migration 046 (uniq_org_scripts_open_per_org).
-  const now = new Date().toISOString()
-  const { error: closeErr } = await admin
-    .from('org_scripts')
-    .update({ ended_at: now })
-    .in('org_id', orgIds)
-    .is('ended_at', null)
-  if (closeErr) return serverError('Não foi possível encerrar associações ativas', closeErr)
+  // RPC transacional (migration 050): fecha associações abertas + upsert
+  // pending numa única transação. Falha de qualquer parte = rollback completo,
+  // sem risco de deixar orgs sem script corrente.
+  const { data: rpcData, error: rpcErr } = await admin.rpc('send_script_to_orgs', {
+    p_script_id: effectiveScriptId,
+    p_org_ids: orgIds,
+    p_sent_by: session.user.id,
+  })
 
-  // UPSERT por (org_id, script_id) — se já existe linha pra essa combinação,
-  // reseta pra pending e renova started_at/sent_by.
-  const rows = orgIds.map((orgId) => ({
-    org_id: orgId,
-    script_id: effectiveScriptId,
-    status: 'pending' as const,
-    started_at: now,
-    ended_at: null,
-    sent_by: session.user.id,
-  }))
-
-  const { data: upserted, error: upsertErr } = await admin
-    .from('org_scripts')
-    .upsert(rows, { onConflict: 'org_id,script_id' })
-    .select('id, org_id, script_id, status, started_at')
-
-  if (upsertErr) {
-    // 23505 = unique_violation. Com o partial unique uniq_org_scripts_open_per_org
-    // (migration 046), envios concorrentes pra mesma org colidem aqui — só um
-    // ganha, o outro retorna 409 pra o admin tentar de novo.
-    if (upsertErr.code === '23505') {
+  if (rpcErr) {
+    // 23505 = unique_violation no partial unique uniq_org_scripts_open_per_org.
+    // Race entre dois admins enviando simultaneamente pra mesma org — um ganha,
+    // outro retorna 409 pro frontend reattempt.
+    if (rpcErr.code === '23505') {
       return Response.json(
         {
           data: null,
@@ -176,14 +157,22 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       )
     }
-    return serverError('Não foi possível registrar o envio', upsertErr)
+    return serverError('Não foi possível registrar o envio', rpcErr)
   }
+
+  const rows = (rpcData ?? []) as Array<{
+    id: string
+    org_id: string
+    script_id: string
+    status: string
+    started_at: string
+  }>
 
   return ok({
     scriptId: effectiveScriptId,
     rubricResolved: rubricId ? true : false,
     sentTo: orgIds.length,
-    rows: (upserted ?? []).map((r) => ({
+    rows: rows.map((r) => ({
       id: r.id,
       orgId: r.org_id,
       scriptId: r.script_id,

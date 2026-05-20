@@ -95,19 +95,26 @@ export async function POST(request: NextRequest) {
       : undefined
 
   // Datas devem ser ISO parseable. Inválidas → ignora silenciosamente.
+  // Pra YYYY-MM-DD (date-only), construímos o boundary explicitamente em
+  // UTC. Antes usávamos setHours() em cima de new Date('YYYY-MM-DD'), o
+  // que parsing UTC midnight + setHours() local causa shift de timezone
+  // (ex: UTC-3 → meia-noite UTC vira 21:00 do dia anterior local).
   const lastActivityFrom = body.lastActivityFrom
     ? (() => {
-        const d = new Date(body.lastActivityFrom!)
+        const raw = body.lastActivityFrom!
+        const d = raw.length === 10
+          ? new Date(`${raw}T00:00:00.000Z`)
+          : new Date(raw)
         return isNaN(d.getTime()) ? undefined : d.toISOString()
       })()
     : undefined
   const lastActivityTo = body.lastActivityTo
     ? (() => {
-        const d = new Date(body.lastActivityTo!)
-        if (isNaN(d.getTime())) return undefined
-        // Inclusivo até final do dia se vier só com YYYY-MM-DD.
-        if (body.lastActivityTo!.length === 10) d.setHours(23, 59, 59, 999)
-        return d.toISOString()
+        const raw = body.lastActivityTo!
+        const d = raw.length === 10
+          ? new Date(`${raw}T23:59:59.999Z`)
+          : new Date(raw)
+        return isNaN(d.getTime()) ? undefined : d.toISOString()
       })()
     : undefined
 

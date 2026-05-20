@@ -235,7 +235,7 @@ export function FiltersModal({ open, current, availableScriptVersions, onApply, 
               className="px-3 py-1.5 rounded-md text-sm"
               style={{ color: 'var(--am-muted)' }}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="button"

@@ -130,8 +130,13 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     [t],
   );
 
-  // Debounced fetch — dispara 250ms após o último change de filtro/search.
+  // Debounced fetch — dispara 250ms após o último change de filtro/search/page.
   // Não dispara no mount inicial (já temos initialRows do server).
+  //
+  // Reset de page=1 ao trocar filter/search é feito sincronamente nos handlers
+  // (handleFiltersApply, handleSearchChange) — antes vivia em useEffect
+  // separado e gerava fetch duplicado (um pra page antigo, outro pra page=1)
+  // antes do cleanup do timeout cancelar.
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
@@ -144,11 +149,17 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     return () => clearTimeout(handle);
   }, [filters, search, page, limit, doFetch]);
 
-  // Quando filtros mudam, volta pra página 1 (senão pode estar pedindo
-  // uma página que não existe mais com o novo filtro).
-  useEffect(() => {
+  // Handlers que mudam filter/search resetam page=1 no MESMO batch — React
+  // junta os setStates da mesma callback num só re-render.
+  const handleFiltersApply = useCallback((next: FilterValues) => {
+    setFilters(next);
     setPage(1);
-  }, [filters, search]);
+  }, []);
+
+  const handleSearchChange = useCallback((next: string) => {
+    setSearch(next);
+    setPage(1);
+  }, []);
 
   // ── Bulk selection ─────────────────────────────────────────────────
 
@@ -249,7 +260,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
             <input
               type="search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder={t("searchPlaceholder")}
               className="pl-8 pr-3 py-1.5 rounded-md border outline-none text-sm w-64"
               style={{
@@ -413,7 +424,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         open={filtersOpen}
         current={filters}
         availableScriptVersions={availableScriptVersions}
-        onApply={setFilters}
+        onApply={handleFiltersApply}
         onClose={() => setFiltersOpen(false)}
       />
 
