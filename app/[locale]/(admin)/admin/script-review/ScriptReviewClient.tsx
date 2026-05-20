@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useLocale } from 'next-intl'
 import { Search, GitCompare, Wand2, Send, X, ChevronDown, ChevronUp, Loader2, CheckCircle } from 'lucide-react'
 import type { Client, OrgScriptStatus } from '@/lib/types'
 import type { ScriptSection, ScriptCriterion } from '@/lib/db/scripts'
@@ -91,7 +93,7 @@ function SectionDiff({ current, proposed }: { current: ScriptSection[]; proposed
             </div>
 
             {changed && (
-              <div className="grid grid-cols-2 divide-x" style={{ divideColor: 'var(--am-border)' }}>
+              <div className="grid grid-cols-2">
                 {/* Current */}
                 <div className="p-4 space-y-2" style={{ borderRight: '1px solid var(--am-border)' }}>
                   <p className="text-[10px] font-mono uppercase tracking-wide mb-2" style={{ color: 'var(--am-muted)' }}>Current</p>
@@ -460,6 +462,7 @@ interface Props {
 }
 
 export function ScriptReviewClient({ initialRows, initialTotal, initialPageSize, catalog }: Props) {
+  const locale = useLocale()
   const [rows, setRows] = useState<Client[]>(initialRows)
   const [total, setTotal] = useState(initialTotal)
   const [loading, setLoading] = useState(false)
@@ -593,16 +596,27 @@ export function ScriptReviewClient({ initialRows, initialTotal, initialPageSize,
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setImproveTarget(client)}
-                        disabled={!script || catalog.length === 0}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
-                        style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
-                        title={!script ? 'No active script to improve' : 'Generate AI improvements for this org'}
-                      >
-                        <Wand2 size={12} />
-                        Improve
-                      </button>
+                      {script ? (
+                        <Link
+                          href={`/${locale}/admin/script-review/${script.scriptId}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-opacity hover:opacity-80"
+                          style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
+                          title="Open the Script Intelligence review for this org"
+                        >
+                          <Wand2 size={12} />
+                          Improve
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium opacity-30 cursor-not-allowed"
+                          style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
+                          title="No active script to improve"
+                        >
+                          <Wand2 size={12} />
+                          Improve
+                        </button>
+                      )}
                       {script && (
                         <button
                           onClick={() => {

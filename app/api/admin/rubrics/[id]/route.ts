@@ -5,7 +5,7 @@ import type { Role } from '@/lib/types'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -14,7 +14,7 @@ export async function PATCH(
   if (role !== 'admin') return forbidden()
 
   try {
-    const id = params.id
+    const { id } = await params
     const body = (await request.json()) as UpdateRubricInput
     
     // We only update the rubric directly. 
