@@ -17,6 +17,7 @@ import {
   PlusCircle,
   Wand2,
   SlidersHorizontal,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -139,7 +140,7 @@ export function AdminNavItems() {
       href: "/admin/organizations/new",
       icon: PlusCircle,
     },
-    { label: t("rubricConfig"), href: "/admin/rubric", icon: Settings },
+    { label: t("coachingSettings"), href: "/admin/settings", icon: Cog },
     {
       label: t("aiControls"),
       href: "/admin/ai-controls",
