@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sparkles, X, Check } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
@@ -34,6 +35,7 @@ interface PendingScriptInfo {
 export function PendingScriptBanner() {
   const t = useTranslations('Owner.pendingScript')
   const locale = useLocale()
+  const router = useRouter()
   const [pending, setPending] = useState<PendingScriptInfo | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -120,7 +122,7 @@ export function PendingScriptBanner() {
         </div>
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={() => router.push(`/${locale}/owner-script-review`)}
           className="cursor-pointer px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap"
           style={{ background: 'var(--am-accent)', color: 'var(--am-on-accent)' }}
         >
