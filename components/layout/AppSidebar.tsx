@@ -29,8 +29,6 @@ const EXACT_ONLY = new Set([
   "/team-command-center",
   "/me",
   "/admin",
-  // /dashboard/settings é a página da Rubric; não pode "ativar" em /dashboard/settings/invite (Members)
-  "/dashboard/settings",
 ]);
 
 export function NavItem({
@@ -104,8 +102,6 @@ export function OwnerNavItems() {
     },
   ];
   const toolsNav = [
-    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
-    { label: t("rubricConfig"), href: "/dashboard/settings", icon: Settings },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
