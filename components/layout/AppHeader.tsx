@@ -27,9 +27,15 @@ interface AppHeaderProps {
    * can resolve the active title automatically (used by /dashboard/*).
    */
   pageTitle?: string | Record<string, string>
+  /**
+   * Slot pra notificações server-rendered (ex: PendingScriptBadgeServer).
+   * Renderizado no extremo esquerdo da seção direita. Passar via prop em
+   * vez de hardcoded permite layouts diferentes injetarem badges diferentes.
+   */
+  pendingBadge?: React.ReactNode
 }
 
-export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
+export function AppHeader({ mobileSidebar, pageTitle, pendingBadge }: AppHeaderProps) {
   const pathname = usePathname()
   const locale = useLocale()
   const t = useTranslations('Shared.header')
@@ -103,6 +109,10 @@ export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
 
       {/* ── Right ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 md:gap-4">
+        {/* Slot pra badge de aprovação pendente — só renderiza pra Owner
+            com script pending. Server-rendered via prop. */}
+        {pendingBadge}
+
         {!resolvedTitle && (
           <>
             <span

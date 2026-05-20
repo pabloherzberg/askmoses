@@ -19,7 +19,7 @@ export default async function SubscriptionPage({ params }: PageProps) {
   const admin = createAdminClient();
   const { data: org } = await admin
     .from("organizations")
-    .select("id, name, subscription_status, trial_ends_at, plans(code)")
+    .select("id, name, subscription_status, trial_ends_at, mrr, plans(code)")
     .eq("id", orgId)
     .maybeSingle();
 
@@ -33,6 +33,7 @@ export default async function SubscriptionPage({ params }: PageProps) {
     name: string;
     subscription_status: SubStatus;
     trial_ends_at: string | null;
+    mrr: number | string | null;
     plans: { code: PlanCode } | { code: PlanCode }[] | null;
   };
   const planRaw = orgRow.plans;
@@ -49,6 +50,7 @@ export default async function SubscriptionPage({ params }: PageProps) {
         initialStatus={orgRow.subscription_status}
         initialPlanCode={plan?.code ?? null}
         initialTrialEndsAt={orgRow.trial_ends_at}
+        initialMrr={Number(orgRow.mrr ?? 0)}
       />
     </div>
   );
