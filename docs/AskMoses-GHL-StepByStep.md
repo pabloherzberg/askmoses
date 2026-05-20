@@ -24,7 +24,7 @@
 |---|---|
 | App name | AskMosesInt (API v2.0) |
 | Location ID | `l2VVQax2pxKTUZWYYsW0` |
-| Access Token | `pit-d0c072b8-8a73-43cf-982b-a22b457a0d29` |
+| Access Token | `YOUR_GHL_ACCESS_TOKEN` |
 | API Base | `https://services.leadconnectorhq.com/v2` |
 | Scopes | conversations, objects/schema, objects/record, medias, templates, tags, redirects, products, **contacts, opportunities, users** (all .readonly) |
 | Workflow | "Call Completion Notification" → Send to Ask Moses → Email Check Confirmation |
