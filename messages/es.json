@@ -463,6 +463,27 @@
     }
   },
   "Owner": {
+    "pendingScript": {
+      "bannerTitle": "Una nueva versión del script espera tu aprobación",
+      "bannerCta": "Ver cambios",
+      "bannerVersionDelta": "v{previous} → v{incoming}",
+      "bannerVersionNew": "Nueva: v{incoming}",
+      "modalTitle": "Revisar script propuesto",
+      "modalSubtitle": "Enviado por {sender} el {date}",
+      "modalSubtitleNoSender": "Enviado el {date}",
+      "currentLabel": "Actual",
+      "incomingLabel": "Propuesto",
+      "noCurrent": "Sin script activo",
+      "noDescription": "Sin descripción.",
+      "accept": "Aceptar y activar",
+      "reject": "Mantener actual",
+      "accepting": "Aceptando…",
+      "rejecting": "Rechazando…",
+      "genericError": "Algo salió mal. Inténtalo de nuevo.",
+      "rejectedRestored": "Volvió a v{version}",
+      "rejectedNoRestore": "Sin script activo ahora",
+      "accepted": "v{version} está activa"
+    },
     "teamOverview": "Vista del equipo",
     "metrics": {
       "monthlyRevenue": "Ingresos mensuales estimados",
@@ -1238,7 +1259,7 @@
         "tipPrefix": "Consejo: {tip}",
         "fullScript": "Script Completo",
         "evaluationCriteria": "Criterios de Evaluación Generados Automáticamente ({count})",
-        "createRubric": "Crear Rúbrica",
+        "createRubric": "Crear Script",
         "startOver": "Empezar de Nuevo"
       },
       "confirm": {
@@ -1263,6 +1284,9 @@
         "criterionNamePlaceholder": "Nombre del criterio",
         "criterionDescriptionPlaceholder": "Descripción",
         "addCriterion": "+ Agregar Criterio",
+        "rubricLabel": "Rúbrica",
+        "rubricSubtitle": "Elige a qué rúbrica pertenece este script",
+        "rubricNone": "No se encontraron rúbricas. Crea una primero en Configuración.",
         "saving": "Guardando...",
         "saveRubric": "Guardar Rúbrica",
         "back": "Volver",

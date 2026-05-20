@@ -77,16 +77,17 @@ export async function dbGetRubricById(
   return data as DbRubric;
 }
 
-/** Lists all active rubrics for an org (RB-05). */
-export async function dbGetRubrics(orgId: string): Promise<DbRubric[]> {
+/** Lists all active rubrics for an org, including globals (org_id IS NULL). */
+export async function dbGetRubrics(orgId: string | null): Promise<DbRubric[]> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("rubrics")
-    .select("*")
-    .eq("org_id", orgId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("rubrics").select("*").eq("is_active", true)
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},org_id.is.null`)
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) throw new Error(`dbGetRubrics: ${error.message}`);
 
@@ -123,7 +124,7 @@ export async function dbGetDefaultRubricWithCriteria(orgId: string | null): Prom
 // ─── Input interfaces ────────────────────────────────────────────────────────
 
 export interface CreateRubricInput {
-  orgId: string;
+  orgId: string | null;
   name: string;
   description?: string | null;
   isDefault?: boolean;

@@ -1,6 +1,7 @@
 import {
   dbGetDefaultRubric,
   dbGetDefaultRubricWithCriteria,
+  dbGetRubrics,
   dbUpdateRubric,
   dbCreateCriterion,
   dbUpdateCriterion,
@@ -195,6 +196,11 @@ export async function getRevenueEstimator(): Promise<{
 export async function getRubricConfig() {
   const orgId = await getOrgId(); // null → admin sem org → rubric global
   return dbGetDefaultRubricWithCriteria(orgId);
+}
+
+export async function listRubrics() {
+  const orgId = await getOrgId();
+  return dbGetRubrics(orgId);
 }
 
 // ─── Write operations ────────────────────────────────────────────────────────

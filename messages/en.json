@@ -463,6 +463,27 @@
     }
   },
   "Owner": {
+    "pendingScript": {
+      "bannerTitle": "A new script version is awaiting your approval",
+      "bannerCta": "Review changes",
+      "bannerVersionDelta": "v{previous} → v{incoming}",
+      "bannerVersionNew": "New: v{incoming}",
+      "modalTitle": "Review proposed script",
+      "modalSubtitle": "Sent by {sender} on {date}",
+      "modalSubtitleNoSender": "Sent on {date}",
+      "currentLabel": "Current",
+      "incomingLabel": "Proposed",
+      "noCurrent": "No active script",
+      "noDescription": "No description.",
+      "accept": "Accept & activate",
+      "reject": "Keep current",
+      "accepting": "Accepting…",
+      "rejecting": "Rejecting…",
+      "genericError": "Something went wrong. Try again.",
+      "rejectedRestored": "Reverted to v{version}",
+      "rejectedNoRestore": "No active script now",
+      "accepted": "v{version} is now active"
+    },
     "teamOverview": "Team Overview",
     "metrics": {
       "monthlyRevenue": "Est. Monthly Revenue",
@@ -1238,7 +1259,7 @@
         "tipPrefix": "Tip: {tip}",
         "fullScript": "Full Script",
         "evaluationCriteria": "Auto-Generated Evaluation Criteria ({count})",
-        "createRubric": "Create Rubric",
+        "createRubric": "Create Script",
         "startOver": "Start Over"
       },
       "confirm": {
@@ -1263,6 +1284,9 @@
         "criterionNamePlaceholder": "Criterion name",
         "criterionDescriptionPlaceholder": "Description",
         "addCriterion": "+ Add Criterion",
+        "rubricLabel": "Rubric",
+        "rubricSubtitle": "Choose which rubric this script belongs to",
+        "rubricNone": "No rubrics found. Create a rubric first in Settings.",
         "saving": "Saving...",
         "saveRubric": "Save Rubric",
         "back": "Back",
