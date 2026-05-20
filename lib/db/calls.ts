@@ -230,3 +230,119 @@ export async function dbDeleteCall(id: string, scope?: CallMutationScope): Promi
   if (error) throw new Error(`dbDeleteCall: ${error.message}`)
   return (count ?? 0) > 0
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// GHL ingestion helpers
+// Mantidos separados de dbCreateCall para não inflar a função canônica com
+// opcionais que só fazem sentido na rota do webhook.
+// ────────────────────────────────────────────────────────────────────────────
+
+export type ProcessingStatus =
+  | 'pending'
+  | 'processing'
+  | 'transcribed'
+  | 'no_recording'
+  | 'transcription_failed'
+  | 'webhook_failed'
+
+export interface CreateGhlCallInput {
+  orgId: string
+  externalCallId: string
+  ghlPayload: Record<string, unknown>
+  trainerName: string
+  trainerEmail?: string | null
+  clientName?: string | null
+  leadName?: string | null
+  leadSource?: string | null
+  callOutcome?: string | null
+  durationSeconds?: number | null
+}
+
+export interface UpsertResult {
+  call: DbCall
+  isNew: boolean
+}
+
+/**
+ * Insere uma call ingerida pelo webhook GHL marcada como pending.
+ * Idempotente: se já existe linha com o mesmo external_call_id, retorna
+ * essa linha e isNew=false (o pipeline NÃO deve reprocessar).
+ */
+export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<UpsertResult> {
+  const supabase = createAdminClient()
+
+  const existing = await supabase
+    .from('calls')
+    .select('*')
+    .eq('external_call_id', input.externalCallId)
+    .maybeSingle()
+
+  if (existing.error && existing.error.code !== 'PGRST116') {
+    throw new Error(`dbUpsertGhlCall lookup: ${existing.error.message}`)
+  }
+  if (existing.data) {
+    return { call: existing.data as DbCall, isNew: false }
+  }
+
+  const { data, error } = await supabase
+    .from('calls')
+    .insert({
+      org_id: input.orgId,
+      external_call_id: input.externalCallId,
+      ghl_payload: input.ghlPayload,
+      ingest_source: 'ghl',
+      processing_status: 'pending',
+      transcript_source: 'whisper',
+      trainer_name: input.trainerName,
+      trainer_email: input.trainerEmail ?? '',
+      client_name: input.clientName ?? null,
+      lead_name: input.leadName ?? null,
+      lead_source: input.leadSource ?? null,
+      call_outcome: input.callOutcome ?? null,
+      duration_seconds: input.durationSeconds ?? null,
+      email_sent: false,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    // Corrida: outra requisição inseriu entre o lookup e o insert.
+    // Reler a linha existente garante idempotência.
+    if (error.code === '23505') {
+      const retry = await supabase
+        .from('calls')
+        .select('*')
+        .eq('external_call_id', input.externalCallId)
+        .single()
+      if (retry.data) {
+        return { call: retry.data as DbCall, isNew: false }
+      }
+    }
+    throw new Error(`dbUpsertGhlCall insert: ${error.message}`)
+  }
+
+  return { call: data as DbCall, isNew: true }
+}
+
+export interface UpdateGhlPipelineInput {
+  processingStatus?: ProcessingStatus
+  recordingUrl?: string | null
+  transcript?: string | null
+  transcriptSource?: 'whisper' | 'manual' | 'ghl'
+}
+
+export async function dbUpdateGhlCallPipeline(
+  id: string,
+  input: UpdateGhlPipelineInput,
+): Promise<void> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (input.processingStatus !== undefined) patch.processing_status = input.processingStatus
+  if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
+  if (input.transcript !== undefined) patch.transcript = input.transcript
+  if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
+
+  const { error } = await supabase.from('calls').update(patch).eq('id', id)
+  if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
+}

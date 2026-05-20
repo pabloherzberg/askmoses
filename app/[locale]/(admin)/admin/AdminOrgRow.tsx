@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Send } from 'lucide-react'
+import { Settings, Webhook } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -238,25 +238,24 @@ export function AdminOrgRow({
           {lastActivityDate}
         </span>
       </td>
-
-      {/* Actions: Send Script + Settings */}
-      <td className="px-3 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+      <td className="px-3 py-4 text-right">
+        {/* stopPropagation pra não disparar o impersonate da row inteira */}
         <div className="inline-flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onSendScript}
-            aria-label={tTools('sendScript')}
-            title={tTools('sendScript')}
+          <Link
+            href={`/${locale}/admin/organizations/${client.id}/integrations/ghl`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={t('ghlSettings', { name: client.name })}
+            title={t('ghlSettings', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >
-            <Send size={14} />
-          </button>
+            <Webhook size={14} />
+          </Link>
           <Link
             href={`/${locale}/admin/organizations/${client.id}/subscription`}
             onClick={(e) => e.stopPropagation()}
             aria-label={t('subscriptionSettings', { name: client.name })}
-            title={tTools('editOrg')}
+            title={t('subscriptionSettings', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >
