@@ -226,6 +226,7 @@
       "triggerAria": "Menú de usuario",
       "loading": "Cargando…",
       "password": "Contraseña",
+      "notificationPrefs": "Preferencias de notificación",
       "signOut": "Salir"
     },
     "pageTitles": {
@@ -442,6 +443,22 @@
     "thScore": "Puntuación",
     "thResult": "Resultado",
     "forbidden": "No tienes acceso a esta llamada.",
+    "settings": {
+      "label": "Configuración",
+      "title": "Preferencias de notificación",
+      "subtitle": "Elige cómo quieres recibir las recomendaciones de coaching de tu responsable.",
+      "channelsTitle": "¿Cómo quieres recibir las recomendaciones?",
+      "channelsSubtitle": "Cada recomendación se entrega por los canales que mantienes activos.",
+      "inAppLabel": "Notificación en la app",
+      "inAppDesc": "Mostrar nuevas recomendaciones en la campana de notificaciones.",
+      "emailLabel": "Email",
+      "emailDesc": "Enviar recomendaciones a {email}.",
+      "save": "Guardar preferencias",
+      "saving": "Guardando…",
+      "saved": "Preferencias guardadas",
+      "error": "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
+      "allOffWarning": "Con ambos canales desactivados no recibirás ninguna recomendación de coaching."
+    },
     "newCall": {
       "backToDashboard": "Volver a mi panel",
       "title": "Registrar nueva llamada",
@@ -918,7 +935,11 @@
     "recsSend": "Enviar a {name}",
     "recsSending": "Enviando…",
     "recsSentTitle": "Recomendación enviada",
-    "recsSentBody": "{name} la verá en sus notificaciones.",
+    "recsDeliveredVia": "Entregado a {name} vía:",
+    "recsChannelInApp": "Notificación en la app",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} desactivó todos los canales — no recibirá esta recomendación.",
+    "recsEmailFailed": "No se pudo entregar el email.",
     "recsSendAnother": "Escribir otra recomendación",
     "recsEmptyError": "Escribe una recomendación antes de enviar.",
     "recsError": "No se pudo enviar la recomendación. Inténtalo de nuevo.",

@@ -226,6 +226,7 @@
       "triggerAria": "Menu do usuário",
       "loading": "Carregando…",
       "password": "Senha",
+      "notificationPrefs": "Preferências de notificação",
       "signOut": "Sair"
     },
     "pageTitles": {
@@ -442,6 +443,22 @@
     "thScore": "Nota",
     "thResult": "Resultado",
     "forbidden": "Você não tem acesso a esta chamada.",
+    "settings": {
+      "label": "Configurações",
+      "title": "Preferências de notificação",
+      "subtitle": "Escolha como você quer receber as recomendações de coaching do seu gestor.",
+      "channelsTitle": "Como você quer receber as recomendações?",
+      "channelsSubtitle": "Cada recomendação é entregue pelos canais que você mantém ativos.",
+      "inAppLabel": "Notificação no app",
+      "inAppDesc": "Mostrar novas recomendações no sino de notificações.",
+      "emailLabel": "Email",
+      "emailDesc": "Enviar recomendações para {email}.",
+      "save": "Salvar preferências",
+      "saving": "Salvando…",
+      "saved": "Preferências salvas",
+      "error": "Não foi possível salvar suas preferências. Tente novamente.",
+      "allOffWarning": "Com os dois canais desativados você não vai receber nenhuma recomendação de coaching."
+    },
     "newCall": {
       "backToDashboard": "Voltar ao meu painel",
       "title": "Registrar nova chamada",
@@ -918,7 +935,11 @@
     "recsSend": "Enviar para {name}",
     "recsSending": "Enviando…",
     "recsSentTitle": "Recomendação enviada",
-    "recsSentBody": "{name} verá isto nas notificações.",
+    "recsDeliveredVia": "Entregue para {name} via:",
+    "recsChannelInApp": "Notificação no app",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} desativou todos os canais — não vai receber esta recomendação.",
+    "recsEmailFailed": "Não foi possível entregar o email.",
     "recsSendAnother": "Escrever outra recomendação",
     "recsEmptyError": "Escreva uma recomendação antes de enviar.",
     "recsError": "Não foi possível enviar a recomendação. Tente novamente.",

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations, useLocale } from 'next-intl'
-import { KeyRound, LogOut } from 'lucide-react'
+import { KeyRound, LogOut, Bell } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +15,18 @@ import {
 import { createClient } from '@/lib/supabase/client'
 
 interface MeResponse {
-  data: { id: string; name?: string | null; email?: string | null } | null
+  data: {
+    id: string
+    name?: string | null
+    email?: string | null
+    role?: string | null
+  } | null
 }
 
 // Avatar no canto direito do header. Click abre dropdown com:
 //   - Nome + email (header do menu)
-//   - "Conta" → /account (definir/trocar senha)
+//   - "Preferências de notificação" → /me/settings (só trainer)
+//   - "Senha" → /password (definir/trocar senha)
 //   - "Sair" → signOut + redirect /login
 // Iniciais do nome geram o avatar circular (fallback "??" se nome ausente).
 export function UserAvatarMenu() {
@@ -29,6 +35,7 @@ export function UserAvatarMenu() {
 
   const [name, setName] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+  const [role, setRole] = useState<string | null>(null)
 
   useEffect(() => {
     // /api/me devolve perfil mínimo; deixa avatar com placeholder até resolver.
@@ -37,6 +44,7 @@ export function UserAvatarMenu() {
       .then((json: MeResponse) => {
         setName(json.data?.name ?? null)
         setEmail(json.data?.email ?? null)
+        setRole(json.data?.role ?? null)
       })
       .catch(() => {})
   }, [])
@@ -100,6 +108,14 @@ export function UserAvatarMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {role === 'trainer' && (
+          <DropdownMenuItem asChild>
+            <Link href={`/${locale}/me/settings`} className="flex items-center gap-2">
+              <Bell size={14} />
+              <span>{t('notificationPrefs')}</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href={`/${locale}/password`} className="flex items-center gap-2">
             <KeyRound size={14} />

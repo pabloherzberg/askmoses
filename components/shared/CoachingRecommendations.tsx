@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from "react";
-import { Send, Check, Sparkles, RotateCcw } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Send, Check, Sparkles, RotateCcw, Bell, Mail, AlertTriangle } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import type { CoachingRec } from "@/lib/mock-data";
 
 interface CoachingRecommendationsProps {
@@ -14,17 +14,25 @@ interface CoachingRecommendationsProps {
 
 type Phase = "edit" | "sending" | "sent";
 
+type EmailDelivery = "sent" | "mocked" | "skipped" | "failed";
+
+interface Delivery {
+  inApp: boolean;
+  email: EmailDelivery;
+}
+
 /**
  * Painel de recomendação de coaching. A IA reúne os pontos analisados nas
  * calls do trainer numa ÚNICA recomendação; o owner edita o texto livremente
  * — tirando o que discorda, acrescentando detalhes — e envia.
  *
- * O envio cria uma notificação real (POST /api/coaching/notifications) que o
- * sales person vê no sino do header. Entrega por e-mail e escolha de canal
- * pelo trainer ficam para uma etapa futura.
+ * O envio cria uma notificação real (POST /api/coaching/notifications). A
+ * entrega faz fan-out pros canais ativos do trainer (sino in-app / email),
+ * configuráveis por ele em /me/settings — a resposta informa o que foi usado.
  */
 export function CoachingRecommendations({ recs, trainerName }: CoachingRecommendationsProps) {
   const t = useTranslations("Coaching");
+  const locale = useLocale();
   const firstName = trainerName.split(" ")[0];
 
   // Rascunho inicial: une os pontos da IA num texto único e editável.
@@ -39,6 +47,7 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
   const [text, setText] = useState(draft);
   const [phase, setPhase] = useState<Phase>("edit");
   const [error, setError] = useState<string | null>(null);
+  const [delivery, setDelivery] = useState<Delivery | null>(null);
 
   const handleSend = async () => {
     if (phase === "sending") return;
@@ -52,7 +61,7 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
     try {
       const res = await fetch("/api/coaching/notifications", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-locale": locale },
         body: JSON.stringify({
           recipientName: trainerName,
           title: t("recsNotificationTitle"),
@@ -65,6 +74,7 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
         setPhase("edit");
         return;
       }
+      setDelivery(json?.data?.delivery ?? { inApp: true, email: "skipped" });
       setPhase("sent");
     } catch {
       setError(t("recsError"));
@@ -80,8 +90,14 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
   const handleSendAnother = () => {
     setText(draft);
     setError(null);
+    setDelivery(null);
     setPhase("edit");
   };
+
+  const inAppDelivered = delivery?.inApp === true;
+  const emailDelivered = delivery?.email === "sent" || delivery?.email === "mocked";
+  const emailFailed = delivery?.email === "failed";
+  const anyDelivered = inAppDelivered || emailDelivered;
 
   return (
     <div
@@ -114,9 +130,52 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
           <p className="text-sm font-semibold" style={{ color: "var(--am-text)" }}>
             {t("recsSentTitle")}
           </p>
-          <p className="text-xs" style={{ color: "var(--am-muted)" }}>
-            {t("recsSentBody", { name: firstName })}
-          </p>
+
+          {anyDelivered ? (
+            <>
+              <p className="text-xs" style={{ color: "var(--am-muted)" }}>
+                {t("recsDeliveredVia", { name: firstName })}
+              </p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {inAppDelivered && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium"
+                    style={{ background: "var(--am-bg3)", color: "var(--am-text)" }}
+                  >
+                    <Bell size={12} style={{ color: "var(--am-green)" }} />
+                    {t("recsChannelInApp")}
+                  </span>
+                )}
+                {emailDelivered && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium"
+                    style={{ background: "var(--am-bg3)", color: "var(--am-text)" }}
+                  >
+                    <Mail size={12} style={{ color: "var(--am-green)" }} />
+                    {t("recsChannelEmail")}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div
+              className="flex items-start gap-2 px-3 py-2.5 rounded-lg text-[12px] leading-relaxed text-left"
+              style={{
+                background: "var(--am-amber-bg, rgba(255,171,46,0.12))",
+                color: "var(--am-amber)",
+              }}
+            >
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+              <span>{t("recsNoChannels", { name: firstName })}</span>
+            </div>
+          )}
+
+          {emailFailed && (
+            <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
+              {t("recsEmailFailed")}
+            </p>
+          )}
+
           <button
             type="button"
             onClick={handleSendAnother}

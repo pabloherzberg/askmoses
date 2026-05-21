@@ -226,6 +226,7 @@
       "triggerAria": "User menu",
       "loading": "Loading…",
       "password": "Password",
+      "notificationPrefs": "Notification preferences",
       "signOut": "Sign out"
     },
     "pageTitles": {
@@ -442,6 +443,22 @@
     "thScore": "Score",
     "thResult": "Result",
     "forbidden": "You don't have access to this call.",
+    "settings": {
+      "label": "Settings",
+      "title": "Notification preferences",
+      "subtitle": "Choose how you want to receive coaching recommendations from your manager.",
+      "channelsTitle": "How do you want to receive recommendations?",
+      "channelsSubtitle": "Each recommendation is delivered through the channels you keep active.",
+      "inAppLabel": "In-app notification",
+      "inAppDesc": "Show new recommendations in the notification bell.",
+      "emailLabel": "Email",
+      "emailDesc": "Send recommendations to {email}.",
+      "save": "Save preferences",
+      "saving": "Saving…",
+      "saved": "Preferences saved",
+      "error": "Couldn't save your preferences. Please try again.",
+      "allOffWarning": "With both channels off you won't receive any coaching recommendations."
+    },
     "newCall": {
       "backToDashboard": "Back to My Dashboard",
       "title": "Log a New Call",
@@ -918,7 +935,11 @@
     "recsSend": "Send to {name}",
     "recsSending": "Sending…",
     "recsSentTitle": "Recommendation sent",
-    "recsSentBody": "{name} will see it in their notifications.",
+    "recsDeliveredVia": "Delivered to {name} via:",
+    "recsChannelInApp": "In-app notification",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} turned off all channels — they won't receive this recommendation.",
+    "recsEmailFailed": "The email couldn't be delivered.",
     "recsSendAnother": "Write another recommendation",
     "recsEmptyError": "Write a recommendation before sending.",
     "recsError": "Couldn't send the recommendation. Please try again.",

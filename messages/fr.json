@@ -226,6 +226,7 @@
       "triggerAria": "Menu utilisateur",
       "loading": "Chargement…",
       "password": "Mot de passe",
+      "notificationPrefs": "Préférences de notification",
       "signOut": "Déconnexion"
     },
     "pageTitles": {
@@ -442,6 +443,22 @@
     "thScore": "Score",
     "thResult": "Résultat",
     "forbidden": "Vous n'avez pas accès à cet appel.",
+    "settings": {
+      "label": "Paramètres",
+      "title": "Préférences de notification",
+      "subtitle": "Choisissez comment vous voulez recevoir les recommandations de coaching de votre manager.",
+      "channelsTitle": "Comment voulez-vous recevoir les recommandations ?",
+      "channelsSubtitle": "Chaque recommandation est livrée via les canaux que vous gardez actifs.",
+      "inAppLabel": "Notification dans l'app",
+      "inAppDesc": "Afficher les nouvelles recommandations dans la cloche de notifications.",
+      "emailLabel": "Email",
+      "emailDesc": "Envoyer les recommandations à {email}.",
+      "save": "Enregistrer les préférences",
+      "saving": "Enregistrement…",
+      "saved": "Préférences enregistrées",
+      "error": "Impossible d'enregistrer vos préférences. Réessayez.",
+      "allOffWarning": "Avec les deux canaux désactivés, vous ne recevrez aucune recommandation de coaching."
+    },
     "newCall": {
       "backToDashboard": "Retour à mon tableau de bord",
       "title": "Enregistrer un nouvel appel",
@@ -918,7 +935,11 @@
     "recsSend": "Envoyer à {name}",
     "recsSending": "Envoi…",
     "recsSentTitle": "Recommandation envoyée",
-    "recsSentBody": "{name} la verra dans ses notifications.",
+    "recsDeliveredVia": "Envoyé à {name} via :",
+    "recsChannelInApp": "Notification dans l'app",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} a désactivé tous les canaux — ne recevra pas cette recommandation.",
+    "recsEmailFailed": "L'email n'a pas pu être envoyé.",
     "recsSendAnother": "Rédiger une autre recommandation",
     "recsEmptyError": "Rédigez une recommandation avant d'envoyer.",
     "recsError": "Impossible d'envoyer la recommandation. Réessayez.",
