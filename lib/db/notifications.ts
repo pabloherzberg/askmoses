@@ -31,36 +31,36 @@ export interface CreateCoachingNotificationInput {
 
 export interface ResolvedTrainer {
   id: string
-  /** Email denormalizado em calls.trainer_email — null se a row não tiver. */
+  name: string
+  /** Email do trainer (users.email) — null se não resolver. */
   email: string | null
 }
 
 /**
- * Resolve o trainer destinatário pelo nome, dentro da org. Usa a row de
- * calls como fonte: calls.trainer_name é o campo consistente com os nomes da
- * tela de coaching, e calls.trainer_email carrega o endereço pra entrega por
- * email. Retorna null se nenhuma call casar (a notificação ainda é gravada,
- * só não vira "entregável").
+ * Resolve o trainer destinatário pelo ID, validando que pertence à org do
+ * Owner. Nome e email vêm do join com `users` — não dependem de o trainer já
+ * ter calls (ao contrário da antiga resolução por calls.trainer_name, que
+ * falhava pra um trainer recém-criado sem calls). Retorna null se o ID não
+ * casar com nenhum trainer da org.
  */
-export async function dbResolveTrainerByName(
+export async function dbResolveTrainerById(
   orgId: string,
-  name: string,
+  trainerId: string,
 ): Promise<ResolvedTrainer | null> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
-    .from('calls')
-    .select('trainer_id, trainer_email')
+    .from('trainers')
+    .select('id, org_id, users(name, email)')
+    .eq('id', trainerId)
     .eq('org_id', orgId)
-    .eq('trainer_name', name)
-    .not('trainer_id', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(1)
     .maybeSingle()
-  if (error) throw new Error(`dbResolveTrainerByName: ${error.message}`)
-  if (!data?.trainer_id) return null
+  if (error) throw new Error(`dbResolveTrainerById: ${error.message}`)
+  if (!data) return null
+  const user = (data.users ?? null) as { name?: string | null; email?: string | null } | null
   return {
-    id: data.trainer_id as string,
-    email: (data.trainer_email as string | null) ?? null,
+    id: data.id as string,
+    name: user?.name ?? '',
+    email: user?.email ?? null,
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Mail, Check, AlertTriangle } from 'lucide-react'
+import { Bell, Mail, Check, Info } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface ChannelPrefs {
@@ -36,7 +36,7 @@ function Switch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="relative inline-flex items-center rounded-full transition-colors flex-shrink-0 disabled:opacity-50"
+      className="relative inline-flex items-center rounded-full transition-colors flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
       style={{
         width: 44,
         height: 24,
@@ -59,6 +59,9 @@ function Switch({
  * Formulário de preferências de canal do trainer. Salva via
  * PUT /api/me/notification-prefs. O Owner ainda envia uma recomendação só —
  * o fan-out de entrega respeita os canais ativos escolhidos aqui.
+ *
+ * Invariante: pelo menos um canal sempre ativo — o toggle do último canal
+ * ligado fica desabilitado, então é impossível desligar os dois.
  */
 export function NotificationPrefsForm({ initialPrefs, email }: Props) {
   const t = useTranslations('Trainer.settings')
@@ -70,7 +73,6 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const dirty = inApp !== saved.inApp || emailOn !== saved.email
-  const allOff = !inApp && !emailOn
 
   const handleSave = async () => {
     if (phase === 'saving' || !dirty) return
@@ -96,6 +98,13 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
     }
   }
 
+  const update = (next: boolean, set: (v: boolean) => void) => {
+    set(next)
+    if (phase === 'saved') setPhase('idle')
+  }
+
+  // Pelo menos um canal precisa ficar ativo — o toggle do último canal ligado
+  // fica travado, impossibilitando desligar os dois.
   const channels = [
     {
       key: 'inApp',
@@ -103,10 +112,8 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
       label: t('inAppLabel'),
       desc: t('inAppDesc'),
       checked: inApp,
-      set: (v: boolean) => {
-        setInApp(v)
-        if (phase === 'saved') setPhase('idle')
-      },
+      disabled: phase === 'saving' || (inApp && !emailOn),
+      set: (v: boolean) => update(v, setInApp),
     },
     {
       key: 'email',
@@ -114,10 +121,8 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
       label: t('emailLabel'),
       desc: t('emailDesc', { email }),
       checked: emailOn,
-      set: (v: boolean) => {
-        setEmailOn(v)
-        if (phase === 'saved') setPhase('idle')
-      },
+      disabled: phase === 'saving' || (emailOn && !inApp),
+      set: (v: boolean) => update(v, setEmailOn),
     },
   ]
 
@@ -168,7 +173,7 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
                 <Switch
                   checked={ch.checked}
                   onChange={ch.set}
-                  disabled={phase === 'saving'}
+                  disabled={ch.disabled}
                   label={ch.label}
                 />
               </div>
@@ -176,15 +181,14 @@ export function NotificationPrefsForm({ initialPrefs, email }: Props) {
           })}
         </div>
 
-        {allOff && (
-          <div
-            className="flex items-start gap-2 mt-3 px-3 py-2.5 rounded-lg text-[12px] leading-relaxed"
-            style={{ background: 'var(--am-amber-bg, rgba(255,171,46,0.12))', color: 'var(--am-amber)' }}
-          >
-            <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
-            <span>{t('allOffWarning')}</span>
-          </div>
-        )}
+        {/* Invariante: pelo menos um canal ativo. */}
+        <div
+          className="flex items-start gap-2 mt-3 px-3 py-2.5 rounded-lg text-[12px] leading-relaxed"
+          style={{ background: 'var(--am-bg3)', color: 'var(--am-muted)' }}
+        >
+          <Info size={14} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--am-accent2)' }} />
+          <span>{t('keepOneActive')}</span>
+        </div>
 
         {error && (
           <p

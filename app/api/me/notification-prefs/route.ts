@@ -52,6 +52,11 @@ export async function PUT(request: NextRequest) {
     if (typeof body.inApp !== 'boolean' || typeof body.email !== 'boolean') {
       return badRequest('inApp e email devem ser boolean')
     }
+    // Pelo menos um canal precisa ficar ativo — senão o trainer fica
+    // incontactável. Espelha o CHECK da migration 058 e a trava da UI.
+    if (!body.inApp && !body.email) {
+      return badRequest('Pelo menos um canal de notificação precisa ficar ativo')
+    }
 
     await dbUpsertChannelPrefs(trainerId, { inApp: body.inApp, email: body.email })
     return ok({ inApp: body.inApp, email: body.email })

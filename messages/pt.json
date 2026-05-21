@@ -457,7 +457,7 @@
       "saving": "Salvando…",
       "saved": "Preferências salvas",
       "error": "Não foi possível salvar suas preferências. Tente novamente.",
-      "allOffWarning": "Com os dois canais desativados você não vai receber nenhuma recomendação de coaching."
+      "keepOneActive": "Pelo menos um canal precisa ficar ativo para o seu gestor sempre conseguir te contatar."
     },
     "newCall": {
       "backToDashboard": "Voltar ao meu painel",

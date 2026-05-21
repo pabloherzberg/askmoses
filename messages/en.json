@@ -457,7 +457,7 @@
       "saving": "Saving…",
       "saved": "Preferences saved",
       "error": "Couldn't save your preferences. Please try again.",
-      "allOffWarning": "With both channels off you won't receive any coaching recommendations."
+      "keepOneActive": "At least one channel must stay active so your manager can always reach you."
     },
     "newCall": {
       "backToDashboard": "Back to My Dashboard",

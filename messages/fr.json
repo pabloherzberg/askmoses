@@ -457,7 +457,7 @@
       "saving": "Enregistrement…",
       "saved": "Préférences enregistrées",
       "error": "Impossible d'enregistrer vos préférences. Réessayez.",
-      "allOffWarning": "Avec les deux canaux désactivés, vous ne recevrez aucune recommandation de coaching."
+      "keepOneActive": "Au moins un canal doit rester actif pour que votre manager puisse toujours vous joindre."
     },
     "newCall": {
       "backToDashboard": "Retour à mon tableau de bord",

@@ -12,13 +12,6 @@ import { CoachingRecommendations } from '@/components/shared/CoachingRecommendat
 import { CallCard } from '@/components/shared/CallCard'
 import { PerformanceTrend } from '@/components/shared/PerformanceTrend'
 
-const trainerKeyMap: Record<string, string> = {
-  '00000000-0000-0000-0000-000000000301': 'marcus',
-  '00000000-0000-0000-0000-000000000302': 'jamie',
-  '00000000-0000-0000-0000-000000000303': 'jordan',
-  '00000000-0000-0000-0000-000000000304': 'taylor',
-}
-
 export function TrainerTabs() {
   const t = useTranslations('Coaching')
   const locale = useLocale()
@@ -50,7 +43,8 @@ export function TrainerTabs() {
   if (!activeId || trainers.length === 0) return null
 
   const trainer = trainers.find((tr) => tr.id === activeId)!
-  const trainerKey = trainerKeyMap[trainer.id]
+  // /api/coaching já chaveia todo o conteúdo de coaching por trainer.id real.
+  const trainerKey = trainer.id
 
   const submitted = trainer.callsThisWeek ?? 0
   const total = submitted > 0 ? submitted + Math.round(submitted * 0.1) + 2 : 0
@@ -67,7 +61,7 @@ export function TrainerTabs() {
     <div>
       {/* ── Trainer selector tabs ─────────────────────────────── */}
       <div
-        className="flex gap-1 mb-6 p-1 rounded-xl w-fit"
+        className="flex flex-wrap gap-1 mb-6 p-1 rounded-xl w-fit"
         style={{ background: 'var(--am-bg3)' }}
       >
         {trainers.map((tr) => {
@@ -191,6 +185,7 @@ export function TrainerTabs() {
         <CoachingRecommendations
           key={activeId}
           recs={recs[trainerKey] ?? []}
+          trainerId={trainer.id}
           trainerName={trainer.name}
         />
       </div>

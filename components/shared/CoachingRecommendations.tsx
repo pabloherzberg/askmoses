@@ -8,7 +8,9 @@ import type { CoachingRec } from "@/lib/mock-data";
 interface CoachingRecommendationsProps {
   /** Pontos analisados pela IA — unidos num único rascunho editável. */
   recs: CoachingRec[];
-  /** Sales person que recebe a recomendação. */
+  /** ID do trainer destinatário (trainers.id) — usado no envio. */
+  trainerId: string;
+  /** Sales person que recebe a recomendação — exibido na UI. */
   trainerName: string;
 }
 
@@ -30,7 +32,7 @@ interface Delivery {
  * entrega faz fan-out pros canais ativos do trainer (sino in-app / email),
  * configuráveis por ele em /me/settings — a resposta informa o que foi usado.
  */
-export function CoachingRecommendations({ recs, trainerName }: CoachingRecommendationsProps) {
+export function CoachingRecommendations({ recs, trainerId, trainerName }: CoachingRecommendationsProps) {
   const t = useTranslations("Coaching");
   const locale = useLocale();
   const firstName = trainerName.split(" ")[0];
@@ -63,7 +65,7 @@ export function CoachingRecommendations({ recs, trainerName }: CoachingRecommend
         method: "POST",
         headers: { "Content-Type": "application/json", "x-locale": locale },
         body: JSON.stringify({
-          recipientName: trainerName,
+          recipientId: trainerId,
           title: t("recsNotificationTitle"),
           body,
         }),

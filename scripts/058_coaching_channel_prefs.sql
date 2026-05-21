@@ -13,6 +13,10 @@
 -- abriu /me/settings continua recebendo tudo — comportamento idêntico ao
 -- anterior à migration 058.
 --
+-- Invariante: pelo menos um canal sempre ativo (CHECK in_app OR email). O
+-- trainer não pode se tornar incontactável — o Owner sempre tem por onde
+-- entregar a recomendação. Garantido também na API e na UI.
+--
 -- Acesso só via service role (RLS on, sem policies) — mesmo padrão de
 -- coaching_notifications (057). O scoping por trainer é feito na aplicação.
 --
@@ -23,7 +27,10 @@ CREATE TABLE IF NOT EXISTS public.coaching_channel_prefs (
   trainer_id  UUID PRIMARY KEY REFERENCES public.trainers(id) ON DELETE CASCADE,
   in_app      BOOLEAN NOT NULL DEFAULT true,
   email       BOOLEAN NOT NULL DEFAULT true,
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Pelo menos um canal precisa ficar ativo — senão o Owner não teria como
+  -- entregar a recomendação ao trainer.
+  CONSTRAINT coaching_channel_prefs_at_least_one CHECK (in_app OR email)
 );
 
 COMMENT ON TABLE public.coaching_channel_prefs IS
