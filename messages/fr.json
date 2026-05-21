@@ -213,7 +213,14 @@
     "notifications": {
       "title": "Notifications",
       "empty": "Aucune notification pour le moment",
-      "sentBy": "De {name}"
+      "sentBy": "De {name}",
+      "coachingLine": "{name} vous a envoyé une recommandation de coaching",
+      "detail": {
+        "title": "Recommandation de coaching",
+        "from": "De {name}",
+        "received": "Reçu le {when}",
+        "close": "Fermer"
+      }
     },
     "userMenu": {
       "triggerAria": "Menu utilisateur",
@@ -905,21 +912,18 @@
     "mockFooterBest": "† toutes les valeurs proviennent de mock-data.ts — Écouter à X:XX → ne fonctionne pas dans cette démo",
     "mockFooterWorst": "† toutes les valeurs proviennent de mock-data.ts — Revoir à X:XX → ne fonctionne pas dans cette démo",
     "recsTitle": "Recommandations de Coaching IA",
-    "recsReview": "Vérifier et envoyer",
-    "recsSentBadge": "Envoyé",
-    "reviewModal": {
-      "title": "Vérifier la recommandation de coaching",
-      "subtitle": "Vérifiez-la avant de la partager avec {name}.",
-      "recipient": "Destinataire",
-      "recommendation": "Recommandation",
-      "cancel": "Annuler",
-      "send": "Envoyer à {name}",
-      "sending": "Envoi…",
-      "sentTitle": "Recommandation envoyée",
-      "sentBody": "{name} la verra dans son fil de coaching.",
-      "close": "Fermer",
-      "error": "Impossible d'envoyer la recommandation. Réessayez."
-    }
+    "recsHint": "L'IA a réuni l'analyse des appels récents de {name} en une seule recommandation. Modifiez-la librement avant de l'envoyer.",
+    "recsPlaceholder": "Rédigez la recommandation de coaching…",
+    "recsReset": "Rétablir le brouillon de l'IA",
+    "recsSend": "Envoyer à {name}",
+    "recsSending": "Envoi…",
+    "recsSentTitle": "Recommandation envoyée",
+    "recsSentBody": "{name} la verra dans ses notifications.",
+    "recsSendAnother": "Rédiger une autre recommandation",
+    "recsEmptyError": "Rédigez une recommandation avant d'envoyer.",
+    "recsError": "Impossible d'envoyer la recommandation. Réessayez.",
+    "recsNotificationTitle": "Recommandation de coaching",
+    "draftIntro": "{name}, voici vos priorités de coaching basées sur vos appels récents :"
   },
   "Dashboard": {
     "home": {

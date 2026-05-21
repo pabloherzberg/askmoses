@@ -213,7 +213,14 @@
     "notifications": {
       "title": "Notificações",
       "empty": "Nenhuma notificação ainda",
-      "sentBy": "De {name}"
+      "sentBy": "De {name}",
+      "coachingLine": "{name} enviou uma recomendação de coaching",
+      "detail": {
+        "title": "Recomendação de coaching",
+        "from": "De {name}",
+        "received": "Recebido em {when}",
+        "close": "Fechar"
+      }
     },
     "userMenu": {
       "triggerAria": "Menu do usuário",
@@ -905,21 +912,18 @@
     "mockFooterBest": "† todos os valores vêm de mock-data.ts — Ouvir em X:XX → não funciona nesta demo",
     "mockFooterWorst": "† todos os valores vêm de mock-data.ts — Revisar em X:XX → não funciona nesta demo",
     "recsTitle": "Recomendações de Coaching IA",
-    "recsReview": "Revisar e enviar",
-    "recsSentBadge": "Enviado",
-    "reviewModal": {
-      "title": "Revisar recomendação de coaching",
-      "subtitle": "Revise antes de enviar para {name}.",
-      "recipient": "Destinatário",
-      "recommendation": "Recomendação",
-      "cancel": "Cancelar",
-      "send": "Enviar para {name}",
-      "sending": "Enviando…",
-      "sentTitle": "Recomendação enviada",
-      "sentBody": "{name} verá isto no feed de coaching.",
-      "close": "Fechar",
-      "error": "Não foi possível enviar a recomendação. Tente novamente."
-    }
+    "recsHint": "A IA reuniu a análise das chamadas recentes de {name} em uma única recomendação. Edite à vontade antes de enviar.",
+    "recsPlaceholder": "Escreva a recomendação de coaching…",
+    "recsReset": "Restaurar rascunho da IA",
+    "recsSend": "Enviar para {name}",
+    "recsSending": "Enviando…",
+    "recsSentTitle": "Recomendação enviada",
+    "recsSentBody": "{name} verá isto nas notificações.",
+    "recsSendAnother": "Escrever outra recomendação",
+    "recsEmptyError": "Escreva uma recomendação antes de enviar.",
+    "recsError": "Não foi possível enviar a recomendação. Tente novamente.",
+    "recsNotificationTitle": "Recomendação de coaching",
+    "draftIntro": "{name}, estas são suas prioridades de coaching com base nas suas chamadas recentes:"
   },
   "Dashboard": {
     "home": {

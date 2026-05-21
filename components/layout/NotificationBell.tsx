@@ -1,17 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, ChevronRight, Sparkles } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-
-interface NotificationItem {
-  id: string
-  title: string
-  body: string
-  sentByName: string
-  status: 'unread' | 'read'
-  createdAt: string
-}
+import {
+  NotificationDetailModal,
+  type NotificationItem,
+} from '@/components/layout/NotificationDetailModal'
 
 function formatWhen(iso: string, locale: string): string {
   try {
@@ -30,6 +25,9 @@ function formatWhen(iso: string, locale: string): string {
  * Sino de notificações de coaching no header. Só aparece para o sales person
  * (a API responde isRecipient:false para owner/admin). Faz poll a cada 30s pra
  * o demo refletir um envio feito em outra sessão.
+ *
+ * Cada item mostra só uma linha curta ("X enviou uma recomendação") — o texto
+ * completo pode ser longo, então abre num modal de detalhe ao clicar.
  */
 export function NotificationBell() {
   const t = useTranslations('Shared.notifications')
@@ -38,6 +36,7 @@ export function NotificationBell() {
   const [items, setItems] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
+  const [active, setActive] = useState<NotificationItem | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +72,11 @@ export function NotificationBell() {
         // Ignora — o próximo poll reconcilia.
       }
     }
+  }
+
+  const handleOpenDetail = (n: NotificationItem) => {
+    setActive(n)
+    setOpen(false)
   }
 
   if (!isRecipient) return null
@@ -128,41 +132,52 @@ export function NotificationBell() {
             ) : (
               <div className="flex flex-col">
                 {items.map((n) => (
-                  <div
+                  <button
                     key={n.id}
-                    className="px-4 py-3 flex gap-2.5"
+                    type="button"
+                    onClick={() => handleOpenDetail(n)}
+                    className="w-full px-4 py-3 flex items-center gap-2.5 text-left transition-colors hover:bg-[var(--am-bg3)]"
                     style={{ borderBottom: '1px solid var(--am-border)' }}
                   >
+                    {/* Unread indicator */}
                     <span
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                       style={{
                         background: n.status === 'unread' ? 'var(--am-accent)' : 'transparent',
                       }}
                     />
+                    {/* Icon */}
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
+                    >
+                      <Sparkles size={15} />
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-[13px] font-semibold leading-snug"
+                        className="text-[12.5px] leading-snug"
                         style={{ color: 'var(--am-text)' }}
                       >
-                        {n.title}
+                        {t('coachingLine', { name: n.sentByName })}
                       </p>
-                      <p
-                        className="text-[12px] leading-relaxed mt-0.5"
-                        style={{ color: 'var(--am-text)', opacity: 0.8 }}
-                      >
-                        {n.body}
-                      </p>
-                      <p className="text-[11px] mt-1.5" style={{ color: 'var(--am-muted)' }}>
-                        {t('sentBy', { name: n.sentByName })} · {formatWhen(n.createdAt, locale)}
+                      <p className="text-[11px] mt-0.5" style={{ color: 'var(--am-muted)' }}>
+                        {formatWhen(n.createdAt, locale)}
                       </p>
                     </div>
-                  </div>
+                    <ChevronRight
+                      size={14}
+                      className="flex-shrink-0"
+                      style={{ color: 'var(--am-muted)' }}
+                    />
+                  </button>
                 ))}
               </div>
             )}
           </div>
         </>
       )}
+
+      <NotificationDetailModal notification={active} onClose={() => setActive(null)} />
     </div>
   )
 }
