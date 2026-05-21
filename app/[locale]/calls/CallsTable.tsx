@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone } from 'lucide-react'
+import { ChevronRight, Phone, FileText } from 'lucide-react'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCES, LEAD_SOURCE_LABELS } from '@/lib/constants'
@@ -16,6 +16,8 @@ interface CallsTableProps {
   title: string
 }
 
+const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
+
 export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, title }: CallsTableProps) {
   const router = useRouter()
   const locale = useLocale()
@@ -24,6 +26,7 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
   const [resultFilter, setResultFilter] = useState<string>('all')
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
   const [sourceFilter, setSourceFilter] = useState<string>('all')
+  const [scriptFilter, setScriptFilter] = useState<string>('all')
 
   const trainers = useMemo(() => {
     const map = new Map<string, string>()
@@ -33,14 +36,30 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
   }, [calls])
 
+  // Scripts efetivamente usados pelas calls visíveis — fonte tanto do filtro
+  // quanto da tag de script ativo. Calls sem script (rubric) são ignoradas.
+  const scriptsInCalls = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; isActive: boolean }>()
+    for (const c of calls) {
+      if (c.scriptId && c.scriptName && !map.has(c.scriptId)) {
+        map.set(c.scriptId, { id: c.scriptId, name: c.scriptName, isActive: !!c.scriptIsActive })
+      }
+    }
+    return Array.from(map.values())
+  }, [calls])
+
+  const hasScripts = scriptsInCalls.length > 0
+  const activeScript = scriptsInCalls.find((s) => s.isActive) ?? null
+
   const filtered = useMemo(
     () => calls.filter((c) => {
       if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
       if (sourceFilter !== 'all' && (c.lead_source ?? null) !== sourceFilter) return false
+      if (scriptFilter !== 'all' && (c.scriptId ?? null) !== scriptFilter) return false
       return true
     }),
-    [calls, resultFilter, trainerFilter, sourceFilter]
+    [calls, resultFilter, trainerFilter, sourceFilter, scriptFilter]
   )
 
   const selectClass = 'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
@@ -48,7 +67,9 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
 
   const headers = [
     ...(showTrainerColumn ? [t('thTrainer')] : []),
-    t('thProspect'), t('thDate'), t('thScore'), t('thResult'), '',
+    t('thProspect'), t('thDate'),
+    ...(hasScripts ? [t('thScript')] : []),
+    t('thScore'), t('thResult'), '',
   ]
 
   const countLabel = filtered.length === 1
@@ -67,7 +88,7 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap items-center gap-3 mb-5">
         <select className={selectClass} style={selectStyle} value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
           <option value="all">{tOutcomes('all')}</option>
           {CALL_OUTCOMES.map((o) => (
@@ -86,6 +107,24 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
+        {hasScripts && (
+          <select className={selectClass} style={selectStyle} value={scriptFilter} onChange={(e) => setScriptFilter(e.target.value)}>
+            <option value="all">{t('filterAllScripts')}</option>
+            {scriptsInCalls.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
+
+        {activeScript && (
+          <span
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg sm:ml-auto"
+            style={{ background: GREEN_BG, color: 'var(--am-green)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--am-green)' }} />
+            {t('activeScriptTag', { name: activeScript.name })}
+          </span>
+        )}
       </div>
 
       <div className="rounded-2xl border overflow-hidden shadow-md" style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}>
@@ -146,6 +185,25 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
                           {new Date(call.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </td>
+                      {hasScripts && (
+                        <td className="px-4 py-3">
+                          {call.scriptName ? (
+                            <span
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                              style={
+                                call.scriptIsActive
+                                  ? { background: GREEN_BG, color: 'var(--am-green)' }
+                                  : { background: 'var(--am-bg4)', color: 'var(--am-muted)' }
+                              }
+                            >
+                              <FileText size={11} />
+                              {call.scriptName}
+                            </span>
+                          ) : (
+                            <span className="text-xs" style={{ color: 'var(--am-muted)' }}>—</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3"><ScorePill score={call.score} /></td>
                       <td className="px-4 py-3">
                         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>

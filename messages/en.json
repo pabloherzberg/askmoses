@@ -210,6 +210,11 @@
         "trainer": "Sales Person"
       }
     },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No notifications yet",
+      "sentBy": "From {name}"
+    },
     "userMenu": {
       "triggerAria": "User menu",
       "loading": "Loading…",
@@ -544,7 +549,10 @@
       "thDate": "Date",
       "thScore": "Score",
       "thResult": "Result",
-      "forbidden": "You don't have access to this call."
+      "forbidden": "You don't have access to this call.",
+      "thScript": "Script",
+      "filterAllScripts": "All Scripts",
+      "activeScriptTag": "Active script: {name}"
     }
   },
   "Admin": {
@@ -631,7 +639,8 @@
       "activeFiltersCount": "{count} active",
       "filtersTitle": "Filters",
       "filtersSubtitle": "Refine by status, plan and activity.",
-      "selectedCount": "{count} selected",
+      "enterSelectionMode": "Send scripts",
+      "selectionHint": "Click the organizations that will receive the script, then click the send button.",
       "sendScriptBulk": "Send script to {count} org(s)",
       "sendScript": "Send script",
       "editOrg": "Edit org",
@@ -894,7 +903,23 @@
     "worstCall": "Needs Improvement",
     "mockBadge": "mock data only",
     "mockFooterBest": "† all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo",
-    "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo"
+    "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo",
+    "recsTitle": "AI Coaching Recommendations",
+    "recsReview": "Review & send",
+    "recsSentBadge": "Sent",
+    "reviewModal": {
+      "title": "Review coaching recommendation",
+      "subtitle": "Review this before sharing it with {name}.",
+      "recipient": "Recipient",
+      "recommendation": "Recommendation",
+      "cancel": "Cancel",
+      "send": "Send to {name}",
+      "sending": "Sending…",
+      "sentTitle": "Recommendation sent",
+      "sentBody": "{name} will see this in their coaching feed.",
+      "close": "Close",
+      "error": "Couldn't send the recommendation. Please try again."
+    }
   },
   "Dashboard": {
     "home": {
