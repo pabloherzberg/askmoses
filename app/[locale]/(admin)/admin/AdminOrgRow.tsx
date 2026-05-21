@@ -126,6 +126,13 @@ export function AdminOrgRow({
       tabIndex={loading ? -1 : 0}
       aria-disabled={loading}
       aria-pressed={selectionMode ? isSelected : undefined}
+      // aria-label explícito: title sozinho não é anunciado de forma
+      // confiável por leitores de tela. Espelha o título visível.
+      aria-label={
+        selectionMode
+          ? tTools('selectRow', { name: client.name })
+          : t('impersonateTooltip', { name: client.name })
+      }
       title={
         selectionMode
           ? tTools('selectRow', { name: client.name })

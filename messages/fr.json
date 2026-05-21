@@ -640,7 +640,7 @@
       "filtersTitle": "Filtres",
       "filtersSubtitle": "Affinez par statut, plan et activité.",
       "enterSelectionMode": "Envoyer des scripts",
-      "selectionHint": "Cliquez sur les organisations qui recevront le script, puis sur « Envoyer à… ».",
+      "selectionHint": "Cliquez sur les organisations qui recevront le script, puis sur le bouton d’envoi.",
       "sendScriptBulk": "Envoyer le script à {count} org(s)",
       "sendScript": "Envoyer le script",
       "editOrg": "Éditer l'org",

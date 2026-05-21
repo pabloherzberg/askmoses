@@ -640,7 +640,7 @@
       "filtersTitle": "Filters",
       "filtersSubtitle": "Refine by status, plan and activity.",
       "enterSelectionMode": "Send scripts",
-      "selectionHint": "Click the organizations that will receive the script, then click “Send to…”.",
+      "selectionHint": "Click the organizations that will receive the script, then click the send button.",
       "sendScriptBulk": "Send script to {count} org(s)",
       "sendScript": "Send script",
       "editOrg": "Edit org",
