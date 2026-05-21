@@ -18,6 +18,7 @@ import {
   Wand2,
   SlidersHorizontal,
   Cog,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -96,6 +97,11 @@ export function OwnerNavItems() {
       icon: GraduationCap,
     },
     { label: t("calls"), href: "/calls", icon: Phone },
+    {
+      label: t("insights"),
+      href: "/dashboard/insights",
+      icon: Brain,
+    },
     {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",

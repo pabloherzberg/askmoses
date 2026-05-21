@@ -122,7 +122,7 @@ export function PendingScriptBanner() {
         </div>
         <button
           type="button"
-          onClick={() => router.push(`/${locale}/owner-script-review`)}
+          onClick={() => router.push(`/${locale}/dashboard/insights?tab=suggestion`)}
           className="cursor-pointer px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap"
           style={{ background: 'var(--am-accent)', color: 'var(--am-on-accent)' }}
         >
