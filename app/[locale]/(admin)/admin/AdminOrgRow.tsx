@@ -10,6 +10,9 @@ import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
 interface Props {
   client: Client
   isLast: boolean
+  // Quando true, a linha entra em "modo seleção": mostra o checkbox e o
+  // click marca/desmarca em vez de fazer impersonate.
+  selectionMode: boolean
   isSelected: boolean
   onToggleSelected: () => void
   onSendScript: () => void
@@ -47,6 +50,7 @@ const scriptStatusStyles: Record<OrgScriptStatus, { bg: string; color: string }>
 export function AdminOrgRow({
   client,
   isLast,
+  selectionMode,
   isSelected,
   onToggleSelected,
   onSendScript,
@@ -96,48 +100,84 @@ export function AdminOrgRow({
     }
   }
 
+  // No modo seleção a linha inteira marca/desmarca a org — alvo de clique
+  // grande, mais intuitivo pra quem não conhece checkbox. Fora dele, mantém
+  // o comportamento original (click = impersonate).
+  const handleRowActivate = () => {
+    if (loading) return
+    if (selectionMode) {
+      onToggleSelected()
+      return
+    }
+    void handleClick()
+  }
+
+  // Linha selecionada fica destacada em roxo; é o background de repouso
+  // (hover/focus sobrescrevem temporariamente e restauram pra cá).
+  const restBg =
+    selectionMode && isSelected
+      ? 'var(--am-accent-bg, rgba(110,86,255,0.12))'
+      : 'transparent'
+
   return (
     <tr
-      onClick={handleClick}
+      onClick={handleRowActivate}
       role="button"
       tabIndex={loading ? -1 : 0}
       aria-disabled={loading}
-      title={t('impersonateTooltip', { name: client.name })}
+      aria-pressed={selectionMode ? isSelected : undefined}
+      // aria-label explícito: title sozinho não é anunciado de forma
+      // confiável por leitores de tela. Espelha o título visível.
+      aria-label={
+        selectionMode
+          ? tTools('selectRow', { name: client.name })
+          : t('impersonateTooltip', { name: client.name })
+      }
+      title={
+        selectionMode
+          ? tTools('selectRow', { name: client.name })
+          : t('impersonateTooltip', { name: client.name })
+      }
       onKeyDown={(e) => {
         if (loading || e.target !== e.currentTarget) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          void handleClick()
+          handleRowActivate()
         }
       }}
       style={{
         borderBottom: isLast ? 'none' : '1px solid var(--am-border)',
         cursor: loading ? 'wait' : 'pointer',
         opacity: loading ? 0.6 : 1,
+        background: restBg,
         transition: 'background 0.15s',
       }}
       onMouseEnter={(e) => {
         if (!loading) e.currentTarget.style.background = 'var(--am-bg3)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.background = restBg
       }}
       onFocus={(e) => {
         if (!loading && e.target === e.currentTarget) e.currentTarget.style.background = 'var(--am-bg3)'
       }}
       onBlur={(e) => {
-        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.background = restBg
       }}
     >
-      <td className="w-8 px-3 py-4" onClick={(e) => e.stopPropagation()}>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onToggleSelected}
-          aria-label={tTools('selectRow', { name: client.name })}
-          style={{ accentColor: 'var(--am-accent)' }}
-        />
-      </td>
+      {/* Checkbox só existe no modo seleção. stopPropagation evita o
+          double-toggle (checkbox onChange + onClick da linha). */}
+      {selectionMode && (
+        <td className="w-8 px-3 py-4" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelected}
+            aria-label={tTools('selectRow', { name: client.name })}
+            style={{ accentColor: 'var(--am-accent)' }}
+          />
+        </td>
+      )}
 
       <td className="px-3 py-4">
         <div className="flex items-center gap-2 flex-wrap">
