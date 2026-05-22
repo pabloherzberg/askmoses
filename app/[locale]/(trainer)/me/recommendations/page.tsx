@@ -85,6 +85,9 @@ export default async function TrainerRecommendationsPage() {
             <Link
               key={n.id}
               href={`/${locale}/me/recommendations/${n.id}`}
+              // Sem prefetch — abrir o detalhe marca como lida; o prefetch
+              // dispararia a leitura só por rolar a lista.
+              prefetch={false}
               className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-[var(--am-bg3)]"
               style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
             >
