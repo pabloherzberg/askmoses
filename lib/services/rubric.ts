@@ -51,7 +51,7 @@ export interface TrainerSectionScore {
 
 // ─── Trend computation ───────────────────────────────────────────────────────
 
-function buildWeeklyTrend(
+export function buildWeeklyTrend(
   calls: { date: string; score: number; result: string }[],
   weeks: number,
 ): TrendPoint[] {

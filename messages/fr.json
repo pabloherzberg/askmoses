@@ -351,15 +351,14 @@
       "teamPill": "Équipe"
     },
     "rubricGapDetection": {
-      "title": "Détection des lacunes de la grille",
+      "title": "Détection des lacunes du script",
       "mockBadge": "données mock uniquement",
       "th": {
         "frequency": "Fréq.",
         "gapDetected": "Lacune détectée"
       },
-      "addToRubric": "Ajouter à la grille →",
-      "notCovered": "Non couvert",
-      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — Ajouter à la grille → ne fonctionne pas dans cette démo"
+      "addToScript": "Ajouter au script →",
+      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — Ajouter au script → ne fonctionne pas dans cette démo"
     },
     "revenueEstimator": {
       "title": "Estimateur d'impact sur les revenus",
@@ -526,7 +525,8 @@
       "activeSalesPeopleOne": "{count} commercial actif",
       "activeSalesPeopleOther": "{count} commerciaux actifs",
       "bestCloseRate": "Meilleur taux de closing",
-      "noTrainers": "Aucun commercial"
+      "noTrainers": "Aucun commercial",
+      "activeSalesPeople": "Commerciaux actifs"
     },
     "teamHealth": {
       "title": "Santé de l'équipe",
@@ -542,7 +542,11 @@
       "callsLabelOther": "{count} appels",
       "ptsOne": "pt",
       "ptsOther": "pts",
-      "mockFooter": "† point vert = en progression · point rouge = en recul · valeurs issues de mock-data.ts · pas de calcul réel"
+      "mockFooter": "† point vert = en progression · point rouge = en recul · valeurs issues de mock-data.ts · pas de calcul réel",
+      "statusActiveToday": "Actif aujourd'hui",
+      "statusYesterday": "Hier",
+      "statusDaysAgo": "Il y a {days} jours",
+      "statusNoActivity": "Aucun appel"
     },
     "activeAlerts": {
       "title": "Alertes actives",
@@ -555,7 +559,8 @@
     "detailedRubricLabel": "Score par commercial — Grille détaillée",
     "detailedRubricTh": {
       "section": "Section",
-      "team": "Équipe"
+      "team": "Équipe",
+      "salesPerson": "Commercial"
     },
     "aiInsights": "Insights IA",
     "calls": {

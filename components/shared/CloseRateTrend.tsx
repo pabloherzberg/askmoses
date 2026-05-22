@@ -11,15 +11,17 @@ import {
   YAxis,
 } from 'recharts'
 
-type WeeklyPoint = { week: string; closeRate: number }
+// closeRate = null → semana sem nenhuma call: vira lacuna no gráfico (sem
+// barra), em vez de uma barra falsa de 0% que confundiria o usuário.
+type WeeklyPoint = { week: string; closeRate: number | null }
 
 interface CloseRateTrendProps {
-  /** Team-mode data (matches the spec values) */
+  /** Team-mode data */
   data: WeeklyPoint[]
-  /** Team-mode summary (matches the spec values) */
+  /** Team-mode summary */
   summary: { from: number; to: number; delta: number }
   /** Per-trainer weekly trends, keyed by trainer id */
-  trainerTrends?: Record<string, { week: string; closeRate: number }[]>
+  trainerTrends?: Record<string, WeeklyPoint[]>
   /** Trainers available in the selector */
   salesPeople?: { id: string; name: string }[]
 }
@@ -35,27 +37,28 @@ export function CloseRateTrend({
 
   const trainersWithData =
     salesPeople && trainerTrends
-      ? salesPeople.filter((sp) => (trainerTrends[sp.id]?.length ?? 0) > 0)
+      ? salesPeople.filter((sp) =>
+          (trainerTrends[sp.id] ?? []).some((p) => p.closeRate != null),
+        )
       : []
   const hasSelector = trainersWithData.length > 0
 
   const activeData: WeeklyPoint[] =
-    selected === 'team'
-      ? data
-      : (trainerTrends?.[selected]?.map((p) => ({
-          week: p.week,
-          closeRate: p.closeRate,
-        })) ?? [])
+    selected === 'team' ? data : (trainerTrends?.[selected] ?? [])
 
+  // Resumo (primeira → última semana) ignora semanas sem calls (closeRate null).
+  const knownPoints = activeData.filter(
+    (p): p is { week: string; closeRate: number } => p.closeRate != null,
+  )
   const activeSummary =
     selected === 'team'
       ? summary
       : {
-          from: activeData[0]?.closeRate ?? 0,
-          to: activeData[activeData.length - 1]?.closeRate ?? 0,
+          from: knownPoints[0]?.closeRate ?? 0,
+          to: knownPoints[knownPoints.length - 1]?.closeRate ?? 0,
           delta:
-            (activeData[activeData.length - 1]?.closeRate ?? 0) -
-            (activeData[0]?.closeRate ?? 0),
+            (knownPoints[knownPoints.length - 1]?.closeRate ?? 0) -
+            (knownPoints[0]?.closeRate ?? 0),
         }
 
   const deltaSign = activeSummary.delta >= 0 ? '+' : ''
@@ -146,7 +149,11 @@ export function CloseRateTrend({
                 color: 'var(--am-text)',
               }}
               labelStyle={{ color: 'var(--am-muted)', fontSize: 11 }}
-              formatter={(value: number) => [`${value}%`, t('closeRate')]}
+              formatter={(value) =>
+                value == null
+                  ? ['—', t('closeRate')]
+                  : [`${value}%`, t('closeRate')]
+              }
             />
             <Bar
               dataKey="closeRate"

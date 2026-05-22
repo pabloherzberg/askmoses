@@ -1,4 +1,4 @@
-import type { Trainer, PerformanceTrendPoint, CallsByTrainerMap } from "@/lib/types";
+import type { Trainer, PerformanceTrendPoint, TrendPoint, CallsByTrainerMap } from "@/lib/types";
 import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
 
 const USE_MOCK = process.env.USE_MOCK_DATA !== "false";
@@ -13,27 +13,6 @@ export async function getTrainers(): Promise<Trainer[]> {
 export async function getTrainerById(id: string): Promise<Trainer | null> {
   const { dbGetTrainerById } = await import("@/lib/db/trainers");
   return dbGetTrainerById(id);
-}
-
-// Maps mock trend curves to real trainer IDs by demo email.
-// 4 curves exist: 301 (top, climbing), 302 (mid-high), 303 (mid), 304 (declining).
-// Reused across the 3 demo orgs to match each trainer's seeded skill level.
-const EMAIL_TO_MOCK_KEY: Record<string, string> = {
-  // Org 100 — Dog Wizard HQ
-  "trainer@demo.askmoses.ai":  "00000000-0000-0000-0000-000000000301",
-  "trainer2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
-  "trainer3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
-  "trainer4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
-  // Org 200 — K9 Elite Training (high performers)
-  "trainer-k9elite-1@demo.askmoses.ai": "00000000-0000-0000-0000-000000000301",
-  "trainer-k9elite-2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
-  "trainer-k9elite-3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
-  "trainer-k9elite-4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
-  // Org 300 — Paw Academy (mid → declining)
-  "trainer-pawacademy-1@demo.askmoses.ai": "00000000-0000-0000-0000-000000000302",
-  "trainer-pawacademy-2@demo.askmoses.ai": "00000000-0000-0000-0000-000000000303",
-  "trainer-pawacademy-3@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
-  "trainer-pawacademy-4@demo.askmoses.ai": "00000000-0000-0000-0000-000000000304",
 }
 
 export async function getTrainersWithMockData(): Promise<Trainer[]> {
@@ -64,24 +43,94 @@ export async function getBehavioralTrends(trainerKey: string): Promise<Behaviora
   return trainerTrends[trainerKey] ?? [];
 }
 
+// Saúde do time derivada de dados reais: stats já agregadas em `trainers`
+// (close_rate, score_delta) + data da última call por trainer para o status
+// de atividade (active hoje · recent ≤7d · away).
 export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
-  const { teamHealth } = await import("@/lib/mock-data");
-  return teamHealth;
+  const orgId = await getOrgId();
+  if (!orgId) return [];
+
+  const { dbGetTrainers } = await import("@/lib/db/trainers");
+  const { getCalls } = await import("@/lib/services/calls");
+  const { getTranslations } = await import("next-intl/server");
+  const [trainers, calls, t] = await Promise.all([
+    dbGetTrainers({ orgId }),
+    getCalls({ limit: 200, orgId }),
+    getTranslations("Owner.teamHealth"),
+  ]);
+
+  // Última call por trainer — base para o status de atividade.
+  const lastCallMs = new Map<string, number>();
+  for (const c of calls) {
+    if (!c.trainerId) continue;
+    const ms = new Date(c.date).getTime();
+    if (Number.isFinite(ms) && ms > (lastCallMs.get(c.trainerId) ?? 0)) {
+      lastCallMs.set(c.trainerId, ms);
+    }
+  }
+
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+
+  return trainers.map((tr) => {
+    const last = lastCallMs.get(tr.id);
+    const days = last != null ? Math.floor((now - last) / DAY) : null;
+    const statusType: TeamHealthEntry["statusType"] =
+      days == null ? "away" : days <= 1 ? "active" : days <= 7 ? "recent" : "away";
+    const status =
+      days == null
+        ? t("statusNoActivity")
+        : days === 0
+          ? t("statusActiveToday")
+          : days === 1
+            ? t("statusYesterday")
+            : t("statusDaysAgo", { days });
+    return {
+      initials: tr.avatar,
+      name: tr.name,
+      avatarColor: tr.avatarColor,
+      calls: tr.totalCalls,
+      status,
+      statusType,
+      closeRate: tr.closeRate,
+      delta: tr.scoreDelta,
+      trend: tr.scoreDelta >= 0 ? "up" : "down",
+    };
+  });
 }
 
+// Tendências semanais de close rate, calculadas das calls reais via
+// buildWeeklyTrend (6 semanas). Inclui a curva "team" + uma por trainer.
 export async function getPerformanceTrends(
   realTrainers: { id: string; email?: string }[]
 ): Promise<Record<string, PerformanceTrendPoint[]>> {
-  if (USE_MOCK) {
-    const { performanceTrends } = await import("@/lib/mock-data");
-    const remapped: Record<string, PerformanceTrendPoint[]> = { team: performanceTrends.team }
-    for (const trainer of realTrainers) {
-      const mockKey = trainer.email ? EMAIL_TO_MOCK_KEY[trainer.email] : undefined
-      if (mockKey && performanceTrends[mockKey]) {
-        remapped[trainer.id] = performanceTrends[mockKey]
-      }
+  const orgId = await getOrgId();
+  if (!orgId) return {};
+
+  const { getCalls } = await import("@/lib/services/calls");
+  const { buildWeeklyTrend } = await import("@/lib/services/rubric");
+  const calls = await getCalls({ limit: 200, orgId });
+
+  // buildWeeklyTrend emite score = 0 em semanas sem calls. Mantemos todas as 6
+  // semanas (eixo contínuo no gráfico) mas marcamos as vazias como null — null
+  // vira lacuna no gráfico, em vez de uma barra falsa de 0%.
+  const toPoints = (tp: TrendPoint[]): PerformanceTrendPoint[] =>
+    tp.map((p) => ({
+      week: p.week,
+      closeRate: p.score > 0 ? p.closeRate : null,
+      avgScore: p.score > 0 ? p.score : null,
+    }));
+
+  const result: Record<string, PerformanceTrendPoint[]> = {
+    team: toPoints(buildWeeklyTrend(calls, 6)),
+  };
+
+  for (const tr of realTrainers) {
+    const trainerCalls = calls.filter((c) => c.trainerId === tr.id);
+    if (trainerCalls.length > 0) {
+      result[tr.id] = toPoints(buildWeeklyTrend(trainerCalls, 6));
     }
-    return remapped;
   }
-  return {};
+
+  return result;
 }

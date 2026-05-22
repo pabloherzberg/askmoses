@@ -173,10 +173,11 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
                 color: 'var(--am-text)',
               }}
               labelStyle={{ color: 'var(--am-muted)', fontSize: 11 }}
-              formatter={(value: number, name: string) => {
-                if (name === 'closeRate') return [`${value}%`, trainerName ?? 'Close Rate']
-                if (name === 'teamCloseRate') return [`${value}%`, 'Team avg']
-                return [`${value}`, name]
+              formatter={(value, name) => {
+                const display = value == null ? '—' : `${value}%`
+                if (name === 'closeRate') return [display, trainerName ?? 'Close Rate']
+                if (name === 'teamCloseRate') return [display, 'Team avg']
+                return [value == null ? '—' : `${value}`, name as string]
               }}
             />
 

@@ -212,8 +212,9 @@ export type CallsByTrainerMap = Record<string, BestCall[]>
 
 export interface PerformanceTrendPoint {
   week: string
-  closeRate: number
-  avgScore: number
+  // null = semana sem nenhuma call — vira lacuna no gráfico, não uma barra de 0%.
+  closeRate: number | null
+  avgScore: number | null
 }
 
 export interface RevenueEstimatorItem {

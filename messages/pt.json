@@ -351,15 +351,14 @@
       "teamPill": "Time"
     },
     "rubricGapDetection": {
-      "title": "Detecção de gaps na rubrica",
+      "title": "Detecção de gaps no script",
       "mockBadge": "apenas dados mock",
       "th": {
         "frequency": "Freq.",
         "gapDetected": "Gap detectado"
       },
-      "addToRubric": "Adicionar à rubrica →",
-      "notCovered": "Não coberto",
-      "mockFooter": "† todos os valores vêm de mock-data.ts — Adicionar à rubrica → não funciona nesta demo"
+      "addToScript": "Adicionar ao script →",
+      "mockFooter": "† todos os valores vêm de mock-data.ts — Adicionar ao script → não funciona nesta demo"
     },
     "revenueEstimator": {
       "title": "Estimador de impacto em receita",
@@ -526,7 +525,8 @@
       "activeSalesPeopleOne": "{count} vendedor ativo",
       "activeSalesPeopleOther": "{count} vendedores ativos",
       "bestCloseRate": "Melhor taxa de fechamento",
-      "noTrainers": "Sem vendedores"
+      "noTrainers": "Sem vendedores",
+      "activeSalesPeople": "Vendedores ativos"
     },
     "teamHealth": {
       "title": "Saúde do time",
@@ -542,7 +542,11 @@
       "callsLabelOther": "{count} chamadas",
       "ptsOne": "pt",
       "ptsOther": "pts",
-      "mockFooter": "† ponto verde = melhorando · ponto vermelho = piorando · valores de mock-data.ts · sem cálculo real"
+      "mockFooter": "† ponto verde = melhorando · ponto vermelho = piorando · valores de mock-data.ts · sem cálculo real",
+      "statusActiveToday": "Ativo hoje",
+      "statusYesterday": "Ontem",
+      "statusDaysAgo": "Há {days} dias",
+      "statusNoActivity": "Sem chamadas ainda"
     },
     "activeAlerts": {
       "title": "Alertas ativos",
@@ -555,7 +559,8 @@
     "detailedRubricLabel": "Nota por vendedor — Rubrica detalhada",
     "detailedRubricTh": {
       "section": "Seção",
-      "team": "Time"
+      "team": "Time",
+      "salesPerson": "Vendedor"
     },
     "aiInsights": "Insights de IA",
     "calls": {

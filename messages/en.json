@@ -351,15 +351,14 @@
       "teamPill": "Team"
     },
     "rubricGapDetection": {
-      "title": "Rubric Gap Detection",
+      "title": "Script Gap Detection",
       "mockBadge": "mock data only",
       "th": {
         "frequency": "Freq.",
         "gapDetected": "Gap detected"
       },
-      "addToRubric": "Add to rubric →",
-      "notCovered": "Not covered",
-      "mockFooter": "† all values sourced from mock-data.ts — Add to rubric → is non-functional in demo"
+      "addToScript": "Add to script →",
+      "mockFooter": "† all values sourced from mock-data.ts — Add to script → is non-functional in demo"
     },
     "revenueEstimator": {
       "title": "Revenue Impact Estimator",
@@ -526,7 +525,8 @@
       "activeSalesPeopleOne": "{count} active sales person",
       "activeSalesPeopleOther": "{count} active sales people",
       "bestCloseRate": "Best Close Rate",
-      "noTrainers": "No sales people"
+      "noTrainers": "No sales people",
+      "activeSalesPeople": "Active Sales People"
     },
     "teamHealth": {
       "title": "Team Health",
@@ -542,7 +542,11 @@
       "callsLabelOther": "{count} calls",
       "ptsOne": "pt",
       "ptsOther": "pts",
-      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation"
+      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation",
+      "statusActiveToday": "Active today",
+      "statusYesterday": "Yesterday",
+      "statusDaysAgo": "{days} days ago",
+      "statusNoActivity": "No calls yet"
     },
     "activeAlerts": {
       "title": "Active Alerts",
@@ -555,7 +559,8 @@
     "detailedRubricLabel": "Score by Sales Person — Detailed Rubric",
     "detailedRubricTh": {
       "section": "Section",
-      "team": "Team"
+      "team": "Team",
+      "salesPerson": "Sales Person"
     },
     "aiInsights": "AI Insights",
     "calls": {
