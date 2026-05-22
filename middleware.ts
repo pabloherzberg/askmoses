@@ -138,11 +138,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
   }
 
-  // /owner-script-review: exclusivo para owner
-  if (rawPath.startsWith('/owner-script-review') && role !== 'owner') {
-    return NextResponse.redirect(redirectByRole(role!, locale, request.url))
-  }
-
   // ── Admin impersonando: whitelist de paths read-only ─────────────────────
   // Admin vê só /dashboard e /team-command-center (e drilldowns de call) quando
   // está numa org cliente. Telas operacionais (upload, settings, marketing

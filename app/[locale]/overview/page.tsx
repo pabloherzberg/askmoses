@@ -16,6 +16,8 @@ import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 import { BestCallsTeamWeekly } from "@/components/shared/BestCallsTeamWeekly";
 import { WorstCallsTeamWeekly } from "@/components/shared/WorstCallsTeamWeekly";
+import { ScriptAnalysisBanner } from "@/components/shared/ScriptAnalysisBanner";
+import { isSuperAdmin } from "@/lib/auth";
 
 
 export default async function OverviewPage() {
@@ -25,6 +27,7 @@ export default async function OverviewPage() {
     { sections: rubric, trainerSectionScores },
     revenueData,
     teamHealth,
+    isAdmin,
     t,
     tMetrics,
     tHealth,
@@ -35,6 +38,7 @@ export default async function OverviewPage() {
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),
+    isSuperAdmin(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
@@ -69,6 +73,9 @@ export default async function OverviewPage() {
 
   return (
     <div>
+      {/* ── Banner de análise IA (só admin) ───────────────────── */}
+      {isAdmin && <ScriptAnalysisBanner />}
+
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">

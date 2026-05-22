@@ -32,6 +32,8 @@ interface Props {
   // Quando recebe orgIds.length === 1, mostra subtítulo singular com orgName.
   // Quando > 1, subtítulo plural com a contagem.
   orgIds: string[]
+  // Ordem das orgs na tabela do admin — define a sequência de análise IA.
+  orgIdsOrdered: string[]
   // Map orgId → name pra renderizar o subtítulo single. Caller passa o map
   // completo da página pra evitar fetch redundante; só uma entrada é usada.
   orgNames: Record<string, string>
@@ -48,7 +50,7 @@ interface Props {
 //
 // Bulk e single usam o mesmo fluxo — a diferença é só quantos orgIds estão
 // no array.
-export function SendScriptModal({ open, orgIds, orgNames, onClose, onSent }: Props) {
+export function SendScriptModal({ open, orgIds, orgIdsOrdered, orgNames, onClose, onSent }: Props) {
   const t = useTranslations('Admin.sendScriptModal')
 
   const [mode, setMode] = useState<Mode>('scripts')
@@ -132,8 +134,8 @@ export function SendScriptModal({ open, orgIds, orgNames, onClose, onSent }: Pro
     try {
       const body =
         mode === 'scripts'
-          ? { scriptId: selectedId, orgIds }
-          : { rubricId: selectedId, orgIds }
+          ? { scriptId: selectedId, orgIds, orgIdsOrdered }
+          : { rubricId: selectedId, orgIds, orgIdsOrdered }
       const res = await fetch('/api/admin/scripts/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
