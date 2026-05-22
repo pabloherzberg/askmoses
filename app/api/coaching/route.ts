@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized, getSession, getOrgId } from '@/lib/auth'
+import { ok, unauthorized, forbidden, getActiveOrgContext } from '@/lib/auth'
 import {
   trainers as mockTrainers,
   bestCalls,
@@ -38,15 +38,18 @@ const PERSONAS = [
 // re-chaveado por trainer.id real. Quando a org tem mais trainers que as 4
 // personas, o mock se repete.
 export async function GET(request: NextRequest) {
-  const session = await getSession()
-  if (!session) return unauthorized()
+  const ctx = await getActiveOrgContext()
+  if (!ctx) return unauthorized()
+  // Team Command Center é owner/admin — trainer não vê a lista do time. Já
+  // gateado no middleware; aqui é defesa em profundidade pra não vazar
+  // id/email dos colegas via API.
+  if (ctx.role !== 'owner' && ctx.role !== 'admin') return forbidden()
 
   const locale = resolveLocale(request.headers.get('x-locale'))
 
   let realTrainers: Trainer[] = []
   try {
-    const orgId = await getOrgId()
-    if (orgId) realTrainers = await dbGetTrainers({ orgId })
+    if (ctx.activeOrgId) realTrainers = await dbGetTrainers({ orgId: ctx.activeOrgId })
   } catch {
     realTrainers = []
   }

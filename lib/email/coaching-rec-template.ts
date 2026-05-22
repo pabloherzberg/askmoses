@@ -71,8 +71,9 @@ export function buildCoachingRecEmail(data: CoachingRecEmailData): {
   const subject = fill(s.subject, { sender: data.senderName })
   const greeting = escapeHtml(fill(s.greeting, { name: trainerFirst }))
   const intro = escapeHtml(fill(s.intro, { sender: data.senderName }))
-  // body é texto livre do owner — escapar e converter quebras de linha.
-  const bodyHtml = escapeHtml(data.body).replace(/\n/g, '<br>')
+  // body é texto livre do owner — escapar e converter quebras de linha
+  // (suporta LF e CRLF; alguns clientes deixavam \r visível).
+  const bodyHtml = escapeHtml(data.body).replace(/\r?\n/g, '<br>')
 
   const html = `<!DOCTYPE html>
 <html lang="${lang}">
