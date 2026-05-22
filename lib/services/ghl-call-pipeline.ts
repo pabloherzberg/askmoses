@@ -1,6 +1,7 @@
 import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { downloadRecording, fetchRecordingUrl } from "@/lib/services/ghl-api"
 import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
+import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 import { transcribeAudioBuffer } from "@/lib/services/whisper"
 
 const TRANSCRIBE_RETRY_DELAYS_MS = [0, 1500, 4000]
@@ -35,6 +36,11 @@ export async function processGhlCall(
     await dbUpdateGhlCallPipeline(callId, {
       processingStatus: "no_recording",
     })
+    await notifyPipelineFailure("no_recording", {
+      callId,
+      contactId: payload.contactId,
+      error: err,
+    })
     return
   }
 
@@ -45,6 +51,10 @@ export async function processGhlCall(
     })
     await dbUpdateGhlCallPipeline(callId, {
       processingStatus: "no_recording",
+    })
+    await notifyPipelineFailure("no_recording", {
+      callId,
+      contactId: payload.contactId,
     })
     return
   }
@@ -58,6 +68,11 @@ export async function processGhlCall(
     console.error("[ghl-pipeline] downloadRecording failed", { callId, err })
     await dbUpdateGhlCallPipeline(callId, {
       processingStatus: "transcription_failed",
+    })
+    await notifyPipelineFailure("transcription_failed", {
+      callId,
+      contactId: payload.contactId,
+      error: err,
     })
     return
   }
@@ -84,6 +99,11 @@ export async function processGhlCall(
     console.error("[ghl-pipeline] Whisper exhausted retries", { callId, lastError })
     await dbUpdateGhlCallPipeline(callId, {
       processingStatus: "transcription_failed",
+    })
+    await notifyPipelineFailure("transcription_failed", {
+      callId,
+      contactId: payload.contactId,
+      error: lastError,
     })
     return
   }
