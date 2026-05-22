@@ -40,12 +40,19 @@ function getApiBase(): string {
 interface GhlConversation {
   id: string
   contactId?: string
+  locationId?: string
   lastMessageDate?: string
 }
 
 interface GhlMessage {
   id: string
+  /** Legacy: pode ser string ("CALL", "TYPE_CALL") ou número (1=outbound,
+   *  2=inbound, 25=CALL_INBOUND, 26=CALL_OUTBOUND). NÃO usar pra
+   *  discriminar tipo de message — usar `messageType` que é estável. */
   type: string | number
+  /** Discriminador estável do tipo (TYPE_CALL, TYPE_SMS, etc). */
+  messageType?: string
+  locationId?: string
   dateAdded?: string
   attachments?: Array<string | { url?: string }>
   meta?: { call?: { recordingUrl?: string } }
@@ -130,18 +137,20 @@ export async function fetchRecordingUrl(
       conversationId: conv.id,
       messagesCount: messages.length,
       callMessagesCount: callMessages.length,
-      messageTypes: messages.map((m) => m.type),
-      callMessagesWithAttachments: callMessages.map((m) => ({
+      messageTypes: messages.map((m) => ({ type: m.type, messageType: m.messageType })),
+      callMessages: callMessages.map((m) => ({
         id: m.id,
         type: m.type,
+        messageType: m.messageType,
         dateAdded: m.dateAdded,
         hasMetaRecording: Boolean(m.meta?.call?.recordingUrl),
         attachmentsCount: m.attachments?.length ?? 0,
+        locationId: m.locationId,
       })),
     })
 
     for (const msg of callMessages) {
-      const url = extractRecordingUrl(msg)
+      const url = extractRecordingUrl(msg, conv.locationId, base)
       if (url) {
         return { url, messageId: msg.id, conversationId: conv.id }
       }
@@ -156,21 +165,43 @@ export async function fetchRecordingUrl(
 }
 
 function isCallMessage(msg: GhlMessage): boolean {
+  // Discriminador estável: messageType. GHL atual envia "TYPE_CALL"
+  // mesmo em locations LC Phone / Twilio. Confirmado via curl manual.
+  if (typeof msg.messageType === "string" && msg.messageType.toUpperCase().includes("CALL")) {
+    return true
+  }
+  // Legacy: campo `type` em string.
   if (typeof msg.type === "string") {
     return msg.type.toUpperCase().includes("CALL")
   }
-  // GHL also returns numeric type codes; 25/26 are CALL_INBOUND/CALL_OUTBOUND.
+  // Legacy: códigos numéricos (vistos em listings antigos).
+  // 25 = CALL_INBOUND, 26 = CALL_OUTBOUND. Mantido por compatibilidade.
   return msg.type === 25 || msg.type === 26
 }
 
-function extractRecordingUrl(msg: GhlMessage): string | null {
+function extractRecordingUrl(
+  msg: GhlMessage,
+  conversationLocationId: string | undefined,
+  apiBase: string,
+): string | null {
+  // Legacy 1: gravação embutida no meta. Algumas integrações ainda enviam.
   const metaUrl = msg.meta?.call?.recordingUrl
   if (metaUrl) return metaUrl
 
+  // Legacy 2: URL em attachment.
   for (const att of msg.attachments ?? []) {
     if (typeof att === "string" && att.startsWith("http")) return att
     if (att && typeof att === "object" && att.url) return att.url
   }
+
+  // Atual (LC Phone + Pepper): o áudio fica no endpoint dedicado, não
+  // vem inline no listing de messages. Construir a URL e deixar o
+  // downloadRecording resolver com Bearer auth.
+  const locationId = msg.locationId ?? conversationLocationId
+  if (locationId) {
+    return `${apiBase}/conversations/messages/${encodeURIComponent(msg.id)}/locations/${encodeURIComponent(locationId)}/recording`
+  }
+
   return null
 }
 
