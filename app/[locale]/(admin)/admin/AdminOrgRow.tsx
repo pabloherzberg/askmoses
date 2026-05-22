@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook } from 'lucide-react'
+import { Settings, Webhook, Loader2 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -201,11 +201,25 @@ export function AdminOrgRow({
         )}
       </td>
 
-      {/* Script Version: mostra "v1.5" ou "v2.0 → v2.1" quando pending com previous */}
+      {/* Script Version */}
       <td className="px-3 py-4 whitespace-nowrap">
         {script ? (
           <div className="inline-flex items-center gap-1.5 font-mono text-[11px] whitespace-nowrap">
-            {script.previousVersion && (
+            {scriptStatus === 'rejected' ? (
+              // Rejected: owner continua com o script anterior (previousVersion)
+              // ou sem script se não havia anterior
+              script.previousVersion ? (
+                <span
+                  className="px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+                >
+                  v{script.previousVersion}
+                </span>
+              ) : (
+                <span className="font-mono" style={{ color: 'var(--am-muted)' }}>—</span>
+              )
+            ) : scriptStatus === 'pending' && script.previousVersion ? (
+              // Pending com versão anterior: mostra "v2.0 → v2.1"
               <>
                 <span
                   className="px-1.5 py-0.5 rounded"
@@ -214,14 +228,22 @@ export function AdminOrgRow({
                   v{script.previousVersion}
                 </span>
                 <span style={{ color: 'var(--am-muted)' }}>→</span>
+                <span
+                  className="px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+                >
+                  v{script.version}
+                </span>
               </>
+            ) : (
+              // Active / deprecated / outro: mostra versão atual
+              <span
+                className="px-1.5 py-0.5 rounded font-medium"
+                style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+              >
+                v{script.version}
+              </span>
             )}
-            <span
-              className="px-1.5 py-0.5 rounded font-medium"
-              style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-            >
-              v{script.version}
-            </span>
           </div>
         ) : (
           <span className="text-[12px] font-mono" style={{ color: 'var(--am-muted)' }}>—</span>
@@ -230,12 +252,43 @@ export function AdminOrgRow({
 
       {/* Status do script */}
       <td className="px-3 py-4 whitespace-nowrap">
-        <span
-          className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-          style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-        >
-          {tStatusScript(scriptStatus)}
-        </span>
+        {script?.analysisStatus === 'processing' ? (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
+          >
+            <Loader2 size={10} className="animate-spin" />
+            Analisando...
+          </span>
+        ) : script?.analysisStatus === 'queued' ? (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+          >
+            Na fila
+          </span>
+        ) : scriptStatus === 'rejected' ? (
+          <span
+            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: 'var(--am-red-bg, rgba(255,94,94,0.15))', color: 'var(--am-red)' }}
+          >
+            {tStatusScript('rejected')}
+          </span>
+        ) : scriptStatus === 'active' ? (
+          <span
+            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: 'var(--am-green-bg)', color: 'var(--am-green)' }}
+          >
+            {tStatusScript('active')}
+          </span>
+        ) : (
+          <span
+            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+          >
+            {tStatusScript(scriptStatus)}
+          </span>
+        )}
       </td>
 
       {/* Plan */}

@@ -138,6 +138,11 @@ export interface OrgScriptInfo {
   previousVersion: string | null
   status: OrgScriptStatus
   startedAt: string | null
+  // Preenchido apenas quando status='pending'.
+  // 'queued' = aguardando na fila | 'processing' = IA rodando | null = pronto ou sem cache.
+  analysisStatus?: 'queued' | 'processing' | null
+  // org_scripts.id — necessário para cruzar com o cache de análise
+  orgScriptId?: string | null
 }
 
 export interface Client {
