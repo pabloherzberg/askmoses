@@ -31,30 +31,60 @@
 
 ---
 
-## Webhook Payload (Already Configured in GHL)
+## Webhook Payload (How GHL Actually Sends It)
 
-These fields are already configured in the "Send to Ask Moses" webhook action:
+**Important — actual structure differs from what's configured.** Fields you add to GHL's "Custom Data" UI are nested under `customData` in the request body. The root of the body has GHL's native fields (contact, location, workflow, message, etc.). The handler reads from `body.customData`, NOT from `body` directly.
 
-```json
+### Configure in GHL Pepper (Custom Data tab of the webhook action)
+
+| Key | Value | Notes |
+|---|---|---|
+| `type` | `callCompleted` | **Literal string, no quotes, no merge tag** |
+| `contactId` | `{{contact.id}}` | |
+| `userId` | `{{phoneCall.user.id}}` | |
+| `callStatus` | `{{phoneCall.callStatus}}` | |
+| `callDirection` | `{{phoneCall.direction}}` | |
+| `userName` | `{{phoneCall.user.name}}` | |
+| `userEmail` | `{{user.email}}` | |
+| `contactName` | `{{contact.name}}` | |
+| `duration` | `{{phoneCall.duration}}` | |
+| `contactSource` | `{{contact.source}}` | |
+| `contactEmail` | `{{contact.email}}` | |
+
+When typing `callCompleted` in the Pepper Value field, do **not** wrap it in quotes — GHL treats whatever you type as the literal string value. Typing `"callCompleted"` stores the quotes as part of the string and the handler rejects it (`Unsupported webhook type: "callCompleted"`).
+
+### What GHL actually sends (root has native fields, custom data is nested)
+
+```jsonc
 {
-  "type": "callCompleted",
-  "contactId": "{{contact.id}}",
-  "userId": "{{phoneCall.user.id}}",
-  "callStatus": "{{phoneCall.callStatus}}",
-  "callDirection": "{{phoneCall.direction}}",
-  "transcript": "{{voice_ai.transcript}}",
-  "userName": "{{phoneCall.user.name}}",
-  "userEmail": "{{user.email}}",
-  "contactName": "{{contact.name}}",
-  "duration": "{{phoneCall.duration}}",
-  "contactSource": "{{contact.source}}",
-  "contactEmail": "{{contact.email}}"
+  // Native GHL fields at root — we don't control these:
+  "contact_id": "xSCSxSknhx4hQwUEb9GV",
+  "first_name": "...", "last_name": "...", "email": "...",
+  "location": { "id": "<locationId>", "name": "...", "address": "..." },
+  "workflow": { "id": "...", "name": "..." },
+  "message": { "type": 1 },
+  "contact": { /* full contact object */ },
+
+  // Fields we added via Custom Data — nested under customData:
+  "customData": {
+    "type": "callCompleted",
+    "contactId": "xSCSxSknhx4hQwUEb9GV",
+    "userId": "...",
+    "callStatus": "completed",
+    "callDirection": "outbound",
+    "userName": "Sarah Schaefer",
+    "userEmail": "...",
+    "contactName": "...",
+    "duration": "34",
+    "contactSource": "...",
+    "contactEmail": "..."
+  }
 }
 ```
 
-**Note:** `recordingUrl` is NOT available as a workflow variable. The backend fetches it via GHL Conversations API using the `contactId`. **Audio is mandatory** — all transcription is done via OpenAI Whisper. GHL's built-in transcript is not used due to quality issues.
+The handler validates `body.customData.type === "callCompleted"` and reads the other fields from the same `customData` object. The whole raw envelope (root + customData) is persisted to `calls.ghl_payload` for debugging — `location.id` and `workflow.name` at root are useful when investigating.
 
-**Important:** The `transcript` field in the webhook payload (`{{voice_ai.transcript}}`) is **ignored**. We always download the audio and run Whisper ourselves for consistent, high-quality transcription.
+**Note:** `recordingUrl` is NOT available as a Pepper workflow variable. The backend fetches it via GHL Conversations API using the `contactId`. **Audio is mandatory** — all transcription is done via OpenAI Whisper. GHL's built-in transcript is not used due to quality issues, so the `transcript` Custom Data field is omitted (handler doesn't read it anyway).
 
 ---
 

@@ -16,6 +16,16 @@ export interface GhlWebhookPayload {
   locationId?: string | null
 }
 
+// O Pepper envia o request com os campos nativos do GHL no root
+// (contact, location, workflow, message, etc.) e os campos que adicionamos
+// via "Custom Data" aninhados em `customData`. Persistir o envelope completo
+// em ghl_payload preserva contexto útil pra debug (location.id, workflow.name).
+export interface GhlRawWebhookBody {
+  customData?: GhlWebhookPayload
+  location?: { id?: string | null }
+  workflow?: { id?: string; name?: string }
+}
+
 export type CallType =
   | "cold_inbound"
   | "warm_inbound"
