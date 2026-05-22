@@ -6,7 +6,10 @@
       "Read(//c/Users/pablo/.claude/projects/**)",
       "Bash(SB_URL=\"https://azphsweveznidfttykbq.supabase.co\" SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6cGhzd2V2ZXpuaWRmdHR5a2JxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMDgzNiwiZXhwIjoyMDg0NzA2ODM2fQ.BcU2cZ6m9GJM0JTOiSLgcL9b9YLUmrAnNGvZSl8NWXY\" __NEW_LINE_dcf5f5b37145edc4__ curl -s \"$SB_URL/auth/v1/admin/users\" -H \"apikey: $SB_KEY\" -H \"Authorization: Bearer $SB_KEY\")",
       "Bash(find c:/Users/pablo/Documents/v0-coach-mvp -maxdepth 3 -type f \\\\\\(-name *.test.ts* -o -name *.spec.ts* -o -name *msw* -o -name jest.config.* -o -name vitest.config.* \\\\\\))",
-      "Bash(npx msw:*)"
+      "Bash(npx msw:*)",
+      "Bash(curl -s -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' 'https://services.leadconnectorhq.com/conversations/search?contactId=wsqDzFjzSBj3SkxAeyLy&limit=5')",
+      "Bash(curl -s -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' https://services.leadconnectorhq.com/conversations/zGnn1KO8AOjJ1q0rRncv/messages)",
+      "Bash(curl -s -o /tmp/recording.bin -w 'HTTP %{http_code}\\\\nContent-Type: %{content_type}\\\\nSize: %{size_download} bytes\\\\n' -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' https://services.leadconnectorhq.com/conversations/messages/Pt4P39b25sKEUL2cakuv/locations/tZd61H2adMPsphEwGyDt/recording)"
     ]
   }
 }

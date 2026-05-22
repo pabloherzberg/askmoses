@@ -337,6 +337,7 @@ export interface UpdateGhlPipelineInput {
   transcriptSource?: 'whisper' | 'manual' | 'ghl'
   // Campos populados pela fase de scoring (após o transcribed).
   rubricId?: string | null
+  scriptId?: string | null
   overallScore?: number | null
   detectedOutcome?: string | null
   summary?: string | null
@@ -348,6 +349,9 @@ export interface UpdateGhlPipelineInput {
   outputTokens?: number | null
   costUsd?: number | null
   promptVersion?: string | null
+  // Campos populados pela fase de coaching email (após scoring).
+  emailSent?: boolean
+  emailId?: string | null
 }
 
 export async function dbUpdateGhlCallPipeline(
@@ -362,6 +366,7 @@ export async function dbUpdateGhlCallPipeline(
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
   if (input.rubricId !== undefined) patch.rubric_id = input.rubricId
+  if (input.scriptId !== undefined) patch.script_id = input.scriptId
   if (input.overallScore !== undefined) patch.overall_score = input.overallScore
   if (input.detectedOutcome !== undefined) patch.detected_outcome = input.detectedOutcome
   if (input.summary !== undefined) patch.summary = input.summary
@@ -373,6 +378,8 @@ export async function dbUpdateGhlCallPipeline(
   if (input.outputTokens !== undefined) patch.output_tokens = input.outputTokens
   if (input.costUsd !== undefined) patch.cost_usd = input.costUsd
   if (input.promptVersion !== undefined) patch.prompt_version = input.promptVersion
+  if (input.emailSent !== undefined) patch.email_sent = input.emailSent
+  if (input.emailId !== undefined) patch.email_id = input.emailId
 
   const { error } = await supabase.from('calls').update(patch).eq('id', id)
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
