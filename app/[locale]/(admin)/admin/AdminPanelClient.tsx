@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter as FilterIcon, Send, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Filter as FilterIcon,
+  Send,
+  X,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Client, OrgScriptStatus, PlanCode } from "@/lib/types";
 import { AdminOrgRow } from "./AdminOrgRow";
@@ -93,6 +101,9 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
   const [page, setPage] = useState(1);
   const [limit] = useState(initialPageSize);
 
+  // Modo de seleção: os checkboxes só aparecem depois que o admin clica em
+  // "Enviar scripts". Fora dele a tabela funciona normal (click = impersonate).
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [modalOrgIds, setModalOrgIds] = useState<string[] | null>(null);
 
@@ -186,6 +197,12 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     setSelected(next);
   };
 
+  // Sai do modo de seleção e descarta o que estava marcado.
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelected(new Set());
+  };
+
   // ── Modal callbacks ─────────────────────────────────────────────────
 
   const orgNames = useMemo(() => {
@@ -199,6 +216,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
   const handleSent = (_count: number) => {
     setModalOrgIds(null);
     setSelected(new Set());
+    setSelectionMode(false);
     // Refetcha a página atual pra refletir o novo status (pending) das orgs.
     void doFetch(filtersToBody(filters, search, page, limit));
     router.refresh(); // garante que os metric cards também atualizam
@@ -226,26 +244,52 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
       {/* ── Search + filter + bulk action bar ──────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          {selected.size > 0 && (
+          {!selectionMode ? (
+            // Estado padrão: um único CTA que liga o modo de seleção.
+            <button
+              type="button"
+              onClick={() => setSelectionMode(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+              style={{
+                background: "var(--am-accent)",
+                color: "var(--am-on-accent)",
+              }}
+            >
+              <Send size={12} />
+              {t("enterSelectionMode")}
+            </button>
+          ) : (
             <>
-              <span
-                className="text-xs font-mono px-2 py-1 rounded"
-                style={{ background: "var(--am-bg4)", color: "var(--am-muted)" }}
-              >
-                {t("selectedCount", { count: selected.size })}
-              </span>
+              {/* Cancelar sai do modo e limpa a seleção. */}
               <button
                 type="button"
-                onClick={() => setModalOrgIds(Array.from(selected))}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+                onClick={exitSelectionMode}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium"
                 style={{
-                  background: "var(--am-accent)",
-                  color: "var(--am-on-accent)",
+                  background: "var(--am-bg3)",
+                  borderColor: "var(--am-border)",
+                  color: "var(--am-text)",
                 }}
               >
-                <Send size={12} />
-                {t("sendScriptBulk", { count: selected.size })}
+                <X size={12} />
+                {t("cancel")}
               </button>
+              {/* CTA de envio só aparece com orgs marcadas — a contagem fica
+                  só aqui (o badge "X selecionadas" foi removido por redundância). */}
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setModalOrgIds(Array.from(selected))}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+                  style={{
+                    background: "var(--am-accent)",
+                    color: "var(--am-on-accent)",
+                  }}
+                >
+                  <Send size={12} />
+                  {t("sendScriptBulk", { count: selected.size })}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -298,6 +342,25 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         </div>
       </div>
 
+      {/* ── Dica do modo de seleção ──────────────────────────────── */}
+      {/* Orienta o usuário leigo: o checkbox sozinho não explica o fluxo. */}
+      {selectionMode && (
+        <div
+          className="flex items-start gap-2 mb-3 px-3 py-2 rounded-md border text-xs"
+          style={{
+            background: "var(--am-accent-bg, rgba(110,86,255,0.10))",
+            borderColor: "var(--am-accent)",
+            color: "var(--am-text)",
+          }}
+        >
+          <Info
+            size={14}
+            style={{ color: "var(--am-accent2)", marginTop: "1px", flexShrink: 0 }}
+          />
+          <span>{t("selectionHint")}</span>
+        </div>
+      )}
+
       {/* ── Table ───────────────────────────────────────────────── */}
       <div
         className="rounded-2xl border overflow-hidden"
@@ -307,15 +370,17 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
           <table className="w-full border-collapse">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--am-border)" }}>
-                <th className="w-8 px-3 py-3">
-                  <input
-                    type="checkbox"
-                    checked={allSelectedOnPage}
-                    onChange={toggleAll}
-                    aria-label={t("selectAll")}
-                    style={{ accentColor: "var(--am-accent)" }}
-                  />
-                </th>
+                {selectionMode && (
+                  <th className="w-8 px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={allSelectedOnPage}
+                      onChange={toggleAll}
+                      aria-label={t("selectAll")}
+                      style={{ accentColor: "var(--am-accent)" }}
+                    />
+                  </th>
+                )}
                 {(
                   [
                     "client",
@@ -342,7 +407,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
               {rows.length === 0 && !loading && (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={selectionMode ? 10 : 9}
                     className="text-center py-10 text-sm"
                     style={{ color: "var(--am-muted)" }}
                   >
@@ -355,6 +420,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
                   key={client.id}
                   client={client}
                   isLast={i === rows.length - 1}
+                  selectionMode={selectionMode}
                   isSelected={selected.has(client.id)}
                   onToggleSelected={() => toggleOne(client.id)}
                   onSendScript={() => setModalOrgIds([client.id])}
@@ -443,7 +509,7 @@ function Th({ translationKey }: { translationKey: string }) {
   const tTh = useTranslations("Admin.th");
   return (
     <th
-      className="text-[11px] font-medium text-left px-5 py-3 whitespace-nowrap"
+      className="text-[11px] font-medium text-left px-3 py-3 whitespace-nowrap"
       style={{ color: "var(--am-muted)" }}
     >
       {tTh(translationKey)}

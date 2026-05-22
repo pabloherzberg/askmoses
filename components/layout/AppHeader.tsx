@@ -17,6 +17,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { OrgSwitcher } from '@/components/layout/OrgSwitcher'
 import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 interface AppHeaderProps {
   /** Nav items rendered inside the mobile Sheet drawer */
@@ -27,15 +28,9 @@ interface AppHeaderProps {
    * can resolve the active title automatically (used by /dashboard/*).
    */
   pageTitle?: string | Record<string, string>
-  /**
-   * Slot pra notificações server-rendered (ex: PendingScriptBadgeServer).
-   * Renderizado no extremo esquerdo da seção direita. Passar via prop em
-   * vez de hardcoded permite layouts diferentes injetarem badges diferentes.
-   */
-  pendingBadge?: React.ReactNode
 }
 
-export function AppHeader({ mobileSidebar, pageTitle, pendingBadge }: AppHeaderProps) {
+export function AppHeader({ mobileSidebar, pageTitle }: AppHeaderProps) {
   const pathname = usePathname()
   const locale = useLocale()
   const t = useTranslations('Shared.header')
@@ -109,10 +104,6 @@ export function AppHeader({ mobileSidebar, pageTitle, pendingBadge }: AppHeaderP
 
       {/* ── Right ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 md:gap-4">
-        {/* Slot pra badge de aprovação pendente — só renderiza pra Owner
-            com script pending. Server-rendered via prop. */}
-        {pendingBadge}
-
         {!resolvedTitle && (
           <>
             <span
@@ -144,6 +135,8 @@ export function AppHeader({ mobileSidebar, pageTitle, pendingBadge }: AppHeaderP
         )}
 
         <div className="flex items-center gap-1.5">
+          {/* Sino de notificações de coaching — só renderiza para o sales person */}
+          <NotificationBell />
           <OrgSwitcher />
           <LanguageSwitcher />
           <ThemeToggle />

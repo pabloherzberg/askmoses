@@ -160,12 +160,14 @@ export async function POST(request: NextRequest) {
     return serverError('Não foi possível registrar o envio', rpcErr)
   }
 
+  // Migration 053 renomeou as colunas do RETURNS TABLE pra out_* (evita
+  // colisão com nomes de variáveis OUT implícitas — bug 42702).
   const rows = (rpcData ?? []) as Array<{
-    id: string
-    org_id: string
-    script_id: string
-    status: string
-    started_at: string
+    out_id: string
+    out_org_id: string
+    out_script_id: string
+    out_status: string
+    out_started_at: string
   }>
 
   return ok({
@@ -173,11 +175,11 @@ export async function POST(request: NextRequest) {
     rubricResolved: rubricId ? true : false,
     sentTo: orgIds.length,
     rows: rows.map((r) => ({
-      id: r.id,
-      orgId: r.org_id,
-      scriptId: r.script_id,
-      status: r.status,
-      startedAt: r.started_at,
+      id: r.out_id,
+      orgId: r.out_org_id,
+      scriptId: r.out_script_id,
+      status: r.out_status,
+      startedAt: r.out_started_at,
     })),
   })
 }

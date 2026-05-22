@@ -189,6 +189,7 @@
       "howToUse": "Cómo usar",
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
+      "coachingSettings": "Rubric Config",
       "createOrganization": "Nueva organización",
       "aiControls": "AI Controls",
       "tools": "Herramientas",
@@ -203,12 +204,16 @@
       "clientName": "Unleashed Consulting",
       "weekProgress": "Semana 6 / 6",
       "live": "En vivo",
-      "pendingApprovalShort": "aprobación pendiente",
       "orgSwitcher": {
         "label": "Cambiar organización",
         "owner": "Dueño",
         "trainer": "Vendedor"
       }
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "empty": "Sin notificaciones todavía",
+      "sentBy": "De {name}"
     },
     "userMenu": {
       "triggerAria": "Menú de usuario",
@@ -463,6 +468,27 @@
     }
   },
   "Owner": {
+    "pendingScript": {
+      "bannerTitle": "Una nueva versión del script espera tu aprobación",
+      "bannerCta": "Ver cambios",
+      "bannerVersionDelta": "v{previous} → v{incoming}",
+      "bannerVersionNew": "Nueva: v{incoming}",
+      "modalTitle": "Revisar script propuesto",
+      "modalSubtitle": "Enviado por {sender} el {date}",
+      "modalSubtitleNoSender": "Enviado el {date}",
+      "currentLabel": "Actual",
+      "incomingLabel": "Propuesto",
+      "noCurrent": "Sin script activo",
+      "noDescription": "Sin descripción.",
+      "accept": "Aceptar y activar",
+      "reject": "Mantener actual",
+      "accepting": "Aceptando…",
+      "rejecting": "Rechazando…",
+      "genericError": "Algo salió mal. Inténtalo de nuevo.",
+      "rejectedRestored": "Volvió a v{version}",
+      "rejectedNoRestore": "Sin script activo ahora",
+      "accepted": "v{version} está activa"
+    },
     "teamOverview": "Vista del equipo",
     "metrics": {
       "monthlyRevenue": "Ingresos mensuales estimados",
@@ -523,7 +549,10 @@
       "thDate": "Fecha",
       "thScore": "Puntuación",
       "thResult": "Resultado",
-      "forbidden": "No tienes acceso a esta llamada."
+      "forbidden": "No tienes acceso a esta llamada.",
+      "thScript": "Script",
+      "filterAllScripts": "Todos los scripts",
+      "activeScriptTag": "Script activo: {name}"
     }
   },
   "Admin": {
@@ -542,6 +571,20 @@
     "clientsLabel": "Clientes",
     "allOrganizationsLabel": "Todas las organizaciones",
     "subtitleScriptIntel": "Gestión de organizaciones · Script Intelligence",
+    "tabs": {
+      "organizations": "Organizaciones",
+      "scripts": "Scripts"
+    },
+    "scripts": {
+      "searchPlaceholder": "Buscar por nombre, descripción, sección o versión…",
+      "thName": "Nombre",
+      "thRubric": "Rubric",
+      "thVersion": "Versión",
+      "thSections": "Secciones",
+      "thCreated": "Creado",
+      "improve": "Improve",
+      "noResults": "Ningún script encontrado."
+    },
     "th": {
       "client": "Organización",
       "plan": "Plan",
@@ -596,7 +639,8 @@
       "activeFiltersCount": "{count} activo(s)",
       "filtersTitle": "Filtros",
       "filtersSubtitle": "Refina por estado, plan y actividad.",
-      "selectedCount": "{count} seleccionada(s)",
+      "enterSelectionMode": "Enviar scripts",
+      "selectionHint": "Haz clic en las organizaciones que recibirán el script y luego en el botón de envío.",
       "sendScriptBulk": "Enviar script a {count} org(s)",
       "sendScript": "Enviar script",
       "editOrg": "Editar org",
@@ -631,6 +675,39 @@
       "successSingle": "Script enviado a {name}.",
       "successBulk": "Script enviado a {count} organización(es).",
       "genericError": "No se pudo enviar el script. Inténtalo de nuevo."
+    },
+    "scriptReview": {
+      "title": "Revisión de Script Intelligence",
+      "pendingReview": "revisión pendiente",
+      "back": "Volver",
+      "versionHistory": "Historial de versiones",
+      "save": "Guardar script",
+      "discard": "Descartar",
+      "saved": "Script guardado",
+      "aiGeneratedTitle": "Versión generada por IA",
+      "aiGeneratedNote": "Este script fue generado automáticamente por Script Intelligence con base en el análisis de {count} llamadas cerradas.",
+      "baseScript": "Script base",
+      "newVersion": "Nueva versión",
+      "expectedImpact": "Impacto esperado",
+      "modificationsCount": "{count} modificaciones",
+      "changesSummary": "Resumen de cambios",
+      "metadata": "Metadatos",
+      "sectionsCount": "{count} secciones",
+      "criteriaCount": "{count} criterios",
+      "tab_editor": "Editor",
+      "tab_diff": "Diff",
+      "tab_preview": "Vista previa",
+      "change_modified": "Modificado por IA",
+      "change_new": "Nuevo",
+      "description": "Descripción",
+      "reasoningForChanges": "Justificación del cambio",
+      "tipForTrainer": "Consejo para el vendedor",
+      "sectionWeight": "Peso de la sección",
+      "evaluationCriteria": "Criterios de evaluación",
+      "criteriaWeight": "{count} criterios · Peso: {weight}%",
+      "current": "Actual",
+      "proposed": "Propuesto",
+      "noChanges": "Ningún cambio para mostrar."
     },
     "health": {
       "healthy": "Saludable",
@@ -730,6 +807,10 @@
       "mrrLabel": "MRR (USD/mes) — opcional",
       "mrrPlaceholder": "Ej: 1500",
       "errorMrrInvalid": "MRR debe ser un número positivo.",
+      "scriptLabel": "Script activo",
+      "scriptPlaceholder": "Selecciona un script",
+      "scriptLoading": "Cargando scripts…",
+      "errorScriptRequired": "Selecciona un script activo.",
       "submit": "Crear organización y enviar invitación",
       "submitting": "Creando…",
       "successDetail": "{name} aprovisionada en el plan {plan}.",
@@ -822,7 +903,23 @@
     "worstCall": "Necesita Mejorar",
     "mockBadge": "solo datos mock",
     "mockFooterBest": "† todos los valores vienen de mock-data.ts — Escuchar en X:XX → no funciona en esta demo",
-    "mockFooterWorst": "† todos los valores vienen de mock-data.ts — Revisar en X:XX → no funciona en esta demo"
+    "mockFooterWorst": "† todos los valores vienen de mock-data.ts — Revisar en X:XX → no funciona en esta demo",
+    "recsTitle": "Recomendaciones de Coaching IA",
+    "recsReview": "Revisar y enviar",
+    "recsSentBadge": "Enviado",
+    "reviewModal": {
+      "title": "Revisar recomendación de coaching",
+      "subtitle": "Revísala antes de enviarla a {name}.",
+      "recipient": "Destinatario",
+      "recommendation": "Recomendación",
+      "cancel": "Cancelar",
+      "send": "Enviar a {name}",
+      "sending": "Enviando…",
+      "sentTitle": "Recomendación enviada",
+      "sentBody": "{name} la verá en su feed de coaching.",
+      "close": "Cerrar",
+      "error": "No se pudo enviar la recomendación. Inténtalo de nuevo."
+    }
   },
   "Dashboard": {
     "home": {
@@ -1238,7 +1335,7 @@
         "tipPrefix": "Consejo: {tip}",
         "fullScript": "Script Completo",
         "evaluationCriteria": "Criterios de Evaluación Generados Automáticamente ({count})",
-        "createRubric": "Crear Rúbrica",
+        "createRubric": "Crear Script",
         "startOver": "Empezar de Nuevo"
       },
       "confirm": {
@@ -1263,6 +1360,9 @@
         "criterionNamePlaceholder": "Nombre del criterio",
         "criterionDescriptionPlaceholder": "Descripción",
         "addCriterion": "+ Agregar Criterio",
+        "rubricLabel": "Rúbrica",
+        "rubricSubtitle": "Elige a qué rúbrica pertenece este script",
+        "rubricNone": "No se encontraron rúbricas. Crea una primero en Configuración.",
         "saving": "Guardando...",
         "saveRubric": "Guardar Rúbrica",
         "back": "Volver",

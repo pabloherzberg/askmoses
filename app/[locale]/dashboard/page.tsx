@@ -25,6 +25,8 @@ import {
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
+import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
+import { getActiveOrgContext } from "@/lib/auth";
 
 export default async function DashboardPage() {
   const [
@@ -33,6 +35,7 @@ export default async function DashboardPage() {
     { sections: rubric, trainerSectionScores },
     revenueData,
     teamHealth,
+    ctx,
     t,
     tMetrics,
     tHealth,
@@ -43,11 +46,16 @@ export default async function DashboardPage() {
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),
+    getActiveOrgContext(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
     getTranslations("Owner.activeAlerts"),
   ]);
+
+  // Banner só pra Owner real — Admin impersonando não tem poder de
+  // accept/reject, então esconder evita CTA frustrante.
+  const showPendingBanner = ctx?.role === 'owner' && !ctx.isImpersonating;
 
   const coachingDrivers = buildCoachingDrivers(rubric);
 
@@ -82,6 +90,8 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {showPendingBanner && <PendingScriptBanner />}
+
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
 

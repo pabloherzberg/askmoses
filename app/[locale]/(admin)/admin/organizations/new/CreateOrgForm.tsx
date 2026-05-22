@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
@@ -16,6 +16,13 @@ interface CreateResponse {
   error: { message: string; code: number } | null
 }
 
+interface CatalogScript {
+  id: string
+  name: string
+  version: string
+  rubricName: string | null
+}
+
 const PLAN_OPTIONS: PlanCode[] = ['starter', 'pro', 'pro_rag']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -27,6 +34,8 @@ export function CreateOrgForm() {
   const [ownerName, setOwnerName] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
   const [mrr, setMrr] = useState<string>('')
+  const [scriptId, setScriptId] = useState<string>('')
+  const [catalog, setCatalog] = useState<CatalogScript[] | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<{
     name: string
@@ -35,6 +44,24 @@ export function CreateOrgForm() {
     emailDelivery?: 'sent' | 'mocked'
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Carrega o catálogo de scripts pro select obrigatório.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/admin/scripts/catalog')
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return
+        if (json?.data) setCatalog(json.data as CatalogScript[])
+        else setCatalog([])
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -57,6 +84,11 @@ export function CreateOrgForm() {
       }
       parsedMrr = n
     }
+    // Script é obrigatório — toda org nasce com 1 script ativo.
+    if (!scriptId) {
+      setError(t('errorScriptRequired'))
+      return
+    }
 
     setSubmitting(true)
     setError(null)
@@ -71,6 +103,7 @@ export function CreateOrgForm() {
           planCode,
           ownerName: ownerName.trim(),
           ownerEmail: ownerEmail.trim().toLowerCase(),
+          scriptId,
           ...(parsedMrr !== undefined ? { mrr: parsedMrr } : {}),
         }),
       })
@@ -92,6 +125,7 @@ export function CreateOrgForm() {
       setOwnerName('')
       setOwnerEmail('')
       setMrr('')
+      setScriptId('')
     } catch {
       setError(t('genericError'))
     } finally {
@@ -179,6 +213,34 @@ export function CreateOrgForm() {
           {PLAN_OPTIONS.map((code) => (
             <option key={code} value={code}>
               {t(`plan_${code}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
+          {t('scriptLabel')}
+        </span>
+        <select
+          required
+          value={scriptId}
+          onChange={(e) => setScriptId(e.target.value)}
+          disabled={submitting || catalog === null}
+          className="px-3 py-2 rounded-md border outline-none text-sm cursor-pointer"
+          style={{
+            background: 'var(--am-bg3)',
+            borderColor: 'var(--am-border2)',
+            color: 'var(--am-text)',
+          }}
+        >
+          <option value="" disabled>
+            {catalog === null ? t('scriptLoading') : t('scriptPlaceholder')}
+          </option>
+          {(catalog ?? []).map((s) => (
+            <option key={s.id} value={s.id}>
+              v{s.version} · {s.name}
+              {s.rubricName ? ` (${s.rubricName})` : ''}
             </option>
           ))}
         </select>

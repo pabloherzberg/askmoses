@@ -31,6 +31,10 @@ export interface DbCall {
   // GHL/Pepper CRM lead enrichment — added in migration 043
   lead_name: string | null
   lead_source: string | null
+  // Script usado na análise — added in migration 056. Opcional no tipo
+  // porque `select('*')` em bancos sem a migration aplicada não retorna a
+  // coluna; o mapper trata `undefined` como `null`.
+  script_id?: string | null
 }
 
 export interface CreateCallInput {
