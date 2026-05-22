@@ -1,6 +1,7 @@
 import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
 import { runGhlCallScoring } from "@/lib/services/ghl-call-scoring"
+import { sendGhlCoachingEmail } from "@/lib/services/ghl-coaching-email"
 import { downloadRecording, fetchRecordingUrl, GhlAuthError } from "@/lib/services/ghl-api"
 import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
@@ -108,7 +109,10 @@ export async function processGhlCall(
     const delay = TRANSCRIBE_RETRY_DELAYS_MS[attempt]
     if (delay > 0) await sleep(delay)
     try {
-      transcript = await transcribeAudioBuffer(audio.buffer, audio.mimeType)
+      transcript = await transcribeAudioBuffer(audio.buffer, audio.mimeType, {
+        trainerName: payload.userName ?? undefined,
+        clientName: payload.contactName ?? undefined,
+      })
       break
     } catch (err) {
       lastError = err
@@ -139,13 +143,27 @@ export async function processGhlCall(
     processingStatus: "transcribed",
   })
 
-  // Demo: roda scoring inline após transcribed. Best-effort — erros NÃO
-  // afetam o transcript salvo; UI mostra a call sem score se scoring
-  // falhar. Quando virar gargalo (timeout), mover pra job queue separada.
+  // Demo: roda scoring + coaching email inline após transcribed.
+  // Best-effort — erros NÃO afetam o transcript salvo. Erro no scoring
+  // pula o email (email só faz sentido se scoring rodou).
   try {
     await runGhlCallScoring(callId)
   } catch (err) {
     console.error("[ghl-pipeline] scoring failed (non-fatal)", {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
+    })
+    return  // sem score, não envia email
+  }
+
+  // Email é separado num catch próprio porque é "mais best-effort" ainda
+  // que scoring — mesmo se falhar, score já tá no DB e admin pode ver
+  // via /calls. Idempotência via calls.email_sent garante que retentativa
+  // manual depois não duplica.
+  try {
+    await sendGhlCoachingEmail(callId)
+  } catch (err) {
+    console.error("[ghl-pipeline] coaching email failed (non-fatal)", {
       callId,
       err: err instanceof Error ? err.message : String(err),
     })

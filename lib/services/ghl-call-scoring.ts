@@ -1,5 +1,7 @@
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric"
+import { dbGetScriptById, type DbScript } from "@/lib/db/scripts"
+import { createAdminClient } from "@/lib/supabase/admin"
 import {
   DEFAULT_SECTIONS,
   buildDefaultSystemPrompt,
@@ -33,14 +35,48 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     throw new Error(`runGhlCallScoring: call ${callId} has no org_id`)
   }
 
-  // Tenta rubric default da org. Se não tiver, usa DEFAULT_SECTIONS como
-  // fallback — pior caso a call aparece com sections genéricas em vez de
-  // não ter score nenhum.
-  let rubricData = null
+  // Prioridade de resolução (alinhado com /api/analyze):
+  //   1. Script ATIVO da org (via org_scripts_current). Owner aprovou esse
+  //      script — é o playbook oficial pelo qual as calls são avaliadas.
+  //   2. Rubric default da org (fallback se org não tem script ativo).
+  //   3. DEFAULT_SECTIONS hardcoded (fallback se nem rubric default).
+  //
+  // Script tem sections (scored items); rubric vira "framework" no prompt
+  // (contexto pra LLM, não scored).
+  let script: DbScript | null = null
+  let rubricData: Awaited<ReturnType<typeof dbGetDefaultRubricWithCriteria>> = null
+
+  // 1. Script ativo via view org_scripts_current
+  try {
+    const supabase = createAdminClient()
+    const { data: current } = await supabase
+      .from("org_scripts_current")
+      .select("script_id")
+      .eq("org_id", call.org_id)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (current?.script_id) {
+      // orgId="" porque scripts podem ter org_id=null (templates globais).
+      // A autorização org→script já foi feita pela linha org_scripts.
+      script = await dbGetScriptById(current.script_id as string, "")
+    }
+  } catch (err) {
+    console.warn("[ghl-scoring] active script lookup failed, falling back", {
+      callId,
+      orgId: call.org_id,
+      err: err instanceof Error ? err.message : String(err),
+    })
+  }
+
+  // 2. Rubric default (sempre tenta — vira framework quando script existe,
+  //    ou source primária quando não tem script).
   try {
     rubricData = await dbGetDefaultRubricWithCriteria(call.org_id)
   } catch (err) {
-    console.warn("[ghl-scoring] rubric fetch failed, using defaults", {
+    console.warn("[ghl-scoring] rubric fetch failed", {
       callId,
       orgId: call.org_id,
       err: err instanceof Error ? err.message : String(err),
@@ -52,6 +88,19 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   const llmModel = rubricData?.rubric.llm_model ?? null
 
   const scoredItems: ScoredItem[] = (() => {
+    // 1. Script.sections — owner aprovou, weights validados pela UI.
+    if (script && script.sections.length > 0) {
+      return script.sections.map((s) => ({
+        name: s.name,
+        description: [s.instructions, s.tips ? `Tip: ${s.tips}` : ""]
+          .filter(Boolean)
+          .join(" — "),
+        weight: typeof s.weight === "number" ? s.weight : undefined,
+        critical: Boolean(s.critical),
+        source: "script" as const,
+      }))
+    }
+    // 2. Rubric.criteria como scored (sem script ativo).
     const criteria = rubricData?.criteria ?? []
     if (criteria.length > 0) {
       return criteria.map((c) => ({
@@ -68,6 +117,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
         source: "rubric" as const,
       }))
     }
+    // 3. Último fallback: defaults genéricos.
     return DEFAULT_SECTIONS.map((s) => ({
       name: s.name,
       description: s.description,
@@ -77,11 +127,15 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     }))
   })()
 
-  const framework =
-    rubricData?.criteria.map((c) => ({
-      name: c.name,
-      description: c.description ?? "",
-    })) ?? []
+  // Framework = rubric.criteria quando script existe (rubric vira contexto).
+  // Quando não tem script, sections JÁ são rubric.criteria — framework vazio
+  // pra evitar duplicar no prompt.
+  const framework = script
+    ? (rubricData?.criteria.map((c) => ({
+        name: c.name,
+        description: c.description ?? "",
+      })) ?? [])
+    : []
 
   const result = await scoreTranscript({
     transcript: call.transcript,
@@ -96,6 +150,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
 
   await dbUpdateGhlCallPipeline(callId, {
     rubricId,
+    scriptId: script?.id ?? null,
     overallScore: result.overallScore,
     detectedOutcome: result.detectedOutcome,
     summary: result.summary,
@@ -112,7 +167,11 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   console.info("[ghl-scoring] scored call", {
     callId,
     orgId: call.org_id,
+    scriptId: script?.id ?? null,
+    rubricId,
+    source: script ? "script" : (rubricData ? "rubric" : "default"),
     overallScore: result.overallScore,
+    detectedOutcome: result.detectedOutcome,
     sectionsCount: result.sections.length,
     costUsd: result.costUsd,
   })
