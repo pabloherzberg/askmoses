@@ -788,7 +788,10 @@
       "copy": "Copier",
       "copied": "Copié",
       "back": "← Retour au panel",
-      "goToSubscription": "Override d'abonnement →"
+      "goToSubscription": "Override d'abonnement →",
+      "authErrorBannerTitle": "Échec d'authentification GHL",
+      "authErrorBannerBody": "Le Private Integration Token (PIT) a probablement été régénéré dans Pepper. Collez le nouveau token dans le champ \"Access token GHL (PIT)\" ci-dessous et cliquez sur Enregistrer — l'alerte disparaîtra automatiquement.",
+      "authErrorBannerLastSeen": "Dernier échec enregistré"
     },
     "createOrg": {
       "eyebrow": "Provisionnement",

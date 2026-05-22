@@ -16,6 +16,7 @@ export interface OrgGhlAdminView {
   hasWebhookSecret: boolean
   enabled: boolean
   configuredAt: string | null
+  lastAuthErrorAt: string | null
 }
 
 function maskSecret(value: string | null): string | null {
@@ -77,7 +78,7 @@ export async function dbGetOrgGhlAdminView(
   const { data, error } = await supabase
     .from('organizations')
     .select(
-      'id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled, ghl_configured_at',
+      'id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled, ghl_configured_at, ghl_last_auth_error_at',
     )
     .eq('id', orgId)
     .maybeSingle()
@@ -99,6 +100,24 @@ export async function dbGetOrgGhlAdminView(
     hasWebhookSecret: webhookSecret !== null && webhookSecret !== '',
     enabled: Boolean(data.ghl_integration_enabled),
     configuredAt: (data.ghl_configured_at as string | null) ?? null,
+    lastAuthErrorAt: (data.ghl_last_auth_error_at as string | null) ?? null,
+  }
+}
+
+/**
+ * Marca timestamp da última falha de auth GHL pra esta org. Usado pelo
+ * banner em /admin/.../integrations/ghl. Best-effort: erros são logados,
+ * não propagados — pipeline não pode quebrar por causa de update de
+ * observabilidade.
+ */
+export async function dbMarkOrgGhlAuthError(orgId: string): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('organizations')
+    .update({ ghl_last_auth_error_at: new Date().toISOString() })
+    .eq('id', orgId)
+  if (error) {
+    console.error('[organizations] failed to mark ghl auth error', { orgId, err: error.message })
   }
 }
 
@@ -124,7 +143,13 @@ export async function dbUpdateOrgGhlConfig(
 
   const patch: Record<string, unknown> = {}
   if (input.locationId !== undefined) patch.ghl_location_id = input.locationId
-  if (input.accessToken !== undefined) patch.ghl_access_token = input.accessToken
+  if (input.accessToken !== undefined) {
+    patch.ghl_access_token = input.accessToken
+    // Token novo (string não-nula) limpa marca de erro de auth — o banner
+    // some no próximo load do admin form. Token=null (limpar) também limpa,
+    // porque a integração tá sendo desativada.
+    patch.ghl_last_auth_error_at = null
+  }
   if (input.newWebhookSecret !== undefined) patch.ghl_webhook_secret = input.newWebhookSecret
   if (input.enabled !== undefined) patch.ghl_integration_enabled = input.enabled
 

@@ -7,6 +7,12 @@
 
 ---
 
+> **Code-drift note (updated 2026-05-22):** Steps 1-4 below describe the **actual code in production**, not the original implementation spec. The implementation diverged from the spec on several important points: auth check happens **before** body parse, idempotency uses a deterministic SHA-256 hash (not `Date.now()`), access tokens are **per-org in the DB** (not a global env var), background processing uses Next 15's `after()` (not `import('next/server').waitUntil`), and the current pipeline ends at `transcribed` (scoring/coaching email are future features).
+>
+> If you're making structural changes, edit the code first and update this doc in the same PR — don't trust outdated examples in older revisions of this file.
+
+---
+
 ## Infrastructure Constraints
 
 | Platform | Plan | Key Limits |
@@ -18,328 +24,182 @@
 
 ---
 
-## GHL Credentials (Already Configured)
+## GHL Credentials
 
-| Item | Value |
+| Item | Value / Source |
 |---|---|
 | App name | AskMosesInt (API v2.0) |
-| Location ID | `l2VVQax2pxKTUZWYYsW0` |
-| Access Token | `YOUR_GHL_ACCESS_TOKEN` |
-| API Base | `https://services.leadconnectorhq.com/v2` |
+| Location ID | **Per-org**, stored in `organizations.ghl_location_id`. Sent in the webhook request via `X-GHL-Location-Id` header (the handler uses the header for org resolution, not a payload field). |
+| Access Token | **Per-org**, stored in the org record. Pipeline reads it for each call — no global env var. |
+| API Base | `https://services.leadconnectorhq.com` (no `/v2` path — version is pinned via `Version: 2021-04-15` header) |
 | Scopes | conversations, objects/schema, objects/record, medias, templates, tags, redirects, products, **contacts, opportunities, users** (all .readonly) |
 | Workflow | "Call Completion Notification" → Send to Ask Moses → Email Check Confirmation |
 
 ---
 
-## Webhook Payload (Already Configured in GHL)
+## Webhook Payload (How GHL Actually Sends It)
 
-These fields are already configured in the "Send to Ask Moses" webhook action:
+**Important — actual structure differs from what's configured.** Fields you add to GHL's "Custom Data" UI are nested under `customData` in the request body. The root of the body has GHL's native fields (contact, location, workflow, message, etc.). The handler reads from `body.customData`, NOT from `body` directly.
 
-```json
+### Configure in GHL Pepper (Custom Data tab of the webhook action)
+
+| Key | Value | Notes |
+|---|---|---|
+| `type` | `callCompleted` | **Literal string, no quotes, no merge tag** |
+| `contactId` | `{{contact.id}}` | |
+| `userId` | `{{phoneCall.user.id}}` | |
+| `callStatus` | `{{phoneCall.callStatus}}` | |
+| `callDirection` | `{{phoneCall.direction}}` | |
+| `userName` | `{{phoneCall.user.name}}` | |
+| `userEmail` | `{{user.email}}` | |
+| `contactName` | `{{contact.name}}` | |
+| `duration` | `{{phoneCall.duration}}` | |
+| `contactSource` | `{{contact.source}}` | |
+| `contactEmail` | `{{contact.email}}` | |
+
+When typing `callCompleted` in the Pepper Value field, do **not** wrap it in quotes — GHL treats whatever you type as the literal string value. Typing `"callCompleted"` stores the quotes as part of the string and the handler rejects it (`Unsupported webhook type: "callCompleted"`).
+
+### What GHL actually sends (root has native fields, custom data is nested)
+
+```jsonc
 {
-  "type": "callCompleted",
-  "contactId": "{{contact.id}}",
-  "userId": "{{phoneCall.user.id}}",
-  "callStatus": "{{phoneCall.callStatus}}",
-  "callDirection": "{{phoneCall.direction}}",
-  "transcript": "{{voice_ai.transcript}}",
-  "userName": "{{phoneCall.user.name}}",
-  "userEmail": "{{user.email}}",
-  "contactName": "{{contact.name}}",
-  "duration": "{{phoneCall.duration}}",
-  "contactSource": "{{contact.source}}",
-  "contactEmail": "{{contact.email}}"
+  // Native GHL fields at root — we don't control these:
+  "contact_id": "xSCSxSknhx4hQwUEb9GV",
+  "first_name": "...", "last_name": "...", "email": "...",
+  "location": { "id": "<locationId>", "name": "...", "address": "..." },
+  "workflow": { "id": "...", "name": "..." },
+  "message": { "type": 1 },
+  "contact": { /* full contact object */ },
+
+  // Fields we added via Custom Data — nested under customData:
+  "customData": {
+    "type": "callCompleted",
+    "contactId": "xSCSxSknhx4hQwUEb9GV",
+    "userId": "...",
+    "callStatus": "completed",
+    "callDirection": "outbound",
+    "userName": "Sarah Schaefer",
+    "userEmail": "...",
+    "contactName": "...",
+    "duration": "34",
+    "contactSource": "...",
+    "contactEmail": "..."
+  }
 }
 ```
 
-**Note:** `recordingUrl` is NOT available as a workflow variable. The backend fetches it via GHL Conversations API using the `contactId`. **Audio is mandatory** — all transcription is done via OpenAI Whisper. GHL's built-in transcript is not used due to quality issues.
+The handler validates `body.customData.type === "callCompleted"` and reads the other fields from the same `customData` object. The whole raw envelope (root + customData) is persisted to `calls.ghl_payload` for debugging — `location.id` and `workflow.name` at root are useful when investigating.
 
-**Important:** The `transcript` field in the webhook payload (`{{voice_ai.transcript}}`) is **ignored**. We always download the audio and run Whisper ourselves for consistent, high-quality transcription.
+**Note:** `recordingUrl` is NOT available as a Pepper workflow variable. The backend fetches it via GHL Conversations API using the `contactId`. **Audio is mandatory** — all transcription is done via OpenAI Whisper. GHL's built-in transcript is not used due to quality issues, so the `transcript` Custom Data field is omitted (handler doesn't read it anyway).
 
 ---
 
 ## Step-by-Step Implementation
 
-### STEP 1 — Create the webhook endpoint
+### STEP 1 — Webhook endpoint
 
-**File:** `app/api/webhooks/ghl/route.ts`
+**File:** [`app/api/webhooks/ghl/route.ts`](../app/api/webhooks/ghl/route.ts)
 
-```typescript
-import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+Single POST handler. Runtime: `nodejs`, `maxDuration: 300` (Vercel Teams Fluid Compute supports up to 800s; 300s is comfortable headroom for download + Whisper).
 
-export const maxDuration = 300; // 5 minutes — Vercel Teams allows up to 800s
+**Request contract:**
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role for server-side ops
-);
+- Method: `POST`
+- Path: `/api/webhooks/ghl` (single URL for all orgs)
+- Required headers:
+  - `X-GHL-Location-Id` — identifies the org. Looked up against `organizations.ghl_location_id`.
+  - `X-AskMoses-Secret` — per-org secret, validated with `crypto.timingSafeEqual`.
+- Body: JSON. Custom Data fields live under `body.customData` (see "Webhook Payload" section above for full shape).
 
-export async function POST(req: NextRequest) {
-  // 1. Parse payload
-  const payload = await req.json();
+**Behavior, in order:**
 
-  // 2. Validate webhook (check secret header)
-  const secret = req.headers.get('X-AskMoses-Secret');
-  if (secret !== process.env.GHL_WEBHOOK_SECRET) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+1. Read `X-GHL-Location-Id` header → 400 if missing.
+2. Look up org config (`dbGetOrgGhlConfigByLocation`) → 404 if location unknown or integration disabled.
+3. Validate `X-AskMoses-Secret` against the org's stored secret → 401 if mismatch.
+4. Parse body as `GhlRawWebhookBody` → 400 on invalid JSON.
+5. Extract `body.customData` → 400 if missing.
+6. Normalize `customData.type` (`.trim().replace(/^"+|"+$/g, "")`) and require `=== "callCompleted"` → 400 with `console.warn` dumping `customDataKeys` + `rootKeys` if not.
+7. Require non-empty `customData.contactId` → 400.
+8. Build deterministic `externalCallId` via SHA-256 of `contactId | userId | callStatus | callDirection | duration` ([`buildExternalCallId`](../lib/services/ghl-helpers.ts)). Same payload retried by GHL hits the same hash → upsert returns `isNew: false` and the handler responds `{ status: "duplicate" }` instead of double-processing.
+9. Upsert the call row, persisting the **full raw body** (root + customData) to `ghl_payload` for debugging.
+10. Dispatch the async pipeline via Next 15's `after(processGhlCall(...))` from `next/server`. **Do not use** dynamic `import('next/server').waitUntil` — that pattern was in the original spec but `after` is the correct App Router API.
+11. Return `{ data: { callId, status: "received" | "duplicate" }, error: null }` immediately.
 
-  // 3. Check idempotency — has this call been processed?
-  // Use a combination of contactId + timestamp as external_call_id
-  // (GHL doesn't send a unique callId in custom webhook data)
-  const externalId = `${payload.contactId}_${payload.callStatus}_${Date.now()}`;
-  // Better: if you find a callId in standard data, use that
+**Response shape (success):**
 
-  // 4. Save call as "pending" in Supabase
-  const { data: call, error } = await supabase
-    .from('calls')
-    .insert({
-      org_id: await resolveOrgId(payload), // map GHL locationId → org
-      lead_name: normalizeEmpty(payload.contactName),
-      caller_name: normalizeEmpty(payload.userName),
-      lead_source: normalizeSource(payload.contactSource),
-      call_type: detectCallType(payload.callDirection, payload.contactId),
-      duration: parseInt(payload.duration) || null,
-      external_call_id: externalId,
-      processing_status: 'pending',
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Failed to save call:', error);
-    return Response.json({ error: 'Failed to save' }, { status: 500 });
-  }
-
-  // 5. Return 200 immediately to GHL (prevents timeout/retry)
-  // 6. Process in background via waitUntil
-  const { waitUntil } = await import('next/server');
-  waitUntil(processCallPipeline(call.id, payload));
-
-  return Response.json({ status: 'received', callId: call.id });
-}
+```jsonc
+{ "data": { "callId": "<uuid>", "status": "received" }, "error": null }
 ```
 
-**Environment variables to add in Vercel Dashboard:**
-```
-GHL_WEBHOOK_SECRET=amws_2026_askmoses_secret  (share with GHL webhook headers)
-GHL_ACCESS_TOKEN=pit-d0c072b8-8a73-43cf-982b-a22b457a0d29
-GHL_API_BASE=https://services.leadconnectorhq.com/v2
-```
-
-**Also add in GHL webhook headers:**
-```
-X-AskMoses-Secret: amws_2026_askmoses_secret
-```
+**Response shape (error):** `{ "data": null, "error": { "message": "...", "code": <httpCode> } }`. Status codes: 400 (validation), 401 (auth), 404 (unknown location), 500 (DB / server).
 
 ---
 
-### STEP 2 — Helper functions
+### STEP 2 — Helpers and types
 
-**File:** `lib/services/ghl-helpers.ts`
+**File:** [`lib/services/ghl-helpers.ts`](../lib/services/ghl-helpers.ts)
 
-```typescript
-// Normalize empty strings to null (GHL sends "" for missing fields)
-export function normalizeEmpty(value: string | null | undefined): string | null {
-  if (!value || value.trim() === '') return null;
-  return value.trim();
-}
+Pure functions and types used by the handler. **No org resolution here** — that's done in the handler via header.
 
-// Normalize lead source — unmapped values become "other"
-export function normalizeSource(source: string | null | undefined): string | null {
-  if (!source || source.trim() === '') return null;
-  const valid = ['facebook', 'google', 'organic', 'referral', 'other'];
-  const normalized = source.trim().toLowerCase();
-  return valid.includes(normalized) ? normalized : 'other';
-}
-
-// Detect call type from GHL direction
-export function detectCallType(
-  direction: string | null,
-  contactId: string | null
-): string {
-  if (!direction) return 'unknown';
-  if (direction === 'inbound') {
-    // TODO: check if contactId has prior calls → warm_inbound vs cold_inbound
-    // For now, default to cold_inbound for inbound calls
-    return 'cold_inbound';
-  }
-  return 'scheduled_followup'; // outbound = scheduled
-}
-
-// Map GHL locationId to AskMoses org_id
-export async function resolveOrgId(payload: any): Promise<string> {
-  // For now: single org mapping
-  // TODO: when multi-tenant, lookup org by GHL locationId
-  const { data } = await supabase
-    .from('organizations')
-    .select('id')
-    .eq('ghl_location_id', payload.locationId || 'l2VVQax2pxKTUZWYYsW0')
-    .single();
-  return data?.id || process.env.DEFAULT_ORG_ID!;
-}
-```
+| Symbol | What it does |
+|---|---|
+| `GhlWebhookPayload` | TypeScript type representing the shape of `body.customData` (the fields configured in Pepper). |
+| `GhlRawWebhookBody` | Envelope type — has `customData?: GhlWebhookPayload`, plus native GHL root fields (`location`, `workflow`). Used by the handler for body typing. |
+| `normalizeEmpty(value)` | Trims whitespace; returns `null` for empty or whitespace-only strings. |
+| `normalizeSource(source)` | Lowercases and maps to `LeadSource` enum (`facebook` \| `google` \| `organic` \| `referral` \| `other`). Unknown values → `"other"`. |
+| `parseDuration(value)` | Parses `string \| number` to integer seconds or `null`. |
+| `detectCallType(direction, contactId)` | Maps GHL `direction` to internal call type. `inbound` → `cold_inbound` (TODO: distinguish warm vs cold via history); other → `scheduled_followup`. |
+| `buildExternalCallId(payload)` | Deterministic SHA-256 hash of stable payload fields (no timestamp). Returns `ghl_<64-hex>`. Used as `external_call_id` for the UNIQUE INDEX-backed idempotency. |
 
 ---
 
 ### STEP 3 — Background pipeline
 
-**File:** `lib/services/call-pipeline.ts`
+**File:** [`lib/services/ghl-call-pipeline.ts`](../lib/services/ghl-call-pipeline.ts)
 
-This is the core. Runs in background via `waitUntil()`. Has up to 800s on Vercel Teams.
+Triggered by `after(processGhlCall(callId, payload, options))` from the handler. Receives the **per-org access token** via `options.accessToken` — no global env var.
 
-```typescript
-export async function processCallPipeline(callId: string, payload: any) {
-  try {
-    // Update status
-    await updateCallStatus(callId, 'processing');
+**Current pipeline ends at `transcribed`.** It deliberately does **not** do scoring, classification, or coaching email — those are future features that will plug in at the `transcribed` terminal state. The original spec described all five stages, but the implementation was cut to land transcription cleanly first.
 
-    // ── STEP A: Get audio and transcribe via Whisper ──
-    // GHL transcript is NOT used (quality too low). Always Whisper.
-    const audioResult = await fetchAndStoreRecording(payload.contactId, callId, orgId);
-    
-    if (!audioResult) {
-      // No audio found in GHL → pipeline stops. Cannot score without transcript.
-      await updateCallStatus(callId, 'no_recording');
-      return;
-    }
+**Terminal states:**
 
-    // Save recording URL
-    await supabase
-      .from('calls')
-      .update({ recording_url: audioResult.blobUrl })
-      .eq('id', callId);
+| `processingStatus` | Meaning |
+|---|---|
+| `transcribed` | Success. Transcript stored in `calls.transcript`, `transcriptSource: "whisper"`. |
+| `no_recording` | `fetchRecordingUrl` threw or returned null. No audio available in GHL for the contact (yet — see "retry consideration" below). |
+| `transcription_failed` | Audio downloaded but Whisper failed 3 times (delays `0, 1500, 4000` ms) or download itself failed. |
+| `webhook_failed` | Pipeline crashed unexpectedly — handler catches and marks this state. |
 
-    // Transcribe via Whisper
-    const transcript = await transcribeWithWhisper(audioResult.blobUrl);
-    
-    if (!transcript) {
-      await updateCallStatus(callId, 'transcription_failed');
-      return;
-    }
+**Side effect on each terminal failure:** the pipeline calls [`notifyPipelineFailure`](../lib/services/pipeline-alerts.ts) (best-effort POST to `PIPELINE_ALERT_WEBHOOK_URL` if configured). Pipeline keeps running if the alert call fails — it's purely observability.
 
-    // Save transcript
-    await supabase
-      .from('calls')
-      .update({ transcript, transcript_source: 'whisper' })
-      .eq('id', callId);
+**Vercel Blob is not used.** Whisper receives the audio `Buffer` directly via `transcribeAudioBuffer(audio.buffer, audio.mimeType)`. No `BLOB_READ_WRITE_TOKEN` required.
 
-    // ── STEP B: Detect call type from transcript ──
-    const callClassification = await classifyCall(transcript);
-    // Returns: 'sales_call' | 'non_sales' | 'rescheduling' | 'support'
-
-    if (callClassification === 'non_sales' || callClassification === 'support') {
-      // Skip scoring for non-sales calls
-      await supabase
-        .from('calls')
-        .update({
-          call_subtype: callClassification,
-          processing_status: 'completed_no_score',
-        })
-        .eq('id', callId);
-      return;
-    }
-
-    // ── STEP C: Score against rubric ──
-    const orgId = await getCallOrgId(callId);
-    const rubric = await getDefaultRubric(orgId);
-
-    if (!rubric) {
-      await updateCallStatus(callId, 'no_rubric');
-      return;
-    }
-
-    // Assemble dynamic prompt from rubric
-    const prompt = assemblePrompt(rubric, transcript);
-
-    // Call LLM (model from rubric.llm_model or default)
-    const aiResponse = await callLLM(prompt, rubric.llm_model || 'gpt-4o-mini');
-
-    // Validate response — strip sections not in rubric
-    const validatedSections = validateSections(aiResponse.sections, rubric.sections);
-
-    // Calculate overall score (weighted average)
-    const overallScore = calculateOverallScore(validatedSections, rubric.sections);
-
-    // ── STEP D: Save results ──
-    await supabase
-      .from('calls')
-      .update({
-        sections_json: validatedSections,
-        overall_score: overallScore,
-        suggested_outcome: aiResponse.suggested_outcome || null,
-        summary: aiResponse.summary,
-        strengths: aiResponse.strengths,
-        improvements: aiResponse.improvements,
-        call_subtype: callClassification,
-        processing_status: 'completed',
-      })
-      .eq('id', callId);
-
-    // ── STEP E: Generate coaching email ──
-    await generateCoachingEmail(callId, rubric);
-
-  } catch (error) {
-    console.error(`Pipeline failed for call ${callId}:`, error);
-    await updateCallStatus(callId, 'analysis_failed');
-  }
-}
-```
+**Retry consideration:** `fetchRecordingUrl` does **not** retry today. GHL processes call audio asynchronously, so a webhook that fires immediately on call end can hit before the recording is ready. Adding exponential backoff is on the follow-up list — for now, expect occasional spurious `no_recording`.
 
 ---
 
-### STEP 4 — Fetch recording URL via GHL API (if needed)
+### STEP 4 — GHL API client
 
-**File:** `lib/services/ghl-api.ts`
+**File:** [`lib/services/ghl-api.ts`](../lib/services/ghl-api.ts)
 
-Only called when `payload.transcript` is empty — we need the audio.
+Two exported functions. Base URL comes from `GHL_API_BASE` env (default `https://services.leadconnectorhq.com`, no `/v2` — API version is pinned via `Version: 2021-04-15` header on every request).
 
-```typescript
-const GHL_API = process.env.GHL_API_BASE!;
-const GHL_TOKEN = process.env.GHL_ACCESS_TOKEN!;
+**`fetchRecordingUrl(contactId, accessToken)` → `Promise<RecordingRef | null>`**
 
-export async function fetchRecordingUrl(contactId: string): Promise<string | null> {
-  try {
-    // Search conversations for this contact to find the call recording
-    const res = await fetch(
-      `${GHL_API}/conversations/search?contactId=${contactId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${GHL_TOKEN}`,
-          'Version': '2021-04-15',
-        },
-      }
-    );
-    const data = await res.json();
+1. `GET /conversations/search?contactId=<id>&limit=5` — lists up to 5 conversations for the contact.
+2. For each conversation: `GET /conversations/<id>/messages`. Filters messages by `isCallMessage` (handles both string `"CALL"` and numeric type codes `25` / `26` for `CALL_INBOUND` / `CALL_OUTBOUND`).
+3. Sorts call messages by `dateAdded` DESC (most recent first).
+4. For each: tries `meta.call.recordingUrl`, then iterates `attachments[]` looking for a URL.
+5. Returns the first hit as `{ url, messageId, conversationId }`, or `null` if nothing matches.
 
-    // Find the most recent call message with a recording
-    const conversations = data.conversations || [];
-    for (const conv of conversations) {
-      const messagesRes = await fetch(
-        `${GHL_API}/conversations/${conv.id}/messages`,
-        {
-          headers: {
-            'Authorization': `Bearer ${GHL_TOKEN}`,
-            'Version': '2021-04-15',
-          },
-        }
-      );
-      const messagesData = await messagesRes.json();
-      const callMessage = messagesData.messages?.find(
-        (m: any) => m.type === 'CALL' && m.attachments?.length > 0
-      );
-      if (callMessage) {
-        return callMessage.attachments[0]?.url || null;
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error('Failed to fetch recording URL:', error);
-    return null;
-  }
-}
-```
+**Note on the matching logic:** today the function picks the most recent call message with a recording — it doesn't validate against the webhook's `duration` or timing window. If a contact has multiple recent calls, the latest one wins (which is correct in the common case). Refining the match by timing/duration is on the follow-up list.
+
+**`downloadRecording(url, accessToken)` → `Promise<DownloadedRecording>`**
+
+1. First attempts the fetch with `Authorization: Bearer <token>` (some GHL recording URLs are API endpoints in disguise and require auth).
+2. On `401` or `403`, retries **without** the auth header (S3 pre-signed URLs reject the Bearer and fail otherwise).
+3. Enforces a 200 MB cap (defensive — both via `content-length` header and after read).
+4. Returns `{ buffer, mimeType, byteLength }`. MIME is read from `content-type` or defaults to `audio/mpeg`.
 
 ---
 
@@ -382,12 +242,12 @@ UPDATE organizations
 
 Add in **Vercel Dashboard → Project Settings → Environment Variables:**
 
-| Variable | Value | Environments |
-|---|---|---|
-| `GHL_WEBHOOK_SECRET` | `amws_2026_askmoses_secret` | Production, Preview |
-| `GHL_ACCESS_TOKEN` | `pit-d0c072b8-8a73-43cf-982b-a22b457a0d29` | Production, Preview |
-| `GHL_API_BASE` | `https://services.leadconnectorhq.com/v2` | Production, Preview |
-| `DEFAULT_ORG_ID` | (UUID of the default org in Supabase) | Production, Preview |
+| Variable | Value | Required | Environments |
+|---|---|---|---|
+| `GHL_API_BASE` | `https://services.leadconnectorhq.com` (no `/v2`) | Optional — defaults to this | Production, Preview |
+| `PIPELINE_ALERT_WEBHOOK_URL` | Slack incoming webhook URL (or compatible endpoint) | Optional — no alerts emitted if unset | Production, Preview |
+
+**GHL credentials are per-org, not env vars.** Each org's `ghl_location_id`, `accessToken`, and webhook secret are stored in `organizations` (set via the admin panel at `/admin/organizations/.../integrations/ghl`). There are no global `GHL_WEBHOOK_SECRET`, `GHL_ACCESS_TOKEN`, or `DEFAULT_ORG_ID` env vars.
 
 **Also verify these already exist:**
 - `SUPABASE_URL`
@@ -458,37 +318,35 @@ GHL → Workflow → Execution Logs
 
 ---
 
-## Pipeline Timing (Expected)
+## Pipeline Timing (Expected — current scope: ends at `transcribed`)
 
-| Step | Time |
-|---|---|
-| Receive + validate + save | <1s |
-| Return 200 to GHL | <1s |
-| Fetch recording via GHL API | 2-5s |
-| Download audio to Vercel Blob | 5-15s |
-| Whisper transcription (30 min call) | 60-90s |
-| Detect call type | 2-5s |
-| LLM scoring | 10-30s |
-| Calculate + save | <1s |
-| Generate email | 2-5s |
-| **Total** | **~85-155s** |
+| Step | Time | Stage |
+|---|---|---|
+| Receive + validate + upsert | <1s | sync (handler) |
+| Return 200 to GHL | <1s | sync (handler) |
+| Fetch recording via GHL API (search + messages) | 2-5s | async (pipeline) |
+| Download audio (Bearer or S3 pre-signed) | 5-15s | async (pipeline) |
+| Whisper transcription (30 min call, with up to 3 retries) | 60-90s | async (pipeline) |
+| **Total to `transcribed`** | **~70-110s** | |
 
-Well within the 300s default / 800s max of Vercel Teams with Fluid Compute.
+Well within the 300s `maxDuration` of the route (Vercel Teams Fluid Compute supports 800s).
+
+> Future stages (classification, rubric scoring, coaching email) will add ~15-40s and ~$0.03 per call when implemented.
 
 ---
 
-## Cost Per Call
+## Cost Per Call (current scope)
 
 | Component | Cost |
 |---|---|
 | Whisper transcription (30 min) | ~$0.18 |
-| LLM scoring | ~$0.02 |
-| Vercel compute (~120s) | ~$0.003 |
-| Vercel Blob storage | ~$0.0003 |
-| **Total per call** | **~$0.20** |
-| **At 500 calls/month** | **~$100/mo** |
+| Vercel compute (~90s) | ~$0.002 |
+| **Total per call** | **~$0.18** |
+| **At 500 calls/month** | **~$90/mo** |
 
-All transcription runs through OpenAI Whisper. GHL transcript is not used.
+All transcription runs through OpenAI Whisper. GHL transcript is not used. Vercel Blob is not used in the current pipeline — audio is streamed directly to Whisper as a Buffer.
+
+> Future LLM scoring + coaching email will add ~$0.02-0.03 per call.
 
 ---
 
@@ -499,18 +357,19 @@ app/
   api/
     webhooks/
       ghl/
-        route.ts          ← STEP 1: Webhook endpoint
+        route.ts                ← STEP 1: Webhook endpoint
 lib/
   services/
-    ghl-helpers.ts        ← STEP 2: Normalize, detect, resolve
-    ghl-api.ts            ← STEP 4: Fetch recording URL
-    call-pipeline.ts      ← STEP 3: Background processing pipeline
-    scoring.ts            ← Existing: calculateOverallScore
-    prompt-assembler.ts   ← Existing: assemblePrompt from rubric
-    coaching-email.ts     ← Existing: generateCoachingEmail
+    ghl-helpers.ts              ← STEP 2: Types, normalize, hash for idempotency
+    ghl-api.ts                  ← STEP 4: fetchRecordingUrl, downloadRecording
+    ghl-call-pipeline.ts        ← STEP 3: Async pipeline (ends at `transcribed`)
+    pipeline-alerts.ts          ← Best-effort Slack alert for pipeline failures
+    whisper.ts                  ← transcribeAudioBuffer wrapper
 scripts/
-  ghl_integration.sql     ← STEP 5: Schema migration
+  ghl_integration.sql           ← STEP 5: Schema migration
 ```
+
+**Future files** (when scoring / coaching email land): `scoring.ts`, `prompt-assembler.ts`, `coaching-email.ts`, plus a step that plugs into the pipeline at the `transcribed` terminal state.
 
 ---
 

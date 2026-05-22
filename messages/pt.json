@@ -788,7 +788,10 @@
       "copy": "Copiar",
       "copied": "Copiado",
       "back": "← Voltar ao painel",
-      "goToSubscription": "Override de assinatura →"
+      "goToSubscription": "Override de assinatura →",
+      "authErrorBannerTitle": "Falha de autenticação na GHL",
+      "authErrorBannerBody": "Provavelmente o Private Integration Token (PIT) foi rotacionado no Pepper. Cole o token novo no campo \"Access token do GHL (PIT)\" abaixo e clique Salvar — o aviso desaparece automaticamente.",
+      "authErrorBannerLastSeen": "Última falha registrada"
     },
     "createOrg": {
       "eyebrow": "Provisionamento",
