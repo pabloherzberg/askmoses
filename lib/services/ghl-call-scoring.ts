@@ -164,6 +164,9 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     scriptId: script?.id ?? null,
     overallScore: result.overallScore,
     detectedOutcome: result.detectedOutcome,
+    // GHL pipeline não tem humano marcando outcome — espelha o detectado
+    // pro campo que a UI lê (lib/services/calls.ts:107).
+    callOutcome: result.detectedOutcome,
     summary: result.summary,
     strengths: result.strengths,
     improvements: result.improvements,
