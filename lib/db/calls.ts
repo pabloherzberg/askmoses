@@ -340,6 +340,9 @@ export interface UpdateGhlPipelineInput {
   scriptId?: string | null
   overallScore?: number | null
   detectedOutcome?: string | null
+  /** Em calls vindas de webhook (sem revisão humana), espelha
+   *  detectedOutcome — a UI lê esse campo como "outcome final". */
+  callOutcome?: string | null
   summary?: string | null
   strengths?: string[] | null
   improvements?: string[] | null
@@ -369,6 +372,7 @@ export async function dbUpdateGhlCallPipeline(
   if (input.scriptId !== undefined) patch.script_id = input.scriptId
   if (input.overallScore !== undefined) patch.overall_score = input.overallScore
   if (input.detectedOutcome !== undefined) patch.detected_outcome = input.detectedOutcome
+  if (input.callOutcome !== undefined) patch.call_outcome = input.callOutcome
   if (input.summary !== undefined) patch.summary = input.summary
   if (input.strengths !== undefined) patch.strengths = input.strengths
   if (input.improvements !== undefined) patch.improvements = input.improvements
