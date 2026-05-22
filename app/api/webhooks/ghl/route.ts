@@ -3,12 +3,13 @@ import { after, type NextRequest, NextResponse } from "next/server"
 import { dbUpsertGhlCall, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
+import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 import {
   buildExternalCallId,
   normalizeEmpty,
   normalizeSource,
   parseDuration,
-  type GhlWebhookPayload,
+  type GhlRawWebhookBody,
 } from "@/lib/services/ghl-helpers"
 
 export const runtime = "nodejs"
@@ -44,14 +45,31 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Parse + validação mínima do payload.
-  let payload: GhlWebhookPayload
+  //    O Pepper aninha os campos de Custom Data em `customData`. Outros
+  //    campos no root vêm nativos do GHL (location, workflow, etc.).
+  let rawBody: GhlRawWebhookBody
   try {
-    payload = (await req.json()) as GhlWebhookPayload
+    rawBody = (await req.json()) as GhlRawWebhookBody
   } catch {
     return jsonError("Invalid JSON", 400)
   }
 
-  if (payload.type !== "callCompleted") {
+  const payload = rawBody.customData
+  if (!payload) {
+    return jsonError("Missing customData in webhook body", 400)
+  }
+
+  // Defensiva: já vimos no campo o Pepper salvar com aspas e whitespace.
+  const normalizedType =
+    typeof payload.type === "string"
+      ? payload.type.trim().replace(/^"+|"+$/g, "")
+      : ""
+  if (normalizedType !== "callCompleted") {
+    console.warn("[ghl-webhook] type-check failed", {
+      receivedType: payload.type,
+      customDataKeys: Object.keys(payload),
+      rootKeys: Object.keys(rawBody),
+    })
     return jsonError(`Unsupported webhook type: ${payload.type}`, 400)
   }
   const contactId = normalizeEmpty(payload.contactId)
@@ -76,7 +94,7 @@ export async function POST(req: NextRequest) {
     upsertResult = await dbUpsertGhlCall({
       orgId: orgConfig.orgId,
       externalCallId,
-      ghlPayload: payload as unknown as Record<string, unknown>,
+      ghlPayload: rawBody as unknown as Record<string, unknown>,
       trainerName,
       trainerEmail,
       clientName,
@@ -115,6 +133,12 @@ export async function POST(req: NextRequest) {
           updateErr,
         })
       }
+      await notifyPipelineFailure("webhook_failed", {
+        callId,
+        orgId: orgConfig.orgId,
+        contactId,
+        error: err,
+      })
     }
   })
 
