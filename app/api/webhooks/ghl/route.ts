@@ -120,7 +120,11 @@ export async function POST(req: NextRequest) {
   // 6. Dispara pipeline async com o token específico da org.
   after(async () => {
     try {
-      await processGhlCall(callId, { ...payload, contactId }, { accessToken })
+      await processGhlCall(
+        callId,
+        { ...payload, contactId },
+        { accessToken, orgId: orgConfig.orgId },
+      )
     } catch (err) {
       console.error("[ghl-webhook] pipeline crashed", { callId, err })
       try {

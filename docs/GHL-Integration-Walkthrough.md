@@ -600,6 +600,47 @@ Depois disso, disparar e seguir a seção 7.3 pra validar cada camada.
 
 ---
 
+## 12. Rotação do PIT (Private Integration Token)
+
+Quando o owner da location GHL rotaciona o PIT no Pepper (o que pode acontecer por segurança ou rotina), nosso DB continua com o token antigo, agora inválido. O sistema lida com isso assim:
+
+### Detecção automática
+
+[lib/services/ghl-api.ts](../lib/services/ghl-api.ts) exporta `GhlAuthError`. Quando uma chamada de API retorna 401 ou 403:
+- `fetchRecordingUrl` → throw `GhlAuthError` (no `/conversations/search` ou no `/conversations/{id}/messages`).
+- `downloadRecording` → throw `GhlAuthError` (depois de tentar com e sem Bearer).
+
+O pipeline em [lib/services/ghl-call-pipeline.ts](../lib/services/ghl-call-pipeline.ts) intercepta `GhlAuthError` especificamente e:
+1. Marca a call como `processing_status = 'auth_expired'`.
+2. Atualiza `organizations.ghl_last_auth_error_at` com timestamp atual.
+3. Dispara alerta `auth_expired` no Slack (se `PIPELINE_ALERT_WEBHOOK_URL` configurado).
+
+### UX no admin
+
+`/admin/organizations/<id>/integrations/ghl` mostra banner vermelho se `ghl_last_auth_error_at` for menor que 24h. O banner indica explicitamente que o PIT foi rotacionado e pede que o admin cole o token novo.
+
+Quando admin cola novo token e clica Salvar:
+- `dbUpdateOrgGhlConfig` limpa `ghl_last_auth_error_at = NULL` automaticamente.
+- Banner some no próximo load.
+
+### Calls afetadas
+
+Calls que ficaram em `auth_expired` **não retentam automaticamente**. Comportamento esperado:
+- Calls novas (depois do token atualizado) processam normalmente.
+- Calls antigas em `auth_expired` ficam visíveis no admin com esse status. Se forem críticas, opções:
+  - Disparar o workflow novamente no Pepper pro mesmo contato — vai cair em `duplicate` se nada mudou (idempotência via hash).
+  - Reset manual via SQL (gambiarra): `UPDATE calls SET processing_status='pending', transcript=NULL, recording_url=NULL WHERE id='<uuid>'`. Mas sem endpoint de "reprocess" hoje, só reseta o status.
+
+### Migration
+
+`scripts/046_ghl_auth_error_tracking.sql` adiciona:
+- `'auth_expired'` ao CHECK constraint de `calls.processing_status`.
+- Coluna `organizations.ghl_last_auth_error_at TIMESTAMPTZ`.
+
+Idempotente — pode rodar várias vezes.
+
+---
+
 ## Apêndice — Referências cruzadas
 
 - [docs/AskMoses-GHL-StepByStep.md](./AskMoses-GHL-StepByStep.md) — guia de implementação original (Steps 1-4 reescritos hoje pra refletir código real)

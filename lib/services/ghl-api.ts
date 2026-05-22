@@ -9,6 +9,21 @@ export interface RecordingRef {
   conversationId: string
 }
 
+/**
+ * Erro lançado quando a GHL responde 401/403 — sinaliza que o PIT da org
+ * foi rotacionado/revogado no Pepper. Pipeline catch trata especificamente
+ * pra marcar processing_status='auth_expired' e atualizar
+ * organizations.ghl_last_auth_error_at (consumido pelo banner do admin).
+ */
+export class GhlAuthError extends Error {
+  readonly status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = "GhlAuthError"
+    this.status = status
+  }
+}
+
 function buildAuthHeaders(accessToken: string): HeadersInit {
   if (!accessToken) throw new Error("GHL access token is required")
   return {
@@ -58,6 +73,12 @@ export async function fetchRecordingUrl(
   )
   if (!convRes.ok) {
     const body = await convRes.text()
+    if (convRes.status === 401 || convRes.status === 403) {
+      throw new GhlAuthError(
+        convRes.status,
+        `GHL conversations/search auth failed (${convRes.status}): ${body}`,
+      )
+    }
     throw new Error(
       `GHL conversations/search failed ${convRes.status}: ${body}`,
     )
@@ -73,7 +94,15 @@ export async function fetchRecordingUrl(
       `${base}/conversations/${encodeURIComponent(conv.id)}/messages`,
       { headers },
     )
-    if (!msgRes.ok) continue
+    if (!msgRes.ok) {
+      if (msgRes.status === 401 || msgRes.status === 403) {
+        throw new GhlAuthError(
+          msgRes.status,
+          `GHL conversations/${conv.id}/messages auth failed (${msgRes.status})`,
+        )
+      }
+      continue
+    }
 
     const msgData = (await msgRes.json()) as {
       messages?: { messages?: GhlMessage[] } | GhlMessage[]
@@ -141,6 +170,12 @@ export async function downloadRecording(
     res = await fetch(url)
   }
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      throw new GhlAuthError(
+        res.status,
+        `Failed to download recording: auth rejected (${res.status})`,
+      )
+    }
     throw new Error(`Failed to download recording: ${res.status} ${res.statusText}`)
   }
 

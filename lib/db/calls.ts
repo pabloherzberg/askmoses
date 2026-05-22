@@ -248,6 +248,7 @@ export type ProcessingStatus =
   | 'no_recording'
   | 'transcription_failed'
   | 'webhook_failed'
+  | 'auth_expired'
 
 export interface CreateGhlCallInput {
   orgId: string
