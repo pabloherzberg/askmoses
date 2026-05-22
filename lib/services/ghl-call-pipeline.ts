@@ -109,7 +109,10 @@ export async function processGhlCall(
     const delay = TRANSCRIBE_RETRY_DELAYS_MS[attempt]
     if (delay > 0) await sleep(delay)
     try {
-      transcript = await transcribeAudioBuffer(audio.buffer, audio.mimeType)
+      transcript = await transcribeAudioBuffer(audio.buffer, audio.mimeType, {
+        trainerName: payload.userName ?? undefined,
+        clientName: payload.contactName ?? undefined,
+      })
       break
     } catch (err) {
       lastError = err
