@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, ChevronRight, Sparkles } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 interface NotificationItem {
   id: string
@@ -30,10 +31,15 @@ function formatWhen(iso: string, locale: string): string {
  * Sino de notificações de coaching no header. Só aparece para o sales person
  * (a API responde isRecipient:false para owner/admin). Faz poll a cada 30s pra
  * o demo refletir um envio feito em outra sessão.
+ *
+ * Cada item mostra só uma linha curta ("X enviou uma recomendação"). Clicar
+ * abre a página Recommendations daquele item — abrir o detalhe conta como
+ * leitura, então a marcação de lida acontece lá (não ao abrir o sino).
  */
 export function NotificationBell() {
   const t = useTranslations('Shared.notifications')
   const locale = useLocale()
+  const router = useRouter()
   const [isRecipient, setIsRecipient] = useState(false)
   const [items, setItems] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -60,19 +66,14 @@ export function NotificationBell() {
     return () => window.clearInterval(id)
   }, [load])
 
-  const handleToggle = async () => {
-    const next = !open
-    setOpen(next)
-    if (next && unreadCount > 0) {
-      // Marca tudo como lido ao abrir — otimista, com PATCH em background.
-      setUnreadCount(0)
-      setItems((prev) => prev.map((i) => ({ ...i, status: 'read' as const })))
-      try {
-        await fetch('/api/coaching/notifications', { method: 'PATCH' })
-      } catch {
-        // Ignora — o próximo poll reconcilia.
-      }
-    }
+  const goToDetail = (n: NotificationItem) => {
+    setOpen(false)
+    router.push(`/${locale}/me/recommendations/${n.id}`)
+  }
+
+  const goToAll = () => {
+    setOpen(false)
+    router.push(`/${locale}/me/recommendations`)
   }
 
   if (!isRecipient) return null
@@ -81,7 +82,7 @@ export function NotificationBell() {
     <div className="relative">
       <button
         type="button"
-        onClick={handleToggle}
+        onClick={() => setOpen((v) => !v)}
         aria-label={t('title')}
         className="relative p-1.5 rounded-md transition-opacity hover:opacity-70"
         style={{ color: 'var(--am-muted)' }}
@@ -102,7 +103,7 @@ export function NotificationBell() {
           {/* Click-outside */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 mt-2 w-80 max-h-[420px] overflow-y-auto rounded-xl border shadow-lg z-50"
+            className="absolute right-0 mt-2 w-80 max-h-[440px] overflow-y-auto rounded-xl border shadow-lg z-50"
             style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
           >
             <div
@@ -128,36 +129,55 @@ export function NotificationBell() {
             ) : (
               <div className="flex flex-col">
                 {items.map((n) => (
-                  <div
+                  <button
                     key={n.id}
-                    className="px-4 py-3 flex gap-2.5"
+                    type="button"
+                    onClick={() => goToDetail(n)}
+                    className="w-full px-4 py-3 flex items-center gap-2.5 text-left transition-colors hover:bg-[var(--am-bg3)]"
                     style={{ borderBottom: '1px solid var(--am-border)' }}
                   >
+                    {/* Unread indicator */}
                     <span
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                       style={{
                         background: n.status === 'unread' ? 'var(--am-accent)' : 'transparent',
                       }}
                     />
+                    {/* Icon */}
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
+                    >
+                      <Sparkles size={15} />
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-[13px] font-semibold leading-snug"
+                        className="text-[12.5px] leading-snug"
                         style={{ color: 'var(--am-text)' }}
                       >
-                        {n.title}
+                        {t('coachingLine', { name: n.sentByName })}
                       </p>
-                      <p
-                        className="text-[12px] leading-relaxed mt-0.5"
-                        style={{ color: 'var(--am-text)', opacity: 0.8 }}
-                      >
-                        {n.body}
-                      </p>
-                      <p className="text-[11px] mt-1.5" style={{ color: 'var(--am-muted)' }}>
-                        {t('sentBy', { name: n.sentByName })} · {formatWhen(n.createdAt, locale)}
+                      <p className="text-[11px] mt-0.5" style={{ color: 'var(--am-muted)' }}>
+                        {formatWhen(n.createdAt, locale)}
                       </p>
                     </div>
-                  </div>
+                    <ChevronRight
+                      size={14}
+                      className="flex-shrink-0"
+                      style={{ color: 'var(--am-muted)' }}
+                    />
+                  </button>
                 ))}
+
+                {/* Ver todas → página Recommendations */}
+                <button
+                  type="button"
+                  onClick={goToAll}
+                  className="w-full px-4 py-2.5 text-center text-[12px] font-medium transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--am-accent2)' }}
+                >
+                  {t('viewAll')}
+                </button>
               </div>
             )}
           </div>

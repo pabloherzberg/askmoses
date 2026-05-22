@@ -178,6 +178,7 @@
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
+      "recommendations": "Recommendations",
       "uploadCall": "Upload Call",
       "history": "History",
       "analytics": "Analytics",
@@ -213,12 +214,15 @@
     "notifications": {
       "title": "Notifications",
       "empty": "No notifications yet",
-      "sentBy": "From {name}"
+      "sentBy": "From {name}",
+      "coachingLine": "{name} sent you a coaching recommendation",
+      "viewAll": "View all recommendations"
     },
     "userMenu": {
       "triggerAria": "User menu",
       "loading": "Loading…",
       "password": "Password",
+      "notificationPrefs": "Notification preferences",
       "signOut": "Sign out"
     },
     "pageTitles": {
@@ -435,6 +439,37 @@
     "thScore": "Score",
     "thResult": "Result",
     "forbidden": "You don't have access to this call.",
+    "settings": {
+      "label": "Settings",
+      "title": "Notification preferences",
+      "subtitle": "Choose how you want to receive coaching recommendations from your manager.",
+      "channelsTitle": "How do you want to receive recommendations?",
+      "channelsSubtitle": "Each recommendation is delivered through the channels you keep active.",
+      "inAppLabel": "In-app notification",
+      "inAppDesc": "Show new recommendations in the notification bell.",
+      "emailLabel": "Email",
+      "emailDesc": "Send recommendations to {email}.",
+      "save": "Save preferences",
+      "saving": "Saving…",
+      "saved": "Preferences saved",
+      "error": "Couldn't save your preferences. Please try again.",
+      "keepOneActive": "At least one channel must stay active so your manager can always reach you."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommendations",
+      "subtitle": "Every coaching recommendation your manager sent you.",
+      "empty": "No recommendations yet",
+      "emptyHint": "When your manager sends you a coaching recommendation, it shows up here.",
+      "markAllRead": "Mark all as read",
+      "unread": "New",
+      "listItemTitle": "{name} sent you a recommendation",
+      "back": "Recommendations",
+      "headerTitle": "Coaching Recommendation",
+      "greeting": "Hi {name},",
+      "intro": "{sender} sent you a coaching recommendation:",
+      "sentBy": "Sent by {name}"
+    },
     "newCall": {
       "backToDashboard": "Back to My Dashboard",
       "title": "Log a New Call",
@@ -908,21 +943,22 @@
     "mockFooterBest": "† all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo",
     "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo",
     "recsTitle": "AI Coaching Recommendations",
-    "recsReview": "Review & send",
-    "recsSentBadge": "Sent",
-    "reviewModal": {
-      "title": "Review coaching recommendation",
-      "subtitle": "Review this before sharing it with {name}.",
-      "recipient": "Recipient",
-      "recommendation": "Recommendation",
-      "cancel": "Cancel",
-      "send": "Send to {name}",
-      "sending": "Sending…",
-      "sentTitle": "Recommendation sent",
-      "sentBody": "{name} will see this in their coaching feed.",
-      "close": "Close",
-      "error": "Couldn't send the recommendation. Please try again."
-    }
+    "recsHint": "AI combined the analysis of {name}'s recent calls into one recommendation. Edit it freely before sending.",
+    "recsPlaceholder": "Write the coaching recommendation…",
+    "recsReset": "Reset to AI draft",
+    "recsSend": "Send to {name}",
+    "recsSending": "Sending…",
+    "recsSentTitle": "Recommendation sent",
+    "recsDeliveredVia": "Delivered to {name} via:",
+    "recsChannelInApp": "In-app notification",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} turned off all channels — they won't receive this recommendation.",
+    "recsEmailFailed": "The email couldn't be delivered.",
+    "recsSendAnother": "Write another recommendation",
+    "recsEmptyError": "Write a recommendation before sending.",
+    "recsError": "Couldn't send the recommendation. Please try again.",
+    "recsNotificationTitle": "Coaching recommendation",
+    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:"
   },
   "Dashboard": {
     "home": {

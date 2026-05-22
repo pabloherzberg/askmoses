@@ -178,6 +178,7 @@
       "calls": "Appels",
       "myDashboard": "Mon tableau de bord",
       "myCalls": "Mes appels",
+      "recommendations": "Recommandations",
       "uploadCall": "Charger un appel",
       "history": "Historique",
       "analytics": "Analytics",
@@ -213,12 +214,15 @@
     "notifications": {
       "title": "Notifications",
       "empty": "Aucune notification pour le moment",
-      "sentBy": "De {name}"
+      "sentBy": "De {name}",
+      "coachingLine": "{name} vous a envoyé une recommandation de coaching",
+      "viewAll": "Voir toutes les recommandations"
     },
     "userMenu": {
       "triggerAria": "Menu utilisateur",
       "loading": "Chargement…",
       "password": "Mot de passe",
+      "notificationPrefs": "Préférences de notification",
       "signOut": "Déconnexion"
     },
     "pageTitles": {
@@ -435,6 +439,37 @@
     "thScore": "Score",
     "thResult": "Résultat",
     "forbidden": "Vous n'avez pas accès à cet appel.",
+    "settings": {
+      "label": "Paramètres",
+      "title": "Préférences de notification",
+      "subtitle": "Choisissez comment vous voulez recevoir les recommandations de coaching de votre manager.",
+      "channelsTitle": "Comment voulez-vous recevoir les recommandations ?",
+      "channelsSubtitle": "Chaque recommandation est livrée via les canaux que vous gardez actifs.",
+      "inAppLabel": "Notification dans l'app",
+      "inAppDesc": "Afficher les nouvelles recommandations dans la cloche de notifications.",
+      "emailLabel": "Email",
+      "emailDesc": "Envoyer les recommandations à {email}.",
+      "save": "Enregistrer les préférences",
+      "saving": "Enregistrement…",
+      "saved": "Préférences enregistrées",
+      "error": "Impossible d'enregistrer vos préférences. Réessayez.",
+      "keepOneActive": "Au moins un canal doit rester actif pour que votre manager puisse toujours vous joindre."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommandations",
+      "subtitle": "Toutes les recommandations de coaching que votre manager vous a envoyées.",
+      "empty": "Aucune recommandation pour le moment",
+      "emptyHint": "Lorsque votre manager vous envoie une recommandation de coaching, elle apparaît ici.",
+      "markAllRead": "Tout marquer comme lu",
+      "unread": "Nouveau",
+      "listItemTitle": "{name} vous a envoyé une recommandation",
+      "back": "Recommandations",
+      "headerTitle": "Recommandation de Coaching",
+      "greeting": "Bonjour {name},",
+      "intro": "{sender} vous a envoyé une recommandation de coaching :",
+      "sentBy": "Envoyé par {name}"
+    },
     "newCall": {
       "backToDashboard": "Retour à mon tableau de bord",
       "title": "Enregistrer un nouvel appel",
@@ -908,21 +943,22 @@
     "mockFooterBest": "† toutes les valeurs proviennent de mock-data.ts — Écouter à X:XX → ne fonctionne pas dans cette démo",
     "mockFooterWorst": "† toutes les valeurs proviennent de mock-data.ts — Revoir à X:XX → ne fonctionne pas dans cette démo",
     "recsTitle": "Recommandations de Coaching IA",
-    "recsReview": "Vérifier et envoyer",
-    "recsSentBadge": "Envoyé",
-    "reviewModal": {
-      "title": "Vérifier la recommandation de coaching",
-      "subtitle": "Vérifiez-la avant de la partager avec {name}.",
-      "recipient": "Destinataire",
-      "recommendation": "Recommandation",
-      "cancel": "Annuler",
-      "send": "Envoyer à {name}",
-      "sending": "Envoi…",
-      "sentTitle": "Recommandation envoyée",
-      "sentBody": "{name} la verra dans son fil de coaching.",
-      "close": "Fermer",
-      "error": "Impossible d'envoyer la recommandation. Réessayez."
-    }
+    "recsHint": "L'IA a réuni l'analyse des appels récents de {name} en une seule recommandation. Modifiez-la librement avant de l'envoyer.",
+    "recsPlaceholder": "Rédigez la recommandation de coaching…",
+    "recsReset": "Rétablir le brouillon de l'IA",
+    "recsSend": "Envoyer à {name}",
+    "recsSending": "Envoi…",
+    "recsSentTitle": "Recommandation envoyée",
+    "recsDeliveredVia": "Envoyé à {name} via :",
+    "recsChannelInApp": "Notification dans l'app",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} a désactivé tous les canaux — ne recevra pas cette recommandation.",
+    "recsEmailFailed": "L'email n'a pas pu être envoyé.",
+    "recsSendAnother": "Rédiger une autre recommandation",
+    "recsEmptyError": "Rédigez une recommandation avant d'envoyer.",
+    "recsError": "Impossible d'envoyer la recommandation. Réessayez.",
+    "recsNotificationTitle": "Recommandation de coaching",
+    "draftIntro": "{name}, voici vos priorités de coaching basées sur vos appels récents :"
   },
   "Dashboard": {
     "home": {

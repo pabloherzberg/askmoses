@@ -29,28 +29,39 @@ export interface CreateCoachingNotificationInput {
   body: string
 }
 
+export interface ResolvedTrainer {
+  id: string
+  name: string
+  /** Email do trainer (users.email) — null se não resolver. */
+  email: string | null
+}
+
 /**
- * Resolve o trainer destinatário pelo nome, dentro da org. Usa
- * calls.trainer_name como fonte — é o campo consistente com os nomes da
- * tela de coaching em ambas as variantes de seed. Retorna null se nenhuma
- * call casar (a notificação ainda é gravada, só não vira "entregável").
+ * Resolve o trainer destinatário pelo ID, validando que pertence à org do
+ * Owner. Nome e email vêm do join com `users` — não dependem de o trainer já
+ * ter calls (ao contrário da antiga resolução por calls.trainer_name, que
+ * falhava pra um trainer recém-criado sem calls). Retorna null se o ID não
+ * casar com nenhum trainer da org.
  */
-export async function dbResolveTrainerIdByName(
+export async function dbResolveTrainerById(
   orgId: string,
-  name: string,
-): Promise<string | null> {
+  trainerId: string,
+): Promise<ResolvedTrainer | null> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
-    .from('calls')
-    .select('trainer_id')
+    .from('trainers')
+    .select('id, org_id, users(name, email)')
+    .eq('id', trainerId)
     .eq('org_id', orgId)
-    .eq('trainer_name', name)
-    .not('trainer_id', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(1)
     .maybeSingle()
-  if (error) throw new Error(`dbResolveTrainerIdByName: ${error.message}`)
-  return (data?.trainer_id as string | undefined) ?? null
+  if (error) throw new Error(`dbResolveTrainerById: ${error.message}`)
+  if (!data) return null
+  const user = (data.users ?? null) as { name?: string | null; email?: string | null } | null
+  return {
+    id: data.id as string,
+    name: user?.name ?? '',
+    email: user?.email ?? null,
+  }
 }
 
 export async function dbCreateCoachingNotification(
@@ -88,6 +99,41 @@ export async function dbGetTrainerNotifications(
   return (data ?? []) as DbCoachingNotification[]
 }
 
+/**
+ * Busca uma recomendação específica do trainer. Escopada por
+ * recipient_trainer_id — um trainer só lê as próprias recomendações.
+ * Retorna null se o id não existir ou não pertencer ao trainer.
+ */
+export async function dbGetTrainerNotificationById(
+  trainerId: string,
+  id: string,
+): Promise<DbCoachingNotification | null> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('coaching_notifications')
+    .select('*')
+    .eq('id', id)
+    .eq('recipient_trainer_id', trainerId)
+    .maybeSingle()
+  if (error) throw new Error(`dbGetTrainerNotificationById: ${error.message}`)
+  return (data as DbCoachingNotification | null) ?? null
+}
+
+/** Marca uma recomendação específica do trainer como lida (idempotente). */
+export async function dbMarkTrainerNotificationRead(
+  trainerId: string,
+  id: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('coaching_notifications')
+    .update({ status: 'read', read_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('recipient_trainer_id', trainerId)
+    .eq('status', 'unread')
+  if (error) throw new Error(`dbMarkTrainerNotificationRead: ${error.message}`)
+}
+
 export async function dbMarkTrainerNotificationsRead(trainerId: string): Promise<void> {
   const supabase = createAdminClient()
   const { error } = await supabase
@@ -96,4 +142,58 @@ export async function dbMarkTrainerNotificationsRead(trainerId: string): Promise
     .eq('recipient_trainer_id', trainerId)
     .eq('status', 'unread')
   if (error) throw new Error(`dbMarkTrainerNotificationsRead: ${error.message}`)
+}
+
+// ─── Preferências de canal (migration 058) ─────────────────────────────────
+// O trainer escolhe em /me/settings quais canais mantém ativos. O envio de
+// uma recomendação (POST /api/coaching/notifications) faz fan-out só pros
+// canais ativos do destinatário.
+
+export interface ChannelPrefs {
+  inApp: boolean
+  email: boolean
+}
+
+// Sem linha (nunca configurou) = ambos os canais ativos. Mantém o
+// comportamento anterior à migration 058 pra quem nunca abriu /me/settings.
+const DEFAULT_CHANNEL_PREFS: ChannelPrefs = { inApp: true, email: true }
+
+/**
+ * Lê as preferências de canal do trainer. Degrada com segurança: sem linha
+ * OU erro de query (ex.: migration 058 ainda não aplicada) → defaults com
+ * ambos os canais ativos, preservando o fluxo de notificação anterior.
+ */
+export async function dbGetChannelPrefs(trainerId: string): Promise<ChannelPrefs> {
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('coaching_channel_prefs')
+      .select('in_app, email')
+      .eq('trainer_id', trainerId)
+      .maybeSingle()
+    if (error || !data) return DEFAULT_CHANNEL_PREFS
+    return { inApp: Boolean(data.in_app), email: Boolean(data.email) }
+  } catch {
+    return DEFAULT_CHANNEL_PREFS
+  }
+}
+
+/** Cria/atualiza as preferências de canal do trainer (upsert por trainer_id). */
+export async function dbUpsertChannelPrefs(
+  trainerId: string,
+  prefs: ChannelPrefs,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('coaching_channel_prefs')
+    .upsert(
+      {
+        trainer_id: trainerId,
+        in_app: prefs.inApp,
+        email: prefs.email,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'trainer_id' },
+    )
+  if (error) throw new Error(`dbUpsertChannelPrefs: ${error.message}`)
 }
