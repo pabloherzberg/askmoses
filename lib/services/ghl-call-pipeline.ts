@@ -74,6 +74,7 @@ export async function processGhlCall(
     })
     await notifyPipelineFailure("no_recording", {
       callId,
+      orgId: options.orgId,
       contactId: payload.contactId,
     })
     return
