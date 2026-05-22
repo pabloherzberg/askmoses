@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface DbCall {
   id: string
+  org_id: string | null
   rubric_id: string | null
   trainer_id: string | null
   trainer_name: string
@@ -334,6 +335,19 @@ export interface UpdateGhlPipelineInput {
   recordingUrl?: string | null
   transcript?: string | null
   transcriptSource?: 'whisper' | 'manual' | 'ghl'
+  // Campos populados pela fase de scoring (após o transcribed).
+  rubricId?: string | null
+  overallScore?: number | null
+  detectedOutcome?: string | null
+  summary?: string | null
+  strengths?: string[] | null
+  improvements?: string[] | null
+  sections?: Record<string, unknown>[] | null
+  modelUsed?: string | null
+  inputTokens?: number | null
+  outputTokens?: number | null
+  costUsd?: number | null
+  promptVersion?: string | null
 }
 
 export async function dbUpdateGhlCallPipeline(
@@ -347,6 +361,18 @@ export async function dbUpdateGhlCallPipeline(
   if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
+  if (input.rubricId !== undefined) patch.rubric_id = input.rubricId
+  if (input.overallScore !== undefined) patch.overall_score = input.overallScore
+  if (input.detectedOutcome !== undefined) patch.detected_outcome = input.detectedOutcome
+  if (input.summary !== undefined) patch.summary = input.summary
+  if (input.strengths !== undefined) patch.strengths = input.strengths
+  if (input.improvements !== undefined) patch.improvements = input.improvements
+  if (input.sections !== undefined) patch.sections = input.sections
+  if (input.modelUsed !== undefined) patch.model_used = input.modelUsed
+  if (input.inputTokens !== undefined) patch.input_tokens = input.inputTokens
+  if (input.outputTokens !== undefined) patch.output_tokens = input.outputTokens
+  if (input.costUsd !== undefined) patch.cost_usd = input.costUsd
+  if (input.promptVersion !== undefined) patch.prompt_version = input.promptVersion
 
   const { error } = await supabase.from('calls').update(patch).eq('id', id)
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)

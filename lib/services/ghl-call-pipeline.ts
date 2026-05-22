@@ -1,5 +1,6 @@
 import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
+import { runGhlCallScoring } from "@/lib/services/ghl-call-scoring"
 import { downloadRecording, fetchRecordingUrl, GhlAuthError } from "@/lib/services/ghl-api"
 import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
@@ -136,6 +137,18 @@ export async function processGhlCall(
     transcriptSource: "whisper",
     processingStatus: "transcribed",
   })
+
+  // Demo: roda scoring inline após transcribed. Best-effort — erros NÃO
+  // afetam o transcript salvo; UI mostra a call sem score se scoring
+  // falhar. Quando virar gargalo (timeout), mover pra job queue separada.
+  try {
+    await runGhlCallScoring(callId)
+  } catch (err) {
+    console.error("[ghl-pipeline] scoring failed (non-fatal)", {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
+    })
+  }
 }
 
 function sleep(ms: number): Promise<void> {
