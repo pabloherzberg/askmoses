@@ -3,6 +3,7 @@ import { after, type NextRequest, NextResponse } from "next/server"
 import { dbUpsertGhlCall, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
+import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 import {
   buildExternalCallId,
   normalizeEmpty,
@@ -132,6 +133,12 @@ export async function POST(req: NextRequest) {
           updateErr,
         })
       }
+      await notifyPipelineFailure("webhook_failed", {
+        callId,
+        orgId: orgConfig.orgId,
+        contactId,
+        error: err,
+      })
     }
   })
 
