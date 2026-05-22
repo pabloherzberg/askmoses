@@ -18,6 +18,7 @@ import {
   Wand2,
   SlidersHorizontal,
   Cog,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -75,6 +76,11 @@ export function TrainerNavItems() {
   const trainerNav = [
     { label: t("myDashboard"), href: "/me", icon: LayoutDashboard },
     { label: t("myCalls"), href: "/me/calls", icon: Phone },
+    {
+      label: t("recommendations"),
+      href: "/me/recommendations",
+      icon: Sparkles,
+    },
     { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
   ];
   return (

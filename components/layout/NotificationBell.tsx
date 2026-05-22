@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Bell, ChevronRight, Sparkles } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import {
-  NotificationDetailModal,
-  type NotificationItem,
-} from '@/components/layout/NotificationDetailModal'
+import { useRouter } from 'next/navigation'
+
+interface NotificationItem {
+  id: string
+  title: string
+  body: string
+  sentByName: string
+  status: 'unread' | 'read'
+  createdAt: string
+}
 
 function formatWhen(iso: string, locale: string): string {
   try {
@@ -26,17 +32,18 @@ function formatWhen(iso: string, locale: string): string {
  * (a API responde isRecipient:false para owner/admin). Faz poll a cada 30s pra
  * o demo refletir um envio feito em outra sessão.
  *
- * Cada item mostra só uma linha curta ("X enviou uma recomendação") — o texto
- * completo pode ser longo, então abre num modal de detalhe ao clicar.
+ * Cada item mostra só uma linha curta ("X enviou uma recomendação"). Clicar
+ * abre a página Recommendations daquele item — abrir o detalhe conta como
+ * leitura, então a marcação de lida acontece lá (não ao abrir o sino).
  */
 export function NotificationBell() {
   const t = useTranslations('Shared.notifications')
   const locale = useLocale()
+  const router = useRouter()
   const [isRecipient, setIsRecipient] = useState(false)
   const [items, setItems] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
-  const [active, setActive] = useState<NotificationItem | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -59,24 +66,14 @@ export function NotificationBell() {
     return () => window.clearInterval(id)
   }, [load])
 
-  const handleToggle = async () => {
-    const next = !open
-    setOpen(next)
-    if (next && unreadCount > 0) {
-      // Marca tudo como lido ao abrir — otimista, com PATCH em background.
-      setUnreadCount(0)
-      setItems((prev) => prev.map((i) => ({ ...i, status: 'read' as const })))
-      try {
-        await fetch('/api/coaching/notifications', { method: 'PATCH' })
-      } catch {
-        // Ignora — o próximo poll reconcilia.
-      }
-    }
+  const goToDetail = (n: NotificationItem) => {
+    setOpen(false)
+    router.push(`/${locale}/me/recommendations/${n.id}`)
   }
 
-  const handleOpenDetail = (n: NotificationItem) => {
-    setActive(n)
+  const goToAll = () => {
     setOpen(false)
+    router.push(`/${locale}/me/recommendations`)
   }
 
   if (!isRecipient) return null
@@ -85,7 +82,7 @@ export function NotificationBell() {
     <div className="relative">
       <button
         type="button"
-        onClick={handleToggle}
+        onClick={() => setOpen((v) => !v)}
         aria-label={t('title')}
         className="relative p-1.5 rounded-md transition-opacity hover:opacity-70"
         style={{ color: 'var(--am-muted)' }}
@@ -106,7 +103,7 @@ export function NotificationBell() {
           {/* Click-outside */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 mt-2 w-80 max-h-[420px] overflow-y-auto rounded-xl border shadow-lg z-50"
+            className="absolute right-0 mt-2 w-80 max-h-[440px] overflow-y-auto rounded-xl border shadow-lg z-50"
             style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
           >
             <div
@@ -135,7 +132,7 @@ export function NotificationBell() {
                   <button
                     key={n.id}
                     type="button"
-                    onClick={() => handleOpenDetail(n)}
+                    onClick={() => goToDetail(n)}
                     className="w-full px-4 py-3 flex items-center gap-2.5 text-left transition-colors hover:bg-[var(--am-bg3)]"
                     style={{ borderBottom: '1px solid var(--am-border)' }}
                   >
@@ -171,13 +168,21 @@ export function NotificationBell() {
                     />
                   </button>
                 ))}
+
+                {/* Ver todas → página Recommendations */}
+                <button
+                  type="button"
+                  onClick={goToAll}
+                  className="w-full px-4 py-2.5 text-center text-[12px] font-medium transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--am-accent2)' }}
+                >
+                  {t('viewAll')}
+                </button>
               </div>
             )}
           </div>
         </>
       )}
-
-      <NotificationDetailModal notification={active} onClose={() => setActive(null)} />
     </div>
   )
 }

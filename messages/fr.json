@@ -178,6 +178,7 @@
       "calls": "Appels",
       "myDashboard": "Mon tableau de bord",
       "myCalls": "Mes appels",
+      "recommendations": "Recommandations",
       "uploadCall": "Charger un appel",
       "history": "Historique",
       "analytics": "Analytics",
@@ -215,12 +216,7 @@
       "empty": "Aucune notification pour le moment",
       "sentBy": "De {name}",
       "coachingLine": "{name} vous a envoyé une recommandation de coaching",
-      "detail": {
-        "title": "Recommandation de coaching",
-        "from": "De {name}",
-        "received": "Reçu le {when}",
-        "close": "Fermer"
-      }
+      "viewAll": "Voir toutes les recommandations"
     },
     "userMenu": {
       "triggerAria": "Menu utilisateur",
@@ -458,6 +454,21 @@
       "saved": "Préférences enregistrées",
       "error": "Impossible d'enregistrer vos préférences. Réessayez.",
       "keepOneActive": "Au moins un canal doit rester actif pour que votre manager puisse toujours vous joindre."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommandations",
+      "subtitle": "Toutes les recommandations de coaching que votre manager vous a envoyées.",
+      "empty": "Aucune recommandation pour le moment",
+      "emptyHint": "Lorsque votre manager vous envoie une recommandation de coaching, elle apparaît ici.",
+      "markAllRead": "Tout marquer comme lu",
+      "unread": "Nouveau",
+      "listItemTitle": "{name} vous a envoyé une recommandation",
+      "back": "Recommandations",
+      "headerTitle": "Recommandation de Coaching",
+      "greeting": "Bonjour {name},",
+      "intro": "{sender} vous a envoyé une recommandation de coaching :",
+      "sentBy": "Envoyé par {name}"
     },
     "newCall": {
       "backToDashboard": "Retour à mon tableau de bord",

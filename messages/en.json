@@ -178,6 +178,7 @@
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
+      "recommendations": "Recommendations",
       "uploadCall": "Upload Call",
       "history": "History",
       "analytics": "Analytics",
@@ -215,12 +216,7 @@
       "empty": "No notifications yet",
       "sentBy": "From {name}",
       "coachingLine": "{name} sent you a coaching recommendation",
-      "detail": {
-        "title": "Coaching recommendation",
-        "from": "From {name}",
-        "received": "Received {when}",
-        "close": "Close"
-      }
+      "viewAll": "View all recommendations"
     },
     "userMenu": {
       "triggerAria": "User menu",
@@ -458,6 +454,21 @@
       "saved": "Preferences saved",
       "error": "Couldn't save your preferences. Please try again.",
       "keepOneActive": "At least one channel must stay active so your manager can always reach you."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommendations",
+      "subtitle": "Every coaching recommendation your manager sent you.",
+      "empty": "No recommendations yet",
+      "emptyHint": "When your manager sends you a coaching recommendation, it shows up here.",
+      "markAllRead": "Mark all as read",
+      "unread": "New",
+      "listItemTitle": "{name} sent you a recommendation",
+      "back": "Recommendations",
+      "headerTitle": "Coaching Recommendation",
+      "greeting": "Hi {name},",
+      "intro": "{sender} sent you a coaching recommendation:",
+      "sentBy": "Sent by {name}"
     },
     "newCall": {
       "backToDashboard": "Back to My Dashboard",

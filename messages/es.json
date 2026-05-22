@@ -178,6 +178,7 @@
       "calls": "Llamadas",
       "myDashboard": "Mi panel",
       "myCalls": "Mis llamadas",
+      "recommendations": "Recomendaciones",
       "uploadCall": "Subir llamada",
       "history": "Historial",
       "analytics": "Analytics",
@@ -215,12 +216,7 @@
       "empty": "Sin notificaciones todavía",
       "sentBy": "De {name}",
       "coachingLine": "{name} te envió una recomendación de coaching",
-      "detail": {
-        "title": "Recomendación de coaching",
-        "from": "De {name}",
-        "received": "Recibido el {when}",
-        "close": "Cerrar"
-      }
+      "viewAll": "Ver todas las recomendaciones"
     },
     "userMenu": {
       "triggerAria": "Menú de usuario",
@@ -458,6 +454,21 @@
       "saved": "Preferencias guardadas",
       "error": "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
       "keepOneActive": "Al menos un canal debe permanecer activo para que tu responsable siempre pueda contactarte."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recomendaciones",
+      "subtitle": "Todas las recomendaciones de coaching que te envió tu responsable.",
+      "empty": "Aún no hay recomendaciones",
+      "emptyHint": "Cuando tu responsable te envíe una recomendación de coaching, aparecerá aquí.",
+      "markAllRead": "Marcar todas como leídas",
+      "unread": "Nueva",
+      "listItemTitle": "{name} te envió una recomendación",
+      "back": "Recomendaciones",
+      "headerTitle": "Recomendación de Coaching",
+      "greeting": "¡Hola, {name}!",
+      "intro": "{sender} te envió una recomendación de coaching:",
+      "sentBy": "Enviado por {name}"
     },
     "newCall": {
       "backToDashboard": "Volver a mi panel",
