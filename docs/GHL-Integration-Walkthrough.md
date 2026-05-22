@@ -503,8 +503,8 @@ Todas as respostas seguem o formato:
 | 400 | `"contactId is required"` | `customData.contactId` ausente ou vazio | Pepper Custom Data linha `contactId` |
 | 401 | `"Unauthorized"` | `X-AskMoses-Secret` não bate com o do DB | Conferir secret no admin form vs Pepper headers; se necessário, regenerar |
 | 404 | `"Unknown or disabled location"` | `X-GHL-Location-Id` não existe no DB OU `ghl_enabled = false` | Admin form `/admin/organizations/.../integrations/ghl` |
-| 500 | `"Server error"` | Falha no lookup do DB | Vercel logs `[ghl-webhook] lookup failed` |
-| 500 | `"Failed to persist call"` | Upsert do DB falhou | Vercel logs `[ghl-webhook] upsert failed` |
+| 500 | `"Server error"` | Falha no lookup do DB | Vercel logs `[ghl-webhook] lookup failed`. Também alerta Slack via `notifyPipelineFailure("webhook_failed")` com `callId: "sync-error:lookup:<locationId>"`. |
+| 500 | `"Failed to persist call"` | Upsert do DB falhou (ex: NOT NULL constraint) | Vercel logs `[ghl-webhook] upsert failed`. Também alerta Slack com `callId: "sync-error:upsert:<externalCallId>"`. |
 
 ### 8.2 Como ler o log diagnóstico de `type-check failed`
 
