@@ -12,6 +12,9 @@ interface SendBody {
   scriptId?: string
   rubricId?: string
   orgIds?: string[]
+  // Ordem da tabela do admin no momento do envio — define a sequência de análise.
+  // Se omitido, usa a ordem de orgIds.
+  orgIdsOrdered?: string[]
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
     return badRequest('Body inválido')
   }
 
-  const { scriptId, rubricId, orgIds } = body
+  const { scriptId, rubricId, orgIds, orgIdsOrdered } = body
 
   // XOR: exatamente um entre scriptId e rubricId.
   if (!scriptId && !rubricId) return badRequest('Forneça scriptId ou rubricId')
@@ -169,6 +172,87 @@ export async function POST(request: NextRequest) {
     out_status: string
     out_started_at: string
   }>
+
+  // Monta mapa orgId → row para lookup rápido
+  const rowByOrgId = Object.fromEntries(rows.map((r) => [r.out_org_id, r]))
+
+  // Ordem de análise: segue orgIdsOrdered (ordem da tabela do admin) se
+  // fornecido, senão usa a ordem original de orgIds.
+  const analysisOrder = (orgIdsOrdered ?? orgIds).filter((id) => rowByOrgId[id])
+
+  // Para cada org na ordem: busca previous_script_id e prepara o cache.
+  // A primeira fica 'processing', as demais ficam 'queued'.
+  type QueueItem = { orgScriptId: string; orgId: string; currentScriptId: string }
+  const queue: QueueItem[] = []
+
+  for (const orgId of analysisOrder) {
+    const row = rowByOrgId[orgId]
+    if (!row) continue
+    const orgScriptId = row.out_id
+
+    const { data: orgScriptRow } = await admin
+      .from('org_scripts')
+      .select('previous_script_id')
+      .eq('id', orgScriptId)
+      .maybeSingle()
+
+    const currentScriptId = orgScriptRow?.previous_script_id as string | null | undefined
+    if (!currentScriptId) {
+      console.warn(`[send] org ${orgId} has no previous_script_id, skipping analysis`)
+      continue
+    }
+
+    queue.push({ orgScriptId, orgId, currentScriptId })
+  }
+
+  if (queue.length === 0) {
+    return ok({
+      scriptId: effectiveScriptId,
+      rubricResolved: rubricId ? true : false,
+      sentTo: orgIds.length,
+      rows: rows.map((r) => ({
+        id: r.out_id,
+        orgId: r.out_org_id,
+        scriptId: r.out_script_id,
+        status: r.out_status,
+        startedAt: r.out_started_at,
+      })),
+    })
+  }
+
+  // Insere todas as linhas de cache: primeira como 'processing', demais como 'queued'.
+  // Cada linha recebe um updated_at com 1ms de diferença para preservar a ordem
+  // de inserção na query ORDER BY updated_at ASC do process/route.ts.
+  const baseTime = Date.now()
+  for (let i = 0; i < queue.length; i++) {
+    const { orgScriptId, orgId } = queue[i]
+    await admin.from('script_intelligence_cache').upsert({
+      org_id: orgId,
+      org_script_id: orgScriptId,
+      result: {},
+      decisions: [],
+      analysis_status: i === 0 ? 'processing' : 'queued',
+      updated_at: new Date(baseTime + i).toISOString(),
+    }, { onConflict: 'org_id,org_script_id' })
+  }
+
+  // Dispara apenas a primeira da fila em background.
+  // O process/route.ts se encarrega de acionar a próxima quando terminar.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const first = queue[0]
+  void fetch(`${baseUrl}/api/script-intelligence/process`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
+    },
+    body: JSON.stringify({
+      orgScriptId: first.orgScriptId,
+      orgId: first.orgId,
+      suggestedScriptId: effectiveScriptId,
+      currentScriptId: first.currentScriptId,
+    }),
+  }).catch((err) => console.error('[send] background analysis dispatch failed:', err))
 
   return ok({
     scriptId: effectiveScriptId,

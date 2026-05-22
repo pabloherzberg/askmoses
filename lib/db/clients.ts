@@ -169,7 +169,7 @@ function rpcRowToClient(row: RpcRow): Client {
   let currentScript: OrgScriptInfo | null = null;
   if (row.script_id && row.script_status !== "none") {
     const previousVersion =
-      row.script_status === "pending" &&
+      (row.script_status === "pending" || row.script_status === "rejected") &&
       row.prev_script_major !== null &&
       row.prev_script_minor !== null
         ? `${row.prev_script_major}.${row.prev_script_minor}`
@@ -235,8 +235,57 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const rows = (data ?? []) as RpcRow[];
   const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
+  const clients = rows.map(rpcRowToClient);
+
+  // Enriquece orgs com pending: busca o org_script_id e o analysis_status
+  // do cache para mostrar "Analisando..." na tabela do admin enquanto a IA
+  // ainda está rodando.
+  const pendingOrgIds = clients
+    .filter((c) => c.currentScript?.status === 'pending')
+    .map((c) => c.id);
+
+  if (pendingOrgIds.length > 0) {
+    const { data: orgScriptRows } = await supabase
+      .from('org_scripts')
+      .select('id, org_id')
+      .in('org_id', pendingOrgIds)
+      .eq('status', 'pending')
+      .is('ended_at', null)
+
+    if (orgScriptRows && orgScriptRows.length > 0) {
+      const orgScriptByOrg = Object.fromEntries(
+        (orgScriptRows as Array<{ id: string; org_id: string }>).map((r) => [r.org_id, r.id])
+      )
+      const orgScriptIds = (orgScriptRows as Array<{ id: string }>).map((r) => r.id)
+
+      const { data: cacheRows } = await supabase
+        .from('script_intelligence_cache')
+        .select('org_script_id, analysis_status')
+        .in('org_script_id', orgScriptIds)
+
+      const cacheByOrgScript = Object.fromEntries(
+        (cacheRows ?? []).map((r: { org_script_id: string; analysis_status: string }) => [
+          r.org_script_id,
+          r.analysis_status,
+        ])
+      )
+
+      for (const client of clients) {
+        if (client.currentScript?.status !== 'pending') continue
+        const orgScriptId = orgScriptByOrg[client.id] ?? null
+        if (!orgScriptId) continue
+        const status = cacheByOrgScript[orgScriptId] ?? null
+        client.currentScript.orgScriptId = orgScriptId
+        client.currentScript.analysisStatus =
+          status === 'processing' ? 'processing'
+          : status === 'queued' ? 'queued'
+          : null
+      }
+    }
+  }
+
   return {
-    rows: rows.map(rpcRowToClient),
+    rows: clients,
     total,
     page: query.page,
     limit: query.limit,

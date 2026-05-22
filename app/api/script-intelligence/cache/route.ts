@@ -9,6 +9,8 @@ interface CacheRow {
   org_script_id: string
   result: ScriptIntelligenceResult
   decisions: Decision[]
+  analysis_status: 'processing' | 'ready' | 'error'
+  resolution: 'accepted' | 'rejected' | null
   created_at: string
   updated_at: string
 }
@@ -81,26 +83,27 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH /api/script-intelligence/cache
-// Atualiza apenas as decisões do owner (aceitar/rejeitar/reescrever).
-// Body: { orgScriptId, decisions }
+// Atualiza decisões e/ou resolution do owner.
+// Body: { orgScriptId, decisions?, resolution? }
 export async function PATCH(request: NextRequest) {
   const ctx = await getActiveOrgContext()
   if (!ctx) return unauthorized()
   if (!ctx.activeOrgId) return ok({ saved: false })
 
-  const body = await request.json() as { orgScriptId: string; decisions: Decision[] }
-  const { orgScriptId, decisions } = body
+  const body = await request.json() as { orgScriptId: string; decisions?: Decision[]; resolution?: 'accepted' | 'rejected' | null }
+  const { orgScriptId, decisions, resolution } = body
 
   if (!orgScriptId) return ok({ saved: false })
 
   const admin = createAdminClient()
 
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (decisions !== undefined) patch.decisions = decisions
+  if (resolution !== undefined) patch.resolution = resolution
+
   const { error } = await admin
     .from('script_intelligence_cache')
-    .update({
-      decisions,
-      updated_at: new Date().toISOString(),
-    })
+    .update(patch)
     .eq('org_id', ctx.activeOrgId)
     .eq('org_script_id', orgScriptId)
 
