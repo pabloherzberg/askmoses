@@ -46,14 +46,25 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   let script: DbScript | null = null
   let rubricData: Awaited<ReturnType<typeof dbGetDefaultRubricWithCriteria>> = null
 
-  // 1. Script ativo via view org_scripts_current
+  // 1. Script "em vigor" via view org_scripts_current.
+  //
+  // Quando admin envia um v1.1 antes do owner aprovar, a org pode ter
+  // SIMULTANEAMENTE:
+  //   - v1.0 com effective_status='deprecated' (era active, mas existe newer)
+  //   - v1.1 com effective_status='pending' (recém-enviado)
+  //
+  // O comportamento esperado: continuar avaliando contra o v1.0 ATÉ o owner
+  // aprovar o v1.1. Pra isso, filtramos por effective_status ∈ ('active',
+  // 'deprecated') — ambos significam "owner já aprovou em algum momento".
+  // Status 'pending' (não-aprovado) e 'rejected' são excluídos.
   try {
     const supabase = createAdminClient()
     const { data: current } = await supabase
       .from("org_scripts_current")
-      .select("script_id")
+      .select("script_id, effective_status")
       .eq("org_id", call.org_id)
       .is("ended_at", null)
+      .in("effective_status", ["active", "deprecated"])
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle()

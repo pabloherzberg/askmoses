@@ -120,8 +120,15 @@ CLOSING SIGNALS (examples — not exhaustive):
 - Spanish: "sí, lo quiero", "voy a pagar", "vamos a hacerlo", "envíame el cobro", "trato hecho"
 - For any other language, look for explicit consent + commitment phrases that signal the prospect agreed to buy / pay / sign up.
 
-DETECTED OUTCOME RULE:
-If the prospect explicitly agreed to buy/sign/pay (independent of section scores), detectedOutcome MUST be "closed". Section scores can still be low if execution was sloppy, but the outcome reflects what actually happened in the deal.`
+DETECTED OUTCOME RULE — CRITICAL CONSISTENCY:
+detectedOutcome MUST be consistent with what you wrote in section feedback and strengths. Concretely:
+- If the prospect explicitly agreed to buy/sign/pay → detectedOutcome MUST be "closed". Period. Even if execution was sloppy. Outcome reflects WHAT HAPPENED, not HOW WELL it was done.
+- If you wrote "the deal closed", "successfully closed", "prospect agreed to purchase", "quick closure", or any phrase indicating a closed deal in ANY section's feedback or in strengths → detectedOutcome MUST be "closed". Writing one thing and marking another is a critical error.
+- Only use "not_closed" when the prospect explicitly declined or no agreement was reached.
+- Only use "no_outcome" when the call ended without any closure signal (e.g., call dropped, prospect said they'd think about it without committing).
+- "partial" is for cases where there was partial commitment (e.g., agreed to a follow-up meeting, took a trial, but did not pay).
+
+Self-check before responding: read your own sections[] and strengths. If they describe closure, your detectedOutcome field MUST say "closed".`
 }
 
 // ── Helpers puros ───────────────────────────────────────────────────────
@@ -238,6 +245,39 @@ function validateAnalysis(raw: unknown, allowedSections: string[]): ValidationRe
       overallScore: typeof obj.overallScore === "number" ? obj.overallScore : undefined,
     },
   }
+}
+
+// Keywords em vários idiomas que indicam "deal fechado" — usado pela
+// defensiva determinística que override outcome quando o LLM disse
+// "no_outcome" mas escreveu nas sections que houve fechamento.
+const CLOSED_KEYWORDS_REGEX =
+  /\b(closed|closing|close[ds]?\s+the\s+deal|deal\s+closed|signed?\s+up|purchas|bought|agreed?\s+to\s+(buy|pay|purchase|sign)|prospect\s+agreed|quick\s+closure|immediate\s+(prospect\s+)?agreement|fechou|fechad[oa]|comprou|aceitou|cerrad[oa]|firm[oó]|trato\s+hecho)\b/i
+
+/**
+ * Heuristic determinístico: se qualquer section "close" alcançou score alto
+ * (≥80/100) ou se strengths/summary mencionam explicitamente o deal fechado,
+ * retorna true. Usado pra corrigir contradição quando LLM diz no_outcome
+ * mas as próprias sections evidenciam closed.
+ */
+function sectionsSignalClosed(
+  sections: ParsedAnalysis["sections"],
+  strengths: string[],
+  summary: string,
+): boolean {
+  // (a) Section "close & next steps" (ou variação) com score alto + feedback
+  // mencionando fechamento.
+  for (const s of sections) {
+    const isClose = s.name.toLowerCase().includes("close")
+    if (isClose && s.score >= 80 && CLOSED_KEYWORDS_REGEX.test(s.feedback)) {
+      return true
+    }
+  }
+  // (b) Strengths array ou summary com keyword de fechamento.
+  for (const str of strengths) {
+    if (CLOSED_KEYWORDS_REGEX.test(str)) return true
+  }
+  if (CLOSED_KEYWORDS_REGEX.test(summary)) return true
+  return false
 }
 
 function reorderSectionsToRubric(
@@ -414,9 +454,22 @@ export async function scoreTranscript(
   const scores = parsed.sections.map((s) => s.score)
   const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
   const rawScore = Math.round(avg)
-  const reportedOutcome = coerceOutcome(input.reportedOutcome ?? parsed.detectedOutcome)
+  let detectedOutcome = coerceOutcome(parsed.detectedOutcome)
+
+  // Fix B — Pós-processamento determinístico. O LLM (gpt-4o-mini sobretudo)
+  // às vezes escreve nas sections que "the deal closed" mas mantém
+  // detectedOutcome="no_outcome" no top-level. Isso vira contradição visível
+  // (UI mostra "Closed deal" no feedback e "No Outcome" no badge). Cobrimos
+  // override determinístico quando as sections evidenciam fechamento.
+  if (detectedOutcome === "no_outcome" || detectedOutcome === "not_closed") {
+    if (sectionsSignalClosed(parsed.sections, parsed.strengths, parsed.summary)) {
+      console.info("[scoring] outcome override: sections signal closed, LLM said", parsed.detectedOutcome)
+      detectedOutcome = "closed"
+    }
+  }
+
+  const reportedOutcome = coerceOutcome(input.reportedOutcome ?? detectedOutcome)
   const overallScore = Math.min(rawScore, OUTCOME_OVERALL_CAP[reportedOutcome])
-  const detectedOutcome = coerceOutcome(parsed.detectedOutcome)
 
   const normalisedSections: SectionScore[] = parsed.sections.map((s) => ({
     name: s.name,
