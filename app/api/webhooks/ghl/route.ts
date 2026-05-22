@@ -32,6 +32,10 @@ export async function POST(req: NextRequest) {
     orgConfig = await dbGetOrgGhlConfigByLocation(locationId)
   } catch (err) {
     console.error("[ghl-webhook] lookup failed", { err, locationId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:lookup:${locationId}`,
+      error: err instanceof Error ? `[lookup] ${err.message}` : String(err),
+    })
     return jsonError("Server error", 500)
   }
   if (!orgConfig) {
@@ -104,6 +108,12 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error("[ghl-webhook] upsert failed", { err, externalCallId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:upsert:${externalCallId}`,
+      orgId: orgConfig.orgId,
+      contactId,
+      error: err instanceof Error ? `[upsert] ${err.message}` : String(err),
+    })
     return jsonError("Failed to persist call", 500)
   }
 
