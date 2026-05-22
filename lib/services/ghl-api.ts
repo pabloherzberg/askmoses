@@ -89,6 +89,12 @@ export async function fetchRecordingUrl(
   }
   const conversations = convData.conversations ?? []
 
+  console.info("[ghl-api] conversations search result", {
+    contactId,
+    conversationsCount: conversations.length,
+    conversationIds: conversations.map((c) => c.id),
+  })
+
   for (const conv of conversations) {
     const msgRes = await fetch(
       `${base}/conversations/${encodeURIComponent(conv.id)}/messages`,
@@ -120,6 +126,20 @@ export async function fetchRecordingUrl(
         return tb - ta
       })
 
+    console.info("[ghl-api] conversation messages", {
+      conversationId: conv.id,
+      messagesCount: messages.length,
+      callMessagesCount: callMessages.length,
+      messageTypes: messages.map((m) => m.type),
+      callMessagesWithAttachments: callMessages.map((m) => ({
+        id: m.id,
+        type: m.type,
+        dateAdded: m.dateAdded,
+        hasMetaRecording: Boolean(m.meta?.call?.recordingUrl),
+        attachmentsCount: m.attachments?.length ?? 0,
+      })),
+    })
+
     for (const msg of callMessages) {
       const url = extractRecordingUrl(msg)
       if (url) {
@@ -128,6 +148,10 @@ export async function fetchRecordingUrl(
     }
   }
 
+  console.warn("[ghl-api] no recording extractable from any conversation", {
+    contactId,
+    scannedConversations: conversations.length,
+  })
   return null
 }
 
