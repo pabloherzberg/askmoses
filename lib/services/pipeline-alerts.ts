@@ -2,6 +2,7 @@ export type PipelineFailureStatus =
   | "no_recording"
   | "transcription_failed"
   | "webhook_failed"
+  | "auth_expired"
 
 export interface PipelineFailureContext {
   callId: string
