@@ -771,6 +771,7 @@
     "subscriptionSettings": "Configure {name}'s plan",
     "ghlSettings": "Configure {name}'s GHL integration",
     "ownerSettings": "Manage {name}'s owner",
+    "orgConfig": "Configure {name}",
     "scriptManagement": {
       "title": "Organization script",
       "subtitle": "Review the active script and send a new version for AI analysis and owner approval.",
@@ -822,7 +823,15 @@
       "exit": "Back to admin panel",
       "exiting": "Exiting…"
     },
+    "orgConfig": {
+      "eyebrow": "Organization configuration",
+      "noOwner": "This organization does not have an owner yet.",
+      "ghlLinkTitle": "GHL / Pepper integration",
+      "ghlLinkSubtitle": "Connect the GoHighLevel workflow for automatic call transcription."
+    },
     "subscriptionOverride": {
+      "cardTitle": "Subscription",
+      "cardSubtitle": "Override plan, status and MRR. Used for customers on special terms.",
       "eyebrow": "Subscription override",
       "statusLabel": "Status",
       "status_active": "Active",
@@ -884,6 +893,7 @@
       "copied": "Copied",
       "back": "← Back to panel",
       "goToSubscription": "Subscription override →",
+      "goToOrgConfig": "← Back to organization configuration",
       "authErrorBannerTitle": "GHL authentication failed",
       "authErrorBannerBody": "The Private Integration Token (PIT) was likely rotated in Pepper. Paste the new token in the \"GHL access token (PIT)\" field below and click Save — the warning will clear automatically.",
       "authErrorBannerLastSeen": "Last failure"

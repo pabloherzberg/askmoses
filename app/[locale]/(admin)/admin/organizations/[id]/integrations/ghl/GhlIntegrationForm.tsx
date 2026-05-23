@@ -266,11 +266,11 @@ export function GhlIntegrationForm({ orgId, orgName, initial, webhookUrl }: Prop
           </a>
           <span style={{ color: 'var(--am-muted)' }} className="text-xs opacity-40">·</span>
           <a
-            href={`/${locale}/admin/organizations/${orgId}/subscription`}
+            href={`/${locale}/admin/organizations/${orgId}`}
             className="text-xs underline opacity-60 hover:opacity-100"
             style={{ color: 'var(--am-muted)' }}
           >
-            {t('goToSubscription')}
+            {t('goToOrgConfig')}
           </a>
         </div>
       </form>

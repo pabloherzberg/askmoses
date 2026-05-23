@@ -771,6 +771,7 @@
     "subscriptionSettings": "Configurar plan de {name}",
     "ghlSettings": "Configurar integración GHL de {name}",
     "ownerSettings": "Gestionar el owner de {name}",
+    "orgConfig": "Configurar {name}",
     "scriptManagement": {
       "title": "Script de la organización",
       "subtitle": "Revisa el script activo y envía una nueva versión para análisis IA y aprobación del owner.",
@@ -822,7 +823,15 @@
       "exit": "Volver al panel admin",
       "exiting": "Saliendo…"
     },
+    "orgConfig": {
+      "eyebrow": "Configuración de la organización",
+      "noOwner": "Esta organización aún no tiene owner.",
+      "ghlLinkTitle": "Integración GHL / Pepper",
+      "ghlLinkSubtitle": "Conectar el workflow de GoHighLevel para transcripción automática de llamadas."
+    },
     "subscriptionOverride": {
+      "cardTitle": "Suscripción",
+      "cardSubtitle": "Override de plan, estado y MRR. Usado para clientes en condiciones especiales.",
       "eyebrow": "Override de suscripción",
       "statusLabel": "Estado",
       "status_active": "Activa",
@@ -884,6 +893,7 @@
       "copied": "Copiado",
       "back": "← Volver al panel",
       "goToSubscription": "Override de suscripción →",
+      "goToOrgConfig": "← Volver a la configuración de la organización",
       "authErrorBannerTitle": "Falla de autenticación en GHL",
       "authErrorBannerBody": "Probablemente el Private Integration Token (PIT) fue rotado en Pepper. Pega el nuevo token en el campo \"Access token de GHL (PIT)\" abajo y haz clic en Guardar — el aviso desaparecerá automáticamente.",
       "authErrorBannerLastSeen": "Última falla registrada"
