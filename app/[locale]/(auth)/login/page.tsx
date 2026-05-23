@@ -209,6 +209,15 @@ export default function LoginPage() {
               style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
               placeholder={t('passwordPlaceholder')}
             />
+            <div className="mt-1.5 text-right">
+              <Link
+                href={`/${locale}/forgot-password`}
+                className="text-xs underline opacity-80 hover:opacity-100"
+                style={{ color: 'var(--am-muted)' }}
+              >
+                {t('forgotPasswordLink')}
+              </Link>
+            </div>
           </div>
         )}
 

@@ -40,7 +40,19 @@
     "roleAdmin": "Admin",
     "backToHome": "Volver al inicio",
     "noAccount": "¿Aún no tienes cuenta?",
-    "signupLink": "Regístrate"
+    "signupLink": "Regístrate",
+    "forgotPasswordLink": "¿Olvidaste tu contraseña?"
+  },
+  "ForgotPassword": {
+    "title": "¿Olvidaste tu contraseña?",
+    "subtitle": "Ingresa tu email y te enviaremos un enlace para elegir una nueva contraseña.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "emailInvalid": "Ingresa un email válido.",
+    "submit": "Enviar enlace de recuperación",
+    "submitting": "Enviando…",
+    "sent": "Si este email está registrado, recibirás un enlace de recuperación. Revisa tu bandeja de entrada.",
+    "backToLogin": "Volver al login"
   },
   "Signup": {
     "title": "Crea tu cuenta",
@@ -390,12 +402,16 @@
     "eyebrow": "Seguridad",
     "title": "Contraseña",
     "subtitle": "Define o cambia tu contraseña. El magic link sigue funcionando — la contraseña es una alternativa.",
+    "recoveryTitle": "Elige una nueva contraseña",
+    "recoverySubtitle": "Te hemos verificado. Define una nueva contraseña para terminar el acceso.",
     "welcome": {
       "aria": "Bienvenido",
       "close": "Cerrar",
       "title": "¡Bienvenido! ¿Quieres definir una contraseña ahora?",
       "body": "Puedes saltarte este paso y seguir entrando por magic link. Si lo prefieres, define una contraseña aquí en segundos.",
-      "skip": "Saltar por ahora"
+      "skip": "Saltar por ahora",
+      "forcedTitle": "Define una contraseña para continuar",
+      "forcedBody": "Como owner de la organización, una contraseña es obligatoria antes de acceder al dashboard. Define una abajo — toma menos de un minuto."
     },
     "form": {
       "newLabel": "Nueva contraseña",
@@ -754,6 +770,36 @@
     "subInactive": "Inactiva",
     "subscriptionSettings": "Configurar plan de {name}",
     "ghlSettings": "Configurar integración GHL de {name}",
+    "ownerSettings": "Gestionar el owner de {name}",
+    "ownerManagement": {
+      "eyebrow": "Gestión del owner",
+      "noOwner": "Esta organización aún no tiene owner.",
+      "title": "Owner de la organización",
+      "subtitle": "Cambia el email del owner o envía un enlace de configuración / recuperación de contraseña.",
+      "pendingBadge": "Pendiente",
+      "emailLabel": "Email",
+      "edit": "Editar",
+      "saveAria": "Guardar",
+      "cancelAria": "Cancelar",
+      "resendInvite": "Reenviar email de setup",
+      "sendRecovery": "Enviar enlace de recuperación",
+      "confirmTitle": "¿Cambiar email del owner?",
+      "confirmBody": "La contraseña actual del owner será invalidada. Recibirá un enlace en {newEmail} para elegir una nueva antes de recuperar el acceso. {oldEmail} dejará de funcionar.",
+      "confirmCancel": "Cancelar",
+      "confirmAction": "Cambiar email y enviar enlace",
+      "emailInvalidTitle": "Email inválido",
+      "emailInvalidBody": "Ingresa un email válido.",
+      "emailChangedTitle": "Email cambiado",
+      "emailChangedSentBody": "Enlace de setup enviado a {email}.",
+      "emailChangedMockedBody": "Email guardado. (La entrega de email está en modo mock — el owner no recibirá {email}.)",
+      "resendSentTitle": "Email enviado",
+      "resendSentBody": "Enlace de setup reenviado a {email}.",
+      "resendMockedBody": "Reenvío registrado. (La entrega de email está en modo mock — el owner no recibirá {email}.)",
+      "recoverySentTitle": "Recuperación enviada",
+      "recoverySentBody": "Si {email} está registrado, se ha enviado un enlace de recuperación.",
+      "errorTitle": "No se pudo completar",
+      "errorBody": "Algo salió mal. Intenta de nuevo."
+    },
     "impersonateTooltip": "Entrar como {name} (vista de solo lectura)",
     "impersonateError": "No se pudo entrar en esta organización. Inténtalo de nuevo.",
     "impersonateBanner": {

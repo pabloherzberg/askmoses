@@ -40,7 +40,19 @@
     "roleAdmin": "Admin",
     "backToHome": "Back to home",
     "noAccount": "Don't have an account yet?",
-    "signupLink": "Sign up"
+    "signupLink": "Sign up",
+    "forgotPasswordLink": "Forgot your password?"
+  },
+  "ForgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a link to choose a new password.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailInvalid": "Please enter a valid email.",
+    "submit": "Send recovery link",
+    "submitting": "Sending…",
+    "sent": "If this email is registered, you'll receive a recovery link. Check your inbox.",
+    "backToLogin": "Back to login"
   },
   "Signup": {
     "title": "Create your account",
@@ -390,12 +402,16 @@
     "eyebrow": "Security",
     "title": "Password",
     "subtitle": "Set or change your password. Magic link still works — password is an alternative.",
+    "recoveryTitle": "Choose a new password",
+    "recoverySubtitle": "You're verified. Set a new password to finish signing in.",
     "welcome": {
       "aria": "Welcome",
       "close": "Close",
       "title": "Welcome! Want to set a password now?",
       "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
-      "skip": "Skip for now"
+      "skip": "Skip for now",
+      "forcedTitle": "Set a password to continue",
+      "forcedBody": "As the organization owner, a password is required before you can access the dashboard. Choose one below — it should take less than a minute."
     },
     "form": {
       "newLabel": "New password",
@@ -754,6 +770,36 @@
     "subInactive": "Inactive",
     "subscriptionSettings": "Configure {name}'s plan",
     "ghlSettings": "Configure {name}'s GHL integration",
+    "ownerSettings": "Manage {name}'s owner",
+    "ownerManagement": {
+      "eyebrow": "Owner management",
+      "noOwner": "This organization has no owner yet.",
+      "title": "Organization owner",
+      "subtitle": "Change the owner's email or send a password setup / recovery link.",
+      "pendingBadge": "Pending",
+      "emailLabel": "Email",
+      "edit": "Edit",
+      "saveAria": "Save",
+      "cancelAria": "Cancel",
+      "resendInvite": "Resend setup email",
+      "sendRecovery": "Send recovery link",
+      "confirmTitle": "Change owner's email?",
+      "confirmBody": "The owner's current password will be invalidated. They'll receive a setup link at {newEmail} to choose a new password before regaining access. {oldEmail} will no longer work.",
+      "confirmCancel": "Cancel",
+      "confirmAction": "Change email & send setup link",
+      "emailInvalidTitle": "Invalid email",
+      "emailInvalidBody": "Enter a valid email address.",
+      "emailChangedTitle": "Email changed",
+      "emailChangedSentBody": "Setup link sent to {email}.",
+      "emailChangedMockedBody": "Email saved. (Email delivery is mocked — owner will not receive {email}.)",
+      "resendSentTitle": "Email sent",
+      "resendSentBody": "Setup link resent to {email}.",
+      "resendMockedBody": "Resend recorded. (Email delivery is mocked — owner will not receive {email}.)",
+      "recoverySentTitle": "Recovery sent",
+      "recoverySentBody": "If {email} is registered, a recovery link was sent.",
+      "errorTitle": "Could not complete",
+      "errorBody": "Something went wrong. Try again."
+    },
     "impersonateTooltip": "Enter {name} (read-only view)",
     "impersonateError": "Could not enter this organization. Try again.",
     "impersonateBanner": {
