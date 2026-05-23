@@ -9,7 +9,15 @@
       "Bash(npx msw:*)",
       "Bash(curl -s -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' 'https://services.leadconnectorhq.com/conversations/search?contactId=wsqDzFjzSBj3SkxAeyLy&limit=5')",
       "Bash(curl -s -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' https://services.leadconnectorhq.com/conversations/zGnn1KO8AOjJ1q0rRncv/messages)",
-      "Bash(curl -s -o /tmp/recording.bin -w 'HTTP %{http_code}\\\\nContent-Type: %{content_type}\\\\nSize: %{size_download} bytes\\\\n' -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' https://services.leadconnectorhq.com/conversations/messages/Pt4P39b25sKEUL2cakuv/locations/tZd61H2adMPsphEwGyDt/recording)"
+      "Bash(curl -s -o /tmp/recording.bin -w 'HTTP %{http_code}\\\\nContent-Type: %{content_type}\\\\nSize: %{size_download} bytes\\\\n' -H 'Authorization: Bearer pit-aa7f966b-d6bf-4a57-97e5-1d1290512e8f' -H 'Version: 2021-04-15' https://services.leadconnectorhq.com/conversations/messages/Pt4P39b25sKEUL2cakuv/locations/tZd61H2adMPsphEwGyDt/recording)",
+      "Bash(gh pr *)",
+      "PowerShell(gh pr list --head hotfix/notifications --json number,title,mergeable,mergeStateStatus 2>&1)",
+      "Bash(Find-ChildItem -Path \"c:\\\\Users\\\\pablo\\\\Documents\\\\v0-coach-mvp\\\\app\" -Recurse -Filter \"*admin*\" -Type d)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs ls -lh)",
+      "Bash(Get-Location)",
+      "Bash(node -e \"['en','es','fr','pt'].forEach\\(l => { try { JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/'+l+'.json','utf8'\\)\\); console.log\\(l+' OK'\\); } catch\\(e\\) { console.error\\(l+' FAIL:', e.message\\); process.exit\\(1\\); } }\\)\")",
+      "Bash(node -e \"['en','es','fr','pt'].forEach\\(l => JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/'+l+'.json','utf8'\\)\\)\\); console.log\\('all 4 locale files parse OK'\\)\")"
     ]
   }
 }

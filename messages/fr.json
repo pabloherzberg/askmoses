@@ -40,7 +40,19 @@
     "roleAdmin": "Admin",
     "backToHome": "Retour à l'accueil",
     "noAccount": "Pas encore de compte ?",
-    "signupLink": "S'inscrire"
+    "signupLink": "S'inscrire",
+    "forgotPasswordLink": "Mot de passe oublié ?"
+  },
+  "ForgotPassword": {
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre email et nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "votre@email.com",
+    "emailInvalid": "Entrez un email valide.",
+    "submit": "Envoyer le lien de récupération",
+    "submitting": "Envoi…",
+    "sent": "Si cet email est enregistré, vous recevrez un lien de récupération. Vérifiez votre boîte de réception.",
+    "backToLogin": "Retour à la connexion"
   },
   "Signup": {
     "title": "Créez votre compte",
@@ -386,12 +398,16 @@
     "eyebrow": "Sécurité",
     "title": "Mot de passe",
     "subtitle": "Définissez ou changez votre mot de passe. Le magic link fonctionne toujours — le mot de passe est une alternative.",
+    "recoveryTitle": "Choisissez un nouveau mot de passe",
+    "recoverySubtitle": "Vous êtes vérifié. Définissez un nouveau mot de passe pour finaliser la connexion.",
     "welcome": {
       "aria": "Bienvenue",
       "close": "Fermer",
       "title": "Bienvenue ! Vous voulez définir un mot de passe maintenant ?",
       "body": "Vous pouvez passer cette étape et continuer à vous connecter par magic link. Si vous préférez, définissez un mot de passe ici en quelques secondes.",
-      "skip": "Passer pour l'instant"
+      "skip": "Passer pour l'instant",
+      "forcedTitle": "Définissez un mot de passe pour continuer",
+      "forcedBody": "En tant qu'owner de l'organisation, un mot de passe est obligatoire avant d'accéder au dashboard. Définissez-en un ci-dessous — cela prend moins d'une minute."
     },
     "form": {
       "newLabel": "Nouveau mot de passe",
@@ -719,6 +735,36 @@
     "subInactive": "Inactif",
     "subscriptionSettings": "Configurer le plan de {name}",
     "ghlSettings": "Configurer l'intégration GHL de {name}",
+    "ownerSettings": "Gérer l'owner de {name}",
+    "ownerManagement": {
+      "eyebrow": "Gestion de l'owner",
+      "noOwner": "Cette organisation n'a pas encore d'owner.",
+      "title": "Owner de l'organisation",
+      "subtitle": "Modifiez l'email de l'owner ou envoyez un lien de configuration / récupération de mot de passe.",
+      "pendingBadge": "En attente",
+      "emailLabel": "Email",
+      "edit": "Modifier",
+      "saveAria": "Enregistrer",
+      "cancelAria": "Annuler",
+      "resendInvite": "Renvoyer l'email de setup",
+      "sendRecovery": "Envoyer le lien de récupération",
+      "confirmTitle": "Changer l'email de l'owner ?",
+      "confirmBody": "Le mot de passe actuel de l'owner sera invalidé. Il recevra un lien à {newEmail} pour choisir un nouveau mot de passe avant de récupérer l'accès. {oldEmail} ne fonctionnera plus.",
+      "confirmCancel": "Annuler",
+      "confirmAction": "Changer l'email et envoyer le lien",
+      "emailInvalidTitle": "Email invalide",
+      "emailInvalidBody": "Entrez une adresse email valide.",
+      "emailChangedTitle": "Email modifié",
+      "emailChangedSentBody": "Lien de setup envoyé à {email}.",
+      "emailChangedMockedBody": "Email enregistré. (La livraison d'email est en mode mock — l'owner ne recevra pas {email}.)",
+      "resendSentTitle": "Email envoyé",
+      "resendSentBody": "Lien de setup renvoyé à {email}.",
+      "resendMockedBody": "Renvoi enregistré. (La livraison d'email est en mode mock — l'owner ne recevra pas {email}.)",
+      "recoverySentTitle": "Récupération envoyée",
+      "recoverySentBody": "Si {email} est enregistré, un lien de récupération a été envoyé.",
+      "errorTitle": "Impossible de terminer",
+      "errorBody": "Quelque chose s'est mal passé. Réessayez."
+    },
     "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
     "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
     "impersonateBanner": {

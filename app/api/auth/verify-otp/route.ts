@@ -50,10 +50,19 @@ export async function GET(request: NextRequest) {
   // Primeiro acesso após invite aceito: redireciona pra /password?welcome=1
   // com next=<home original>. Página mostra banner "definir senha agora ou
   // pular" — decisão Victor 2026-05-13: magic link continua funcionando, a
-  // senha é opcional. Apenas pro fluxo invite — magiclink/recovery vão direto.
+  // senha é opcional. Apenas pro fluxo invite — magiclink vai direto.
   if (typeRaw === 'invite') {
     return NextResponse.redirect(
       `${origin}/password?welcome=1&next=${encodeURIComponent(homePath)}`,
+    )
+  }
+
+  // Recovery: usuário esqueceu senha e clicou no link de recuperação. Cai
+  // direto no form de definir senha (sem banner welcome). Após salvar,
+  // PasswordForm faz hard redirect pro homePath.
+  if (typeRaw === 'recovery') {
+    return NextResponse.redirect(
+      `${origin}/password?recovery=1&next=${encodeURIComponent(homePath)}`,
     )
   }
 
