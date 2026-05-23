@@ -594,6 +594,10 @@ export default function InsightsPage() {
     _setIntelligenceLoading(v)
   }, [])
   const [intelligenceError, setIntelligenceError] = useState("")
+  // Caso "primeira aprovação": org sem script ativo prévio recebe sugestão do
+  // admin. Não há análise comparativa, mas owner ainda aprova/rejeita normalmente
+  // pelo banner — mostramos um empty state no lugar do painel.
+  const [firstApproval, setFirstApproval] = useState(false)
   const [suggestionDecisions, setSuggestionDecisions] = useState<Array<{ index: number; decision: "pending" | "accepted" | "rejected"; editedText: string }>>([])
   const [orgScriptIdCache, setOrgScriptIdCache] = useState<string | null>(null)
 
@@ -773,6 +777,7 @@ export default function InsightsPage() {
     setIntelligenceLoadingSync(true)
     setIntelligenceError("")
     setIntelligence(null)
+    setFirstApproval(false)
     setSuggestionDecisions([])
 
     try {
@@ -834,6 +839,15 @@ export default function InsightsPage() {
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error?.message || t("errors.generateFailed"))
+
+      // Caso especial: backend sinaliza "primeira aprovação" — sem análise
+      // comparativa porque a org não tem script ativo prévio. UI mostra empty
+      // state, owner ainda aprova/rejeita pelo banner.
+      if (json.data?.firstApproval === true) {
+        setFirstApproval(true)
+        setOrgScriptIdCache(orgScriptId ?? null)
+        return
+      }
 
       setIntelligence(json.data)
       setOrgScriptIdCache(orgScriptId ?? null)
@@ -1021,6 +1035,33 @@ export default function InsightsPage() {
           {actionError && (
             <p className="mt-3 text-xs" style={{ color: "var(--am-red)" }}>{actionError}</p>
           )}
+        </div>
+      )}
+
+      {/* ── First approval empty state — org sem script ativo prévio ── */}
+      {firstApproval && (
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+            <p className="text-xs font-medium uppercase tracking-widest shrink-0" style={{ color: "var(--am-muted)" }}>
+              {t("title")}
+            </p>
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+          </div>
+          <div
+            className="rounded-2xl border p-6 flex items-start gap-4"
+            style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}
+          >
+            <Sparkles size={20} style={{ color: "var(--am-accent2)" }} className="shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold" style={{ color: "var(--am-text)" }}>
+                {t("firstApproval.title")}
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--am-muted)" }}>
+                {t("firstApproval.body")}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

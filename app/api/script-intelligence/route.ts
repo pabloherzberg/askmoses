@@ -42,15 +42,15 @@ export async function POST(request: NextRequest) {
     return data as { id: string; name: string; description: string | null; sections: ScriptSection[] } | null
   }
 
-  // Resolve current script ID
+  // Resolve current script ID. Quando o caller (frontend) não fornece um
+  // currentScriptId E a org não tem script ativo no schema antigo, isso é o
+  // caso de "primeira aprovação" — sem base de comparação. Devolve um shape
+  // diferenciado pra UI mostrar empty state em vez de tratar como erro.
   let resolvedCurrentScriptId = currentScriptId
   if (!resolvedCurrentScriptId) {
     const activeScript = await loadActiveScript()
     if (!activeScript) {
-      return Response.json(
-        { data: null, error: { message: 'Current script not found', code: 404 } },
-        { status: 404 },
-      )
+      return ok({ firstApproval: true })
     }
     resolvedCurrentScriptId = activeScript.id
   }

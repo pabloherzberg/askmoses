@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { FileText, Loader2, Send } from 'lucide-react'
+import { FileText, Loader2, RefreshCw, Send } from 'lucide-react'
 import { SendScriptModal } from '../../SendScriptModal'
+import { useToast } from '@/hooks/use-toast'
 
 export interface ScriptSnapshot {
   name: string
@@ -72,7 +73,7 @@ export function ScriptManagementCard({ orgId, orgName, activeScript, pending }: 
         {/* Pending row (only if there is a pending) */}
         {pending && (
           <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--am-border)' }}>
-            <PendingRow pending={pending} />
+            <PendingRow orgId={orgId} pending={pending} />
           </div>
         )}
       </div>
@@ -134,8 +135,39 @@ function ScriptRow({
   )
 }
 
-function PendingRow({ pending }: { pending: PendingSnapshot }) {
+function PendingRow({ orgId, pending }: { orgId: string; pending: PendingSnapshot }) {
   const t = useTranslations('Admin.scriptManagement')
+  const router = useRouter()
+  const { toast } = useToast()
+  const [retrying, setRetrying] = useState(false)
+
+  const isStuck = pending.analysisStatus === 'processing' || pending.analysisStatus === 'queued'
+
+  const handleRetry = async () => {
+    if (retrying) return
+    setRetrying(true)
+    try {
+      const res = await fetch('/api/admin/scripts/retry-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId }),
+      })
+      const json = (await res.json()) as { error: { message: string } | null }
+      if (!res.ok || json.error) {
+        throw new Error(json.error?.message ?? t('retryError'))
+      }
+      toast({ title: t('retrySuccess') })
+      router.refresh()
+    } catch (err) {
+      toast({
+        title: t('retryError'),
+        description: err instanceof Error ? err.message : undefined,
+        variant: 'destructive',
+      })
+    } finally {
+      setRetrying(false)
+    }
+  }
 
   const statusBadge = (() => {
     switch (pending.analysisStatus) {
@@ -198,6 +230,18 @@ function PendingRow({ pending }: { pending: PendingSnapshot }) {
             v{pending.version}
           </span>
           {statusBadge}
+          {isStuck && (
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying}
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: 'var(--am-bg3)', color: 'var(--am-text)', border: '1px solid var(--am-border)' }}
+            >
+              {retrying ? <Loader2 size={9} className="animate-spin" /> : <RefreshCw size={9} />}
+              {t('retry')}
+            </button>
+          )}
         </div>
       </div>
     </div>
