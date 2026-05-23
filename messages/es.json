@@ -780,7 +780,10 @@
       "changeScript": "Cambiar script",
       "statusAnalyzing": "Analizando…",
       "statusReady": "Listo p/ aprobación",
-      "statusError": "Error en el análisis"
+      "statusError": "Error en el análisis",
+      "retry": "Reanalizar",
+      "retrySuccess": "Análisis reprogramado",
+      "retryError": "No se pudo reprogramar el análisis"
     },
     "ownerManagement": {
       "eyebrow": "Gestión del owner",
@@ -1368,6 +1371,10 @@
         "tips": "Consejos",
         "weight": "Peso",
         "critical": "Crítico"
+      },
+      "firstApproval": {
+        "title": "Primera sugerencia de script",
+        "body": "Esta es la primera sugerencia de script de tu organización. No hay base anterior para análisis comparativo — usa el panel de arriba para revisar el contenido y aprobar o rechazar."
       },
       "suggestion": {
         "noPending": "Sin sugerencia de script pendiente. Cuando el admin envíe una nueva versión, aparecerá aquí.",
