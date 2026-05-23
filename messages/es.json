@@ -771,6 +771,17 @@
     "subscriptionSettings": "Configurar plan de {name}",
     "ghlSettings": "Configurar integración GHL de {name}",
     "ownerSettings": "Gestionar el owner de {name}",
+    "scriptManagement": {
+      "title": "Script de la organización",
+      "subtitle": "Revisa el script activo y envía una nueva versión para análisis IA y aprobación del owner.",
+      "activeLabel": "Script activo",
+      "noActive": "Sin script activo en esta organización.",
+      "pendingLabel": "Esperando aprobación del owner",
+      "changeScript": "Cambiar script",
+      "statusAnalyzing": "Analizando…",
+      "statusReady": "Listo p/ aprobación",
+      "statusError": "Error en el análisis"
+    },
     "ownerManagement": {
       "eyebrow": "Gestión del owner",
       "noOwner": "Esta organización aún no tiene owner.",
@@ -1362,6 +1373,8 @@
         "noPending": "Sin sugerencia de script pendiente. Cuando el admin envíe una nueva versión, aparecerá aquí.",
         "bannerTitle": "Sugerencia de Script del Admin",
         "pendingApproval": "Pendiente de aprobación",
+        "analyzing": "Analizando…",
+        "analyzingHint": "El análisis de IA aún está en curso. La aprobación estará disponible cuando termine.",
         "sentBy": "Enviado por",
         "currentV": "Versión actual",
         "rejectAll": "Rechazar todo",

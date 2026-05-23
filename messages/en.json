@@ -771,6 +771,17 @@
     "subscriptionSettings": "Configure {name}'s plan",
     "ghlSettings": "Configure {name}'s GHL integration",
     "ownerSettings": "Manage {name}'s owner",
+    "scriptManagement": {
+      "title": "Organization script",
+      "subtitle": "Review the active script and send a new version for AI analysis and owner approval.",
+      "activeLabel": "Active script",
+      "noActive": "No active script for this organization.",
+      "pendingLabel": "Awaiting owner approval",
+      "changeScript": "Change script",
+      "statusAnalyzing": "Analyzing…",
+      "statusReady": "Ready for approval",
+      "statusError": "Analysis error"
+    },
     "ownerManagement": {
       "eyebrow": "Owner management",
       "noOwner": "This organization has no owner yet.",
@@ -1362,6 +1373,8 @@
         "noPending": "No pending script suggestion. When the admin sends a new version, it will appear here.",
         "bannerTitle": "Admin Script Suggestion",
         "pendingApproval": "Pending approval",
+        "analyzing": "Analyzing…",
+        "analyzingHint": "The AI analysis is still running. Approval becomes available once it finishes.",
         "sentBy": "Sent by",
         "currentV": "Current version",
         "rejectAll": "Reject all",

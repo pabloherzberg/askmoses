@@ -29,6 +29,10 @@ interface PendingScriptInfo {
   orgScriptId: string
   startedAt: string
   sentByName: string | null
+  // Status da análise IA do Script Intelligence comparativo. Enquanto for
+  // 'processing' a aprovação fica desabilitada — owner precisa esperar a
+  // análise terminar pra decidir com contexto.
+  analysisStatus: 'processing' | 'queued' | 'ready' | 'error' | null
   incoming: { id: string; name: string; description: string | null; version: string }
   previous: { id: string; name: string; description: string | null; version: string } | null
 }
@@ -676,6 +680,13 @@ export default function InsightsPage() {
           setIntelligence(null)
           setSuggestionDecisions([])
           setPending(newPending)
+        } else {
+          // Mesmo orgScriptId, mas analysisStatus pode ter avançado de
+          // 'processing' → 'ready' / 'error'. Atualiza o objeto pra UI
+          // liberar os botões accept/reject sem resetar intelligence/decisões.
+          setPending((prev) =>
+            prev?.analysisStatus !== newPending.analysisStatus ? newPending : prev,
+          )
         }
       } catch {
         // silencioso
@@ -694,6 +705,7 @@ export default function InsightsPage() {
 
   const handleAccept = async () => {
     if (!pending || busy) return
+    if (pending.analysisStatus === 'processing') return
     setBusy("accept")
     setActionError(null)
     try {
@@ -724,6 +736,7 @@ export default function InsightsPage() {
 
   const handleReject = async () => {
     if (!pending || busy) return
+    if (pending.analysisStatus === 'processing') return
     setBusy("reject")
     setActionError(null)
     try {
@@ -784,11 +797,16 @@ export default function InsightsPage() {
                 setSuggestionDecisions(pollCache.decisions ?? [])
                 setOrgScriptIdCache(orgScriptId)
                 setIntelligenceLoadingSync(false)
+                // Sincroniza o status do pending pra liberar accept/reject sem
+                // depender do polling de /api/scripts/pending (que fica em
+                // early-return enquanto há pending no state).
+                setPending((prev) => (prev ? { ...prev, analysisStatus: 'ready' } : prev))
               } else if (pollCache?.analysis_status === 'error') {
                 clearInterval(analysisPollRef.current!)
                 analysisPollRef.current = null
                 setIntelligenceError(t("errors.generateFailed"))
                 setIntelligenceLoadingSync(false)
+                setPending((prev) => (prev ? { ...prev, analysisStatus: 'error' } : prev))
               }
             }, 5000)
             return
@@ -953,9 +971,16 @@ export default function InsightsPage() {
                   <p className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>
                     {t("suggestion.bannerTitle")}
                   </p>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(255,171,46,0.15)", borderColor: "rgba(255,171,46,0.3)", color: "var(--am-amber)" }}>
-                    {t("suggestion.pendingApproval")}
-                  </span>
+                  {pending!.analysisStatus === 'processing' ? (
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(94,179,255,0.15)", borderColor: "rgba(94,179,255,0.3)", color: "var(--am-blue)" }}>
+                      <Loader2 size={10} className="animate-spin" />
+                      {t("suggestion.analyzing")}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(255,171,46,0.15)", borderColor: "rgba(255,171,46,0.3)", color: "var(--am-amber)" }}>
+                      {t("suggestion.pendingApproval")}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-5 flex-wrap text-sm">
                   <div>
@@ -974,14 +999,22 @@ export default function InsightsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                <button type="button" onClick={handleReject} disabled={!!busy} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors disabled:opacity-50 cursor-pointer" style={{ borderColor: "rgba(255,94,94,0.3)", color: "var(--am-red)", background: "transparent" }}>
-                  {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
-                  {t("suggestion.rejectAll")}
-                </button>
-                <button type="button" onClick={handleAccept} disabled={!!busy} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer" style={{ background: "var(--am-green)", color: "#000" }}>
-                  {busy === "accept" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  {t("suggestion.approveAll")}
-                </button>
+                {(() => {
+                  const analyzing = pending!.analysisStatus === 'processing'
+                  const tooltip = analyzing ? t("suggestion.analyzingHint") : undefined
+                  return (
+                    <>
+                      <button type="button" onClick={handleReject} disabled={!!busy || analyzing} title={tooltip} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ borderColor: "rgba(255,94,94,0.3)", color: "var(--am-red)", background: "transparent" }}>
+                        {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                        {t("suggestion.rejectAll")}
+                      </button>
+                      <button type="button" onClick={handleAccept} disabled={!!busy || analyzing} title={tooltip} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ background: "var(--am-green)", color: "#000" }}>
+                        {busy === "accept" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {t("suggestion.approveAll")}
+                      </button>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           )}
