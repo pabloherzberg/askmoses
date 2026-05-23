@@ -126,5 +126,5 @@ export async function POST(request: NextRequest) {
     }),
   }).catch((err) => console.error('[sic/process] next dispatch failed:', err))
 
-  return Response.json({ ok: true, queued: orgScriptMatches.length - 1 })
+  return Response.json({ ok: true, queued: orgScriptRows.length - 1 })
 }
