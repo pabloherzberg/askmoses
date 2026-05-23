@@ -771,6 +771,7 @@
     "subscriptionSettings": "Configurer le plan de {name}",
     "ghlSettings": "Configurer l'intégration GHL de {name}",
     "ownerSettings": "Gérer l'owner de {name}",
+    "orgConfig": "Configurer {name}",
     "scriptManagement": {
       "title": "Script de l'organisation",
       "subtitle": "Consultez le script actif et envoyez une nouvelle version pour analyse IA et approbation du owner.",
@@ -822,7 +823,15 @@
       "exit": "Retour au panel admin",
       "exiting": "Sortie…"
     },
+    "orgConfig": {
+      "eyebrow": "Configuration de l'organisation",
+      "noOwner": "Cette organisation n'a pas encore de owner.",
+      "ghlLinkTitle": "Intégration GHL / Pepper",
+      "ghlLinkSubtitle": "Connecter le workflow GoHighLevel pour la transcription automatique des appels."
+    },
     "subscriptionOverride": {
+      "cardTitle": "Abonnement",
+      "cardSubtitle": "Remplacement du plan, du statut et du MRR. Utilisé pour les clients en conditions spéciales.",
       "eyebrow": "Override d'abonnement",
       "statusLabel": "Statut",
       "status_active": "Actif",
@@ -884,6 +893,7 @@
       "copied": "Copié",
       "back": "← Retour au panel",
       "goToSubscription": "Override d'abonnement →",
+      "goToOrgConfig": "← Retour à la configuration de l'organisation",
       "authErrorBannerTitle": "Échec d'authentification GHL",
       "authErrorBannerBody": "Le Private Integration Token (PIT) a probablement été régénéré dans Pepper. Collez le nouveau token dans le champ \"Access token GHL (PIT)\" ci-dessous et cliquez sur Enregistrer — l'alerte disparaîtra automatiquement.",
       "authErrorBannerLastSeen": "Dernier échec enregistré"

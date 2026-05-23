@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, UserCog, Webhook, Loader2 } from 'lucide-react'
+import { Settings, Webhook, Loader2 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -332,18 +332,11 @@ export function AdminOrgRow({
         </span>
       </td>
       <td className="px-3 py-4 text-right">
-        {/* stopPropagation pra não disparar o impersonate da row inteira */}
+        {/* stopPropagation pra não disparar o impersonate da row inteira.
+            Owner + Subscription + Script foram consolidados em /admin/
+            organizations/[id]; engrenagem aponta pra lá. GHL fica em
+            sub-página separada por ser form complexo com OAuth. */}
         <div className="inline-flex items-center gap-1">
-          <Link
-            href={`/${locale}/admin/organizations/${client.id}`}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={t('ownerSettings', { name: client.name })}
-            title={t('ownerSettings', { name: client.name })}
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
-            style={{ color: 'var(--am-muted)' }}
-          >
-            <UserCog size={14} />
-          </Link>
           <Link
             href={`/${locale}/admin/organizations/${client.id}/integrations/ghl`}
             onClick={(e) => e.stopPropagation()}
@@ -355,10 +348,10 @@ export function AdminOrgRow({
             <Webhook size={14} />
           </Link>
           <Link
-            href={`/${locale}/admin/organizations/${client.id}/subscription`}
+            href={`/${locale}/admin/organizations/${client.id}`}
             onClick={(e) => e.stopPropagation()}
-            aria-label={t('subscriptionSettings', { name: client.name })}
-            title={t('subscriptionSettings', { name: client.name })}
+            aria-label={t('orgConfig', { name: client.name })}
+            title={t('orgConfig', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >

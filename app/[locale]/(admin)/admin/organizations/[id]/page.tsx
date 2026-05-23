@@ -1,31 +1,52 @@
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
+import { Webhook } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OwnerManagementCard } from './OwnerManagementCard'
 import { ScriptManagementCard, type PendingSnapshot, type ScriptSnapshot } from './ScriptManagementCard'
+import { SubscriptionOverrideCard } from './SubscriptionOverrideCard'
+
+type PlanCode = 'starter' | 'pro' | 'pro_rag'
+type SubStatus = 'active' | 'inactive' | 'trial'
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>
 }
 
-// Página de detalhe da org pro admin. Por enquanto só hospeda o card de
-// gerenciamento de owner (trocar email + reenviar setup + recovery). Layout
-// do grupo (admin) já garante role=admin via middleware.
+// Página de configuração unificada da org pro admin: owner, subscription
+// override e script management num só lugar. GHL fica em sub-página separada
+// (form complexo com OAuth + custom field mapping) — linkamos daqui.
+// Layout do grupo (admin) já garante role=admin via middleware.
 export default async function OrganizationDetailPage({ params }: PageProps) {
   const { id: orgId } = await params
-  const t = await getTranslations('Admin.ownerManagement')
+  const t = await getTranslations('Admin.orgConfig')
+  const locale = await getLocale()
 
   const admin = createAdminClient()
 
   const { data: org } = await admin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, subscription_status, trial_ends_at, mrr, plans(code)')
     .eq('id', orgId)
     .maybeSingle()
 
   if (!org) notFound()
+
+  // plans(code) vem como objeto OU array dependendo do TS gerado pelo
+  // Supabase — normalizamos via unknown cast (mesmo padrão de subscription/page.tsx).
+  const orgRow = org as unknown as {
+    id: string
+    name: string
+    subscription_status: SubStatus
+    trial_ends_at: string | null
+    mrr: number | string | null
+    plans: { code: PlanCode } | { code: PlanCode }[] | null
+  }
+  const planRaw = orgRow.plans
+  const plan = Array.isArray(planRaw) ? (planRaw[0] ?? null) : planRaw
 
   // Resolve owner via memberships → users. Pode haver mais de um owner por
   // org (multi-owner é raro mas válido); pegamos o mais antigo (criação).
@@ -71,14 +92,14 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
           {t('eyebrow')}
         </p>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--am-text)' }}>
-          {org.name as string}
+          {orgRow.name}
         </h1>
       </div>
 
       {owner ? (
         <OwnerManagementCard
-          orgId={org.id as string}
-          orgName={org.name as string}
+          orgId={orgRow.id}
+          orgName={orgRow.name}
           owner={owner}
         />
       ) : (
@@ -90,12 +111,49 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      <SubscriptionOverrideCard
+        orgId={orgRow.id}
+        orgName={orgRow.name}
+        initialStatus={orgRow.subscription_status}
+        initialPlanCode={plan?.code ?? null}
+        initialTrialEndsAt={orgRow.trial_ends_at}
+        initialMrr={Number(orgRow.mrr ?? 0)}
+      />
+
       <ScriptManagementCard
-        orgId={org.id as string}
-        orgName={org.name as string}
+        orgId={orgRow.id}
+        orgName={orgRow.name}
         activeScript={activeScript}
         pending={pending}
       />
+
+      {/* GHL integration entry — sub-página separada por ser form complexo
+          com OAuth + custom field mapping + webhook setup. */}
+      <Link
+        href={`/${locale}/admin/organizations/${orgRow.id}/integrations/ghl`}
+        className="flex items-center justify-between rounded-2xl border p-4 mb-4 transition-opacity hover:opacity-80"
+        style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0"
+            style={{ background: 'var(--am-bg3)', color: 'var(--am-muted)' }}
+          >
+            <Webhook size={14} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--am-text)' }}>
+              {t('ghlLinkTitle')}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--am-muted)' }}>
+              {t('ghlLinkSubtitle')}
+            </p>
+          </div>
+        </div>
+        <span className="text-sm" style={{ color: 'var(--am-muted)' }}>
+          →
+        </span>
+      </Link>
     </div>
   )
 }
