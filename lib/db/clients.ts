@@ -284,6 +284,10 @@ export async function dbGetClientByOrgId(
   // currentScript + lastCallAt: queries dedicadas pra esse único org
   // (sem reuse da RPC que é otimizada pra batch).
   const [scriptRes, lastCallRes] = await Promise.all([
+    // Filtra explicitamente por effective_status IN ('active','deprecated')
+    // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
+    // com active (mig. 057): sem este filtro o order-by started_at pegaria a
+    // proposta pendente mais recente em vez do script atual da org.
     supabase
       .from("org_scripts_current")
       .select(
@@ -291,6 +295,7 @@ export async function dbGetClientByOrgId(
       )
       .eq("org_id", orgId)
       .is("ended_at", null)
+      .in("effective_status", ["active", "deprecated"])
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle(),

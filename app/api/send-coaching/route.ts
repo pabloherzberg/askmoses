@@ -24,15 +24,21 @@ interface SendCoachingBody {
 //   Admin impersonando é bloqueado (read-only).
 export async function POST(request: Request) {
   const session = await getSession()
-  if (!session) return unauthorized()
+  if (!session) {
+    console.warn('[send-coaching] 401 — sem session')
+    return unauthorized()
+  }
 
   const writeErr = await requireOwnerWrite()
-  if (writeErr) return writeErr
+  if (writeErr) {
+    console.warn('[send-coaching] 403 — requireOwnerWrite (admin impersonando)')
+    return writeErr
+  }
 
-  // requireOwnerWrite só barra admin impersonando — trainer logado ainda
-  // passaria. Mesma checagem de papel das demais rotas de escrita.
+  // Trainer pode disparar o coaching email — mas SÓ se o destinatário for
+  // ele mesmo (ver checagem trainerEmail === session.user.email abaixo).
+  // Owner segue podendo mandar pra qualquer trainer da org.
   const role = await getRole()
-  if (role === 'trainer') return forbidden()
 
   try {
     const body = (await request.json()) as SendCoachingBody
@@ -51,8 +57,30 @@ export async function POST(request: Request) {
       return Response.json({ error: 'trainerEmail é obrigatório' }, { status: 400 })
     }
 
+    // Trainer só pode enviar pra si mesmo. Owner/Admin não tem restrição
+    // (a checagem org-match abaixo garante que o destinatário pertence à
+    // mesma org). Sem isso, trainer logado podia disparar email de
+    // "coaching" pra qualquer colega — vetor de spam interno.
+    if (role === 'trainer') {
+      const sessionEmail = session.user.email?.toLowerCase() ?? ''
+      if (trainerEmail.toLowerCase() !== sessionEmail) {
+        console.warn('[send-coaching] 403 — trainer tentando enviar pra outro email', {
+          sessionEmail,
+          trainerEmail: trainerEmail.toLowerCase(),
+        })
+        return forbidden()
+      }
+    }
+
     const ctx = await getActiveOrgContext()
-    if (!ctx?.activeOrgId) return forbidden()
+    if (!ctx?.activeOrgId) {
+      console.warn('[send-coaching] 403 — sem activeOrgId', {
+        userId: session.user.id,
+        role,
+        ctx: ctx ? { activeOrgId: ctx.activeOrgId, isImpersonating: ctx.isImpersonating } : null,
+      })
+      return forbidden()
+    }
 
     // Trainer destinatário precisa estar na mesma org do caller. Pre-merge
     // o lookup ia users.email → users.id → trainers.org_id; com migration
@@ -67,6 +95,11 @@ export async function POST(request: Request) {
       .eq('trainers.org_id', ctx.activeOrgId)
       .maybeSingle()
     if (!trainerOwner) {
+      console.warn('[send-coaching] 403 — trainer não pertence à org', {
+        trainerEmail: trainerEmail.toLowerCase(),
+        activeOrgId: ctx.activeOrgId,
+        role,
+      })
       return Response.json(
         { error: 'Trainer não pertence à sua organização' },
         { status: 403 },

@@ -7,7 +7,7 @@ import {
   dbGetCriteriaByRubric,
 } from "@/lib/db/rubric";
 import { dbCreateCall } from "@/lib/db/calls";
-import { dbGetScriptById } from "@/lib/db/scripts";
+import { dbGetScriptById, dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
   forbidden,
@@ -20,6 +20,7 @@ import {
   unauthorized,
 } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { DbRubric } from "@/lib/db/rubric";
 import {
   OUTCOME_OVERALL_CAP,
   normaliseOutcome,
@@ -310,13 +311,68 @@ export async function POST(request: NextRequest) {
     let script: Awaited<ReturnType<typeof dbGetScriptById>> | null = null;
 
     if (body.scriptId) {
+      // 1ª tentativa: script local da org (org_id = X). Strict cross-tenant.
       script = await dbGetScriptById(body.scriptId, orgId);
-      if (!script) return forbidden();
+
+      // 2ª tentativa: template (org_id=NULL) que a org tem linkado via
+      // org_scripts. Necessário porque o dropdown de upload (getScripts em
+      // lib/services/scripts.ts) une scripts owned + templates linkados —
+      // se o owner picou um template, o filtro estrito acima falhava.
+      if (!script) {
+        const admin = createAdminClient();
+        const { data: link } = await admin
+          .from("org_scripts")
+          .select("script_id")
+          .eq("org_id", orgId)
+          .eq("script_id", body.scriptId)
+          .is("ended_at", null)
+          .in("status", ["active", "pending"])
+          .maybeSingle();
+        if (link) {
+          const { data: tpl } = await admin
+            .from("scripts")
+            .select("*")
+            .eq("id", body.scriptId)
+            .maybeSingle();
+          if (tpl) script = tpl as typeof script;
+        }
+      }
+
+      if (!script) {
+        console.warn("[analyze] 403 — scriptId não pertence à org nem via org_scripts", {
+          orgId,
+          scriptId: body.scriptId,
+        });
+        return forbidden();
+      }
       try {
         rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
       } catch (e) {
         console.warn(
           "[analyze] script rubric fetch failed, using org default:",
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+
+    // Auto-fill: toda org nasce com 1 script linkado em org_scripts
+    // (status='active', garantido pelo fluxo de criação de org). Se o caller
+    // não mandou scriptId, herda esse — evita call órfã (script_id/rubric_id
+    // nulos faziam a tela de tendência ficar em branco). Lê de org_scripts
+    // porque o script linkado costuma ser um template (org_id=NULL em
+    // scripts), invisível pro filtro orgId+is_active de dbGetScripts.
+    if (!script) {
+      try {
+        const activeOrgScript = await dbGetActiveOrgScript(orgId);
+        if (activeOrgScript) {
+          script = activeOrgScript;
+          if (!rubricData) {
+            rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "[analyze] org active script lookup failed:",
           e instanceof Error ? e.message : e,
         );
       }
@@ -336,6 +392,32 @@ export async function POST(request: NextRequest) {
     }
 
     const rubricId = rubricData?.rubric.id ?? null;
+
+    // Guard: org sem script ativo E sem rubric default não pode salvar call —
+    // toda call precisa ser ancorada em algo pra a tendência/score serem
+    // computáveis. Em vez de salvar com null silenciosamente (o que fazia o QA
+    // ver gráfico em branco), bloqueia com 400 pra Owner/Admin configurar a org.
+    if (!rubricId) {
+      // Diagnóstico: log cada etapa que falhou pra o dev entender por que a
+      // cadeia chegou aqui (script template? rubric global? rubric inativa?).
+      console.error("[analyze] 400 — cadeia de resolução não encontrou rubric:", {
+        orgId,
+        bodyScriptId: body.scriptId ?? null,
+        bodyRubricId: body.rubricId ?? null,
+        scriptResolved: script
+          ? { id: script.id, rubric_id: script.rubric_id, is_active: script.is_active }
+          : null,
+        rubricResolved: rubricData?.rubric.id ?? null,
+      });
+      return Response.json(
+        {
+          error: "Org sem script ativo ou rubric default configurado",
+          details:
+            "Vá em Settings → Scripts e ative um script, ou configure uma rubric default antes de subir calls.",
+        },
+        { status: 400 },
+      );
+    }
     const systemPrompt =
       rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt();
     const llmModel = rubricData?.rubric.llm_model ?? null;
@@ -529,6 +611,7 @@ export async function POST(request: NextRequest) {
       savedCall = await dbCreateCall({
         orgId,
         rubricId: rubricId ?? undefined,
+        scriptId: script?.id ?? undefined,
         trainerId: sessionTrainerId ?? undefined,
         trainerName: trainerName ?? "Unknown",
         trainerEmail: trainerEmail ?? undefined,
@@ -600,7 +683,25 @@ export async function POST(request: NextRequest) {
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 async function resolveRubricForOrg(orgId: string, rubricId: string) {
-  const rubric = await dbGetRubricById(orgId, rubricId);
+  // Tenta primeiro como rubric local da org, depois como global (org_id
+  // IS NULL) — ambas com is_active=true. Pra scripts template a 2ª
+  // tentativa é a que casa.
+  let rubric = await dbGetRubricById(orgId, rubricId);
+  if (!rubric) rubric = await dbGetRubricById(null, rubricId);
+
+  // Último fallback: rubric existe mas está com is_active=FALSE (algumas
+  // rubrics template entram nesse estado). Já validamos o link via
+  // org_scripts/script.rubric_id, confiamos no link e pegamos a row direta.
+  if (!rubric) {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("rubrics")
+      .select("*")
+      .eq("id", rubricId)
+      .maybeSingle();
+    if (data) rubric = data as DbRubric;
+  }
+
   if (!rubric) return dbGetDefaultRubricWithCriteria(orgId);
 
   const criteria = await dbGetCriteriaByRubric(rubric.id);

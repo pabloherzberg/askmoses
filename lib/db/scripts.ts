@@ -83,6 +83,44 @@ export async function dbGetScripts(filters?: {
 }
 
 /**
+ * Resolve o script ATIVO da org via tabela org_scripts (status='active',
+ * ended_at IS NULL — partial unique uniq_org_scripts_open_per_org garante
+ * no máx. 1 row). Funciona pra script template (org_id=NULL em scripts)
+ * E pra script local da org — diferente de dbGetScripts({orgId, active:true})
+ * que filtra scripts.is_active e ignora a relação org→script template.
+ */
+export async function dbGetActiveOrgScript(orgId: string): Promise<DbScript | null> {
+  const supabase = createAdminClient()
+
+  const { data: link, error: linkErr } = await supabase
+    .from('org_scripts')
+    .select('script_id')
+    .eq('org_id', orgId)
+    .eq('status', 'active')
+    .is('ended_at', null)
+    .maybeSingle()
+
+  if (linkErr) {
+    if (linkErr.code === 'PGRST116') return null
+    throw new Error(`dbGetActiveOrgScript: ${linkErr.message}`)
+  }
+  if (!link) return null
+
+  const { data: script, error: scriptErr } = await supabase
+    .from('scripts')
+    .select('*')
+    .eq('id', link.script_id)
+    .maybeSingle()
+
+  if (scriptErr) {
+    if (scriptErr.code === 'PGRST116') return null
+    throw new Error(`dbGetActiveOrgScript: ${scriptErr.message}`)
+  }
+
+  return (script ?? null) as DbScript | null
+}
+
+/**
  * Fetch a script by id. Pass `orgId` to enforce tenant isolation — required
  * defense-in-depth because dbCreateAdminClient bypasses RLS. Calling this
  * without `orgId` is a security bug; the parameter is required for that

@@ -68,9 +68,13 @@ function scoreColor(display: number): string {
 }
 
 function progressBar(display: number): string {
-  const filled = display
-  const empty = 10 - filled
-  const color = scoreColor(display)
+  // Clamp p/ [0,10] e fallback p/ 0 em NaN/Infinity — Array(neg) e Array(NaN)
+  // jogam "Invalid array length" e o caller pode mandar score fora do range
+  // (LLM ocasionalmente cospe valores em escala 0-100, ou null).
+  const safe = Number.isFinite(display) ? Math.max(0, Math.min(10, Math.round(display))) : 0
+  const filled = safe
+  const empty = 10 - safe
+  const color = scoreColor(safe)
 
   const filledCells = Array(filled).fill(
     `<td width="14" height="14" bgcolor="${color}" style="border-radius:2px;font-size:1px;">&nbsp;</td><td width="2" style="font-size:1px;">&nbsp;</td>`
