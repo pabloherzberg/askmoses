@@ -123,7 +123,7 @@ export async function PATCH(
     return ok({ unchanged: true, scriptId, scriptName: scriptRow.name })
   }
 
-  // ── 1. Fecha active corrente (mantém status='active', só ended_at) ─────
+  // ── 1a. Fecha active corrente (mantém status='active', só ended_at) ────
   const now = new Date().toISOString()
   const { error: closeErr } = await admin
     .from('org_scripts')
@@ -132,6 +132,22 @@ export async function PATCH(
     .eq('status', 'active')
     .is('ended_at', null)
   if (closeErr) return serverError('Falha ao fechar active anterior', closeErr)
+
+  // ── 1b. Fecha pending corrente, se existir e for de OUTRO script. ──────
+  // Sem isso, o owner pode aceitar o pending depois e desfazer o override
+  // do admin (accept_org_script fecha o active e promove o pending). Quando
+  // o pending é PRECISAMENTE o script alvo do override, deixa passar — o
+  // upsert abaixo vai converter ele em active sem perder história.
+  const { error: closePendingErr } = await admin
+    .from('org_scripts')
+    .update({ status: 'rejected', ended_at: now })
+    .eq('org_id', orgId)
+    .eq('status', 'pending')
+    .is('ended_at', null)
+    .neq('script_id', scriptId)
+  if (closePendingErr) {
+    console.warn('[admin/organizations/script] falha ao fechar pending:', closePendingErr)
+  }
 
   // ── 2. Upsert do novo active. Se (org, scriptId) já existe (era pending
   //      ou active histórico), reativa; senão INSERT puro. ────────────────

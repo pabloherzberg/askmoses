@@ -106,6 +106,9 @@ export async function POST(request: Request) {
       )
     }
 
+    // Sections + overall vêm em 0-100 da analyze API (mesmo padrão usado no
+    // DB e em CallDetail). Template converte pra 0-5 internamente via
+    // toDisplay5(s100).
     const sections: CoachingEmailSection[] = (body.sections ?? []).map(s => ({
       name: s.name ?? (s as unknown as Record<string, unknown>)['criterionName'] as string ?? '',
       score: s.score ?? 0,

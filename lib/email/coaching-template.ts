@@ -56,25 +56,32 @@ function t(locale: string) {
   return i18n[locale] ?? i18n.en
 }
 
-// score input is 0–5; display is 0–10
-function toDisplay(score: number): number {
-  return Math.round(score * 2)
+// Score input do template é 0–100 (mesmo padrão do analyze + DB). Display
+// é 0–5 com 1 decimal (mesmo `toDisplay5` usado em CallDetail/dashboard).
+// Progress bar continua com 10 células pra granularidade fina — cada
+// célula = 0.5 ponto na escala 0–5.
+function toDisplay5(score: number): string {
+  if (!Number.isFinite(score)) return '0.0'
+  return (Math.max(0, Math.min(100, score)) / 20).toFixed(1)
 }
 
-function scoreColor(display: number): string {
-  if (display >= 9) return '#16A97D'
-  if (display >= 7) return '#D48A1A'
+function toCells(score: number): number {
+  if (!Number.isFinite(score)) return 0
+  return Math.max(0, Math.min(10, Math.round(score / 10)))
+}
+
+function scoreColor(score: number): string {
+  // Thresholds em 0-100 alinhados com scoreLevel (lib/score-display.ts):
+  // >= 85 verde, >= 70 âmbar, senão vermelho.
+  if (score >= 85) return '#16A97D'
+  if (score >= 70) return '#D48A1A'
   return '#D94444'
 }
 
-function progressBar(display: number): string {
-  // Clamp p/ [0,10] e fallback p/ 0 em NaN/Infinity — Array(neg) e Array(NaN)
-  // jogam "Invalid array length" e o caller pode mandar score fora do range
-  // (LLM ocasionalmente cospe valores em escala 0-100, ou null).
-  const safe = Number.isFinite(display) ? Math.max(0, Math.min(10, Math.round(display))) : 0
-  const filled = safe
-  const empty = 10 - safe
-  const color = scoreColor(safe)
+function progressBar(score: number): string {
+  const filled = toCells(score)
+  const empty = 10 - filled
+  const color = scoreColor(score)
 
   const filledCells = Array(filled).fill(
     `<td width="14" height="14" bgcolor="${color}" style="border-radius:2px;font-size:1px;">&nbsp;</td><td width="2" style="font-size:1px;">&nbsp;</td>`
@@ -86,18 +93,20 @@ function progressBar(display: number): string {
   return `<table border="0" cellpadding="0" cellspacing="0" role="presentation"><tr>${filledCells}${emptyCells}</tr></table>`
 }
 
-function badge(display: number, critical?: boolean): string {
-  if (display >= 9) return ' 🏆'
-  if (critical && display <= 8) return ' ⚠️'
+function badge(score: number, critical?: boolean): string {
+  if (score >= 90) return ' 🏆'
+  if (critical && score <= 60) return ' ⚠️'
   return ''
 }
 
 function sectionRow(section: CoachingEmailSection): string {
-  const display = toDisplay(section.score)
-  const isCritical = !!section.critical && display <= 8
+  const score = Number.isFinite(section.score) ? section.score : 0
+  // Critical alert quando o score (0-100) é "Needs work" ou pior (< 60),
+  // alinhado com a tier de feedback usada em CallDetail.
+  const isCritical = !!section.critical && score < 60
   const borderColor = isCritical ? '#D94444' : '#E2E6EF'
-  const color = scoreColor(display)
-  const bdg = badge(display, section.critical)
+  const color = scoreColor(score)
+  const bdg = badge(score, section.critical)
 
   return `
     <tr>
@@ -111,12 +120,12 @@ function sectionRow(section: CoachingEmailSection): string {
                     ${section.name}${bdg}
                   </td>
                   <td align="right" style="font-family:'DM Mono',monospace,'Courier New';font-size:14px;color:${color};font-weight:700;white-space:nowrap;">
-                    ${display}/10
+                    ${toDisplay5(score)}/5
                   </td>
                 </tr>
                 <tr>
                   <td colspan="2" style="padding-top:8px;">
-                    ${progressBar(display)}
+                    ${progressBar(score)}
                   </td>
                 </tr>
               </table>
@@ -142,10 +151,12 @@ function bulletList(items: string[], limit = 3): string {
 export function buildCoachingEmail(data: CoachingEmailData): { subject: string; html: string } {
   const lang = t(data.locale ?? 'en')
   const clientLabel = data.clientName ? ` ${data.clientName}` : ''
-  const subject = `${lang.subject} — ${lang.subtitle}${clientLabel} | ${data.overallScore.toFixed(1)}/5`
+  const subject = `${lang.subject} — ${lang.subtitle}${clientLabel} | ${toDisplay5(data.overallScore)}/5`
 
   const worstSection = [...data.sections].sort((a, b) => a.score - b.score)[0]
-  const criticalNote = worstSection && toDisplay(worstSection.score) <= 4
+  // Critical note quando o pior section score (0-100) é < 40 — alinhado com
+  // a heurística antiga (display <= 4 em 0-10 == score <= 40 em 0-100).
+  const criticalNote = worstSection && worstSection.score < 40
     ? `<tr><td style="padding:12px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;color:#D94444;">⚠️ ${worstSection.name} — focus here this week.</td></tr>`
     : ''
 
@@ -180,7 +191,7 @@ export function buildCoachingEmail(data: CoachingEmailData): { subject: string; 
                     <table border="0" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="background-color:rgba(255,255,255,0.15);border-radius:8px;padding:8px 16px;">
-                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:22px;font-weight:700;color:#FFFFFF;">${data.overallScore.toFixed(1)}</span>
+                          <span style="font-family:'DM Mono',monospace,'Courier New';font-size:22px;font-weight:700;color:#FFFFFF;">${toDisplay5(data.overallScore)}</span>
                           <span style="font-family:'DM Mono',monospace,'Courier New';font-size:14px;color:#C4B8FF;">/5</span>
                         </td>
                       </tr>

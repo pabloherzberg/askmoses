@@ -346,7 +346,10 @@ export async function POST(request: NextRequest) {
         return forbidden();
       }
       try {
-        rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
+        // trusted=true: script.rubric_id vem de um link já validado (script
+        // foi carregado via dbGetScriptById com tenant check ou via lookup
+        // do org_scripts). Permite resolver rubric mesmo se for de outra org.
+        rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
       } catch (e) {
         console.warn(
           "[analyze] script rubric fetch failed, using org default:",
@@ -367,7 +370,8 @@ export async function POST(request: NextRequest) {
         if (activeOrgScript) {
           script = activeOrgScript;
           if (!rubricData) {
-            rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
+            // trusted=true: idem acima, link via org_scripts.status='active'.
+            rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
           }
         }
       } catch (e) {
@@ -380,8 +384,10 @@ export async function POST(request: NextRequest) {
 
     if (!rubricData) {
       try {
+        // body.rubricId é input não-validado → trusted=false força filtro
+        // de tenant no fallback (impede leak cross-org).
         rubricData = body.rubricId
-          ? await resolveRubricForOrg(orgId, body.rubricId)
+          ? await resolveRubricForOrg(orgId, body.rubricId, false)
           : await dbGetDefaultRubricWithCriteria(orgId);
       } catch (e) {
         console.warn(
@@ -682,17 +688,29 @@ export async function POST(request: NextRequest) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-async function resolveRubricForOrg(orgId: string, rubricId: string) {
+async function resolveRubricForOrg(
+  orgId: string,
+  rubricId: string,
+  // `trusted=true` quando o rubricId veio de um link já validado
+  // (script.rubric_id depois de dbGetActiveOrgScript/dbGetScriptById passar).
+  // `trusted=false` quando veio do body do request — neste caso o último
+  // fallback aplica filtro de tenant pra impedir leak cross-org via
+  // body.rubricId arbitrário.
+  trusted = false,
+) {
   // Tenta primeiro como rubric local da org, depois como global (org_id
   // IS NULL) — ambas com is_active=true. Pra scripts template a 2ª
   // tentativa é a que casa.
   let rubric = await dbGetRubricById(orgId, rubricId);
   if (!rubric) rubric = await dbGetRubricById(null, rubricId);
 
-  // Último fallback: rubric existe mas está com is_active=FALSE (algumas
-  // rubrics template entram nesse estado). Já validamos o link via
-  // org_scripts/script.rubric_id, confiamos no link e pegamos a row direta.
-  if (!rubric) {
+  // Último fallback: rubric existe mas está com is_active=FALSE OU pertence
+  // a outra org (template clonado de uma org A pra org B). Só executa quando
+  // trusted=true — ou seja, o link foi previamente validado via org_scripts.
+  // Sem este gate (e com filtro de tenant aplicado abaixo) um owner que
+  // enviasse rubricId arbitrário no body conseguiria ler system_prompt/
+  // metadata de rubrica de OUTRA org.
+  if (!rubric && trusted) {
     const supabase = createAdminClient();
     const { data } = await supabase
       .from("rubrics")
