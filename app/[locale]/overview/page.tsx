@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
+import type { Locale } from "@/i18n/routing";
 import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
@@ -19,6 +20,7 @@ import { WorstCallsTeamWeekly } from "@/components/shared/WorstCallsTeamWeekly";
 
 
 export default async function OverviewPage() {
+  const locale = (await getLocale()) as Locale;
   const [
     trainers,
     insights,
@@ -31,7 +33,7 @@ export default async function OverviewPage() {
     tAlerts,
   ] = await Promise.all([
     getTrainers(),
-    getInsights(),
+    getInsights(locale),
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),

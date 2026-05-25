@@ -1,5 +1,5 @@
 import type { Locale } from '@/i18n/routing'
-import type { Call, BestCall } from '@/lib/types'
+import type { Call, BestCall, Insight } from '@/lib/types'
 import type { CoachingRec, BehavioralDimension } from '@/lib/mock-data'
 import { translateStrings } from '@/lib/i18n/translate'
 
@@ -187,6 +187,25 @@ export async function translateCoachingRecs(
     title: translated[i * 3] ?? r.title,
     text: translated[i * 3 + 1] ?? r.text,
     cta: translated[i * 3 + 2] ?? r.cta,
+  }))
+}
+
+/** Translate the user-facing fields of the AI insight cards (title, summary,
+ *  action, tag). Tag is included because the server emits English strings like
+ *  "Team pattern" / "ROI signal" — not i18n keys. One batched LLM call. */
+export async function translateInsightCards(
+  insights: Insight[],
+  locale: Locale,
+): Promise<Insight[]> {
+  if (locale === 'en' || insights.length === 0) return insights
+  const batch = insights.flatMap((i) => [i.title, i.summary, i.action, i.tag])
+  const translated = await translateStrings(batch, locale)
+  return insights.map((i, idx) => ({
+    ...i,
+    title:   translated[idx * 4]     ?? i.title,
+    summary: translated[idx * 4 + 1] ?? i.summary,
+    action:  translated[idx * 4 + 2] ?? i.action,
+    tag:     translated[idx * 4 + 3] ?? i.tag,
   }))
 }
 

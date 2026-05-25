@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   getTrainers,
   getPerformanceTrends,
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
+import type { Locale } from "@/i18n/routing";
 import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { scoreLevel, toDisplay5, toNumber5 } from "@/lib/score-display";
@@ -20,6 +21,7 @@ import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
 import { getActiveOrgContext } from "@/lib/auth";
 
 export default async function DashboardPage() {
+  const locale = (await getLocale()) as Locale;
   const [
     trainers,
     insights,
@@ -31,7 +33,7 @@ export default async function DashboardPage() {
     tHealth,
   ] = await Promise.all([
     getTrainers(),
-    getInsights(),
+    getInsights(locale),
     getRubric(),
     getTeamHealth(),
     getActiveOrgContext(),
