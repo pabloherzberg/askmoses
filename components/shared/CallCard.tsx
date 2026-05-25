@@ -1,6 +1,5 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import { toDisplay5Suffixed } from '@/lib/score-display'
 import type { BestCall } from '@/lib/types'
 
@@ -15,21 +14,17 @@ const palette = {
     border:   'rgba(34,217,160,0.2)',
     scoreFg:  'var(--am-green)',
     resultFg: 'var(--am-green)',
-    ctaFg:    'var(--am-green)',
   },
   worst: {
     bg:       'rgba(255,94,94,0.07)',
     border:   'rgba(255,94,94,0.2)',
     scoreFg:  'var(--am-red)',
     resultFg: 'var(--am-amber)',
-    ctaFg:    'var(--am-green)',
   },
 } as const
 
 export function CallCard({ call, variant = 'best' }: Props) {
-  const t = useTranslations('Shared.callCard')
   const p = palette[variant]
-  const ctaPrefix = t(`${variant}.ctaPrefix` as 'best.ctaPrefix' | 'worst.ctaPrefix')
 
   return (
     <div
@@ -79,14 +74,6 @@ export function CallCard({ call, variant = 'best' }: Props) {
       <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-text)', opacity: 0.85 }}>
         {call.analysis}
       </p>
-
-      {/* CTA as plain link */}
-      <span
-        className="text-[11px] font-medium cursor-default"
-        style={{ color: p.ctaFg }}
-      >
-        {ctaPrefix} {call.listenAt} →
-      </span>
     </div>
   )
 }

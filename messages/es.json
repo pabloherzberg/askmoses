@@ -342,13 +342,21 @@
     },
     "behavioralProfile": {
       "title": "Perfil de correlación conductual",
-      "teamAvg": "Promedio del equipo"
+      "teamAvg": "Promedio del equipo",
+      "empty": "Aún no hay llamadas analizadas"
+    },
+    "behavioralTrends": {
+      "title": "Tendencias de comportamiento — 6 semanas",
+      "empty": "Aún no hay llamadas analizadas"
     },
     "closeRateTrend": {
       "title": "Tendencia de cierre — 6 semanas",
-      "summary": "Semana 1: {from}% → Semana 6: {to}% {delta}pts",
+      "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Tasa de cierre",
       "teamPill": "Equipo"
+    },
+    "performanceTrend": {
+      "noCalls": "Sin llamadas"
     },
     "rubricGapDetection": {
       "title": "Detección de gaps en el script",
@@ -949,7 +957,11 @@
     "recsEmptyError": "Escribe una recomendación antes de enviar.",
     "recsError": "No se pudo enviar la recomendación. Inténtalo de nuevo.",
     "recsNotificationTitle": "Recomendación de coaching",
-    "draftIntro": "{name}, estas son tus prioridades de coaching según tus llamadas recientes:"
+    "draftIntro": "{name}, estas son tus prioridades de coaching según tus llamadas recientes:",
+    "noCallsYet": "Aún no hay llamadas analizadas de {name}.",
+    "recsLoading": "Generando recomendaciones de IA…",
+    "recsGenerateError": "No se pudieron generar recomendaciones ahora.",
+    "worstCallEmpty": "Aún no hay suficientes llamadas para comparar."
   },
   "Dashboard": {
     "home": {

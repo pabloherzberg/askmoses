@@ -108,12 +108,13 @@ export async function getPerformanceTrends(
   if (!orgId) return {};
 
   const { getCalls } = await import("@/lib/services/calls");
-  const { buildWeeklyTrend } = await import("@/lib/services/rubric");
+  const { buildWeeklyTrend, weeksSpanned } = await import("@/lib/services/rubric");
   const calls = await getCalls({ limit: 200, orgId });
 
-  // buildWeeklyTrend emite score = 0 em semanas sem calls. Mantemos todas as 6
-  // semanas (eixo contínuo no gráfico) mas marcamos as vazias como null — null
-  // vira lacuna no gráfico, em vez de uma barra falsa de 0%.
+  // Janela do gráfico = nº de semanas que as calls da org realmente cobrem
+  // (1–6) — a MESMA para o time e para cada trainer, pra os pontos alinharem
+  // por índice. Semanas sem call DENTRO da janela viram null (lacuna).
+  const n = weeksSpanned(calls, 6);
   const toPoints = (tp: TrendPoint[]): PerformanceTrendPoint[] =>
     tp.map((p) => ({
       week: p.week,
@@ -122,13 +123,13 @@ export async function getPerformanceTrends(
     }));
 
   const result: Record<string, PerformanceTrendPoint[]> = {
-    team: toPoints(buildWeeklyTrend(calls, 6)),
+    team: toPoints(buildWeeklyTrend(calls, n)),
   };
 
   for (const tr of realTrainers) {
     const trainerCalls = calls.filter((c) => c.trainerId === tr.id);
     if (trainerCalls.length > 0) {
-      result[tr.id] = toPoints(buildWeeklyTrend(trainerCalls, 6));
+      result[tr.id] = toPoints(buildWeeklyTrend(trainerCalls, n));
     }
   }
 

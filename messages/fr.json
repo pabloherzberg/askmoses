@@ -342,13 +342,21 @@
     },
     "behavioralProfile": {
       "title": "Profil de corrélation comportementale",
-      "teamAvg": "Moyenne équipe"
+      "teamAvg": "Moyenne équipe",
+      "empty": "Aucun appel analysé pour l'instant"
+    },
+    "behavioralTrends": {
+      "title": "Tendances comportementales — 6 semaines",
+      "empty": "Aucun appel analysé pour l'instant"
     },
     "closeRateTrend": {
       "title": "Tendance du taux de closing — 6 semaines",
-      "summary": "Semaine 1: {from}% → Semaine 6: {to}% {delta}pts",
+      "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Taux de closing",
       "teamPill": "Équipe"
+    },
+    "performanceTrend": {
+      "noCalls": "Aucun appel"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes du script",
@@ -949,7 +957,11 @@
     "recsEmptyError": "Rédigez une recommandation avant d'envoyer.",
     "recsError": "Impossible d'envoyer la recommandation. Réessayez.",
     "recsNotificationTitle": "Recommandation de coaching",
-    "draftIntro": "{name}, voici vos priorités de coaching basées sur vos appels récents :"
+    "draftIntro": "{name}, voici vos priorités de coaching basées sur vos appels récents :",
+    "noCallsYet": "Aucun appel analysé pour {name} pour l'instant.",
+    "recsLoading": "Génération des recommandations IA…",
+    "recsGenerateError": "Impossible de générer des recommandations pour le moment.",
+    "worstCallEmpty": "Pas encore assez d'appels à comparer."
   },
   "Dashboard": {
     "home": {

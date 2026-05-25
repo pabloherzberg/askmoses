@@ -342,13 +342,21 @@
     },
     "behavioralProfile": {
       "title": "Behavioral Correlation Profile",
-      "teamAvg": "Team avg"
+      "teamAvg": "Team avg",
+      "empty": "No calls analyzed yet"
+    },
+    "behavioralTrends": {
+      "title": "Behavioral Trends — 6 Weeks",
+      "empty": "No calls analyzed yet"
     },
     "closeRateTrend": {
       "title": "6-Week Close Rate Trend",
-      "summary": "Week 1: {from}% → Week 6: {to}% {delta}pts",
+      "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Close rate",
       "teamPill": "Team"
+    },
+    "performanceTrend": {
+      "noCalls": "No calls"
     },
     "rubricGapDetection": {
       "title": "Script Gap Detection",
@@ -949,7 +957,11 @@
     "recsEmptyError": "Write a recommendation before sending.",
     "recsError": "Couldn't send the recommendation. Please try again.",
     "recsNotificationTitle": "Coaching recommendation",
-    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:"
+    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:",
+    "noCallsYet": "No calls analyzed for {name} yet.",
+    "recsLoading": "Generating AI recommendations…",
+    "recsGenerateError": "Couldn't generate recommendations right now.",
+    "worstCallEmpty": "Not enough calls to compare yet."
   },
   "Dashboard": {
     "home": {

@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import { scoreColorVar, toDisplay5 } from '@/lib/score-display'
 import type { BehavioralTrendDimension } from '@/lib/mock-data'
 
@@ -40,64 +43,54 @@ interface Props {
 }
 
 export function BehavioralTrends({ dimensions }: Props) {
+  const t = useTranslations('Shared.behavioralTrends')
+
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
       style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          Behavioral Trends — 6 Weeks
-        </p>
-        <span
-          className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
-          style={{
-            color: 'var(--am-amber)',
-            borderColor: 'rgba(255,171,46,0.35)',
-            background: 'rgba(255,171,46,0.08)',
-          }}
-        >
-          mock data only
-        </span>
-      </div>
-
-      {/* Rows */}
-      <div className="flex flex-col">
-        {dimensions.map((dim, i) => (
-          <div
-            key={dim.dimension}
-            className="flex items-center justify-between gap-3 py-2.5"
-            style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
-          >
-            {/* Dimension name */}
-            <span
-              className="text-[12px] font-medium w-36 flex-shrink-0 truncate"
-              style={{ color: 'var(--am-text)' }}
-            >
-              {dim.dimension}
-            </span>
-
-            {/* Bar sparkline */}
-            <div className="flex-1 flex justify-center">
-              <BarSparkline trend={dim.trend} />
-            </div>
-
-            {/* Current score */}
-            <span
-              className="text-[13px] font-mono font-semibold w-8 text-right flex-shrink-0"
-              style={{ color: scoreColorVar(dim.currentScore) }}
-            >
-              {toDisplay5(dim.currentScore)}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <p className="mt-3 text-[10px]" style={{ color: 'var(--am-amber)' }}>
-        † mock data · green ≥ 85 · amber ≥ 70 · red &lt; 70 (scale 0–100)
+      <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
+        {t('title')}
       </p>
+
+      {dimensions.length === 0 ? (
+        <p className="text-[12px]" style={{ color: 'var(--am-muted)' }}>
+          {t('empty')}
+        </p>
+      ) : (
+        <div className="flex flex-col">
+          {dimensions.map((dim, i) => (
+            <div
+              key={dim.dimension}
+              className="flex items-center justify-between gap-3 py-2.5"
+              style={{ borderTop: i > 0 ? '1px solid var(--am-border)' : 'none' }}
+            >
+              {/* Dimension name */}
+              <span
+                className="text-[12px] font-medium w-36 flex-shrink-0 truncate"
+                style={{ color: 'var(--am-text)' }}
+              >
+                {dim.dimension}
+              </span>
+
+              {/* Bar sparkline */}
+              <div className="flex-1 flex justify-center">
+                <BarSparkline trend={dim.trend} />
+              </div>
+
+              {/* Current score */}
+              <span
+                className="text-[13px] font-mono font-semibold w-8 text-right flex-shrink-0"
+                style={{ color: scoreColorVar(dim.currentScore) }}
+              >
+                {toDisplay5(dim.currentScore)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
