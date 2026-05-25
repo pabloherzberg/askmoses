@@ -3,23 +3,12 @@
 import { useTranslations } from 'next-intl'
 import { Info } from 'lucide-react'
 import { toBarWidth, toDisplay5Suffixed } from '@/lib/score-display'
-import type { CorrelationFactor, CorrelationLevel, CorrelationSource } from '@/lib/types'
+import type { CorrelationFactor, CorrelationLevel } from '@/lib/types'
 
 const barColor: Record<CorrelationLevel, string> = {
   High: 'var(--am-green)',
   Med: 'var(--am-amber)',
   Low: 'var(--am-muted)',
-}
-
-const levelStyle: Record<CorrelationLevel, { color: string; bg: string }> = {
-  High: { color: 'var(--am-green)', bg: 'rgba(34,217,160,0.12)' },
-  Med: { color: 'var(--am-amber)', bg: 'rgba(255,171,46,0.12)' },
-  Low: { color: 'var(--am-muted)', bg: 'rgba(122,132,154,0.12)' },
-}
-
-const sourceStyle: Record<CorrelationSource, { color: string; bg: string }> = {
-  Rubric: { color: 'var(--am-accent2)', bg: 'rgba(155,135,255,0.12)' },
-  Behavioral: { color: 'var(--am-green)', bg: 'rgba(34,217,160,0.12)' },
 }
 
 // Volume mínimo para o título exibir linguagem estatística ("Correlation Engine —
@@ -35,30 +24,6 @@ interface Props {
 export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
   const t = useTranslations('Shared.correlationEngine')
   const hasVolume = totalCalls >= MIN_CALLS_FOR_STATS
-
-  function LevelBadge({ value }: { value: CorrelationLevel }) {
-    const s = levelStyle[value]
-    return (
-      <span
-        className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
-        style={{ color: s.color, background: s.bg }}
-      >
-        {t(`levels.${value}`)}
-      </span>
-    )
-  }
-
-  function SourceBadge({ value }: { value: CorrelationSource }) {
-    const s = sourceStyle[value]
-    return (
-      <span
-        className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full"
-        style={{ color: s.color, background: s.bg }}
-      >
-        {t(`sources.${value}`)}
-      </span>
-    )
-  }
 
   return (
     <div
@@ -89,23 +54,12 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
             </span>
           </div>
         ))}
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'var(--am-accent2)' }} />
-          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('legend.rubric')}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: 'var(--am-green)' }} />
-          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>{t('legend.behavioral')}</span>
-        </div>
       </div>
 
       {/* Column headers */}
-      <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}>
+      <div className="grid items-center mb-2 gap-2" style={{ gridTemplateColumns: '1fr 3rem' }}>
         <span className="text-[10px] font-medium" style={{ color: 'var(--am-muted)' }}>{t('th.score')}</span>
         <span className="text-[10px] font-medium text-right" style={{ color: 'var(--am-muted)' }}>{t('th.percent')}</span>
-        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.correlation')}</span>
-        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.impact')}</span>
-        <span className="text-[10px] font-medium text-center" style={{ color: 'var(--am-muted)' }}>{t('th.source')}</span>
       </div>
 
       {/* Rows */}
@@ -124,10 +78,10 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
               {f.label}
             </span>
 
-            {/* Grid row: bar + badges */}
+            {/* Grid row: bar + score */}
             <div
               className="grid items-center gap-2"
-              style={{ gridTemplateColumns: '3fr 3rem 4rem 4rem 5rem' }}
+              style={{ gridTemplateColumns: '1fr 3rem' }}
             >
               {/* Bar (with label on sm+) */}
               <div className="flex flex-col gap-1 min-w-0">
@@ -156,21 +110,6 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
               <span className="text-[12px] font-mono text-right" style={{ color: 'var(--am-text)' }}>
                 {toDisplay5Suffixed(f.score)}
               </span>
-
-              {/* Correlation badge */}
-              <div className="flex justify-center">
-                <LevelBadge value={f.correlation} />
-              </div>
-
-              {/* Impact badge */}
-              <div className="flex justify-center">
-                <LevelBadge value={f.impact} />
-              </div>
-
-              {/* Source badge */}
-              <div className="flex justify-center">
-                <SourceBadge value={f.source} />
-              </div>
             </div>
           </div>
         ))}

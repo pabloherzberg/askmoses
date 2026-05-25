@@ -75,29 +75,17 @@ export function RubricGapDetection({ gaps }: Props) {
               <span className="text-[12px] flex-1 min-w-0" style={{ color: 'var(--am-text)' }}>
                 {gap.description}
               </span>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => {}}
-                  className="text-[11px] font-mono px-2.5 py-1 rounded-lg border cursor-default"
-                  style={{
-                    color: 'var(--am-accent2)',
-                    borderColor: 'rgba(155,135,255,0.35)',
-                    background: 'rgba(110,86,255,0.08)',
-                  }}
-                >
-                  {t('addToRubric')}
-                </button>
-                <span
-                  className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full border"
-                  style={{
-                    color: 'var(--am-red)',
-                    borderColor: 'rgba(255,94,94,0.35)',
-                    background: 'rgba(255,94,94,0.08)',
-                  }}
-                >
-                  {t('notCovered')}
-                </span>
-              </div>
+              <button
+                onClick={() => {}}
+                className="text-[11px] font-mono px-2.5 py-1 rounded-lg border cursor-default flex-shrink-0"
+                style={{
+                  color: 'var(--am-accent2)',
+                  borderColor: 'rgba(155,135,255,0.35)',
+                  background: 'rgba(110,86,255,0.08)',
+                }}
+              >
+                {t('addToScript')}
+              </button>
             </div>
           </div>
         ))}

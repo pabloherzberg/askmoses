@@ -51,7 +51,7 @@ export interface TrainerSectionScore {
 
 // ─── Trend computation ───────────────────────────────────────────────────────
 
-function buildWeeklyTrend(
+export function buildWeeklyTrend(
   calls: { date: string; score: number; result: string }[],
   weeks: number,
 ): TrendPoint[] {
@@ -93,6 +93,34 @@ function buildWeeklyTrend(
   }
 
   return trend;
+}
+
+// Quantas semanas (1–maxWeeks) a janela do gráfico deve ter, com base no
+// período real coberto pelas calls — evita semanas vazias "fantasma" no início
+// do gráfico quando a org tem menos de maxWeeks semanas de dados.
+export function weeksSpanned(
+  calls: { date: string }[],
+  maxWeeks: number,
+): number {
+  if (calls.length === 0) return 0;
+  const mondayOf = (d: Date): number => {
+    const m = new Date(d);
+    m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    m.setHours(0, 0, 0, 0);
+    return m.getTime();
+  };
+  const currentMonday = mondayOf(new Date());
+  let oldest = Number.POSITIVE_INFINITY;
+  for (const c of calls) {
+    const t = new Date(c.date).getTime();
+    if (Number.isFinite(t) && t < oldest) oldest = t;
+  }
+  if (!Number.isFinite(oldest)) return Math.min(maxWeeks, 1);
+  const span =
+    Math.round(
+      (currentMonday - mondayOf(new Date(oldest))) / (7 * 24 * 60 * 60 * 1000),
+    ) + 1;
+  return Math.max(1, Math.min(maxWeeks, span));
 }
 
 export async function getRubric(): Promise<{
@@ -157,8 +185,8 @@ export async function getRubric(): Promise<{
     };
   });
 
-  // ── 6-week trend ──────────────────────────────────────────────────────────
-  const trend = buildWeeklyTrend(calls, 6);
+  // ── Weekly trend — janela = semanas reais cobertas pelas calls (até 6) ────
+  const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
 
   return { sections, trend, trainerSectionScores };
 }

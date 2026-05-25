@@ -36,6 +36,10 @@ export interface Trainer {
   score: number
   scoreDelta: number
   lastActive: string
+  /** ISO timestamp of the trainer's most recent call (preferred for display —
+   *  format on the client via Intl per active locale). `lastActive` is kept
+   *  for back-compat with pre-formatted EN cache in `trainers.last_active`. */
+  lastActiveAt?: string | null
   ownerId: string
   orgId?: string
   rubricScores: RubricScores
@@ -217,8 +221,9 @@ export type CallsByTrainerMap = Record<string, BestCall[]>
 
 export interface PerformanceTrendPoint {
   week: string
-  closeRate: number
-  avgScore: number
+  // null = semana sem nenhuma call — vira lacuna no gráfico, não uma barra de 0%.
+  closeRate: number | null
+  avgScore: number | null
 }
 
 export interface RevenueEstimatorItem {

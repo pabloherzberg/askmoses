@@ -350,24 +350,36 @@
     },
     "behavioralProfile": {
       "title": "Perfil de correlación conductual",
-      "teamAvg": "Promedio del equipo"
+      "teamAvg": "Promedio del equipo",
+      "empty": "Aún no hay llamadas analizadas"
+    },
+    "behavioralTrends": {
+      "title": "Tendencias de comportamiento — 6 semanas",
+      "empty": "Aún no hay llamadas analizadas"
     },
     "closeRateTrend": {
       "title": "Tendencia de cierre — 6 semanas",
-      "summary": "Semana 1: {from}% → Semana 6: {to}% {delta}pts",
+      "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Tasa de cierre",
       "teamPill": "Equipo"
     },
+    "performanceTrend": {
+      "noCalls": "Sin llamadas",
+      "title": "Tendencia de tasa de conversión",
+      "team": "Equipo",
+      "teamAvg": "Promedio del equipo",
+      "closeRateLegend": "Tasa de cierre",
+      "weekLabel": "Semana {n}"
+    },
     "rubricGapDetection": {
-      "title": "Detección de gaps en la rúbrica",
+      "title": "Detección de gaps en el script",
       "mockBadge": "solo datos mock",
       "th": {
         "frequency": "Frec.",
         "gapDetected": "Gap detectado"
       },
-      "addToRubric": "Añadir a la rúbrica →",
-      "notCovered": "No cubierto",
-      "mockFooter": "† todos los valores vienen de mock-data.ts — Añadir a la rúbrica → no funciona en esta demo"
+      "addToScript": "Añadir al script →",
+      "mockFooter": "† todos los valores vienen de mock-data.ts — Añadir al script → no funciona en esta demo"
     },
     "revenueEstimator": {
       "title": "Estimador de impacto en ingresos",
@@ -553,7 +565,8 @@
       "activeSalesPeopleOne": "{count} vendedor activo",
       "activeSalesPeopleOther": "{count} vendedores activos",
       "bestCloseRate": "Mejor tasa de cierre",
-      "noTrainers": "Sin vendedores"
+      "noTrainers": "Sin vendedores",
+      "activeSalesPeople": "Vendedores activos"
     },
     "teamHealth": {
       "title": "Salud del equipo",
@@ -569,7 +582,11 @@
       "callsLabelOther": "{count} llamadas",
       "ptsOne": "pt",
       "ptsOther": "pts",
-      "mockFooter": "† punto verde = mejorando · punto rojo = empeorando · valores desde mock-data.ts · sin cálculo real"
+      "mockFooter": "† punto verde = mejorando · punto rojo = empeorando · valores desde mock-data.ts · sin cálculo real",
+      "statusActiveToday": "Activo hoy",
+      "statusYesterday": "Ayer",
+      "statusDaysAgo": "Hace {days} días",
+      "statusNoActivity": "Sin llamadas aún"
     },
     "activeAlerts": {
       "title": "Alertas activas",
@@ -582,7 +599,8 @@
     "detailedRubricLabel": "Puntuación por vendedor — Rúbrica detallada",
     "detailedRubricTh": {
       "section": "Sección",
-      "team": "Equipo"
+      "team": "Equipo",
+      "salesPerson": "Vendedor"
     },
     "aiInsights": "Insights de IA",
     "calls": {
@@ -1028,7 +1046,11 @@
     "recsEmptyError": "Escribe una recomendación antes de enviar.",
     "recsError": "No se pudo enviar la recomendación. Inténtalo de nuevo.",
     "recsNotificationTitle": "Recomendación de coaching",
-    "draftIntro": "{name}, estas son tus prioridades de coaching según tus llamadas recientes:"
+    "draftIntro": "{name}, estas son tus prioridades de coaching según tus llamadas recientes:",
+    "noCallsYet": "Aún no hay llamadas analizadas de {name}.",
+    "recsLoading": "Generando recomendaciones de IA…",
+    "recsGenerateError": "No se pudieron generar recomendaciones ahora.",
+    "worstCallEmpty": "Aún no hay suficientes llamadas para comparar."
   },
   "Dashboard": {
     "home": {

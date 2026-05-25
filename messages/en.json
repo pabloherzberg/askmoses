@@ -350,24 +350,36 @@
     },
     "behavioralProfile": {
       "title": "Behavioral Correlation Profile",
-      "teamAvg": "Team avg"
+      "teamAvg": "Team avg",
+      "empty": "No calls analyzed yet"
+    },
+    "behavioralTrends": {
+      "title": "Behavioral Trends — 6 Weeks",
+      "empty": "No calls analyzed yet"
     },
     "closeRateTrend": {
       "title": "6-Week Close Rate Trend",
-      "summary": "Week 1: {from}% → Week 6: {to}% {delta}pts",
+      "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Close rate",
       "teamPill": "Team"
     },
+    "performanceTrend": {
+      "noCalls": "No calls",
+      "title": "Conversion Rate Trend",
+      "team": "Team",
+      "teamAvg": "Team avg",
+      "closeRateLegend": "Close Rate",
+      "weekLabel": "Week {n}"
+    },
     "rubricGapDetection": {
-      "title": "Rubric Gap Detection",
+      "title": "Script Gap Detection",
       "mockBadge": "mock data only",
       "th": {
         "frequency": "Freq.",
         "gapDetected": "Gap detected"
       },
-      "addToRubric": "Add to rubric →",
-      "notCovered": "Not covered",
-      "mockFooter": "† all values sourced from mock-data.ts — Add to rubric → is non-functional in demo"
+      "addToScript": "Add to script →",
+      "mockFooter": "† all values sourced from mock-data.ts — Add to script → is non-functional in demo"
     },
     "revenueEstimator": {
       "title": "Revenue Impact Estimator",
@@ -553,7 +565,8 @@
       "activeSalesPeopleOne": "{count} active sales person",
       "activeSalesPeopleOther": "{count} active sales people",
       "bestCloseRate": "Best Close Rate",
-      "noTrainers": "No sales people"
+      "noTrainers": "No sales people",
+      "activeSalesPeople": "Active Sales People"
     },
     "teamHealth": {
       "title": "Team Health",
@@ -569,7 +582,11 @@
       "callsLabelOther": "{count} calls",
       "ptsOne": "pt",
       "ptsOther": "pts",
-      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation"
+      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation",
+      "statusActiveToday": "Active today",
+      "statusYesterday": "Yesterday",
+      "statusDaysAgo": "{days} days ago",
+      "statusNoActivity": "No calls yet"
     },
     "activeAlerts": {
       "title": "Active Alerts",
@@ -582,7 +599,8 @@
     "detailedRubricLabel": "Score by Sales Person — Detailed Rubric",
     "detailedRubricTh": {
       "section": "Section",
-      "team": "Team"
+      "team": "Team",
+      "salesPerson": "Sales Person"
     },
     "aiInsights": "AI Insights",
     "calls": {
@@ -1028,7 +1046,11 @@
     "recsEmptyError": "Write a recommendation before sending.",
     "recsError": "Couldn't send the recommendation. Please try again.",
     "recsNotificationTitle": "Coaching recommendation",
-    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:"
+    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:",
+    "noCallsYet": "No calls analyzed for {name} yet.",
+    "recsLoading": "Generating AI recommendations…",
+    "recsGenerateError": "Couldn't generate recommendations right now.",
+    "worstCallEmpty": "Not enough calls to compare yet."
   },
   "Dashboard": {
     "home": {
