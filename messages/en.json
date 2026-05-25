@@ -356,7 +356,12 @@
       "teamPill": "Team"
     },
     "performanceTrend": {
-      "noCalls": "No calls"
+      "noCalls": "No calls",
+      "title": "Conversion Rate Trend",
+      "team": "Team",
+      "teamAvg": "Team avg",
+      "closeRateLegend": "Close Rate",
+      "weekLabel": "Week {n}"
     },
     "rubricGapDetection": {
       "title": "Script Gap Detection",

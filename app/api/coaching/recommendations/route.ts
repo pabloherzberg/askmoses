@@ -32,6 +32,11 @@ export async function GET(request: NextRequest) {
 
   const trainerId = request.nextUrl.searchParams.get('trainerId')
   if (!trainerId) return errorResponse('trainerId is required', 400)
+  // UUID guard — sem isso o Supabase explode com erro de cast e devolve 500
+  // pra qualquer querystring lixo.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trainerId)) {
+    return errorResponse('trainerId must be a valid UUID', 400)
+  }
 
   const orgId = await getOrgId()
   if (!orgId) return ok({ recs: [] })
@@ -45,9 +50,12 @@ export async function GET(request: NextRequest) {
     return ok({ recs: cached.recs })
   }
 
+  // Calls SEM locale — o prompt da geração já pede "Write in {locale}" pra IA,
+  // então não precisamos pagar uma rodada de tradução de até 50 calls só para
+  // alimentar o prompt. O resultado final sai no locale alvo direto da IA.
   const [trainer, calls] = await Promise.all([
     dbGetTrainerById(trainerId),
-    getCalls({ orgId, trainerId, limit: 50, locale }),
+    getCalls({ orgId, trainerId, limit: 50 }),
   ])
 
   // Trainer sem calls → sem recs. Não faz sentido fabricar recomendação pra

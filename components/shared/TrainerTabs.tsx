@@ -79,6 +79,19 @@ export function TrainerTabs() {
     ? t('callsLabelOne', { count: trainer.totalCalls })
     : t('callsLabelOther', { count: trainer.totalCalls ?? 0 })
 
+  // Prefere o ISO de `lastActiveAt` (real, vem da call mais recente) e
+  // formata no locale ativo. Fallback pro `lastActive` cacheado (EN) só
+  // pra trainers sem call recente, onde a UI já mostra um placeholder.
+  const lastActiveDisplay = (() => {
+    if (trainer.lastActiveAt) {
+      const d = new Date(trainer.lastActiveAt)
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+      }
+    }
+    return trainer.lastActive
+  })()
+
   const callsThisWeek = trainer.callsThisWeek ?? 0
   const bestCalls: BestCall[] = (bestCallsMap[trainerKey] ?? []).slice(0, 2)
   const worstCalls: BestCall[] = (worstCallsMap[trainerKey] ?? []).slice(0, 2)
@@ -122,7 +135,7 @@ export function TrainerTabs() {
                 {trainer.name}
               </p>
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
-                {callsLabel} · {t('lastActive', { when: trainer.lastActive })}
+                {callsLabel} · {t('lastActive', { when: lastActiveDisplay })}
                 {scoreLevel(trainer.score) === 'high' && <> · <span style={{ color: 'var(--am-green)' }}>best on team</span></>}
               </p>
             </div>

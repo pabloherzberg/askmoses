@@ -356,7 +356,12 @@
       "teamPill": "Time"
     },
     "performanceTrend": {
-      "noCalls": "Sem chamadas"
+      "noCalls": "Sem chamadas",
+      "title": "Tendência da taxa de conversão",
+      "team": "Time",
+      "teamAvg": "Média do time",
+      "closeRateLegend": "Taxa de fechamento",
+      "weekLabel": "Semana {n}"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps no script",

@@ -54,10 +54,10 @@ export async function GET(request: NextRequest) {
   // in one batch would overflow `maxOutputTokens` and silently truncate; the
   // displayed best/worst would arrive in English. We translate only the 4
   // strings per trainer that actually render, in a tiny dedicated batch below.
-  const [calls, performanceTrends] = await Promise.all([
-    getCalls({ orgId, limit: 200 }),
-    getPerformanceTrends(trainers),
-  ])
+  // Reaproveitamos o mesmo array `calls` em getPerformanceTrends pra evitar
+  // duas queries idênticas pro Supabase em paralelo.
+  const calls = await getCalls({ orgId, limit: 200 })
+  const performanceTrends = await getPerformanceTrends(trainers, calls)
 
   // Calls agrupadas por trainer.
   const callsByTrainer = new Map<string, Call[]>()
@@ -70,25 +70,40 @@ export async function GET(request: NextRequest) {
 
   const weekStart = startOfWeek(new Date())
 
-  const outTrainers: Trainer[] = []
-  const outBehavioral: Record<string, BehavioralDimension[]> = {}
-  const outBest: CallsByTrainerMap = {}
-  const outWorst: CallsByTrainerMap = {}
-
-  for (const trainer of trainers) {
+  // Enriquece todos os trainers PRIMEIRO (totalCalls = max(cache, real),
+  // lastActiveAt = data ISO da call mais recente real) e usa esse array
+  // enriquecido em buildBehavioralProfile — assim a comparação do trainer x
+  // média do time não bate com objetos que têm totalCalls stale (ex.: seeds
+  // onde syncTrainerStats não rodou).
+  const enrichedTrainers: Trainer[] = trainers.map((trainer) => {
     const tc = callsByTrainer.get(trainer.id) ?? []
     const callsThisWeek = tc.filter(
       (c) => new Date(c.date).getTime() >= weekStart,
     ).length
+    // Última call do trainer — ISO bruto pro cliente formatar por locale.
+    // Sem fallback: undefined → cliente cai no `lastActive` cacheado em EN.
+    const lastAt = tc.length > 0
+      ? tc.reduce((max, c) => {
+          const t = new Date(c.date).getTime()
+          return Number.isFinite(t) && t > max ? t : max
+        }, 0)
+      : 0
+    return {
+      ...trainer,
+      totalCalls: Math.max(trainer.totalCalls ?? 0, tc.length),
+      callsThisWeek,
+      lastActiveAt: lastAt > 0 ? new Date(lastAt).toISOString() : null,
+    }
+  })
 
-    // trainer.totalCalls vem do cache em `trainers.total_calls` (atualizado
-    // por syncTrainerStats). Se o cache estiver stale (calls inseridas direto
-    // no banco, sem passar por /api/analyze — ex.: seeds), tc.length é a
-    // verdade do momento: usamos o maior pra a UI nunca dizer "sem calls"
-    // enquanto a tabela `calls` mostra calls de fato.
-    const totalCalls = Math.max(trainer.totalCalls ?? 0, tc.length)
-    outTrainers.push({ ...trainer, totalCalls, callsThisWeek })
-    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, trainers)
+  const outTrainers: Trainer[] = enrichedTrainers
+  const outBehavioral: Record<string, BehavioralDimension[]> = {}
+  const outBest: CallsByTrainerMap = {}
+  const outWorst: CallsByTrainerMap = {}
+
+  for (const trainer of enrichedTrainers) {
+    const tc = callsByTrainer.get(trainer.id) ?? []
+    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, enrichedTrainers)
     const { best, worst } = buildBestWorstCalls(tc)
     outBest[trainer.id] = best
     outWorst[trainer.id] = worst

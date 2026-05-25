@@ -24,15 +24,16 @@ interface PerformanceTrendProps {
   chartHeight?: number
 }
 
-function labelWeek(w: string) {
-  const num = parseInt(w.replace(/\D/g, ''), 10)
-  if (!isNaN(num)) return `Week ${num}`
-  return w
-}
-
 export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 200 }: PerformanceTrendProps) {
   const t = useTranslations('Shared.performanceTrend')
   const [selected, setSelected] = useState<string>('team')
+
+  // Week label localizado — número extraído da chave (`week3` → 3) e jogado
+  // no template `Semana {n}` do i18n. Sem n numérico fallback p/ string crua.
+  const labelWeek = (w: string) => {
+    const num = parseInt(w.replace(/\D/g, ''), 10)
+    return Number.isNaN(num) ? w : t('weekLabel', { n: num })
+  }
 
   const activeId = fixedId ?? selected
   const data = (trends[activeId] ?? []).map((d) => ({
@@ -52,9 +53,11 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
     weekLabel: labelWeek(d.week),
   }))
 
-  // Merge trainer + team avg numa série só. Semana sem call vira 0 (linha
-  // contínua, sem pontos soltos no gráfico); o flag *Missing faz o tooltip
-  // mostrar "sem chamadas" em vez de um "0%" enganoso.
+  // Merge trainer + team avg numa série só. Semanas sem call vão pra 0 no
+  // dataset — mantém a linha contínua e o gráfico visualmente íntegro
+  // (passar `null` quebra o `connectNulls` quando o gap é no início/fim).
+  // O flag *Missing faz o tooltip mostrar "Sem chamadas" no lugar do "0%",
+  // respeitando o locale via `t('noCalls')`.
   const merged = data.map((d, i) => {
     const teamRaw = teamData[i]?.closeRate ?? null
     return {
@@ -82,7 +85,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
         className="text-[11px] font-semibold tracking-widest uppercase mb-4"
         style={{ color: 'var(--am-muted)' }}
       >
-        Conversion Rate Trend
+        {t('title')}
       </p>
 
       {/* Pill selector — owner view only (no fixedId) */}
@@ -96,7 +99,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
               color: selected === 'team' ? '#fff' : 'var(--am-muted)',
             }}
           >
-            Team
+            {t('team')}
           </button>
           {salesPeople.map((sp) => (
             <button
@@ -152,13 +155,13 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
                 if (name === 'closeRate') {
                   return [
                     row?.closeRateMissing ? t('noCalls') : `${value}%`,
-                    trainerName ?? 'Close Rate',
+                    trainerName ?? t('closeRateLegend'),
                   ]
                 }
                 if (name === 'teamCloseRate') {
                   return [
                     row?.teamCloseRateMissing ? t('noCalls') : `${value}%`,
-                    'Team avg',
+                    t('teamAvg'),
                   ]
                 }
                 return [`${value}`, name as string]
@@ -221,7 +224,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
           <svg width="24" height="2" className="inline-block flex-shrink-0">
             <line x1="0" y1="1" x2="24" y2="1" stroke="var(--am-muted)" strokeWidth="1.5" strokeDasharray="5 3" />
           </svg>
-          Team avg
+          {t('teamAvg')}
         </span>
       </div>
     </div>

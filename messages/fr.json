@@ -356,7 +356,12 @@
       "teamPill": "Équipe"
     },
     "performanceTrend": {
-      "noCalls": "Aucun appel"
+      "noCalls": "Aucun appel",
+      "title": "Tendance du taux de conversion",
+      "team": "Équipe",
+      "teamAvg": "Moyenne de l'équipe",
+      "closeRateLegend": "Taux de conversion",
+      "weekLabel": "Semaine {n}"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes du script",

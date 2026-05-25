@@ -51,22 +51,33 @@ export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
   if (!orgId) return [];
 
   const { dbGetTrainers } = await import("@/lib/db/trainers");
-  const { getCalls } = await import("@/lib/services/calls");
+  const { createAdminClient } = await import("@/lib/supabase/admin");
   const { getTranslations } = await import("next-intl/server");
-  const [trainers, calls, t] = await Promise.all([
+
+  // Projeção mínima (trainer_id + created_at) e sem `limit` — em orgs grandes
+  // o limit de 200 escondia calls antigas e fazia trainers com histórico
+  // aparecerem como "Sem chamadas ainda". Mesmo em orgs com milhares de calls
+  // o payload é pequeno (2 colunas).
+  const supabase = createAdminClient();
+  const [trainers, lastCalls, t] = await Promise.all([
     dbGetTrainers({ orgId }),
-    getCalls({ limit: 200, orgId }),
+    supabase
+      .from("calls")
+      .select("trainer_id, created_at")
+      .eq("org_id", orgId)
+      .not("trainer_id", "is", null)
+      .order("created_at", { ascending: false }),
     getTranslations("Owner.teamHealth"),
   ]);
 
-  // Última call por trainer — base para o status de atividade.
+  // Última call por trainer — primeira linha por trainer_id na lista já
+  // ordenada desc é a mais recente.
   const lastCallMs = new Map<string, number>();
-  for (const c of calls) {
-    if (!c.trainerId) continue;
-    const ms = new Date(c.date).getTime();
-    if (Number.isFinite(ms) && ms > (lastCallMs.get(c.trainerId) ?? 0)) {
-      lastCallMs.set(c.trainerId, ms);
-    }
+  for (const row of lastCalls.data ?? []) {
+    const tid = row.trainer_id as string | null;
+    if (!tid || lastCallMs.has(tid)) continue;
+    const ms = new Date(row.created_at as string).getTime();
+    if (Number.isFinite(ms)) lastCallMs.set(tid, ms);
   }
 
   const now = Date.now();
@@ -101,15 +112,21 @@ export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
 
 // Tendências semanais de close rate, calculadas das calls reais via
 // buildWeeklyTrend (6 semanas). Inclui a curva "team" + uma por trainer.
+// Aceita `calls` pré-carregadas — quando o caller já fez o getCalls (ex.: rota
+// /api/coaching), evita disparar uma 2ª query duplicada pro Supabase.
 export async function getPerformanceTrends(
-  realTrainers: { id: string; email?: string }[]
+  realTrainers: { id: string; email?: string }[],
+  preloadedCalls?: import("@/lib/types").Call[],
 ): Promise<Record<string, PerformanceTrendPoint[]>> {
-  const orgId = await getOrgId();
-  if (!orgId) return {};
-
-  const { getCalls } = await import("@/lib/services/calls");
   const { buildWeeklyTrend, weeksSpanned } = await import("@/lib/services/rubric");
-  const calls = await getCalls({ limit: 200, orgId });
+
+  let calls = preloadedCalls;
+  if (!calls) {
+    const orgId = await getOrgId();
+    if (!orgId) return {};
+    const { getCalls } = await import("@/lib/services/calls");
+    calls = await getCalls({ limit: 200, orgId });
+  }
 
   // Janela do gráfico = nº de semanas que as calls da org realmente cobrem
   // (1–6) — a MESMA para o time e para cada trainer, pra os pontos alinharem
