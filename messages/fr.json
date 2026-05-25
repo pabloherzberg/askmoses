@@ -653,7 +653,8 @@
       "active": "Actif",
       "deprecated": "Obsolète",
       "rejected": "Refusé",
-      "all": "Tous les statuts"
+      "all": "Tous les statuts",
+      "pendingTooltip": "Cette org a aussi un script en attente : {name}"
     },
     "cards": {
       "totalOrgs": "Total des organisations",

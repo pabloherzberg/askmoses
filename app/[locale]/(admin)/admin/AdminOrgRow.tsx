@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook } from 'lucide-react'
+import { Settings, Webhook, Info } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -228,14 +228,28 @@ export function AdminOrgRow({
         )}
       </td>
 
-      {/* Status do script */}
+      {/* Status do script. Info icon aparece quando há pending coexistindo
+          com o active/deprecated — sinal pro Admin "tem proposta em review". */}
       <td className="px-3 py-4 whitespace-nowrap">
-        <span
-          className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-          style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-        >
-          {tStatusScript(scriptStatus)}
-        </span>
+        <div className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+            style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+          >
+            {tStatusScript(scriptStatus)}
+          </span>
+          {client.pendingScriptName && script && (
+            <span
+              role="img"
+              aria-label={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+              title={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+              className="inline-flex items-center cursor-help"
+              style={{ color: 'var(--am-amber)' }}
+            >
+              <Info size={14} />
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Plan */}

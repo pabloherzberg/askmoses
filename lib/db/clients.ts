@@ -198,6 +198,10 @@ function rpcRowToClient(row: RpcRow): Client {
     ownerAccepted: row.owner_accepted,
     subscriptionStatus: row.org_subscription_status,
     currentScript,
+    // pendingScriptName é preenchido por dbListClients via query separada.
+    // No single-org fetch (dbGetClientByOrgId) inicializamos null — caller
+    // pode buscar via dbGetActiveOrgScript ou query própria se precisar.
+    pendingScriptName: null,
     lastCallAt: row.last_call_at,
     createdAt: row.org_created_at,
   };
@@ -235,8 +239,37 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const rows = (data ?? []) as RpcRow[];
   const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
+  // Pendings coexistentes (modelo 059): segunda query enxuta restrita às
+  // orgs da página corrente. Embed via scripts!script_id desambigua a FK
+  // (org_scripts tem 2 refs pra scripts: script_id e previous_script_id).
+  const orgIds = rows.map((r) => r.org_id);
+  const pendingByOrg = new Map<string, string>();
+  if (orgIds.length > 0) {
+    const { data: pendings, error: pendingErr } = await supabase
+      .from("org_scripts")
+      .select("org_id, scripts!script_id(name)")
+      .in("org_id", orgIds)
+      .eq("status", "pending")
+      .is("ended_at", null);
+    if (pendingErr) {
+      console.error("[dbListClients] falha ao buscar pendings:", pendingErr);
+    } else if (pendings) {
+      type PendingRow = {
+        org_id: string;
+        scripts: { name: string } | { name: string }[] | null;
+      };
+      for (const p of pendings as unknown as PendingRow[]) {
+        const scriptObj = Array.isArray(p.scripts) ? p.scripts[0] : p.scripts;
+        if (scriptObj?.name) pendingByOrg.set(p.org_id, scriptObj.name);
+      }
+    }
+  }
+
   return {
-    rows: rows.map(rpcRowToClient),
+    rows: rows.map((row) => ({
+      ...rpcRowToClient(row),
+      pendingScriptName: pendingByOrg.get(row.org_id) ?? null,
+    })),
     total,
     page: query.page,
     limit: query.limit,
