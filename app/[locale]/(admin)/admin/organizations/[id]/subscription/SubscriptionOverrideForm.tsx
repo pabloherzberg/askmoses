@@ -3,10 +3,26 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type SubStatus = 'active' | 'inactive' | 'trial'
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
 type TrialPreset = '24h' | '7d' | '14d' | '30d' | '60d' | '90d' | 'custom'
+
+interface ScriptOption {
+  id: string
+  name: string
+  description: string | null
+}
 
 interface Props {
   orgId: string
@@ -15,6 +31,9 @@ interface Props {
   initialPlanCode: PlanCode | null
   initialTrialEndsAt: string | null
   initialMrr: number
+  initialScriptId: string | null
+  initialScriptName: string | null
+  availableScripts: ScriptOption[]
 }
 
 const PLAN_OPTIONS: PlanCode[] = ['starter', 'pro', 'pro_rag']
@@ -50,6 +69,9 @@ export function SubscriptionOverrideForm({
   initialPlanCode,
   initialTrialEndsAt,
   initialMrr,
+  initialScriptId,
+  initialScriptName,
+  availableScripts,
 }: Props) {
   const t = useTranslations('Admin.subscriptionOverride')
   const router = useRouter()
@@ -63,9 +85,14 @@ export function SubscriptionOverrideForm({
   )
   const [name, setName] = useState<string>(orgName)
   const [mrr, setMrr] = useState<string>(String(initialMrr ?? 0))
+  const [scriptId, setScriptId] = useState<string>(initialScriptId ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  // Pendente entre handleSubmit (que computa+valida) e a confirmação do
+  // AlertDialog. Evita re-validar customDate na confirmação.
+  const [pendingTrialEndsAt, setPendingTrialEndsAt] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -108,6 +135,32 @@ export function SubscriptionOverrideForm({
       return
     }
 
+    // Trocar o script é uma operação "brute-force" — bypassa pending/accept e
+    // notifica o Owner por email. Por isso pedimos confirmação explícita via
+    // AlertDialog antes de chamar o PATCH /script. O fluxo:
+    //   1. Validações já rodaram (acima); construímos o trialEndsAt.
+    //   2. Se script mudou → abre dialog, sai. Confirm no dialog chama
+    //      performSubmit(trialEndsAt) que faz os PATCHes.
+    //   3. Se não mudou → chama performSubmit direto.
+    const scriptChanged = !!scriptId && scriptId !== (initialScriptId ?? '')
+    if (scriptChanged) {
+      setPendingTrialEndsAt(trialEndsAt)
+      setConfirmOpen(true)
+      setSubmitting(false)
+      return
+    }
+
+    await performSubmit(trialEndsAt)
+  }
+
+  const performSubmit = async (trialEndsAt: string | null) => {
+    setSubmitting(true)
+    setSuccess(false)
+    setError(null)
+    const trimmedName = name.trim()
+    const parsedMrr = Number(mrr)
+    const scriptChanged = !!scriptId && scriptId !== (initialScriptId ?? '')
+
     try {
       const res = await fetch(`/api/admin/organizations/${orgId}/subscription`, {
         method: 'PATCH',
@@ -125,6 +178,22 @@ export function SubscriptionOverrideForm({
         setError(json?.error?.message ?? t('genericError'))
         return
       }
+
+      // Subscription OK → troca o script (se mudou) num 2º request. Falha
+      // aqui não desfaz o subscription, mas o erro fica visível pro Admin.
+      if (scriptChanged) {
+        const sres = await fetch(`/api/admin/organizations/${orgId}/script`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scriptId }),
+        })
+        const sjson = await sres.json()
+        if (!sres.ok) {
+          setError(sjson?.error?.message ?? t('genericError'))
+          return
+        }
+      }
+
       setSuccess(true)
       router.refresh()
     } catch {
@@ -134,10 +203,15 @@ export function SubscriptionOverrideForm({
     }
   }
 
+  const newScriptName = availableScripts.find((s) => s.id === scriptId)?.name ?? scriptId
+  const hasCurrentScript = !!initialScriptName
+  const currentScriptName = initialScriptName ?? ''
+
   return (
     // w-full + max-w-xl: mobile ocupa largura toda (limitado pelo px-4 do
     // wrapper da page), desktop trava em 576px — antes ficava em 448px (md)
     // que era estreito demais com 7 campos.
+    <>
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-xl">
       <div className="mb-2">
         <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--am-muted)' }}>
@@ -258,6 +332,30 @@ export function SubscriptionOverrideForm({
         </>
       )}
 
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
+          {t('scriptLabel')}
+        </span>
+        <select
+          value={scriptId}
+          onChange={(e) => setScriptId(e.target.value)}
+          disabled={submitting || availableScripts.length === 0}
+          className="px-3 py-2 rounded-md border outline-none text-sm cursor-pointer"
+          style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }}
+        >
+          <option value="">{t('scriptPlaceholder')}</option>
+          {availableScripts.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+              {s.id === initialScriptId ? ` ${t('scriptCurrentSuffix')}` : ''}
+            </option>
+          ))}
+        </select>
+        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+          {t('scriptHint')}
+        </span>
+      </label>
+
       <button
         type="submit"
         disabled={submitting}
@@ -305,5 +403,40 @@ export function SubscriptionOverrideForm({
         </a>
       </div>
     </form>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {hasCurrentScript
+              ? t('confirmScriptChangeTitle')
+              : t('confirmScriptSetTitle')}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {hasCurrentScript
+              ? t('confirmScriptChange', {
+                  from: currentScriptName,
+                  to: newScriptName,
+                })
+              : t('confirmScriptSet', { to: newScriptName })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={submitting}>
+            {t('confirmScriptChangeCancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            disabled={submitting}
+            onClick={() => {
+              setConfirmOpen(false)
+              void performSubmit(pendingTrialEndsAt)
+            }}
+          >
+            {t('confirmScriptChangeConfirm')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

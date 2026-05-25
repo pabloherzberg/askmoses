@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { SubscriptionOverrideForm } from "./SubscriptionOverrideForm";
 
 type PlanCode = "starter" | "pro" | "pro_rag";
@@ -24,6 +25,34 @@ export default async function SubscriptionPage({ params }: PageProps) {
     .maybeSingle();
 
   if (!org) notFound();
+
+  // Script atual da org: mesma fonte que /api/analyze usa via auto-fill —
+  // dbGetActiveOrgScript resolve via org_scripts (status='active', ended_at=NULL)
+  // e fetcha o script row separado. Funciona pra template (org_id=NULL) E
+  // local da org, diferente de scripts!inner que depende do PostgREST inferir
+  // a FK em tempo de runtime.
+  const [currentScript, scriptsRes] = await Promise.all([
+    dbGetActiveOrgScript(orgId),
+    // Admin escolhe de TODO o catálogo. Filtros por tenant aqui limitam a
+    // escolha do Admin e não impedem o write (a route /script valida que
+    // o script existe, sem checar pertencimento).
+    admin
+      .from("scripts")
+      .select("id, name, description")
+      .order("is_active", { ascending: false })
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (scriptsRes.error) {
+    console.error("[admin/organizations/subscription] scripts fetch failed:", scriptsRes.error);
+  }
+
+  type ScriptOption = { id: string; name: string; description: string | null };
+  const availableScripts = ((scriptsRes.data ?? []) as ScriptOption[]).map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+  }));
 
   // Supabase nested select retorna array quando a relação é definida como
   // hasMany no schema gerado. plans(code) pode vir como objeto OU array
@@ -51,6 +80,9 @@ export default async function SubscriptionPage({ params }: PageProps) {
         initialPlanCode={plan?.code ?? null}
         initialTrialEndsAt={orgRow.trial_ends_at}
         initialMrr={Number(orgRow.mrr ?? 0)}
+        initialScriptId={currentScript?.id ?? null}
+        initialScriptName={currentScript?.name ?? null}
+        availableScripts={availableScripts}
       />
     </div>
   );
