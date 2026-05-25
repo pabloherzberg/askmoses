@@ -12,6 +12,16 @@ interface InitialView {
   hasWebhookSecret: boolean
   enabled: boolean
   configuredAt: string | null
+  lastAuthErrorAt: string | null
+}
+
+const AUTH_ERROR_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000 // 24h
+
+function isAuthErrorRecent(ts: string | null): boolean {
+  if (!ts) return false
+  const parsed = Date.parse(ts)
+  if (Number.isNaN(parsed)) return false
+  return Date.now() - parsed < AUTH_ERROR_VISIBLE_WINDOW_MS
 }
 
 interface Props {
@@ -111,6 +121,8 @@ export function GhlIntegrationForm({ orgId, orgName, initial, webhookUrl }: Prop
     router.refresh()
   }
 
+  const showAuthErrorBanner = isAuthErrorRecent(initial.lastAuthErrorAt)
+
   return (
     <>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-xl">
@@ -125,6 +137,22 @@ export function GhlIntegrationForm({ orgId, orgName, initial, webhookUrl }: Prop
             {t('subtitle')}
           </p>
         </div>
+
+        {showAuthErrorBanner && initial.lastAuthErrorAt && (
+          <div
+            role="alert"
+            className="rounded-md border p-4 flex flex-col gap-1.5"
+            style={{ background: 'var(--am-red-bg)', borderColor: 'var(--am-red)', color: 'var(--am-red)' }}
+          >
+            <div className="text-sm font-semibold">{t('authErrorBannerTitle')}</div>
+            <div className="text-xs" style={{ color: 'var(--am-text)' }}>
+              {t('authErrorBannerBody')}
+            </div>
+            <div className="text-[11px] font-mono" style={{ color: 'var(--am-muted)' }}>
+              {t('authErrorBannerLastSeen')}: {new Date(initial.lastAuthErrorAt).toLocaleString()}
+            </div>
+          </div>
+        )}
 
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-medium" style={{ color: 'var(--am-muted)' }}>
@@ -238,11 +266,11 @@ export function GhlIntegrationForm({ orgId, orgName, initial, webhookUrl }: Prop
           </a>
           <span style={{ color: 'var(--am-muted)' }} className="text-xs opacity-40">·</span>
           <a
-            href={`/${locale}/admin/organizations/${orgId}/subscription`}
+            href={`/${locale}/admin/organizations/${orgId}`}
             className="text-xs underline opacity-60 hover:opacity-100"
             style={{ color: 'var(--am-muted)' }}
           >
-            {t('goToSubscription')}
+            {t('goToOrgConfig')}
           </a>
         </div>
       </form>

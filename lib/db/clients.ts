@@ -169,7 +169,7 @@ function rpcRowToClient(row: RpcRow): Client {
   let currentScript: OrgScriptInfo | null = null;
   if (row.script_id && row.script_status !== "none") {
     const previousVersion =
-      row.script_status === "pending" &&
+      (row.script_status === "pending" || row.script_status === "rejected") &&
       row.prev_script_major !== null &&
       row.prev_script_minor !== null
         ? `${row.prev_script_major}.${row.prev_script_minor}`
@@ -239,11 +239,14 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const rows = (data ?? []) as RpcRow[];
   const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
-  // Pendings coexistentes (modelo 059): segunda query enxuta restrita às
-  // orgs da página corrente. Embed via scripts!script_id desambigua a FK
-  // (org_scripts tem 2 refs pra scripts: script_id e previous_script_id).
-  const orgIds = rows.map((r) => r.org_id);
-  const pendingByOrg = new Map<string, string>();
+  const clients = rows.map(rpcRowToClient);
+
+  // ── Enriquecimento 1: nome do pending coexistindo com active (modelo 057) ──
+  // Pra cada org com active/deprecated corrente, busca se há também um
+  // pending aberto e qual o nome do script — alimenta o Info icon do row
+  // do admin. Embed via scripts!script_id desambigua a FK (org_scripts tem
+  // 2 refs pra scripts: script_id e previous_script_id).
+  const orgIds = clients.map((c) => c.id);
   if (orgIds.length > 0) {
     const { data: pendings, error: pendingErr } = await supabase
       .from("org_scripts")
@@ -258,18 +261,67 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
         org_id: string;
         scripts: { name: string } | { name: string }[] | null;
       };
+      const pendingByOrg = new Map<string, string>();
       for (const p of pendings as unknown as PendingRow[]) {
         const scriptObj = Array.isArray(p.scripts) ? p.scripts[0] : p.scripts;
         if (scriptObj?.name) pendingByOrg.set(p.org_id, scriptObj.name);
+      }
+      for (const c of clients) {
+        c.pendingScriptName = pendingByOrg.get(c.id) ?? null;
+      }
+    }
+  }
+
+  // ── Enriquecimento 2: analysis_status do pending (Script Intelligence) ────
+  // Busca o org_script_id e o analysis_status do cache para mostrar
+  // "Analisando..." / "Na fila" na tabela do admin enquanto a IA ainda
+  // está rodando o pending.
+  const pendingOrgIds = clients
+    .filter((c) => c.currentScript?.status === 'pending')
+    .map((c) => c.id);
+
+  if (pendingOrgIds.length > 0) {
+    const { data: orgScriptRows } = await supabase
+      .from('org_scripts')
+      .select('id, org_id')
+      .in('org_id', pendingOrgIds)
+      .eq('status', 'pending')
+      .is('ended_at', null)
+
+    if (orgScriptRows && orgScriptRows.length > 0) {
+      const orgScriptByOrg = Object.fromEntries(
+        (orgScriptRows as Array<{ id: string; org_id: string }>).map((r) => [r.org_id, r.id])
+      )
+      const orgScriptIds = (orgScriptRows as Array<{ id: string }>).map((r) => r.id)
+
+      const { data: cacheRows } = await supabase
+        .from('script_intelligence_cache')
+        .select('org_script_id, analysis_status')
+        .in('org_script_id', orgScriptIds)
+
+      const cacheByOrgScript = Object.fromEntries(
+        (cacheRows ?? []).map((r: { org_script_id: string; analysis_status: string }) => [
+          r.org_script_id,
+          r.analysis_status,
+        ])
+      )
+
+      for (const client of clients) {
+        if (client.currentScript?.status !== 'pending') continue
+        const orgScriptId = orgScriptByOrg[client.id] ?? null
+        if (!orgScriptId) continue
+        const status = cacheByOrgScript[orgScriptId] ?? null
+        client.currentScript.orgScriptId = orgScriptId
+        client.currentScript.analysisStatus =
+          status === 'processing' ? 'processing'
+          : status === 'queued' ? 'queued'
+          : null
       }
     }
   }
 
   return {
-    rows: rows.map((row) => ({
-      ...rpcRowToClient(row),
-      pendingScriptName: pendingByOrg.get(row.org_id) ?? null,
-    })),
+    rows: clients,
     total,
     page: query.page,
     limit: query.limit,

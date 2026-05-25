@@ -40,7 +40,19 @@
     "roleAdmin": "Admin",
     "backToHome": "Volver al inicio",
     "noAccount": "¿Aún no tienes cuenta?",
-    "signupLink": "Regístrate"
+    "signupLink": "Regístrate",
+    "forgotPasswordLink": "¿Olvidaste tu contraseña?"
+  },
+  "ForgotPassword": {
+    "title": "¿Olvidaste tu contraseña?",
+    "subtitle": "Ingresa tu email y te enviaremos un enlace para elegir una nueva contraseña.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "emailInvalid": "Ingresa un email válido.",
+    "submit": "Enviar enlace de recuperación",
+    "submitting": "Enviando…",
+    "sent": "Si este email está registrado, recibirás un enlace de recuperación. Revisa tu bandeja de entrada.",
+    "backToLogin": "Volver al login"
   },
   "Signup": {
     "title": "Crea tu cuenta",
@@ -178,6 +190,7 @@
       "calls": "Llamadas",
       "myDashboard": "Mi panel",
       "myCalls": "Mis llamadas",
+      "recommendations": "Recomendaciones",
       "uploadCall": "Subir llamada",
       "history": "Historial",
       "analytics": "Analytics",
@@ -215,12 +228,7 @@
       "empty": "Sin notificaciones todavía",
       "sentBy": "De {name}",
       "coachingLine": "{name} te envió una recomendación de coaching",
-      "detail": {
-        "title": "Recomendación de coaching",
-        "from": "De {name}",
-        "received": "Recibido el {when}",
-        "close": "Cerrar"
-      }
+      "viewAll": "Ver todas las recomendaciones"
     },
     "userMenu": {
       "triggerAria": "Menú de usuario",
@@ -406,12 +414,16 @@
     "eyebrow": "Seguridad",
     "title": "Contraseña",
     "subtitle": "Define o cambia tu contraseña. El magic link sigue funcionando — la contraseña es una alternativa.",
+    "recoveryTitle": "Elige una nueva contraseña",
+    "recoverySubtitle": "Te hemos verificado. Define una nueva contraseña para terminar el acceso.",
     "welcome": {
       "aria": "Bienvenido",
       "close": "Cerrar",
       "title": "¡Bienvenido! ¿Quieres definir una contraseña ahora?",
       "body": "Puedes saltarte este paso y seguir entrando por magic link. Si lo prefieres, define una contraseña aquí en segundos.",
-      "skip": "Saltar por ahora"
+      "skip": "Saltar por ahora",
+      "forcedTitle": "Define una contraseña para continuar",
+      "forcedBody": "Como owner de la organización, una contraseña es obligatoria antes de acceder al dashboard. Define una abajo — toma menos de un minuto."
     },
     "form": {
       "newLabel": "Nueva contraseña",
@@ -470,6 +482,21 @@
       "saved": "Preferencias guardadas",
       "error": "No se pudieron guardar tus preferencias. Inténtalo de nuevo.",
       "keepOneActive": "Al menos un canal debe permanecer activo para que tu responsable siempre pueda contactarte."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recomendaciones",
+      "subtitle": "Todas las recomendaciones de coaching que te envió tu responsable.",
+      "empty": "Aún no hay recomendaciones",
+      "emptyHint": "Cuando tu responsable te envíe una recomendación de coaching, aparecerá aquí.",
+      "markAllRead": "Marcar todas como leídas",
+      "unread": "Nueva",
+      "listItemTitle": "{name} te envió una recomendación",
+      "back": "Recomendaciones",
+      "headerTitle": "Recomendación de Coaching",
+      "greeting": "¡Hola, {name}!",
+      "intro": "{sender} te envió una recomendación de coaching:",
+      "sentBy": "Enviado por {name}"
     },
     "newCall": {
       "backToDashboard": "Volver a mi panel",
@@ -762,6 +789,51 @@
     "subInactive": "Inactiva",
     "subscriptionSettings": "Configurar plan de {name}",
     "ghlSettings": "Configurar integración GHL de {name}",
+    "ownerSettings": "Gestionar el owner de {name}",
+    "orgConfigLink": "Configurar {name}",
+    "scriptManagement": {
+      "title": "Script de la organización",
+      "subtitle": "Revisa el script activo y envía una nueva versión para análisis IA y aprobación del owner.",
+      "activeLabel": "Script activo",
+      "noActive": "Sin script activo en esta organización.",
+      "pendingLabel": "Esperando aprobación del owner",
+      "changeScript": "Cambiar script",
+      "statusAnalyzing": "Analizando…",
+      "statusReady": "Listo p/ aprobación",
+      "statusError": "Error en el análisis",
+      "retry": "Reanalizar",
+      "retrySuccess": "Análisis reprogramado",
+      "retryError": "No se pudo reprogramar el análisis"
+    },
+    "ownerManagement": {
+      "eyebrow": "Gestión del owner",
+      "noOwner": "Esta organización aún no tiene owner.",
+      "title": "Owner de la organización",
+      "subtitle": "Cambia el email del owner o envía un enlace de configuración / recuperación de contraseña.",
+      "pendingBadge": "Pendiente",
+      "emailLabel": "Email",
+      "edit": "Editar",
+      "saveAria": "Guardar",
+      "cancelAria": "Cancelar",
+      "resendInvite": "Reenviar email de setup",
+      "sendRecovery": "Enviar enlace de recuperación",
+      "confirmTitle": "¿Cambiar email del owner?",
+      "confirmBody": "La contraseña actual del owner será invalidada. Recibirá un enlace en {newEmail} para elegir una nueva antes de recuperar el acceso. {oldEmail} dejará de funcionar.",
+      "confirmCancel": "Cancelar",
+      "confirmAction": "Cambiar email y enviar enlace",
+      "emailInvalidTitle": "Email inválido",
+      "emailInvalidBody": "Ingresa un email válido.",
+      "emailChangedTitle": "Email cambiado",
+      "emailChangedSentBody": "Enlace de setup enviado a {email}.",
+      "emailChangedMockedBody": "Email guardado. (La entrega de email está en modo mock — el owner no recibirá {email}.)",
+      "resendSentTitle": "Email enviado",
+      "resendSentBody": "Enlace de setup reenviado a {email}.",
+      "resendMockedBody": "Reenvío registrado. (La entrega de email está en modo mock — el owner no recibirá {email}.)",
+      "recoverySentTitle": "Recuperación enviada",
+      "recoverySentBody": "Si {email} está registrado, se ha enviado un enlace de recuperación.",
+      "errorTitle": "No se pudo completar",
+      "errorBody": "Algo salió mal. Intenta de nuevo."
+    },
     "impersonateTooltip": "Entrar como {name} (vista de solo lectura)",
     "impersonateError": "No se pudo entrar en esta organización. Inténtalo de nuevo.",
     "impersonateBanner": {
@@ -770,7 +842,15 @@
       "exit": "Volver al panel admin",
       "exiting": "Saliendo…"
     },
+    "orgConfig": {
+      "eyebrow": "Configuración de la organización",
+      "noOwner": "Esta organización aún no tiene owner.",
+      "ghlLinkTitle": "Integración GHL / Pepper",
+      "ghlLinkSubtitle": "Conectar el workflow de GoHighLevel para transcripción automática de llamadas."
+    },
     "subscriptionOverride": {
+      "cardTitle": "Suscripción",
+      "cardSubtitle": "Override de plan, estado y MRR. Usado para clientes en condiciones especiales.",
       "eyebrow": "Override de suscripción",
       "statusLabel": "Estado",
       "status_active": "Activa",
@@ -841,7 +921,11 @@
       "copy": "Copiar",
       "copied": "Copiado",
       "back": "← Volver al panel",
-      "goToSubscription": "Override de suscripción →"
+      "goToSubscription": "Override de suscripción →",
+      "goToOrgConfig": "← Volver a la configuración de la organización",
+      "authErrorBannerTitle": "Falla de autenticación en GHL",
+      "authErrorBannerBody": "Probablemente el Private Integration Token (PIT) fue rotado en Pepper. Pega el nuevo token en el campo \"Access token de GHL (PIT)\" abajo y haz clic en Guardar — el aviso desaparecerá automáticamente.",
+      "authErrorBannerLastSeen": "Última falla registrada"
     },
     "createOrg": {
       "eyebrow": "Aprovisionamiento",
@@ -1293,6 +1377,7 @@
     "insights": {
       "title": "Script Intelligence",
       "subtitle": "Análisis de salud del script con IA basado en {count} llamadas · Vertical adiestramiento",
+      "pageSubtitle": "Visualiza y edita tu script activo o revisa sugerencias pendientes del admin",
       "selectScriptLabel": "Seleccionar Script",
       "chooseScriptPlaceholder": "Elige un script para analizar...",
       "analyzing": "Analizando llamadas... Un momento por favor",
@@ -1300,6 +1385,80 @@
       "errors": {
         "generateFailed": "Error al analizar script",
         "unknown": "Error desconocido"
+      },
+      "tabs": {
+        "myScript": "Mi Script",
+        "suggestion": "Sugerencia Pendiente",
+        "noSuggestion": "Sin sugerencias pendientes en este momento"
+      },
+      "myScript": {
+        "noScript": "No se encontró ningún script activo para esta organización.",
+        "activeLabel": "Activo",
+        "editScript": "Editar script",
+        "editingMode": "Modo de edición",
+        "sections": "Secciones",
+        "sectionsCount": "{count} secciones",
+        "sectionNamesFixed": "Los nombres de sección son fijos y no se pueden cambiar",
+        "sectionNameLocked": "nombre fijo",
+        "scriptName": "Nombre del script",
+        "description": "Descripción",
+        "edit": "Editar",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "saveAll": "Guardar cambios",
+        "saving": "Guardando...",
+        "saveSuccess": "Script guardado con éxito",
+        "saveError": "Error al guardar script",
+        "unsavedChanges": "Cambios sin guardar",
+        "instructions": "Instrucciones",
+        "tips": "Consejos",
+        "weight": "Peso",
+        "critical": "Crítico"
+      },
+      "firstApproval": {
+        "title": "Primera sugerencia de script",
+        "body": "Esta es la primera sugerencia de script de tu organización. No hay base anterior para análisis comparativo — usa el panel de arriba para revisar el contenido y aprobar o rechazar."
+      },
+      "suggestion": {
+        "noPending": "Sin sugerencia de script pendiente. Cuando el admin envíe una nueva versión, aparecerá aquí.",
+        "bannerTitle": "Sugerencia de Script del Admin",
+        "pendingApproval": "Pendiente de aprobación",
+        "analyzing": "Analizando…",
+        "analyzingHint": "El análisis de IA aún está en curso. La aprobación estará disponible cuando termine.",
+        "sentBy": "Enviado por",
+        "currentV": "Versión actual",
+        "rejectAll": "Rechazar todo",
+        "approveAll": "Aprobar todo",
+        "actionError": "Algo salió mal. Inténtalo de nuevo.",
+        "accepted": "Script v{version} activado con éxito.",
+        "rejected": "Sugerencia rechazada. Se mantiene el script actual.",
+        "compareSections": "Comparación por sección",
+        "modified": "Modificado",
+        "sectionApproved": "Aprobado",
+        "sectionRejected": "Rechazado",
+        "rejectSection": "Rechazar",
+        "approveSection": "Aprobar",
+        "editPrompt": "Editar prompt sugerido",
+        "currentVersion": "Actual (v{version})",
+        "proposedVersion": "Sugerido (v{version})",
+        "unchanged": "Sin cambios",
+        "undoApprove": "Deshacer aprobación",
+        "undoReject": "Deshacer rechazo",
+        "decisionProgress": "{decided} de {total} secciones decididas",
+        "resolutionAcceptedTitle": "Sugerencia aprobada con éxito",
+        "resolutionAcceptedBody": "El script \"{name}\" ha sido activado para tu equipo.",
+        "resolutionRejectedTitle": "Sugerencia rechazada",
+        "resolutionRejectedBody": "La sugerencia \"{name}\" fue rechazada. Tu script actual sigue activo.",
+        "resolutionWaitNext": "Espera el próximo análisis del admin para recibir una nueva sugerencia.",
+        "resolutionDismiss": "Cerrar",
+        "itemRejectedMsg": "Esta sugerencia fue rechazada. Espera la próxima sugerencia.",
+        "itemAcceptedMsg": "Esta sugerencia fue aprobada. Espera el próximo análisis.",
+        "currentScript": "Script actual",
+        "suggestedScript": "Script sugerido",
+        "previewScript": "Previsualizar script sugerido",
+        "previewTitle": "Vista previa del script sugerido",
+        "previewSubtitle": "Cómo quedaría si se aprueba — idéntico a la vista Mi Script",
+        "previewBadge": "Sugerido"
       },
       "playbook": {
         "title": "Playbook",

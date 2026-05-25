@@ -709,9 +709,11 @@ async function resolveRubricForOrg(orgId: string, rubricId: string) {
 }
 
 function buildDefaultSystemPrompt(): string {
-  return `You are a senior sales coach specialising in dog training businesses.
-Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback.
-You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.`;
+  return `You are a senior sales coach. Your client uses this evaluation to improve how their sales team approaches prospects — across any industry, product, or service.
+Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback grounded in the call transcript.
+You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.
+
+The script/rubric the salesperson was supposed to follow is the source of truth for "good execution"; do not impose assumptions from a specific industry (this product is vertical-agnostic — calls may be SaaS, services, training, healthcare, real estate, e-commerce, or anything else).`;
 }
 
 const DEFAULT_SECTIONS: Array<{
@@ -781,7 +783,7 @@ ${frameworkList}
 
   return `${input.systemPrompt}
 
-You are an expert sales coach. Score this dog-training sales call honestly. Your output drives coaching feedback the salesperson will actually read — vague scores hurt more than honest ones.
+You are an expert sales coach. Score this sales call honestly. Your output drives coaching feedback the salesperson will actually read — vague scores hurt more than honest ones.
 
 ${frameworkBlock}## Sections to Score (THE OUTPUT — score each)
 The salesperson was following this playbook. Score each section against the

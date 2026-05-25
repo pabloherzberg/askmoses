@@ -99,6 +99,41 @@ export async function dbGetTrainerNotifications(
   return (data ?? []) as DbCoachingNotification[]
 }
 
+/**
+ * Busca uma recomendação específica do trainer. Escopada por
+ * recipient_trainer_id — um trainer só lê as próprias recomendações.
+ * Retorna null se o id não existir ou não pertencer ao trainer.
+ */
+export async function dbGetTrainerNotificationById(
+  trainerId: string,
+  id: string,
+): Promise<DbCoachingNotification | null> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('coaching_notifications')
+    .select('*')
+    .eq('id', id)
+    .eq('recipient_trainer_id', trainerId)
+    .maybeSingle()
+  if (error) throw new Error(`dbGetTrainerNotificationById: ${error.message}`)
+  return (data as DbCoachingNotification | null) ?? null
+}
+
+/** Marca uma recomendação específica do trainer como lida (idempotente). */
+export async function dbMarkTrainerNotificationRead(
+  trainerId: string,
+  id: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('coaching_notifications')
+    .update({ status: 'read', read_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('recipient_trainer_id', trainerId)
+    .eq('status', 'unread')
+  if (error) throw new Error(`dbMarkTrainerNotificationRead: ${error.message}`)
+}
+
 export async function dbMarkTrainerNotificationsRead(trainerId: string): Promise<void> {
   const supabase = createAdminClient()
   const { error } = await supabase

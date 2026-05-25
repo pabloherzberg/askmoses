@@ -1,7 +1,24 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized } from '@/lib/auth'
+import { ok, unauthorized, getActiveOrgContext } from '@/lib/auth'
 import { getSession, requireOwnerWrite } from '@/lib/auth'
-import { dbUpdateScript, dbDeleteScript, type ScriptSection } from '@/lib/db/scripts'
+import { dbGetScriptById, dbUpdateScript, dbDeleteScript, type ScriptSection } from '@/lib/db/scripts'
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getActiveOrgContext()
+  if (!ctx) return unauthorized()
+
+  const { id } = await params
+
+  // Scripts sugeridos pelo admin podem ter org_id diferente da org ativa —
+  // buscamos sem filtro de org mas com autenticação garantida acima.
+  const script = ctx.activeOrgId
+    ? await dbGetScriptById(id, ctx.activeOrgId).catch(() => null)
+      ?? await dbGetScriptById(id, '')   // fallback sem filtro org
+    : await dbGetScriptById(id, '')
+
+  if (!script) return Response.json({ data: null, error: { message: 'Script not found', code: 404 } }, { status: 404 })
+  return ok(script)
+}
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()

@@ -1,30 +1,43 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useTranslations } from "next-intl"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import {
-  Brain,
+  Sparkles,
+  Check,
+  X,
   Loader2,
-  Plus,
-  RefreshCw,
 } from "lucide-react"
 import { UpsellCard } from "@/components/shared/UpsellCard"
 import { useCurrentClient } from "@/lib/hooks/use-current-client"
-import { scoreColorVar, scoreLevel, toBarWidth, toDisplay5 } from "@/lib/score-display"
+import { Badge } from "@/components/ui/badge"
+import type { ScriptSection } from "@/lib/db/scripts"
+import { scoreColorVar, toBarWidth, toDisplay5, scoreLevel } from "@/lib/score-display"
 import type { ScriptIntelligenceResult } from "@/lib/mocks/data/script-intelligence"
 
-interface Script {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ActiveScript {
   id: string
   name: string
-  description: string
-  rubric_id: string
+  description: string | null
+  sections: ScriptSection[]
+  is_active: boolean
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+interface PendingScriptInfo {
+  orgScriptId: string
+  startedAt: string
+  sentByName: string | null
+  // Status da análise IA do Script Intelligence comparativo. Enquanto for
+  // 'processing' a aprovação fica desabilitada — owner precisa esperar a
+  // análise terminar pra decidir com contexto.
+  analysisStatus: 'processing' | 'queued' | 'ready' | 'error' | null
+  incoming: { id: string; name: string; description: string | null; version: string }
+  previous: { id: string; name: string; description: string | null; version: string } | null
+}
+
+// ── Script Intelligence ───────────────────────────────────────────────────────
 
 function SectionBar({ sections }: { sections: ScriptIntelligenceResult["sections"] }) {
   const colors: Record<string, string> = {
@@ -48,106 +61,847 @@ function SectionBar({ sections }: { sections: ScriptIntelligenceResult["sections
 }
 
 function StatusBadge({ status, t }: { status: "strong" | "weak" | "missing"; t: ReturnType<typeof useTranslations> }) {
-  if (status === "strong") {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-        style={{ background: "rgba(34,217,160,0.15)", color: "var(--am-green)" }}
-      >
-        ✓ {t("sectionAnalysis.strong")}
-      </span>
-    )
-  }
-  if (status === "weak") {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-        style={{ background: "rgba(255,171,46,0.15)", color: "var(--am-amber)" }}
-      >
-        ⚠ {t("sectionAnalysis.weak")}
-      </span>
-    )
-  }
+  if (status === "strong") return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,217,160,0.15)", color: "var(--am-green)" }}>
+      ✓ {t("sectionAnalysis.strong")}
+    </span>
+  )
+  if (status === "weak") return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,171,46,0.15)", color: "var(--am-amber)" }}>
+      ⚠ {t("sectionAnalysis.weak")}
+    </span>
+  )
   return (
-    <span
-      className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}
-    >
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
       ✕ {t("sectionAnalysis.missing")}
     </span>
   )
 }
 
-function ScorePill({ score }: { score: number }) {
-  return (
-    <span className="text-sm font-bold font-mono" style={{ color: scoreColorVar(score) }}>
-      {toDisplay5(score)}/5
-    </span>
-  )
-}
+function SuggestionItem({
+  suggestion: s,
+  initialDecision = "pending",
+  initialEditedText,
+  forceDecision,
+  onDecisionChange,
+  t,
+}: {
+  suggestion: ScriptIntelligenceResult["suggestions"][number]
+  initialDecision?: "pending" | "accepted" | "rejected"
+  initialEditedText?: string
+  forceDecision?: "accepted" | "rejected"
+  onDecisionChange: (decision: "pending" | "accepted" | "rejected", editedText: string) => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  const [decision, setDecision] = useState<"pending" | "accepted" | "rejected">(initialDecision)
+  const [editing, setEditing] = useState(false)
+  const [editedText, setEditedText] = useState(initialEditedText ?? s.suggestedQuote)
 
-function SectionScoreBar({ score }: { score: number }) {
+  const effectiveDecision = forceDecision ?? decision
+  const isDecided = effectiveDecision !== "pending"
+
+  const handleRewrite = () => {
+    setEditing(true)
+    setDecision("pending")
+  }
+
+  const handleSaveEdit = () => {
+    setEditing(false)
+    setDecision("accepted")
+    onDecisionChange("accepted", editedText)
+  }
+
+  const handleCancelEdit = () => {
+    setEditing(false)
+    setEditedText(initialEditedText ?? s.suggestedQuote)
+  }
+
+  const handleReject = () => {
+    setDecision("rejected")
+    setEditing(false)
+    onDecisionChange("rejected", editedText)
+  }
+
+  const handleAccept = () => {
+    setDecision("accepted")
+    setEditing(false)
+    onDecisionChange("accepted", editedText)
+  }
+
+  const handleUndo = () => {
+    setDecision("pending")
+    setEditing(false)
+    onDecisionChange("pending", editedText)
+  }
+
   return (
-    <div className="w-full rounded-full h-1.5" style={{ background: "var(--am-bg4)" }}>
-      <div
-        className="h-1.5 rounded-full transition-all"
-        style={{ width: `${toBarWidth(score)}%`, background: scoreColorVar(score) }}
-      />
+    <div
+      className="space-y-3 pb-6 last:pb-0 border-b last:border-0"
+      style={{ borderColor: "var(--am-bg4)" }}
+    >
+      {/* Header: nome da seção + badge + status + botões */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm" style={{ color: "var(--am-text)" }}>{s.sectionName}</span>
+          {s.action === "rewrite" ? (
+            <Badge
+              variant="outline"
+              className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ borderColor: "var(--am-accent)", color: "var(--am-accent2)" }}
+              onClick={!isDecided && !forceDecision ? handleRewrite : undefined}
+            >
+              {t("aiSuggestions.rewrite")}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs" style={{ borderColor: "var(--am-green)", color: "var(--am-green)" }}>
+              + {t("aiSuggestions.addToScript")}
+            </Badge>
+          )}
+          {effectiveDecision === "accepted" && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(34,217,160,0.15)", color: "var(--am-green)" }}>
+              ✓ {t("suggestion.sectionApproved")}
+            </span>
+          )}
+          {effectiveDecision === "rejected" && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
+              ✕ {t("suggestion.sectionRejected")}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!isDecided && !editing && !forceDecision && (
+            <>
+              <Badge
+                variant="outline"
+                className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ borderColor: "rgba(255,94,94,0.4)", color: "var(--am-red)" }}
+                onClick={handleReject}
+              >
+                {t("suggestion.rejectSection")}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                style={{ borderColor: "rgba(34,217,160,0.4)", color: "var(--am-green)" }}
+                onClick={handleAccept}
+              >
+                {t("suggestion.approveSection")}
+              </Badge>
+            </>
+          )}
+          {isDecided && !forceDecision && (
+            <Badge
+              variant="outline"
+              className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}
+              onClick={handleUndo}
+            >
+              {effectiveDecision === "accepted" ? t("suggestion.undoApprove") : t("suggestion.undoReject")}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Sugestão: editável, mensagem de resolução, ou read-only */}
+      {!isDecided && (
+        <>
+          <p className="text-xs font-medium" style={{ color: "var(--am-muted)" }}>
+            {t("aiSuggestions.suggestedRewrite")}
+          </p>
+          {editing ? (
+            <div className="space-y-2">
+              <textarea
+                rows={6}
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-md text-sm resize-y leading-relaxed"
+                style={{ background: "var(--am-bg3)", border: "1px solid var(--am-accent)", color: "var(--am-text)" }}
+              />
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleSaveEdit} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded cursor-pointer font-medium" style={{ background: "var(--am-accent)", color: "#fff" }}>
+                  <Check size={11} />{t("myScript.save")}
+                </button>
+                <button type="button" onClick={handleCancelEdit} className="text-xs px-3 py-1.5 rounded border cursor-pointer" style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}>
+                  {t("myScript.cancel")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <blockquote
+              className="text-sm italic p-3 rounded-md"
+              style={{
+                background: "rgba(34,217,160,0.08)",
+                color: "var(--am-green)",
+                border: "1px solid rgba(34,217,160,0.2)",
+              }}
+            >
+              {editedText}
+            </blockquote>
+          )}
+        </>
+      )}
+
+      {/* Status após decisão */}
+      {isDecided && (
+        <p
+          className="text-xs p-2.5 rounded-md"
+          style={{
+            background: effectiveDecision === "rejected" ? "rgba(255,94,94,0.05)" : "rgba(34,217,160,0.05)",
+            color: effectiveDecision === "rejected" ? "var(--am-red)" : "var(--am-green)",
+            border: `1px solid ${effectiveDecision === "rejected" ? "rgba(255,94,94,0.2)" : "rgba(34,217,160,0.2)"}`,
+          }}
+        >
+          {effectiveDecision === "rejected" ? t("suggestion.itemRejectedMsg") : t("suggestion.itemAcceptedMsg")}
+        </p>
+      )}
+
+      {!isDecided && <p className="text-xs" style={{ color: "var(--am-muted)" }}>{s.rationale}</p>}
     </div>
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+type DecisionState = { index: number; decision: "pending" | "accepted" | "rejected"; editedText: string }
+
+// ── Left section card: score + editable script content ────────────────────────
+
+function SectionLeftCard({
+  intelSection,
+  scriptSection,
+  onSave,
+  t,
+}: {
+  intelSection: ScriptIntelligenceResult["sections"][number]
+  scriptSection: ScriptSection | null
+  onSave: (updated: Partial<ScriptSection>) => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  const [editing, setEditing] = useState(false)
+  const [instructions, setInstructions] = useState(scriptSection?.instructions ?? "")
+  const [tips, setTips] = useState(scriptSection?.tips ?? "")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!editing) {
+      setInstructions(scriptSection?.instructions ?? "")
+      setTips(scriptSection?.tips ?? "")
+    }
+  }, [scriptSection?.instructions, scriptSection?.tips, editing])
+
+  const handleSave = async () => {
+    setSaving(true)
+    onSave({ instructions, tips })
+    setSaving(false)
+    setEditing(false)
+  }
+
+  const handleCancel = () => {
+    setInstructions(scriptSection?.instructions ?? "")
+    setTips(scriptSection?.tips ?? "")
+    setEditing(false)
+  }
+
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+      {/* Header: name (fixed) + score */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: "var(--am-bg4)" }}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>{intelSection.name}</span>
+          {scriptSection?.weight !== undefined && (
+            <span className="text-xs font-mono" style={{ color: "var(--am-muted)" }}>{scriptSection.weight}%</span>
+          )}
+          {scriptSection?.critical && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
+              {t("myScript.critical")}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-sm font-bold font-mono" style={{ color: scoreColorVar(intelSection.score) }}>
+            {toDisplay5(intelSection.score)}/5
+          </span>
+          {!editing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs px-2.5 py-1 rounded border cursor-pointer"
+              style={{ borderColor: "var(--am-accent)", color: "var(--am-accent2)", background: "rgba(110,86,255,0.08)" }}
+            >
+              {t("myScript.edit")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="px-5 py-4 space-y-3">
+        {/* Score bar + status */}
+        <div className="w-full rounded-full h-1.5" style={{ background: "var(--am-bg4)" }}>
+          <div className="h-1.5 rounded-full transition-all" style={{ width: `${toBarWidth(intelSection.score)}%`, background: scoreColorVar(intelSection.score) }} />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <StatusBadge status={intelSection.status} t={t} />
+          {intelSection.isMissingQuote && intelSection.status !== "missing" && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
+              ✕ {t("sectionAnalysis.missing")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs" style={{ color: "var(--am-muted)" }}>{intelSection.usageStat}</p>
+
+        {/* Divider */}
+        <div className="h-px" style={{ background: "var(--am-bg4)" }} />
+
+        {/* Instructions */}
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--am-muted)" }}>
+            {t("myScript.instructions")}
+          </p>
+          {editing ? (
+            <textarea
+              rows={6}
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-md text-sm resize-y leading-relaxed"
+              style={{ background: "var(--am-bg3)", border: "1px solid var(--am-accent)", color: "var(--am-text)" }}
+            />
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--am-text)" }}>
+              {instructions || <span style={{ color: "var(--am-muted)" }}>—</span>}
+            </p>
+          )}
+        </div>
+
+        {/* Tips */}
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--am-muted)" }}>
+            {t("myScript.tips")}
+          </p>
+          {editing ? (
+            <textarea
+              rows={3}
+              value={tips}
+              onChange={(e) => setTips(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-md text-sm resize-y leading-relaxed"
+              style={{ background: "var(--am-bg3)", border: "1px solid var(--am-bg4)", color: "var(--am-text)" }}
+            />
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--am-muted)" }}>
+              {tips || <span style={{ color: "var(--am-bg4)" }}>—</span>}
+            </p>
+          )}
+        </div>
+
+        {/* Edit actions */}
+        {editing && (
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded cursor-pointer disabled:opacity-50"
+              style={{ background: "var(--am-accent)", color: "#fff" }}
+            >
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+              {t("myScript.save")}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="text-xs px-3 py-1.5 rounded border cursor-pointer disabled:opacity-50"
+              style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}
+            >
+              {t("myScript.cancel")}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ScriptIntelligencePanel({
+  result,
+  loading,
+  error,
+  decisions,
+  onDecisionsChange,
+  scriptSections,
+  onSaveSection,
+  resolution,
+  t,
+}: {
+  result: ScriptIntelligenceResult | null
+  loading: boolean
+  error: string
+  decisions: DecisionState[]
+  onDecisionsChange: (d: DecisionState[]) => void
+  scriptSections: ScriptSection[]
+  onSaveSection: (index: number, updated: Partial<ScriptSection>) => Promise<void>
+  resolution?: "accepted" | "rejected" | null
+  t: ReturnType<typeof useTranslations>
+}) {
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--am-muted)" }} />
+    </div>
+  )
+
+  if (error) return (
+    <div className="p-4 rounded-lg border text-sm" style={{ background: "rgba(255,94,94,0.08)", borderColor: "var(--am-red)", color: "var(--am-red)" }}>
+      {error}
+    </div>
+  )
+
+  if (!result) return null
+
+  return (
+    <div className="space-y-6">
+      {/* Health score */}
+      <div className="rounded-xl border p-5" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+        <div className="flex flex-col md:flex-row gap-6 md:items-center">
+          <div className="shrink-0">
+            <p className="text-xs mb-1" style={{ color: "var(--am-muted)" }}>{t("playbook.healthScore")}</p>
+            <p className="font-bold">
+              <span className="text-4xl font-mono" style={{ color: scoreColorVar(result.healthScore) }}>{toDisplay5(result.healthScore)}</span>
+              <span className="text-xl ml-0.5" style={{ color: "var(--am-muted)" }}>/5</span>
+            </p>
+          </div>
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-medium" style={{ color: "var(--am-muted)" }}>
+              {t(`playbook.effectiveness.${result.effectivenessLabel}`)}
+            </p>
+            <SectionBar sections={result.sections} />
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+              {result.sections.map((s) => (
+                <span key={s.id} className="text-xs font-mono" style={{ color: scoreLevel(s.score) === "low" ? "var(--am-red)" : scoreLevel(s.score) === "mid" ? "var(--am-amber)" : "var(--am-muted)" }}>
+                  {s.name}: {toDisplay5(s.score)}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="md:max-w-[260px] text-sm" style={{ color: "var(--am-muted)" }}>
+            {result.revenueLeak}
+          </div>
+        </div>
+      </div>
+
+      {/* Section analysis + AI suggestions — each section is its own card row */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left column header */}
+        <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
+          {t("sectionAnalysis.title")}
+        </p>
+        {/* Right column header */}
+        <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
+          {t("aiSuggestions.title")}
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {result.sections.map((section, i) => {
+          const suggestion = result.suggestions.find(
+            (s) => s.sectionName.toLowerCase() === section.name.toLowerCase()
+          ) ?? result.suggestions[i]
+          const saved = decisions.find((d) => d.index === i)
+          const scriptSec = scriptSections.find(
+            (s) => s.name.toLowerCase() === section.name.toLowerCase()
+          ) ?? scriptSections[i] ?? null
+          return (
+            <div key={section.id} className="grid gap-4 lg:grid-cols-2">
+              {/* Left: score + editable section content */}
+              <SectionLeftCard
+                intelSection={section}
+                scriptSection={scriptSec}
+                onSave={(updated) => onSaveSection(i, updated)}
+                t={t}
+              />
+
+              {/* Right: AI suggestion card */}
+              {suggestion ? (
+                <div className="rounded-xl border p-5" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+                  <SuggestionItem
+                    suggestion={suggestion}
+                    initialDecision={saved?.decision ?? "pending"}
+                    initialEditedText={saved?.editedText ?? suggestion.suggestedQuote}
+                    forceDecision={resolution ?? undefined}
+                    onDecisionChange={(decision, editedText) => {
+                      const next = decisions.filter((d) => d.index !== i)
+                      next.push({ index: i, decision, editedText })
+                      onDecisionsChange(next)
+                      if (decision === "accepted") {
+                        void onSaveSection(i, { instructions: editedText })
+                      }
+                    }}
+                    t={t}
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border p-5" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+                  <p className="text-sm" style={{ color: "var(--am-muted)" }}>—</p>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Top closer phrases */}
+      <div className="rounded-xl border" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+        <div className="px-5 pt-5 pb-3">
+          <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
+            {t("topClosers.title")}
+          </p>
+        </div>
+        <div className="px-5 pb-5 divide-y" style={{ borderColor: "var(--am-bg4)" }}>
+          {result.topCloserPhrases.map((p, i) => (
+            <div key={i} className="py-4 first:pt-0 last:pb-0 flex items-start gap-4">
+              <div className="shrink-0 text-center w-14">
+                <p className="text-lg font-bold font-mono" style={{ color: p.upliftType === "close" ? "var(--am-green)" : "var(--am-blue)" }}>{p.uplift}</p>
+                <p className="text-[10px]" style={{ color: "var(--am-muted)" }}>{p.upliftType === "close" ? t("topClosers.closeRate") : t("topClosers.showRate")}</p>
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--am-muted)" }}>{p.section}</p>
+                <blockquote className="text-sm italic" style={{ color: "var(--am-text)" }}>{p.quote}</blockquote>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function InsightsPage() {
   const t = useTranslations("Dashboard.insights")
   const tUpsell = useTranslations("Shared.upsell.insightsRag")
 
-  const [scripts, setScripts] = useState<Script[]>([])
-  const [selectedScript, setSelectedScript] = useState("")
+  const [script, setScript] = useState<ActiveScript | null>(null)
+  const [pending, setPending] = useState<PendingScriptInfo | null>(null)
+  const [resolution, setResolution] = useState<"accepted" | "rejected" | null>(null)
+  const [resolvedScriptName, setResolvedScriptName] = useState<string>("")
   const [loading, setLoading] = useState(true)
-  const [analyzing, setAnalyzing] = useState(false)
-  const [scriptResult, setScriptResult] = useState<ScriptIntelligenceResult | null>(null)
-  const [error, setError] = useState("")
+  const [busy, setBusy] = useState<"accept" | "reject" | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [intelligence, setIntelligence] = useState<ScriptIntelligenceResult | null>(null)
+  const [intelligenceLoading, _setIntelligenceLoading] = useState(false)
+  const intelligenceLoadingRef = useRef(false)
+  const setIntelligenceLoadingSync = useCallback((v: boolean) => {
+    intelligenceLoadingRef.current = v
+    _setIntelligenceLoading(v)
+  }, [])
+  const [intelligenceError, setIntelligenceError] = useState("")
+  // Caso "primeira aprovação": org sem script ativo prévio recebe sugestão do
+  // admin. Não há análise comparativa, mas owner ainda aprova/rejeita normalmente
+  // pelo banner — mostramos um empty state no lugar do painel.
+  const [firstApproval, setFirstApproval] = useState(false)
+  const [suggestionDecisions, setSuggestionDecisions] = useState<Array<{ index: number; decision: "pending" | "accepted" | "rejected"; editedText: string }>>([])
+  const [orgScriptIdCache, setOrgScriptIdCache] = useState<string | null>(null)
 
   const { client: currentClient, loading: clientLoading } = useCurrentClient()
   const showRagUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasRag
 
+  // Carregamento inicial: busca script ativo + pending em paralelo
   useEffect(() => {
-    async function loadScripts() {
-      // Script Intelligence é uma tela analítica — owner deve poder auditar
-      // qualquer script da org, inclusive arquivados (`is_active=false`).
-      // Filtrar por active=true zerava o dropdown de orgs cujos scripts foram
-      // criados via Settings (que defaulta is_active=false) sem nunca ativar.
-      // O ordering org-scoped (is_active DESC) mantém o ativo no topo.
-      const res = await fetch("/api/scripts")
-      const { data } = (await res.json()) as { data: Script[] | null; error: unknown }
-      if (data) setScripts(data)
+    const init = async () => {
+      setLoading(true)
+      const [activeRes, pendingRes] = await Promise.all([
+        fetch("/api/scripts/active"),
+        fetch("/api/scripts/pending", { cache: "no-store" }),
+      ])
+      const activeJson = await activeRes.json()
+      const pendingJson = await pendingRes.json()
+
+      if (activeJson?.data?.script) {
+        setScript(activeJson.data.script as ActiveScript)
+      }
+
+      const pendingData = pendingJson?.data?.pending ?? null
+
+      if (pendingData) {
+        // Há pending ativo — limpa qualquer resolução anterior e mostra o pending
+        localStorage.removeItem("sic_resolution")
+        setResolution(null)
+        setResolvedScriptName("")
+        setIntelligence(null)
+        setSuggestionDecisions([])
+        intelligenceKeyRef.current = null
+        setPending(pendingData)
+        pendingOrgScriptIdRef.current = pendingData.orgScriptId
+      } else {
+        // Sem pending — tenta restaurar resolução salva
+        setPending(null)
+        try {
+          const saved = localStorage.getItem("sic_resolution")
+          if (saved) {
+            const parsed = JSON.parse(saved) as { orgScriptId: string; resolution: "accepted" | "rejected"; scriptName: string }
+            const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${parsed.orgScriptId}`)
+            const cacheJson = await cacheRes.json()
+            const cached = cacheJson?.data?.cache
+            if (cached?.resolution && cached?.result) {
+              setResolution(cached.resolution)
+              setResolvedScriptName(parsed.scriptName)
+              setIntelligence(cached.result)
+              setSuggestionDecisions(cached.decisions ?? [])
+              setOrgScriptIdCache(parsed.orgScriptId)
+              intelligenceKeyRef.current = parsed.orgScriptId
+            }
+          }
+        } catch {
+          // silencioso
+        }
+      }
+
       setLoading(false)
     }
-    loadScripts()
+    void init()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleAnalyze() {
-    if (!selectedScript) return
-    setAnalyzing(true)
-    setError("")
-    setScriptResult(null)
+  // Polling: detecta novo script pending enviado pelo admin em tempo real.
+  const intelligenceKeyRef = useRef<string | null>(null)
+  const pendingOrgScriptIdRef = useRef<string | null>(null)
+  const analysisPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if (pending || resolution) return
+
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/scripts/pending", { cache: "no-store" })
+        const json = await res.json()
+        const newPending = json?.data?.pending ?? null
+        if (!newPending) return
+
+        if (pendingOrgScriptIdRef.current !== newPending.orgScriptId) {
+          pendingOrgScriptIdRef.current = newPending.orgScriptId
+          intelligenceKeyRef.current = null
+          localStorage.removeItem("sic_resolution")
+          setResolution(null)
+          setResolvedScriptName("")
+          setIntelligence(null)
+          setSuggestionDecisions([])
+          setPending(newPending)
+        } else {
+          // Mesmo orgScriptId, mas analysisStatus pode ter avançado de
+          // 'processing' → 'ready' / 'error'. Atualiza o objeto pra UI
+          // liberar os botões accept/reject sem resetar intelligence/decisões.
+          setPending((prev) =>
+            prev?.analysisStatus !== newPending.analysisStatus ? newPending : prev,
+          )
+        }
+      } catch {
+        // silencioso
+      }
+    }
+
+    const interval = setInterval(() => { void poll() }, 15_000)
+    return () => clearInterval(interval)
+  }, [pending, resolution])
+
+  useEffect(() => {
+    if (!toast) return
+    const h = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(h)
+  }, [toast])
+
+  const handleAccept = async () => {
+    if (!pending || busy) return
+    if (pending.analysisStatus === 'processing') return
+    setBusy("accept")
+    setActionError(null)
     try {
+      const res = await fetch("/api/scripts/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: pending.orgScriptId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error?.message)
+      const resolvedOrgScriptId = pending.orgScriptId
+      const resolvedScriptName = pending.incoming.name
+      setResolvedScriptName(resolvedScriptName)
+      setResolution("accepted")
+      setPending(null)
+      localStorage.setItem("sic_resolution", JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "accepted", scriptName: resolvedScriptName }))
+      void fetch("/api/script-intelligence/cache", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "accepted" }),
+      })
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t("suggestion.actionError"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!pending || busy) return
+    if (pending.analysisStatus === 'processing') return
+    setBusy("reject")
+    setActionError(null)
+    try {
+      const res = await fetch("/api/scripts/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: pending.orgScriptId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error?.message)
+      const resolvedOrgScriptId = pending.orgScriptId
+      const resolvedScriptName = pending.incoming.name
+      setResolvedScriptName(resolvedScriptName)
+      setResolution("rejected")
+      setPending(null)
+      localStorage.setItem("sic_resolution", JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "rejected", scriptName: resolvedScriptName }))
+      void fetch("/api/script-intelligence/cache", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "rejected" }),
+      })
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t("suggestion.actionError"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const fetchIntelligence = useCallback(async (scriptId: string, currentScriptId?: string, orgScriptId?: string) => {
+    if (analysisPollRef.current) {
+      clearInterval(analysisPollRef.current)
+      analysisPollRef.current = null
+    }
+    setIntelligenceLoadingSync(true)
+    setIntelligenceError("")
+    setIntelligence(null)
+    setFirstApproval(false)
+    setSuggestionDecisions([])
+
+    try {
+      // 1. Verificar cache primeiro
+      if (orgScriptId) {
+        const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`)
+        const cacheJson = await cacheRes.json()
+        if (cacheJson?.data?.cache) {
+          const cached = cacheJson.data.cache
+
+          if (cached.analysis_status === 'processing') {
+            setIntelligenceLoadingSync(true)
+            setIntelligenceError("")
+            analysisPollRef.current = setInterval(async () => {
+              const pollRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`)
+              const pollJson = await pollRes.json()
+              const pollCache = pollJson?.data?.cache
+              if (pollCache?.analysis_status === 'ready') {
+                clearInterval(analysisPollRef.current!)
+                analysisPollRef.current = null
+                setIntelligence(pollCache.result)
+                setSuggestionDecisions(pollCache.decisions ?? [])
+                setOrgScriptIdCache(orgScriptId)
+                setIntelligenceLoadingSync(false)
+                // Sincroniza o status do pending pra liberar accept/reject sem
+                // depender do polling de /api/scripts/pending (que fica em
+                // early-return enquanto há pending no state).
+                setPending((prev) => (prev ? { ...prev, analysisStatus: 'ready' } : prev))
+              } else if (pollCache?.analysis_status === 'error') {
+                clearInterval(analysisPollRef.current!)
+                analysisPollRef.current = null
+                setIntelligenceError(t("errors.generateFailed"))
+                setIntelligenceLoadingSync(false)
+                setPending((prev) => (prev ? { ...prev, analysisStatus: 'error' } : prev))
+              }
+            }, 5000)
+            return
+          }
+
+          if (cached.analysis_status === 'error') {
+            setIntelligenceError(t("errors.generateFailed"))
+            setIntelligenceLoadingSync(false)
+            return
+          }
+
+          setIntelligence(cached.result)
+          setSuggestionDecisions(cached.decisions ?? [])
+          setOrgScriptIdCache(orgScriptId)
+          setIntelligenceLoadingSync(false)
+          return
+        }
+      }
+
+      // 2. Cache vazio — chamar IA diretamente
       const res = await fetch("/api/script-intelligence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scriptId: selectedScript }),
+        body: JSON.stringify({ scriptId, currentScriptId }),
       })
       const json = await res.json()
       if (!res.ok || json.error) throw new Error(json.error?.message || t("errors.generateFailed"))
-      setScriptResult(json.data)
+
+      // Caso especial: backend sinaliza "primeira aprovação" — sem análise
+      // comparativa porque a org não tem script ativo prévio. UI mostra empty
+      // state, owner ainda aprova/rejeita pelo banner.
+      if (json.data?.firstApproval === true) {
+        setFirstApproval(true)
+        setOrgScriptIdCache(orgScriptId ?? null)
+        return
+      }
+
+      setIntelligence(json.data)
+      setOrgScriptIdCache(orgScriptId ?? null)
+
+      // 3. Salvar no cache
+      if (orgScriptId) {
+        void fetch("/api/script-intelligence/cache", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orgScriptId, result: json.data }),
+        })
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errors.unknown"))
+      setIntelligenceError(err instanceof Error ? err.message : t("errors.unknown"))
     } finally {
-      setAnalyzing(false)
+      setIntelligenceLoadingSync(false)
     }
-  }
+  }, [t])
+
+  const persistDecisions = useCallback((decisions: typeof suggestionDecisions) => {
+    if (!orgScriptIdCache) return
+    void fetch("/api/script-intelligence/cache", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orgScriptId: orgScriptIdCache, decisions }),
+    })
+  }, [orgScriptIdCache])
+
+  useEffect(() => {
+    if (loading) return
+    if (intelligenceLoadingRef.current) return
+    if (resolution) return
+
+    const key = pending?.incoming?.id ?? script?.id ?? null
+    if (!key) return
+    if (intelligenceKeyRef.current === key) return
+
+    intelligenceKeyRef.current = key
+    setIntelligence(null)
+    setSuggestionDecisions([])
+
+    if (pending?.incoming?.id) {
+      void fetchIntelligence(pending.incoming.id, script?.id, pending.orgScriptId)
+    } else {
+      void fetchIntelligence(script!.id, undefined, undefined)
+    }
+
+    return () => {
+      if (analysisPollRef.current) {
+        clearInterval(analysisPollRef.current)
+        analysisPollRef.current = null
+      }
+    }
+  }, [loading, pending?.incoming?.id, script?.id, fetchIntelligence, resolution])
 
   if (loading) {
     return (
@@ -160,13 +914,15 @@ export default function InsightsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--am-text)" }}>
-          {t("title")}
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--am-muted)" }}>
-          {t("subtitle", { count: scriptResult?.totalCalls ?? 0 })}
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--am-text)" }}>
+            {t("title")}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--am-muted)" }}>
+            {t("pageSubtitle")}
+          </p>
+        </div>
       </div>
 
       {showRagUpsell && (
@@ -177,179 +933,183 @@ export default function InsightsPage() {
         />
       )}
 
-      {/* Script selector */}
-      <Card style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2" style={{ color: "var(--am-text)" }}>
-            <Brain className="h-5 w-5" />
-            {t("title")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label style={{ color: "var(--am-muted)" }}>{t("selectScriptLabel")}</Label>
-            <select
-              value={selectedScript}
-              onChange={(e) => {
-                setSelectedScript(e.target.value)
-                setScriptResult(null)
-              }}
-              className="w-full px-3 py-2 rounded-md text-sm"
-              style={{ background: "var(--am-bg3)", border: "1px solid var(--am-bg4)", color: "var(--am-text)" }}
-            >
-              <option value="">{t("chooseScriptPlaceholder")}</option>
-              {scripts.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-          <Button
-            onClick={handleAnalyze}
-            disabled={!selectedScript || analyzing}
-            style={{ background: "var(--am-accent)", color: "#fff" }}
-          >
-            {analyzing ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("analyzing")}</>
-            ) : scriptResult ? (
-              <><RefreshCw className="mr-2 h-4 w-4" />{t("generateButton")}</>
-            ) : (
-              <><Brain className="mr-2 h-4 w-4" />{t("generateButton")}</>
-            )}
-          </Button>
-          {error && (
-            <div className="p-3 rounded-md text-sm" style={{ background: "rgba(255,94,94,0.1)", color: "var(--am-red)", border: "1px solid rgba(255,94,94,0.2)" }}>
-              {error}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      {scriptResult && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-lg font-semibold" style={{ color: "var(--am-text)" }}>
-              {t("playbook.title")}
-            </h2>
-            <div className="flex gap-2">
-              <Badge variant="outline" style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}>
-                {t("playbook.dogTrainingVertical")}
-              </Badge>
-              <Badge variant="outline" style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}>
-                {t("playbook.basedOnCalls", { count: scriptResult.totalCalls })}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Health score */}
-          <Card style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
-            <CardContent className="pt-5">
-              <div className="flex flex-col md:flex-row gap-6 md:items-center">
-                <div className="shrink-0">
-                  <p className="text-xs mb-1" style={{ color: "var(--am-muted)" }}>{t("playbook.healthScore")}</p>
-                  <p className="font-bold">
-                    <span className="text-4xl font-mono" style={{ color: scoreColorVar(scriptResult.healthScore) }}>
-                      {toDisplay5(scriptResult.healthScore)}
-                    </span>
-                    <span className="text-xl ml-0.5" style={{ color: "var(--am-muted)" }}>/5</span>
-                  </p>
+      {/* ── Sugestão Pendente / Resolução ── */}
+      {(pending || resolution) && (
+        <div
+          className="rounded-xl border px-6 py-5"
+          style={{
+            background: resolution
+              ? resolution === "accepted"
+                ? "linear-gradient(to right, rgba(34,217,160,0.07), transparent)"
+                : "linear-gradient(to right, rgba(255,94,94,0.07), transparent)"
+              : "linear-gradient(to right, rgba(255,171,46,0.07), transparent)",
+            borderColor: resolution
+              ? resolution === "accepted" ? "rgba(34,217,160,0.3)" : "rgba(255,94,94,0.3)"
+              : "rgba(255,171,46,0.25)",
+          }}
+        >
+          {resolution ? (
+            /* Estado resolvido */
+            <div className="flex items-center justify-between gap-6 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shrink-0"
+                  style={{
+                    background: resolution === "accepted" ? "rgba(34,217,160,0.15)" : "rgba(255,94,94,0.15)",
+                    color: resolution === "accepted" ? "var(--am-green)" : "var(--am-red)",
+                  }}
+                >
+                  {resolution === "accepted" ? "✓" : "✕"}
                 </div>
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium" style={{ color: "var(--am-muted)" }}>
-                    {t(`playbook.effectiveness.${scriptResult.effectivenessLabel}`)}
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>
+                    {resolution === "accepted" ? t("suggestion.resolutionAcceptedTitle") : t("suggestion.resolutionRejectedTitle")}
                   </p>
-                  <SectionBar sections={scriptResult.sections} />
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                    {scriptResult.sections.map((s) => (
-                      <span key={s.id} className="text-xs font-mono" style={{ color: scoreLevel(s.score) === 'low' ? "var(--am-red)" : scoreLevel(s.score) === 'mid' ? "var(--am-amber)" : "var(--am-muted)" }}>
-                        {s.name}: {toDisplay5(s.score)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="md:max-w-[260px] text-sm" style={{ color: "var(--am-muted)" }}>
-                  {scriptResult.revenueLeak}
+                  <p className="text-sm" style={{ color: "var(--am-muted)" }}>
+                    {resolution === "accepted"
+                      ? t("suggestion.resolutionAcceptedBody", { name: resolvedScriptName })
+                      : t("suggestion.resolutionRejectedBody", { name: resolvedScriptName })}
+                  </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Section analysis + AI suggestions */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
-                  {t("sectionAnalysis.title")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {scriptResult.sections.map((section) => (
-                  <div key={section.id} className="space-y-2 pb-5 last:pb-0 border-b last:border-0" style={{ borderColor: "var(--am-bg4)" }}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium text-sm" style={{ color: "var(--am-text)" }}>{section.name}</span>
-                      <ScorePill score={section.score} />
-                    </div>
-                    <SectionScoreBar score={section.score} />
-                    <div className="flex flex-wrap gap-1.5">
-                      <StatusBadge status={section.status} t={t} />
-                      {section.isMissingQuote && section.status !== "missing" && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
-                          ✕ {t("sectionAnalysis.missing")}
-                        </span>
-                      )}
-                    </div>
-                    {section.quote && (
-                      <blockquote className="text-sm italic pl-3 border-l-2" style={{ borderColor: section.status === "strong" ? "var(--am-green)" : "var(--am-red)", color: "var(--am-text)" }}>
-                        {section.quote}
-                      </blockquote>
-                    )}
-                    {section.isMissingQuote && !section.quote && (
-                      <p className="text-sm italic pl-3 border-l-2" style={{ borderColor: "var(--am-red)", color: "var(--am-red)" }}>
-                        [No script for this section]
-                      </p>
-                    )}
-                    <p className="text-xs" style={{ color: "var(--am-muted)" }}>{section.usageStat}</p>
+              <p className="text-xs px-3 py-2 rounded-lg shrink-0" style={{ background: "var(--am-bg3)", color: "var(--am-muted)" }}>
+                {t("suggestion.resolutionWaitNext")}
+              </p>
+            </div>
+          ) : (
+            /* Estado pendente */
+            <div className="flex items-start justify-between gap-6 flex-wrap">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Sparkles size={15} style={{ color: "var(--am-amber)" }} />
+                  <p className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>
+                    {t("suggestion.bannerTitle")}
+                  </p>
+                  {pending!.analysisStatus === 'processing' ? (
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(94,179,255,0.15)", borderColor: "rgba(94,179,255,0.3)", color: "var(--am-blue)" }}>
+                      <Loader2 size={10} className="animate-spin" />
+                      {t("suggestion.analyzing")}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(255,171,46,0.15)", borderColor: "rgba(255,171,46,0.3)", color: "var(--am-amber)" }}>
+                      {t("suggestion.pendingApproval")}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-5 flex-wrap text-sm">
+                  <div>
+                    <span style={{ color: "var(--am-muted)" }}>{t("suggestion.sentBy")}: </span>
+                    <span style={{ color: "var(--am-text)" }}>{pending!.sentByName ?? "Admin"}</span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
-                  {t("aiSuggestions.title")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {scriptResult.suggestions.map((s, i) => (
-                  <div key={i} className="space-y-2 pb-6 last:pb-0 border-b last:border-0" style={{ borderColor: "var(--am-bg4)" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm" style={{ color: "var(--am-text)" }}>{s.sectionName}</span>
-                      {s.action === "rewrite" ? (
-                        <Badge variant="outline" className="text-xs" style={{ borderColor: "var(--am-accent)", color: "var(--am-accent2)" }}>
-                          {t("aiSuggestions.rewrite")}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs" style={{ borderColor: "var(--am-green)", color: "var(--am-green)" }}>
-                          <Plus className="h-3 w-3 mr-1" />
-                          {t("aiSuggestions.addToScript")}
-                        </Badge>
-                      )}
-                    </div>
-                    {s.originalQuote && (
-                      <p className="text-sm italic" style={{ color: "var(--am-muted)" }}>{s.originalQuote}</p>
-                    )}
-                    <p className="text-xs font-medium" style={{ color: "var(--am-muted)" }}>{t("aiSuggestions.suggestedRewrite")}</p>
-                    <blockquote className="text-sm italic p-3 rounded-md" style={{ background: "rgba(34,217,160,0.08)", color: "var(--am-green)", border: "1px solid rgba(34,217,160,0.2)" }}>
-                      {s.suggestedQuote}
-                    </blockquote>
-                    <p className="text-xs" style={{ color: "var(--am-muted)" }}>{s.rationale}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs px-1.5 py-0.5 rounded border" style={{ borderColor: "var(--am-bg4)", color: "var(--am-text)" }}>
+                      {script?.name ?? t("suggestion.currentScript")}
+                    </span>
+                    <span style={{ color: "var(--am-muted)" }}>→</span>
+                    <span className="font-mono text-xs px-1.5 py-0.5 rounded border" style={{ background: "rgba(255,171,46,0.1)", borderColor: "rgba(255,171,46,0.3)", color: "var(--am-amber)" }}>
+                      {pending!.incoming.name}
+                    </span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {(() => {
+                  const analyzing = pending!.analysisStatus === 'processing'
+                  const tooltip = analyzing ? t("suggestion.analyzingHint") : undefined
+                  return (
+                    <>
+                      <button type="button" onClick={handleReject} disabled={!!busy || analyzing} title={tooltip} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ borderColor: "rgba(255,94,94,0.3)", color: "var(--am-red)", background: "transparent" }}>
+                        {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                        {t("suggestion.rejectAll")}
+                      </button>
+                      <button type="button" onClick={handleAccept} disabled={!!busy || analyzing} title={tooltip} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ background: "var(--am-green)", color: "#000" }}>
+                        {busy === "accept" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {t("suggestion.approveAll")}
+                      </button>
+                    </>
+                  )
+                })()}
+              </div>
+            </div>
+          )}
+          {actionError && (
+            <p className="mt-3 text-xs" style={{ color: "var(--am-red)" }}>{actionError}</p>
+          )}
+        </div>
+      )}
+
+      {/* ── First approval empty state — org sem script ativo prévio ── */}
+      {firstApproval && (
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+            <p className="text-xs font-medium uppercase tracking-widest shrink-0" style={{ color: "var(--am-muted)" }}>
+              {t("title")}
+            </p>
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
           </div>
+          <div
+            className="rounded-2xl border p-6 flex items-start gap-4"
+            style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}
+          >
+            <Sparkles size={20} style={{ color: "var(--am-accent2)" }} className="shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold" style={{ color: "var(--am-text)" }}>
+                {t("firstApproval.title")}
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--am-muted)" }}>
+                {t("firstApproval.body")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* ── Script Intelligence — sempre visível quando há script ativo ── */}
+      {(intelligence || intelligenceLoading || intelligenceError) && (
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+            <p className="text-xs font-medium uppercase tracking-widest shrink-0" style={{ color: "var(--am-muted)" }}>
+              {t("title")}
+            </p>
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+          </div>
+          <ScriptIntelligencePanel
+            result={intelligence}
+            loading={intelligenceLoading}
+            error={intelligenceError}
+            decisions={suggestionDecisions}
+            onDecisionsChange={(d) => {
+              setSuggestionDecisions(d)
+              persistDecisions(d)
+            }}
+            scriptSections={script?.sections ?? []}
+            onSaveSection={async (index, updated) => {
+              if (!script) return
+              const newSections = script.sections.map((s, i) => i === index ? { ...s, ...updated } : s)
+              const res = await fetch(`/api/scripts/${script.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sections: newSections }),
+              })
+              if (res.ok) setScript({ ...script, sections: newSections })
+            }}
+            resolution={resolution}
+            t={t}
+          />
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed bottom-4 right-4 z-50 px-4 py-2.5 rounded-lg border shadow-lg flex items-center gap-2"
+          style={{ background: "var(--am-bg2)", borderColor: "var(--am-green)", color: "var(--am-text)" }}
+          role="status"
+        >
+          <Check size={14} style={{ color: "var(--am-green)" }} />
+          <span className="text-sm font-medium">{toast}</span>
         </div>
       )}
     </div>

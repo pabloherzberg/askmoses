@@ -40,7 +40,19 @@
     "roleAdmin": "Admin",
     "backToHome": "Retour à l'accueil",
     "noAccount": "Pas encore de compte ?",
-    "signupLink": "S'inscrire"
+    "signupLink": "S'inscrire",
+    "forgotPasswordLink": "Mot de passe oublié ?"
+  },
+  "ForgotPassword": {
+    "title": "Mot de passe oublié ?",
+    "subtitle": "Entrez votre email et nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "votre@email.com",
+    "emailInvalid": "Entrez un email valide.",
+    "submit": "Envoyer le lien de récupération",
+    "submitting": "Envoi…",
+    "sent": "Si cet email est enregistré, vous recevrez un lien de récupération. Vérifiez votre boîte de réception.",
+    "backToLogin": "Retour à la connexion"
   },
   "Signup": {
     "title": "Créez votre compte",
@@ -178,6 +190,7 @@
       "calls": "Appels",
       "myDashboard": "Mon tableau de bord",
       "myCalls": "Mes appels",
+      "recommendations": "Recommandations",
       "uploadCall": "Charger un appel",
       "history": "Historique",
       "analytics": "Analytics",
@@ -215,12 +228,7 @@
       "empty": "Aucune notification pour le moment",
       "sentBy": "De {name}",
       "coachingLine": "{name} vous a envoyé une recommandation de coaching",
-      "detail": {
-        "title": "Recommandation de coaching",
-        "from": "De {name}",
-        "received": "Reçu le {when}",
-        "close": "Fermer"
-      }
+      "viewAll": "Voir toutes les recommandations"
     },
     "userMenu": {
       "triggerAria": "Menu utilisateur",
@@ -406,12 +414,16 @@
     "eyebrow": "Sécurité",
     "title": "Mot de passe",
     "subtitle": "Définissez ou changez votre mot de passe. Le magic link fonctionne toujours — le mot de passe est une alternative.",
+    "recoveryTitle": "Choisissez un nouveau mot de passe",
+    "recoverySubtitle": "Vous êtes vérifié. Définissez un nouveau mot de passe pour finaliser la connexion.",
     "welcome": {
       "aria": "Bienvenue",
       "close": "Fermer",
       "title": "Bienvenue ! Vous voulez définir un mot de passe maintenant ?",
       "body": "Vous pouvez passer cette étape et continuer à vous connecter par magic link. Si vous préférez, définissez un mot de passe ici en quelques secondes.",
-      "skip": "Passer pour l'instant"
+      "skip": "Passer pour l'instant",
+      "forcedTitle": "Définissez un mot de passe pour continuer",
+      "forcedBody": "En tant qu'owner de l'organisation, un mot de passe est obligatoire avant d'accéder au dashboard. Définissez-en un ci-dessous — cela prend moins d'une minute."
     },
     "form": {
       "newLabel": "Nouveau mot de passe",
@@ -470,6 +482,21 @@
       "saved": "Préférences enregistrées",
       "error": "Impossible d'enregistrer vos préférences. Réessayez.",
       "keepOneActive": "Au moins un canal doit rester actif pour que votre manager puisse toujours vous joindre."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommandations",
+      "subtitle": "Toutes les recommandations de coaching que votre manager vous a envoyées.",
+      "empty": "Aucune recommandation pour le moment",
+      "emptyHint": "Lorsque votre manager vous envoie une recommandation de coaching, elle apparaît ici.",
+      "markAllRead": "Tout marquer comme lu",
+      "unread": "Nouveau",
+      "listItemTitle": "{name} vous a envoyé une recommandation",
+      "back": "Recommandations",
+      "headerTitle": "Recommandation de Coaching",
+      "greeting": "Bonjour {name},",
+      "intro": "{sender} vous a envoyé une recommandation de coaching :",
+      "sentBy": "Envoyé par {name}"
     },
     "newCall": {
       "backToDashboard": "Retour à mon tableau de bord",
@@ -762,6 +789,51 @@
     "subInactive": "Inactif",
     "subscriptionSettings": "Configurer le plan de {name}",
     "ghlSettings": "Configurer l'intégration GHL de {name}",
+    "ownerSettings": "Gérer l'owner de {name}",
+    "orgConfigLink": "Configurer {name}",
+    "scriptManagement": {
+      "title": "Script de l'organisation",
+      "subtitle": "Consultez le script actif et envoyez une nouvelle version pour analyse IA et approbation du owner.",
+      "activeLabel": "Script actif",
+      "noActive": "Aucun script actif pour cette organisation.",
+      "pendingLabel": "En attente d'approbation du owner",
+      "changeScript": "Changer le script",
+      "statusAnalyzing": "Analyse en cours…",
+      "statusReady": "Prêt pour approbation",
+      "statusError": "Erreur d'analyse",
+      "retry": "Relancer l'analyse",
+      "retrySuccess": "Analyse replanifiée",
+      "retryError": "Impossible de replanifier l'analyse"
+    },
+    "ownerManagement": {
+      "eyebrow": "Gestion de l'owner",
+      "noOwner": "Cette organisation n'a pas encore d'owner.",
+      "title": "Owner de l'organisation",
+      "subtitle": "Modifiez l'email de l'owner ou envoyez un lien de configuration / récupération de mot de passe.",
+      "pendingBadge": "En attente",
+      "emailLabel": "Email",
+      "edit": "Modifier",
+      "saveAria": "Enregistrer",
+      "cancelAria": "Annuler",
+      "resendInvite": "Renvoyer l'email de setup",
+      "sendRecovery": "Envoyer le lien de récupération",
+      "confirmTitle": "Changer l'email de l'owner ?",
+      "confirmBody": "Le mot de passe actuel de l'owner sera invalidé. Il recevra un lien à {newEmail} pour choisir un nouveau mot de passe avant de récupérer l'accès. {oldEmail} ne fonctionnera plus.",
+      "confirmCancel": "Annuler",
+      "confirmAction": "Changer l'email et envoyer le lien",
+      "emailInvalidTitle": "Email invalide",
+      "emailInvalidBody": "Entrez une adresse email valide.",
+      "emailChangedTitle": "Email modifié",
+      "emailChangedSentBody": "Lien de setup envoyé à {email}.",
+      "emailChangedMockedBody": "Email enregistré. (La livraison d'email est en mode mock — l'owner ne recevra pas {email}.)",
+      "resendSentTitle": "Email envoyé",
+      "resendSentBody": "Lien de setup renvoyé à {email}.",
+      "resendMockedBody": "Renvoi enregistré. (La livraison d'email est en mode mock — l'owner ne recevra pas {email}.)",
+      "recoverySentTitle": "Récupération envoyée",
+      "recoverySentBody": "Si {email} est enregistré, un lien de récupération a été envoyé.",
+      "errorTitle": "Impossible de terminer",
+      "errorBody": "Quelque chose s'est mal passé. Réessayez."
+    },
     "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
     "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
     "impersonateBanner": {
@@ -770,7 +842,15 @@
       "exit": "Retour au panel admin",
       "exiting": "Sortie…"
     },
+    "orgConfig": {
+      "eyebrow": "Configuration de l'organisation",
+      "noOwner": "Cette organisation n'a pas encore de owner.",
+      "ghlLinkTitle": "Intégration GHL / Pepper",
+      "ghlLinkSubtitle": "Connecter le workflow GoHighLevel pour la transcription automatique des appels."
+    },
     "subscriptionOverride": {
+      "cardTitle": "Abonnement",
+      "cardSubtitle": "Remplacement du plan, du statut et du MRR. Utilisé pour les clients en conditions spéciales.",
       "eyebrow": "Override d'abonnement",
       "statusLabel": "Statut",
       "status_active": "Actif",
@@ -841,7 +921,11 @@
       "copy": "Copier",
       "copied": "Copié",
       "back": "← Retour au panel",
-      "goToSubscription": "Override d'abonnement →"
+      "goToSubscription": "Override d'abonnement →",
+      "goToOrgConfig": "← Retour à la configuration de l'organisation",
+      "authErrorBannerTitle": "Échec d'authentification GHL",
+      "authErrorBannerBody": "Le Private Integration Token (PIT) a probablement été régénéré dans Pepper. Collez le nouveau token dans le champ \"Access token GHL (PIT)\" ci-dessous et cliquez sur Enregistrer — l'alerte disparaîtra automatiquement.",
+      "authErrorBannerLastSeen": "Dernier échec enregistré"
     },
     "createOrg": {
       "eyebrow": "Provisionnement",
@@ -1293,6 +1377,7 @@
     "insights": {
       "title": "Script Intelligence",
       "subtitle": "Analyse de santé du script par IA basée sur {count} appels · Vertical dressage",
+      "pageSubtitle": "Visualisez et modifiez votre script actif ou révisez les suggestions en attente",
       "selectScriptLabel": "Sélectionner le Script",
       "chooseScriptPlaceholder": "Choisissez un script à analyser...",
       "analyzing": "Analyse des appels... Un moment s'il vous plaît",
@@ -1300,6 +1385,80 @@
       "errors": {
         "generateFailed": "Échec de l'analyse du script",
         "unknown": "Erreur inconnue"
+      },
+      "tabs": {
+        "myScript": "Mon Script",
+        "suggestion": "Suggestion en attente",
+        "noSuggestion": "Aucune suggestion en attente pour le moment"
+      },
+      "myScript": {
+        "noScript": "Aucun script actif trouvé pour cette organisation.",
+        "activeLabel": "Actif",
+        "editScript": "Modifier le script",
+        "editingMode": "Mode édition",
+        "sections": "Sections",
+        "sectionsCount": "{count} sections",
+        "sectionNamesFixed": "Les noms de section sont fixes et ne peuvent pas être modifiés",
+        "sectionNameLocked": "nom fixe",
+        "scriptName": "Nom du script",
+        "description": "Description",
+        "edit": "Modifier",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "saveAll": "Enregistrer les modifications",
+        "saving": "Enregistrement...",
+        "saveSuccess": "Script enregistré avec succès",
+        "saveError": "Échec de l'enregistrement du script",
+        "unsavedChanges": "Modifications non enregistrées",
+        "instructions": "Instructions",
+        "tips": "Conseils",
+        "weight": "Poids",
+        "critical": "Critique"
+      },
+      "firstApproval": {
+        "title": "Première suggestion de script",
+        "body": "Ceci est la première suggestion de script pour votre organisation. Il n'y a pas de base antérieure pour une analyse comparative — utilisez le panneau ci-dessus pour examiner le contenu et approuver ou rejeter."
+      },
+      "suggestion": {
+        "noPending": "Aucune suggestion de script en attente. Quand l'admin envoie une nouvelle version, elle apparaîtra ici.",
+        "bannerTitle": "Suggestion de Script de l'Admin",
+        "pendingApproval": "En attente d'approbation",
+        "analyzing": "Analyse en cours…",
+        "analyzingHint": "L'analyse IA est encore en cours. L'approbation sera disponible une fois terminée.",
+        "sentBy": "Envoyé par",
+        "currentV": "Version actuelle",
+        "rejectAll": "Tout rejeter",
+        "approveAll": "Tout approuver",
+        "actionError": "Une erreur est survenue. Veuillez réessayer.",
+        "accepted": "Script v{version} activé avec succès.",
+        "rejected": "Suggestion rejetée. Script actuel conservé.",
+        "compareSections": "Comparaison par section",
+        "modified": "Modifié",
+        "sectionApproved": "Approuvé",
+        "sectionRejected": "Rejeté",
+        "rejectSection": "Rejeter",
+        "approveSection": "Approuver",
+        "editPrompt": "Modifier le prompt suggéré",
+        "currentVersion": "Actuel (v{version})",
+        "proposedVersion": "Suggéré (v{version})",
+        "unchanged": "Sans modification",
+        "undoApprove": "Annuler l'approbation",
+        "undoReject": "Annuler le rejet",
+        "decisionProgress": "{decided} sur {total} sections décidées",
+        "resolutionAcceptedTitle": "Suggestion approuvée avec succès",
+        "resolutionAcceptedBody": "Le script \"{name}\" a été activé pour votre équipe.",
+        "resolutionRejectedTitle": "Suggestion rejetée",
+        "resolutionRejectedBody": "La suggestion \"{name}\" a été refusée. Votre script actuel reste actif.",
+        "resolutionWaitNext": "Attendez la prochaine analyse de l'admin pour recevoir une nouvelle suggestion.",
+        "resolutionDismiss": "Fermer",
+        "itemRejectedMsg": "Cette suggestion a été rejetée. Attendez la prochaine suggestion.",
+        "itemAcceptedMsg": "Cette suggestion a été approuvée. Attendez la prochaine analyse.",
+        "currentScript": "Script actuel",
+        "suggestedScript": "Script suggéré",
+        "previewScript": "Aperçu du script suggéré",
+        "previewTitle": "Aperçu du script suggéré",
+        "previewSubtitle": "À quoi il ressemblerait s'il était approuvé — identique à la vue Mon Script",
+        "previewBadge": "Suggéré"
       },
       "playbook": {
         "title": "Playbook",

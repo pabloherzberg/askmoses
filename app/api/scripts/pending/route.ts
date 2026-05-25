@@ -45,6 +45,19 @@ export async function GET() {
 
   if (!pending) return ok({ pending: null })
 
+  // Lemos analysis_status pra UI saber se a análise IA terminou. Owner vê o
+  // pending mesmo enquanto está 'processing' (com badge "Analisando…" e ações
+  // desabilitadas) — esconder causava loader eterno em orgs sem script ativo.
+  const { data: cacheRow } = await admin
+    .from('script_intelligence_cache')
+    .select('analysis_status')
+    .eq('org_id', ctx.activeOrgId)
+    .eq('org_script_id', pending.id)
+    .maybeSingle()
+
+  const analysisStatus =
+    (cacheRow?.analysis_status as 'processing' | 'queued' | 'ready' | 'error' | null) ?? null
+
   const { data: scriptRow, error: scriptErr } = await admin
     .from('scripts')
     .select('id, name, description, rubric_version_snapshot, minor_version')
@@ -97,6 +110,7 @@ export async function GET() {
       orgScriptId: pending.id,
       startedAt: pending.started_at,
       sentByName,
+      analysisStatus,
       incoming: {
         id: scriptRow.id,
         name: scriptRow.name,

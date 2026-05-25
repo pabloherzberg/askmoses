@@ -29,8 +29,10 @@ function redirectByRole(role: Role, locale: Locale, baseUrl: string) {
 
 // Rotas que NÃO precisam de login (qualquer visitante pode acessar).
 // /signup é público porque é onde o user cria a conta antes de existir
-// sessão. Logged-in users são redirecionados via lógica no bloco isPublic.
-const PUBLIC_PATHS = ['/login', '/signup', '/presentation', '/demobiz', '/tech']
+// sessão. /forgot-password é público porque é onde o user pede recovery
+// quando ainda não conseguiu entrar. Logged-in users são redirecionados
+// via lógica no bloco isPublic.
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/presentation', '/demobiz', '/tech']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -138,9 +140,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
   }
 
-  // /owner-script-review: exclusivo para owner
-  if (rawPath.startsWith('/owner-script-review') && role !== 'owner') {
-    return NextResponse.redirect(redirectByRole(role!, locale, request.url))
+  // ── Owner sem senha definida: trava em /password ─────────────────────────
+  // app_metadata.password_set é setado em POST /api/me/password após save OK.
+  // Default false pra owners criados via admin invite — a senha é exigida
+  // antes de qualquer rota protegida. Trainer continua opcional (decisão
+  // 2026-05-13). Recovery (?recovery=1) cai aqui também — owner sobrescreve
+  // senha e o flag fica true depois do POST.
+  if (role === 'owner' && user.app_metadata?.password_set !== true) {
+    const onPasswordPage = rawPath === '/password' || rawPath.startsWith('/password/')
+    if (!onPasswordPage) {
+      const target = new URL(`/${locale}/password`, request.url)
+      target.searchParams.set('welcome', '1')
+      target.searchParams.set('forced', '1')
+      target.searchParams.set('next', '/dashboard')
+      return NextResponse.redirect(target)
+    }
   }
 
   // ── Admin impersonando: whitelist de paths read-only ─────────────────────

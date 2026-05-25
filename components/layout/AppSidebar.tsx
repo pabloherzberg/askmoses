@@ -18,6 +18,8 @@ import {
   Wand2,
   SlidersHorizontal,
   Cog,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -75,6 +77,11 @@ export function TrainerNavItems() {
   const trainerNav = [
     { label: t("myDashboard"), href: "/me", icon: LayoutDashboard },
     { label: t("myCalls"), href: "/me/calls", icon: Phone },
+    {
+      label: t("recommendations"),
+      href: "/me/recommendations",
+      icon: Sparkles,
+    },
     { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
   ];
   return (
@@ -96,6 +103,11 @@ export function OwnerNavItems() {
       icon: GraduationCap,
     },
     { label: t("calls"), href: "/calls", icon: Phone },
+    {
+      label: t("insights"),
+      href: "/dashboard/insights",
+      icon: Brain,
+    },
     {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",

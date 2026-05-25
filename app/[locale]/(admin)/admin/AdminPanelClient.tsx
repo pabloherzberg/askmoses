@@ -114,6 +114,26 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
   // out-of-order (ex: user digita rápido, request 1 chega depois de request 2).
   const fetchSeqRef = useRef(0);
 
+  // Polling pós-envio: enquanto houver orgs 'processing' ou 'queued',
+  // refetcha a tabela a cada 3s para atualizar os badges em tempo real.
+  const analysisPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAnalysisPoll = useCallback(() => {
+    if (analysisPollRef.current) {
+      clearInterval(analysisPollRef.current);
+      analysisPollRef.current = null;
+    }
+  }, []);
+
+  // Verifica se há orgs em análise ou aguardando decisão do owner na página atual
+  const hasActiveAnalysis = useCallback((currentRows: Client[]) => {
+    return currentRows.some(
+      (c) => c.currentScript?.analysisStatus === 'processing' ||
+             c.currentScript?.analysisStatus === 'queued' ||
+             c.currentScript?.status === 'pending',
+    );
+  }, []);
+
   const doFetch = useCallback(
     async (body: ListRequestBody) => {
       const seq = ++fetchSeqRef.current;
@@ -231,10 +251,43 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     setModalOrgIds(null);
     setSelected(new Set());
     setSelectionMode(false);
-    // Refetcha a página atual pra refletir o novo status (pending) das orgs.
-    void doFetch(filtersToBody(filters, search, page, limit));
-    router.refresh(); // garante que os metric cards também atualizam
+
+    const body = filtersToBody(filters, search, page, limit);
+
+    // Refetcha imediatamente para mostrar os badges 'Analisando...'/'Na fila'
+    void doFetch(body);
+    router.refresh();
+
+    // Inicia polling a cada 3s para atualizar badges em tempo real
+    stopAnalysisPoll();
+    analysisPollRef.current = setInterval(async () => {
+      const seq = ++fetchSeqRef.current;
+      try {
+        const res = await fetch("/api/admin/organizations/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (seq !== fetchSeqRef.current) return;
+        if (!res.ok || !json?.data) return;
+        const newRows = json.data.rows as Client[];
+        setRows(newRows);
+        setTotal(json.data.total as number);
+        // Para o polling quando não houver mais análises em andamento
+        if (!hasActiveAnalysis(newRows)) {
+          stopAnalysisPoll();
+        }
+      } catch {
+        // silencioso — falha de poll não interrompe a UX
+      }
+    }, 3000);
   };
+
+  // Limpa o polling ao desmontar o componente
+  useEffect(() => {
+    return () => stopAnalysisPoll();
+  }, [stopAnalysisPoll]);
 
   // ── Versões únicas (pro filtro) ─────────────────────────────────────
   // Como só temos a página corrente, esse set é incompleto. Trade-off: pra
@@ -511,6 +564,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
       <SendScriptModal
         open={modalOrgIds !== null}
         orgIds={modalOrgIds ?? []}
+        orgIdsOrdered={rows.map((c) => c.id)}
         orgNames={orgNames}
         onClose={() => setModalOrgIds(null)}
         onSent={handleSent}

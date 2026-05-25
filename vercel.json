@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/recover-stale-analyses",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

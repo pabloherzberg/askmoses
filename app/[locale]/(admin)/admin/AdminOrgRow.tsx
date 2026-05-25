@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook, Info } from 'lucide-react'
+import { Settings, Webhook, Loader2, Info } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -201,11 +201,25 @@ export function AdminOrgRow({
         )}
       </td>
 
-      {/* Script Version: mostra "v1.5" ou "v2.0 → v2.1" quando pending com previous */}
+      {/* Script Version */}
       <td className="px-3 py-4 whitespace-nowrap">
         {script ? (
           <div className="inline-flex items-center gap-1.5 font-mono text-[11px] whitespace-nowrap">
-            {script.previousVersion && (
+            {scriptStatus === 'rejected' ? (
+              // Rejected: owner continua com o script anterior (previousVersion)
+              // ou sem script se não havia anterior
+              script.previousVersion ? (
+                <span
+                  className="px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+                >
+                  v{script.previousVersion}
+                </span>
+              ) : (
+                <span className="font-mono" style={{ color: 'var(--am-muted)' }}>—</span>
+              )
+            ) : scriptStatus === 'pending' && script.previousVersion ? (
+              // Pending com versão anterior: mostra "v2.0 → v2.1"
               <>
                 <span
                   className="px-1.5 py-0.5 rounded"
@@ -214,41 +228,87 @@ export function AdminOrgRow({
                   v{script.previousVersion}
                 </span>
                 <span style={{ color: 'var(--am-muted)' }}>→</span>
+                <span
+                  className="px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+                >
+                  v{script.version}
+                </span>
               </>
+            ) : (
+              // Active / deprecated / outro: mostra versão atual
+              <span
+                className="px-1.5 py-0.5 rounded font-medium"
+                style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+              >
+                v{script.version}
+              </span>
             )}
-            <span
-              className="px-1.5 py-0.5 rounded font-medium"
-              style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-            >
-              v{script.version}
-            </span>
           </div>
         ) : (
           <span className="text-[12px] font-mono" style={{ color: 'var(--am-muted)' }}>—</span>
         )}
       </td>
 
-      {/* Status do script. Info icon aparece quando há pending coexistindo
-          com o active/deprecated — sinal pro Admin "tem proposta em review". */}
+      {/* Status do script. Branches específicos pra processing/queued/rejected/
+          active vêm do dev; envolvemos tudo num inline-flex pra encaixar o
+          Info icon quando há pending coexistindo com active/deprecated. */}
       <td className="px-3 py-4 whitespace-nowrap">
         <div className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-          >
-            {tStatusScript(scriptStatus)}
-          </span>
-          {client.pendingScriptName && script && (
+          {script?.analysisStatus === 'processing' ? (
             <span
-              role="img"
-              aria-label={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
-              title={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
-              className="inline-flex items-center cursor-help"
-              style={{ color: 'var(--am-amber)' }}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
             >
-              <Info size={14} />
+              <Loader2 size={10} className="animate-spin" />
+              Analisando...
+            </span>
+          ) : script?.analysisStatus === 'queued' ? (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+            >
+              Na fila
+            </span>
+          ) : scriptStatus === 'rejected' ? (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-red-bg, rgba(255,94,94,0.15))', color: 'var(--am-red)' }}
+            >
+              {tStatusScript('rejected')}
+            </span>
+          ) : scriptStatus === 'active' ? (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-green-bg)', color: 'var(--am-green)' }}
+            >
+              {tStatusScript('active')}
+            </span>
+          ) : (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+            >
+              {tStatusScript(scriptStatus)}
             </span>
           )}
+          {/* Info icon: org tem active/deprecated E pending coexistindo (modelo
+              057). Esconde pra status pending/rejected (o pending JÁ é o
+              row exibido) e pra estados transitórios processing/queued. */}
+          {client.pendingScriptName &&
+            script &&
+            (scriptStatus === 'active' || scriptStatus === 'deprecated') &&
+            !script.analysisStatus && (
+              <span
+                role="img"
+                aria-label={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+                title={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+                className="inline-flex items-center cursor-help"
+                style={{ color: 'var(--am-amber)' }}
+              >
+                <Info size={14} />
+              </span>
+            )}
         </div>
       </td>
 
@@ -293,7 +353,10 @@ export function AdminOrgRow({
         </span>
       </td>
       <td className="px-3 py-4 text-right">
-        {/* stopPropagation pra não disparar o impersonate da row inteira */}
+        {/* stopPropagation pra não disparar o impersonate da row inteira.
+            Owner + Subscription + Script foram consolidados em /admin/
+            organizations/[id]; engrenagem aponta pra lá. GHL fica em
+            sub-página separada por ser form complexo com OAuth. */}
         <div className="inline-flex items-center gap-1">
           <Link
             href={`/${locale}/admin/organizations/${client.id}/integrations/ghl`}
@@ -306,10 +369,10 @@ export function AdminOrgRow({
             <Webhook size={14} />
           </Link>
           <Link
-            href={`/${locale}/admin/organizations/${client.id}/subscription`}
+            href={`/${locale}/admin/organizations/${client.id}`}
             onClick={(e) => e.stopPropagation()}
-            aria-label={t('subscriptionSettings', { name: client.name })}
-            title={t('subscriptionSettings', { name: client.name })}
+            aria-label={t('orgConfigLink', { name: client.name })}
+            title={t('orgConfigLink', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >

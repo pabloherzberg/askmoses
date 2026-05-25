@@ -1,6 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { validatePassword } from '@/lib/auth/password'
@@ -93,6 +94,22 @@ export async function POST(request: NextRequest) {
       )
     }
     return serverError('updateUser falhou', error)
+  }
+
+  // Marca password_set=true no app_metadata. Middleware lê esse flag pra
+  // decidir se redireciona owner sem senha pra /password (gate obrigatório).
+  // Falha aqui não invalida a senha já salva — só loga e segue.
+  try {
+    const admin = createAdminClient()
+    const currentMeta = (session.user.app_metadata ?? {}) as Record<string, unknown>
+    const { error: metaErr } = await admin.auth.admin.updateUserById(session.user.id, {
+      app_metadata: { ...currentMeta, password_set: true },
+    })
+    if (metaErr) {
+      console.warn('[me/password] mark password_set failed', { userId: session.user.id, err: metaErr.message })
+    }
+  } catch (err) {
+    console.warn('[me/password] mark password_set threw', err)
   }
 
   return ok({ updated: true })
