@@ -4,6 +4,7 @@ import { dbGetTrainers } from '@/lib/db/trainers'
 import { getCalls } from '@/lib/services/calls'
 import { getPerformanceTrends } from '@/lib/services/trainers'
 import { buildBehavioralProfile, buildBestWorstCalls } from '@/lib/services/coaching'
+import { translateStrings } from '@/lib/i18n/translate'
 import { routing, type Locale } from '@/i18n/routing'
 import type {
   Call,
@@ -49,8 +50,12 @@ export async function GET(request: NextRequest) {
   const trainers = await dbGetTrainers({ orgId })
   if (trainers.length === 0) return ok(empty)
 
+  // Fetch raw (untranslated) calls — translating 200 calls × ~6 strings each
+  // in one batch would overflow `maxOutputTokens` and silently truncate; the
+  // displayed best/worst would arrive in English. We translate only the 4
+  // strings per trainer that actually render, in a tiny dedicated batch below.
   const [calls, performanceTrends] = await Promise.all([
-    getCalls({ orgId, limit: 200, locale }),
+    getCalls({ orgId, limit: 200 }),
     getPerformanceTrends(trainers),
   ])
 
@@ -87,6 +92,22 @@ export async function GET(request: NextRequest) {
     const { best, worst } = buildBestWorstCalls(tc)
     outBest[trainer.id] = best
     outWorst[trainer.id] = worst
+  }
+
+  // Translate the `analysis` field of all displayed best/worst calls in a
+  // single small batch. Far below the model's token budget — translation is
+  // reliable here in a way it isn't when we batch all 200 calls upfront.
+  if (locale !== 'en') {
+    const displayed = [
+      ...Object.values(outBest).flat(),
+      ...Object.values(outWorst).flat(),
+    ]
+    if (displayed.length > 0) {
+      const translated = await translateStrings(displayed.map((c) => c.analysis), locale)
+      displayed.forEach((c, i) => {
+        c.analysis = translated[i] ?? c.analysis
+      })
+    }
   }
 
   return ok({

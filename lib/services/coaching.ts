@@ -1,5 +1,6 @@
 import { getGeminiModel } from '@/lib/gemini'
 import { runWithGeminiChain } from '@/lib/gemini-chain'
+import { normaliseOutcome } from '@/lib/constants'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
 import type {
   BehavioralDimension,
@@ -35,18 +36,6 @@ const SECTIONS: { key: keyof RubricScores; label: string }[] = [
 // 0–100 — mesma heurística do syncTrainerStats.
 function norm(v: number): number {
   return v > 5 ? v : v * 20
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime())
-    ? '—'
-    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-function prettyResult(result: string): string {
-  const s = result.replace(/_/g, ' ')
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // ─── Behavioral Correlation Profile ──────────────────────────────────────────
@@ -123,11 +112,15 @@ export function buildBestWorstCalls(
 ): { best: BestCall[]; worst: BestCall[] } {
   if (calls.length === 0) return { best: [], worst: [] }
 
+  // Emit raw values (ISO date + canonical outcome enum) so the client can
+  // format/translate per locale. Legacy outcomes (e.g. `follow_up`) are
+  // normalised here so the i18n `Shared.outcomes.short.<key>` lookup hits a
+  // known key on the client.
   const toBestCall = (c: Call): BestCall => ({
     prospect: c.prospect,
-    date: formatDate(c.date),
+    date: c.date,
     score: c.score,
-    result: prettyResult(c.result),
+    result: normaliseOutcome(c.result) ?? c.result,
     analysis: c.feedback || '—',
     listenAt: '',
   })

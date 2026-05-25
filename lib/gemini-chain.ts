@@ -13,12 +13,18 @@ export const GEMINI_MODEL_CHAIN = [
 
 // Cooldowns live on globalThis so they survive Next.js dev HMR cycles —
 // otherwise a hot reload would wipe the map and immediately retry models that
-// are still rate-limited.
-type CooldownState = { cooldowns: Map<string, number> }
+// are still rate-limited. `globalPauseUntil` is set when ALL models fail in a
+// single chain run, so concurrent/subsequent requests with different payloads
+// don't keep hammering Gemini and renewing the cooldowns indefinitely.
+type CooldownState = {
+  cooldowns: Map<string, number>
+  globalPauseUntil: number
+}
 const stateKey = Symbol.for('askmoses.gemini.chain')
 type GlobalWithState = typeof globalThis & { [stateKey]?: CooldownState }
 const g = globalThis as GlobalWithState
-const state: CooldownState = g[stateKey] ?? (g[stateKey] = { cooldowns: new Map() })
+const state: CooldownState =
+  g[stateKey] ?? (g[stateKey] = { cooldowns: new Map(), globalPauseUntil: 0 })
 
 const modelId = (name: string) => `google:${name}`
 
@@ -61,15 +67,27 @@ export function parseRetryDelayMs(err: unknown): number {
  * provider-reported delay and try the next. Any other error logs and continues
  * — useful for non-rate-limit failures like malformed JSON from one model that
  * another might handle. Returns null when the chain is exhausted.
+ *
+ * Global pause: when the chain exhausts all models in a single run, we mark
+ * the whole chain paused until the soonest model recovers. Subsequent calls
+ * (often with different payloads, so different cache keys) return null
+ * immediately instead of generating another set of 429s. This breaks the
+ * death-spiral where parallel requests keep renewing each other's cooldowns.
  */
 export async function runWithGeminiChain<T>(
   attempt: (modelName: string) => Promise<T>,
   models: readonly string[] = GEMINI_MODEL_CHAIN,
 ): Promise<T | null> {
+  const now = Date.now()
+  if (now < state.globalPauseUntil) return null
+
   for (const name of models) {
     if (isOnCooldown(name)) continue
     try {
-      return await attempt(name)
+      const out = await attempt(name)
+      // Success → clear any lingering global pause so the next call goes through.
+      state.globalPauseUntil = 0
+      return out
     } catch (err) {
       if (isRateLimitError(err)) {
         const ms = parseRetryDelayMs(err)
@@ -80,6 +98,16 @@ export async function runWithGeminiChain<T>(
       console.error(`[gemini-chain] ${name} failed:`, err instanceof Error ? err.message : err)
       continue
     }
+  }
+
+  // All models exhausted. Pause until the soonest cooldown expires.
+  const cooldownExpiries = models
+    .map((n) => state.cooldowns.get(modelId(n)) ?? 0)
+    .filter((t) => t > Date.now())
+  if (cooldownExpiries.length > 0) {
+    state.globalPauseUntil = Math.min(...cooldownExpiries)
+    const waitMs = state.globalPauseUntil - Date.now()
+    console.warn(`[gemini-chain] all models exhausted, pausing chain for ${Math.round(waitMs / 1000)}s`)
   }
   return null
 }

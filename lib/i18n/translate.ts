@@ -28,12 +28,18 @@ const TranslatedSchema = z.object({
 // ─── In-memory cache with TTL ──────────────────────────────────────────────
 //
 // Respects the product decision of "no DB persistence": cache lives in the
-// Node process and is wiped on restart/deploy. TTL is short (10 min) so the
-// first request after a locale change IS always a cache miss — only repeat
-// views of the same content within the TTL benefit.
+// Node process and is wiped on restart/deploy.
+//
+// Two TTLs:
+//   - Success: 24h. The source text rarely changes — long TTL maximises hits
+//     and keeps us well under the Gemini RPM/RPD limits across page reloads.
+//   - Failure (all models on cooldown): 60s. Short cache of the source so
+//     concurrent/subsequent requests don't re-hit Gemini while the per-minute
+//     rate-limit bucket recovers.
 
-const CACHE_TTL_MS = 10 * 60 * 1000
-const CACHE_MAX_SIZE = 500
+const CACHE_TTL_SUCCESS_MS = 24 * 60 * 60 * 1000
+const CACHE_TTL_FAILURE_MS = 60 * 1000
+const CACHE_MAX_SIZE = 2000
 
 // Cache lives on globalThis to survive Next.js dev HMR (model cooldowns are
 // shared in @/lib/gemini-chain — this state is just translate-specific cache).
@@ -63,13 +69,13 @@ function cacheGet(key: string): string[] | null {
   return hit.value
 }
 
-function cacheSet(key: string, value: string[]): void {
+function cacheSet(key: string, value: string[], ttlMs: number = CACHE_TTL_SUCCESS_MS): void {
   if (cache.size >= CACHE_MAX_SIZE) {
     // Evict oldest entry (Map iteration is insertion order)
     const oldest = cache.keys().next().value
     if (oldest !== undefined) cache.delete(oldest)
   }
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs })
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────
@@ -130,11 +136,15 @@ export async function translateStrings(
       maxOutputTokens: 8192,
     })
     const translated = object.translations
-    // Accept partial responses. If the LLM returned fewer items than we sent,
-    // fill the tail with source strings instead of rejecting the whole batch.
-    if (translated.length !== payload.length) {
+    // Empty / drastically-truncated output → throw so the chain tries the next
+    // model instead of "succeeding" with all-source strings (which would then
+    // get cached and break translation for the next 10 min).
+    if (translated.length === 0) {
+      throw new Error(`${modelName} returned 0 translations for ${payload.length} inputs`)
+    }
+    if (translated.length < payload.length) {
       console.warn(
-        `[translate] ${modelName} returned ${translated.length}/${payload.length} items — padding with source for missing`,
+        `[translate] ${modelName} returned ${translated.length}/${payload.length} items — padding tail with source`,
       )
     }
     return payload.map((original, i) => {
@@ -144,7 +154,23 @@ export async function translateStrings(
   })
 
   if (!result) {
-    console.warn('[translate] all models unavailable, returning source strings')
+    // All models on cooldown. Cache the source for a short window so a burst
+    // of concurrent/subsequent requests doesn't keep slamming Gemini while
+    // the per-minute rate-limit bucket recovers.
+    console.warn('[translate] all models unavailable, returning source (short cache)')
+    cacheSet(key, payload, CACHE_TTL_FAILURE_MS)
+    return strings
+  }
+
+  // Don't cache identity results — happens when the LLM returned a usable
+  // shape but every entry got padded to source (degraded quality, language
+  // mismatch). Caching would lock the page in source for the long TTL.
+  const translatedCount = result.reduce(
+    (n, v, i) => (v !== payload[i] ? n + 1 : n),
+    0,
+  )
+  if (translatedCount === 0) {
+    console.warn('[translate] result identical to source — not caching')
     return strings
   }
 
