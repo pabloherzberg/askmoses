@@ -13,17 +13,48 @@ export async function GET() {
 
   const admin = createAdminClient()
 
-  const { data: script, error } = await admin
-    .from('scripts')
-    .select('id, name, description, sections, full_script, criteria, is_active, created_at, updated_at')
+  // Fonte de verdade: org_scripts status='active'. Fallback para scripts.is_active=true
+  // para orgs que ainda não passaram pelo fluxo de send/accept do admin.
+  const { data: orgScriptRow, error: osErr } = await admin
+    .from('org_scripts')
+    .select('script_id')
     .eq('org_id', ctx.activeOrgId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+    .eq('status', 'active')
+    .is('ended_at', null)
+    .order('started_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
+  if (osErr) {
+    console.error('[scripts/active] org_scripts fetch failed:', osErr)
+    return Response.json(
+      { data: null, error: { message: 'Erro ao buscar script ativo', code: 500 } },
+      { status: 500 },
+    )
+  }
+
+  const scriptId = orgScriptRow?.script_id as string | null | undefined
+
+  // Fallback: org sem linha em org_scripts ainda usa scripts.is_active=true
+  const query = scriptId
+    ? admin
+        .from('scripts')
+        .select('id, name, description, sections, full_script, criteria, is_active, created_at, updated_at')
+        .eq('id', scriptId)
+        .maybeSingle()
+    : admin
+        .from('scripts')
+        .select('id, name, description, sections, full_script, criteria, is_active, created_at, updated_at')
+        .eq('org_id', ctx.activeOrgId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+  const { data: script, error } = await query
+
   if (error) {
-    console.error('[scripts/active] fetch failed:', error)
+    console.error('[scripts/active] script fetch failed:', error)
     return Response.json(
       { data: null, error: { message: 'Erro ao buscar script ativo', code: 500 } },
       { status: 500 },

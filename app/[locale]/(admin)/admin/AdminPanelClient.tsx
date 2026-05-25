@@ -113,6 +113,9 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
   // Cancellable fetch — guarda o request mais recente pra ignorar respostas
   // out-of-order (ex: user digita rápido, request 1 chega depois de request 2).
   const fetchSeqRef = useRef(0);
+  // Seq separado pro poll de análise — não compete com fetchSeqRef pra não
+  // descartar o resultado do doFetch quando o poll dispara logo depois.
+  const pollSeqRef = useRef(0);
 
   // Polling pós-envio: enquanto houver orgs 'processing' ou 'queued',
   // refetcha a tabela a cada 3s para atualizar os badges em tempo real.
@@ -134,6 +137,31 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     );
   }, []);
 
+  // Inicia polling se ainda não estiver rodando. Reutilizado no mount e no
+  // handleSent para garantir que qualquer pending existente seja monitorado.
+  const startAnalysisPoll = useCallback((body: ListRequestBody) => {
+    if (analysisPollRef.current) return; // já rodando
+    analysisPollRef.current = setInterval(async () => {
+      const seq = ++pollSeqRef.current;
+      try {
+        const res = await fetch("/api/admin/organizations/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (seq !== pollSeqRef.current) return;
+        if (!res.ok || !json?.data) return;
+        const newRows = json.data.rows as Client[];
+        setRows(newRows);
+        setTotal(json.data.total as number);
+        if (!hasActiveAnalysis(newRows)) stopAnalysisPoll();
+      } catch {
+        // silencioso
+      }
+    }, 3000);
+  }, [hasActiveAnalysis, stopAnalysisPoll]);
+
   const doFetch = useCallback(
     async (body: ListRequestBody) => {
       const seq = ++fetchSeqRef.current;
@@ -152,8 +180,13 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
           setFetchError(json?.error?.message ?? t("fetchError"));
           return;
         }
-        setRows(json.data.rows as Client[]);
+        const newRows = json.data.rows as Client[];
+        setRows(newRows);
         setTotal(json.data.total as number);
+        // Inicia polling se houver pendentes (ex: admin abre a página e já
+        // existem orgs aguardando aprovação do owner).
+        if (hasActiveAnalysis(newRows)) startAnalysisPoll(body);
+        else stopAnalysisPoll();
       } catch {
         if (seq !== fetchSeqRef.current) return;
         setFetchError(t("fetchError"));
@@ -161,8 +194,17 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         if (seq === fetchSeqRef.current) setLoading(false);
       }
     },
-    [t],
+    [t, hasActiveAnalysis, startAnalysisPoll, stopAnalysisPoll],
   );
+
+  // Inicia polling no mount se já houver pendentes nos initialRows.
+  useEffect(() => {
+    if (hasActiveAnalysis(initialRows)) {
+      startAnalysisPoll(filtersToBody(EMPTY_FILTERS, "", 1, initialPageSize));
+    }
+    return () => stopAnalysisPoll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounced fetch — dispara 250ms após o último change de filtro/search/page.
   // Não dispara no mount inicial (já temos initialRows do server).
@@ -254,34 +296,14 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
 
     const body = filtersToBody(filters, search, page, limit);
 
-    // Refetcha imediatamente para mostrar os badges 'Analisando...'/'Na fila'
+    // Refetcha imediatamente para mostrar os badges 'Analisando...'/'Na fila'.
+    // O doFetch já chama startAnalysisPoll se encontrar pendentes.
     void doFetch(body);
     router.refresh();
-
-    // Inicia polling a cada 3s para atualizar badges em tempo real
+    // Força início do poll imediatamente sem esperar o doFetch terminar,
+    // para garantir que o intervalo já esteja rodando.
     stopAnalysisPoll();
-    analysisPollRef.current = setInterval(async () => {
-      const seq = ++fetchSeqRef.current;
-      try {
-        const res = await fetch("/api/admin/organizations/list", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const json = await res.json();
-        if (seq !== fetchSeqRef.current) return;
-        if (!res.ok || !json?.data) return;
-        const newRows = json.data.rows as Client[];
-        setRows(newRows);
-        setTotal(json.data.total as number);
-        // Para o polling quando não houver mais análises em andamento
-        if (!hasActiveAnalysis(newRows)) {
-          stopAnalysisPoll();
-        }
-      } catch {
-        // silencioso — falha de poll não interrompe a UX
-      }
-    }, 3000);
+    startAnalysisPoll(body);
   };
 
   // Limpa o polling ao desmontar o componente
@@ -491,6 +513,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
                   isSelected={selected.has(client.id)}
                   onToggleSelected={() => toggleOne(client.id)}
                   onSendScript={() => setModalOrgIds([client.id])}
+                  onCancelScript={() => void doFetch(filtersToBody(filters, search, page, limit))}
                   lastActivityDate={formatDate(
                     client.lastCallAt ?? client.createdAt,
                     locale,

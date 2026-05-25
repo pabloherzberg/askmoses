@@ -1,7 +1,7 @@
 -- ============================================================
--- 065_accept_org_script_reset_started_at.sql
+-- 067_accept_org_script_reset_started_at.sql
 --
--- Conserta `accept_org_script` (introduzida em 059) pra atualizar
+-- Conserta `accept_org_script` (redefinida em 066) pra também atualizar
 -- `started_at = now()` no momento da promoção pending → active.
 --
 -- Sem este fix, o `started_at` da row preservava o timestamp de quando o
@@ -11,10 +11,11 @@
 -- envio). UI ficava mostrando "iniciado em [data antiga]" pra um active
 -- que tinha acabado de ser promovido.
 --
--- Não conflita com 062 (view org_scripts_current), 063 (versioning) ou
--- 064 (password metadata) — toca apenas o RPC accept_org_script.
+-- Mantém todo o comportamento da 066 (fecha linhas abertas anteriores
+-- antes de ativar o pending). Única adição: `started_at = v_now` no
+-- UPDATE de promoção.
 --
--- Idempotente (CREATE OR REPLACE). Rode após 064.
+-- Idempotente (CREATE OR REPLACE). Rode após 066.
 -- ============================================================
 
 DROP FUNCTION IF EXISTS public.accept_org_script(UUID, UUID);
@@ -34,12 +35,14 @@ AS $$
 DECLARE
   v_now TIMESTAMPTZ := now();
 BEGIN
-  -- Fecha active corrente: status='active' preservado, só seta ended_at.
-  UPDATE public.org_scripts AS os
+  -- Fecha todas as outras linhas abertas da org antes de ativar o pending.
+  -- Garante invariante: 1 linha com ended_at IS NULL por org após o accept
+  -- (herdado da 066).
+  UPDATE public.org_scripts
      SET ended_at = v_now
-   WHERE os.org_id = p_org_id
-     AND os.status = 'active'
-     AND os.ended_at IS NULL;
+   WHERE org_id   = p_org_id
+     AND id      <> p_org_script_id
+     AND ended_at IS NULL;
 
   -- Promove pending → active. started_at reseta pra v_now: representa
   -- "quando este script começou a vigorar como active da org", coerente
@@ -61,6 +64,6 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.accept_org_script IS
-  'Fecha active corrente (só ended_at) + promove pending a active com started_at = now(). Status do active anterior preservado.';
+  'Aceita pending: fecha linhas abertas anteriores (066) + promove pending a active com started_at = now() (067). Garante invariante de 1 row aberta por org e started_at coerente.';
 
 GRANT EXECUTE ON FUNCTION public.accept_org_script(UUID, UUID) TO service_role;

@@ -790,7 +790,7 @@
     "subscriptionSettings": "Configure {name}'s plan",
     "ghlSettings": "Configure {name}'s GHL integration",
     "ownerSettings": "Manage {name}'s owner",
-    "orgConfigLink": "Configure {name}",
+    "orgConfigLabel": "Configure {name}",
     "scriptManagement": {
       "title": "Organization script",
       "subtitle": "Review the active script and send a new version for AI analysis and owner approval.",
@@ -801,6 +801,10 @@
       "statusAnalyzing": "Analyzing…",
       "statusReady": "Ready for approval",
       "statusError": "Analysis error",
+      "statusNoAnalysis": "Pending approval",
+      "cancel": "Cancel send",
+      "cancelSuccess": "Script send cancelled",
+      "cancelError": "Could not cancel the send. Try again.",
       "retry": "Re-run analysis",
       "retrySuccess": "Analysis rescheduled",
       "retryError": "Could not reschedule the analysis"

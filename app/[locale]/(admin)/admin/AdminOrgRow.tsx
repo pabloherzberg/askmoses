@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook, Loader2, Info } from 'lucide-react'
+import { Settings, Webhook, Loader2, X, Info } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -16,6 +16,7 @@ interface Props {
   isSelected: boolean
   onToggleSelected: () => void
   onSendScript: () => void
+  onCancelScript: () => void
   // Já formatada pelo caller pra evitar Date parsing em cada row.
   lastActivityDate: string
 }
@@ -54,6 +55,7 @@ export function AdminOrgRow({
   isSelected,
   onToggleSelected,
   onSendScript,
+  onCancelScript,
   lastActivityDate,
 }: Props) {
   const t = useTranslations('Admin')
@@ -63,6 +65,7 @@ export function AdminOrgRow({
   const locale = useLocale()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
 
   const script = client.currentScript
   const scriptStatus: OrgScriptStatus = script?.status ?? 'none'
@@ -97,6 +100,28 @@ export function AdminOrgRow({
     } catch {
       setError(t('impersonateError'))
       setLoading(false)
+    }
+  }
+
+  const handleCancelScript = async () => {
+    if (cancelling || !script?.orgScriptId) return
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/admin/scripts/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgScriptId: script.orgScriptId }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json?.error?.message ?? 'Erro ao cancelar')
+      } else {
+        onCancelScript()
+      }
+    } catch {
+      setError('Erro ao cancelar')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -250,10 +275,12 @@ export function AdminOrgRow({
         )}
       </td>
 
-      {/* Status do script. Branches específicos pra processing/queued/rejected/
-          active vêm do dev; envolvemos tudo num inline-flex pra encaixar o
-          Info icon quando há pending coexistindo com active/deprecated. */}
-      <td className="px-3 py-4 whitespace-nowrap">
+      {/* Status do script. Combina:
+          - Badges específicos por status/analysisStatus (dev)
+          - Botão X de cancelar envio quando processing/queued (dev)
+          - Info icon (amber) quando active/deprecated TEM pending coexistindo (modelo 057)
+          stopPropagation: clicks dentro do td (cancelar, hover do info) não disparam impersonate da linha. */}
+      <td className="px-3 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex items-center gap-1.5">
           {script?.analysisStatus === 'processing' ? (
             <span
@@ -291,6 +318,19 @@ export function AdminOrgRow({
             >
               {tStatusScript(scriptStatus)}
             </span>
+          )}
+          {/* Botão X (cancelar envio): só quando o pending está sendo analisado/na fila */}
+          {(script?.analysisStatus === 'processing' || script?.analysisStatus === 'queued') && script?.orgScriptId && (
+            <button
+              type="button"
+              onClick={handleCancelScript}
+              disabled={cancelling}
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: 'rgba(255,94,94,0.15)', color: 'var(--am-red)' }}
+              title="Cancelar envio"
+            >
+              {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
+            </button>
           )}
           {/* Info icon: org tem active/deprecated E pending coexistindo (modelo
               057). Esconde pra status pending/rejected (o pending JÁ é o
@@ -371,8 +411,8 @@ export function AdminOrgRow({
           <Link
             href={`/${locale}/admin/organizations/${client.id}`}
             onClick={(e) => e.stopPropagation()}
-            aria-label={t('orgConfigLink', { name: client.name })}
-            title={t('orgConfigLink', { name: client.name })}
+            aria-label={t('orgConfigLabel', { name: client.name })}
+            title={t('orgConfigLabel', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >
