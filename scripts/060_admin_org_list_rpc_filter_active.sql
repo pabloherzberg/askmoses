@@ -1,5 +1,5 @@
 -- ============================================================
--- 058_admin_org_list_rpc_filter_active.sql
+-- 060_admin_org_list_rpc_filter_active.sql
 --
 -- list_admin_organizations precisa filtrar current_scripts por
 -- effective_status IN ('active','deprecated') agora que a 057 permite

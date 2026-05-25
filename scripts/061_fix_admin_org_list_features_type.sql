@@ -1,9 +1,9 @@
 -- ============================================================
--- 059_fix_admin_org_list_features_type.sql
+-- 061_fix_admin_org_list_features_type.sql
 --
--- Conserta regressão da migration 058. Ao reescrever list_admin_organizations
+-- Conserta regressão da migration 060. Ao reescrever list_admin_organizations
 -- pra filtrar current_scripts por effective_status IN ('active','deprecated'),
--- a 058 copiou a estrutura do RPC original (048) e perdeu o fix da 049 nos
+-- a 060 copiou a estrutura do RPC original (048) e perdeu o fix da 049 nos
 -- tipos do RETURNS TABLE:
 --   - plan_features: declarava TEXT[], mas plans.features é JSONB no schema
 --     (migration 018) → COALESCE(f.features, ARRAY[]::TEXT[]) joga

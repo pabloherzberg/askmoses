@@ -1,5 +1,5 @@
 -- ============================================================
--- 057_org_scripts_active_lifecycle.sql
+-- 059_org_scripts_active_lifecycle.sql
 --
 -- Conserta o ciclo de vida do active em org_scripts. send_script_to_orgs
 -- (migration 050-053) fechava o active assim que um pending era enviado,
