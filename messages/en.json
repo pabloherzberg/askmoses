@@ -680,7 +680,8 @@
       "active": "Active",
       "deprecated": "Deprecated",
       "rejected": "Rejected",
-      "all": "All statuses"
+      "all": "All statuses",
+      "pendingTooltip": "This org also has a pending script: {name}"
     },
     "cards": {
       "totalOrgs": "Total Organizations",
@@ -879,6 +880,16 @@
       "mrrPlaceholder": "e.g. 1500",
       "errorOrgNameRequired": "Organization name cannot be empty.",
       "errorMrrInvalid": "MRR must be a positive number.",
+      "scriptLabel": "Active script",
+      "scriptPlaceholder": "Select a script",
+      "scriptCurrentSuffix": "(current)",
+      "scriptHint": "Force-changing the script bypasses pending review and notifies the Owner by email.",
+      "confirmScriptChange": "Change script from \"{from}\" to \"{to}\"? The Owner will be notified by email and this bypasses pending review.",
+      "confirmScriptChangeTitle": "Confirm script change",
+      "confirmScriptSetTitle": "Confirm script assignment",
+      "confirmScriptSet": "Set \"{to}\" as the active script for this organization? The Owner will be notified by email and this bypasses pending review.",
+      "confirmScriptChangeCancel": "Cancel",
+      "confirmScriptChangeConfirm": "Yes, change and notify",
       "submit": "Save override",
       "submitting": "Saving…",
       "successDetail": "Subscription updated. Admin override active.",

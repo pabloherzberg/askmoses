@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook, Loader2, X } from 'lucide-react'
+import { Settings, Webhook, Loader2, X, Info } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -275,58 +275,80 @@ export function AdminOrgRow({
         )}
       </td>
 
-      {/* Status do script */}
+      {/* Status do script. Combina:
+          - Badges específicos por status/analysisStatus (dev)
+          - Botão X de cancelar envio quando processing/queued (dev)
+          - Info icon (amber) quando active/deprecated TEM pending coexistindo (modelo 057)
+          stopPropagation: clicks dentro do td (cancelar, hover do info) não disparam impersonate da linha. */}
       <td className="px-3 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
         <div className="inline-flex items-center gap-1.5">
-        {script?.analysisStatus === 'processing' ? (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
-          >
-            <Loader2 size={10} className="animate-spin" />
-            Analisando...
-          </span>
-        ) : script?.analysisStatus === 'queued' ? (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
-          >
-            Na fila
-          </span>
-        ) : scriptStatus === 'rejected' ? (
-          <span
-            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: 'var(--am-red-bg, rgba(255,94,94,0.15))', color: 'var(--am-red)' }}
-          >
-            {tStatusScript('rejected')}
-          </span>
-        ) : scriptStatus === 'active' ? (
-          <span
-            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: 'var(--am-green-bg)', color: 'var(--am-green)' }}
-          >
-            {tStatusScript('active')}
-          </span>
-        ) : (
-          <span
-            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
-            style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
-          >
-            {tStatusScript(scriptStatus)}
-          </span>
-        )}
-        {(script?.analysisStatus === 'processing' || script?.analysisStatus === 'queued') && script?.orgScriptId && (
-          <button
-            type="button"
-            onClick={handleCancelScript}
-            disabled={cancelling}
-            className="inline-flex items-center justify-center w-5 h-5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
-            style={{ background: 'rgba(255,94,94,0.15)', color: 'var(--am-red)' }}
-            title="Cancelar envio"
-          >
-            {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
-          </button>
-        )}
+          {script?.analysisStatus === 'processing' ? (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
+            >
+              <Loader2 size={10} className="animate-spin" />
+              Analisando...
+            </span>
+          ) : script?.analysisStatus === 'queued' ? (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+            >
+              Na fila
+            </span>
+          ) : scriptStatus === 'rejected' ? (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-red-bg, rgba(255,94,94,0.15))', color: 'var(--am-red)' }}
+            >
+              {tStatusScript('rejected')}
+            </span>
+          ) : scriptStatus === 'active' ? (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: 'var(--am-green-bg)', color: 'var(--am-green)' }}
+            >
+              {tStatusScript('active')}
+            </span>
+          ) : (
+            <span
+              className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
+              style={{ background: scriptStatusStyle.bg, color: scriptStatusStyle.color }}
+            >
+              {tStatusScript(scriptStatus)}
+            </span>
+          )}
+          {/* Botão X (cancelar envio): só quando o pending está sendo analisado/na fila */}
+          {(script?.analysisStatus === 'processing' || script?.analysisStatus === 'queued') && script?.orgScriptId && (
+            <button
+              type="button"
+              onClick={handleCancelScript}
+              disabled={cancelling}
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
+              style={{ background: 'rgba(255,94,94,0.15)', color: 'var(--am-red)' }}
+              title="Cancelar envio"
+            >
+              {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
+            </button>
+          )}
+          {/* Info icon: org tem active/deprecated E pending coexistindo (modelo
+              057). Esconde pra status pending/rejected (o pending JÁ é o
+              row exibido) e pra estados transitórios processing/queued. */}
+          {client.pendingScriptName &&
+            script &&
+            (scriptStatus === 'active' || scriptStatus === 'deprecated') &&
+            !script.analysisStatus && (
+              <span
+                role="img"
+                aria-label={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+                title={tStatusScript('pendingTooltip', { name: client.pendingScriptName })}
+                className="inline-flex items-center cursor-help"
+                style={{ color: 'var(--am-amber)' }}
+              >
+                <Info size={14} />
+              </span>
+            )}
         </div>
       </td>
 

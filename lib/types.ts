@@ -169,6 +169,10 @@ export interface Client {
   // Script ativo associado à org (mais recente em org_scripts via started_at
   // desc, ended_at IS NULL). null quando a org nunca recebeu script.
   currentScript: OrgScriptInfo | null
+  // Pending coexistindo com o active (modelo 059). Nome do script pendente
+  // pra UI exibir ícone informativo. Optional/null em paths que não
+  // computam o pending (single-org fetch, mocks) — só dbListClients popula.
+  pendingScriptName?: string | null
   // ISO timestamp da última atividade na org (max(calls.created_at)).
   // Usado na coluna Last Activity da tabela admin. null se nunca teve calls
   // — cai pra organizations.created_at no caller.

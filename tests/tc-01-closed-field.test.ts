@@ -30,6 +30,7 @@ describe('TC-01 › DbCall interface', () => {
     // objeto parcial que satisfaz a interface e checamos as propriedades.
     const row: DbCall = {
       id: 'x',
+      org_id: null,
       rubric_id: null,
       trainer_id: null,
       trainer_name: 'Marcus',

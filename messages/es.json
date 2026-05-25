@@ -680,7 +680,8 @@
       "active": "Activo",
       "deprecated": "Desactualizado",
       "rejected": "Rechazado",
-      "all": "Todos los estados"
+      "all": "Todos los estados",
+      "pendingTooltip": "Esta org también tiene un script pendiente: {name}"
     },
     "cards": {
       "totalOrgs": "Total de organizaciones",
@@ -879,6 +880,16 @@
       "mrrPlaceholder": "Ej: 1500",
       "errorOrgNameRequired": "El nombre de la organización no puede estar vacío.",
       "errorMrrInvalid": "MRR debe ser un número positivo.",
+      "scriptLabel": "Script activo",
+      "scriptPlaceholder": "Selecciona un script",
+      "scriptCurrentSuffix": "(actual)",
+      "scriptHint": "Forzar el cambio de script omite el flujo de pending review y notifica al Owner por email.",
+      "confirmScriptChange": "¿Cambiar script de \"{from}\" a \"{to}\"? El Owner será notificado por email y esto omite el flujo de pending review.",
+      "confirmScriptChangeTitle": "Confirmar cambio de script",
+      "confirmScriptSetTitle": "Confirmar asignación de script",
+      "confirmScriptSet": "¿Establecer \"{to}\" como script activo de esta organización? El Owner será notificado por email y esto omite el flujo de pending review.",
+      "confirmScriptChangeCancel": "Cancelar",
+      "confirmScriptChangeConfirm": "Sí, cambiar y notificar",
       "submit": "Guardar override",
       "submitting": "Guardando…",
       "successDetail": "Suscripción actualizada. Admin override activo.",

@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useToast } from "@/hooks/use-toast";
 import type { Client, OrgScriptStatus, PlanCode } from "@/lib/types";
 import { AdminOrgRow } from "./AdminOrgRow";
 import { SendScriptModal } from "./SendScriptModal";
@@ -87,8 +88,10 @@ function filtersToBody(
 
 export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }: Props) {
   const t = useTranslations("Admin.tableTools");
+  const tSend = useTranslations("Admin.sendScriptModal");
   const router = useRouter();
   const locale = useLocale();
+  const { toast } = useToast();
 
   const [rows, setRows] = useState<Client[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
@@ -275,7 +278,18 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     return map;
   }, [rows]);
 
-  const handleSent = (_count: number) => {
+  const handleSent = (count: number) => {
+    // Feedback visual antes de fechar o modal — sem isso o admin clica em
+    // "Enviar" e a UI só some, sem confirmação do que aconteceu.
+    const sentIds = modalOrgIds ?? [];
+    if (count === 1 && sentIds.length === 1) {
+      toast({
+        title: tSend("successSingle", { name: orgNames[sentIds[0]] ?? "" }),
+      });
+    } else if (count > 0) {
+      toast({ title: tSend("successBulk", { count }) });
+    }
+
     setModalOrgIds(null);
     setSelected(new Set());
     setSelectionMode(false);

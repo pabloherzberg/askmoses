@@ -41,6 +41,7 @@ export interface DbCall {
 export interface CreateCallInput {
   orgId?: string
   rubricId?: string
+  scriptId?: string
   trainerId?: string
   trainerName: string
   trainerEmail?: string
@@ -147,6 +148,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
     .insert({
       org_id: input.orgId ?? null,
       rubric_id: input.rubricId ?? null,
+      script_id: input.scriptId ?? null,
       trainer_id: input.trainerId ?? null,
       trainer_name: input.trainerName,
       trainer_email: input.trainerEmail ?? '',

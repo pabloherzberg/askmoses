@@ -198,6 +198,10 @@ function rpcRowToClient(row: RpcRow): Client {
     ownerAccepted: row.owner_accepted,
     subscriptionStatus: row.org_subscription_status,
     currentScript,
+    // pendingScriptName é preenchido por dbListClients via query separada.
+    // No single-org fetch (dbGetClientByOrgId) inicializamos null — caller
+    // pode buscar via dbGetActiveOrgScript ou query própria se precisar.
+    pendingScriptName: null,
     lastCallAt: row.last_call_at,
     createdAt: row.org_created_at,
   };
@@ -237,9 +241,41 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
 
   const clients = rows.map(rpcRowToClient);
 
-  // Enriquece orgs com pending: busca o org_script_id e o analysis_status
-  // do cache para mostrar "Analisando..." na tabela do admin enquanto a IA
-  // ainda está rodando.
+  // ── Enriquecimento 1: nome do pending coexistindo com active (modelo 057) ──
+  // Pra cada org com active/deprecated corrente, busca se há também um
+  // pending aberto e qual o nome do script — alimenta o Info icon do row
+  // do admin. Embed via scripts!script_id desambigua a FK (org_scripts tem
+  // 2 refs pra scripts: script_id e previous_script_id).
+  const orgIds = clients.map((c) => c.id);
+  if (orgIds.length > 0) {
+    const { data: pendings, error: pendingErr } = await supabase
+      .from("org_scripts")
+      .select("org_id, scripts!script_id(name)")
+      .in("org_id", orgIds)
+      .eq("status", "pending")
+      .is("ended_at", null);
+    if (pendingErr) {
+      console.error("[dbListClients] falha ao buscar pendings:", pendingErr);
+    } else if (pendings) {
+      type PendingRow = {
+        org_id: string;
+        scripts: { name: string } | { name: string }[] | null;
+      };
+      const pendingByOrg = new Map<string, string>();
+      for (const p of pendings as unknown as PendingRow[]) {
+        const scriptObj = Array.isArray(p.scripts) ? p.scripts[0] : p.scripts;
+        if (scriptObj?.name) pendingByOrg.set(p.org_id, scriptObj.name);
+      }
+      for (const c of clients) {
+        c.pendingScriptName = pendingByOrg.get(c.id) ?? null;
+      }
+    }
+  }
+
+  // ── Enriquecimento 2: analysis_status do pending (Script Intelligence) ────
+  // Busca o org_script_id e o analysis_status do cache para mostrar
+  // "Analisando..." / "Na fila" na tabela do admin enquanto a IA ainda
+  // está rodando o pending.
   const pendingOrgIds = clients
     .filter((c) => c.currentScript?.status === 'pending')
     .map((c) => c.id);
@@ -333,6 +369,10 @@ export async function dbGetClientByOrgId(
   // currentScript + lastCallAt: queries dedicadas pra esse único org
   // (sem reuse da RPC que é otimizada pra batch).
   const [scriptRes, lastCallRes] = await Promise.all([
+    // Filtra explicitamente por effective_status IN ('active','deprecated')
+    // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
+    // com active (mig. 057): sem este filtro o order-by started_at pegaria a
+    // proposta pendente mais recente em vez do script atual da org.
     supabase
       .from("org_scripts_current")
       .select(
@@ -340,6 +380,7 @@ export async function dbGetClientByOrgId(
       )
       .eq("org_id", orgId)
       .is("ended_at", null)
+      .in("effective_status", ["active", "deprecated"])
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle(),

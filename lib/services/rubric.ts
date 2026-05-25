@@ -133,14 +133,38 @@ export async function getRubric(): Promise<{
     console.warn('[getRubric] getOrgId() returned null — user has no active org. Returning empty rubric.')
     return { sections: [], trend: [], trainerSectionScores: [] };
   }
-  const [result, calls] = await Promise.all([
+  const [defaultRubric, calls] = await Promise.all([
     dbGetDefaultRubricWithCriteria(orgId),
     getCalls({ limit: 200, orgId }),
   ]);
 
+  // Trend é puro stats de calls — não depende da rubric existir localmente.
+  // Pré-fix, faltar rubric default zerava o gráfico do time mesmo com calls
+  // analisadas (orgs novas só têm rubric via org_scripts → script.rubric_id,
+  // sem default local). Computa SEMPRE.
+  const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
+
+  // Fallback da rubric: default local → rubric do script ativo via org_scripts
+  // → rubric global. Garante que sections/trainerSectionScores tenham
+  // conteúdo mesmo pra orgs criadas com script template.
+  let result = defaultRubric;
   if (!result) {
-    console.warn(`[getRubric] No default rubric found for org=${orgId}. Check rubrics table: is_default=true, is_active=true, org_id set.`)
-    return { sections: [], trend: [], trainerSectionScores: [] };
+    const { dbGetActiveOrgScript } = await import('@/lib/db/scripts');
+    const activeScript = await dbGetActiveOrgScript(orgId);
+    if (activeScript) {
+      const { dbGetRubricById, dbGetCriteriaByRubric } = await import('@/lib/db/rubric');
+      const rubric =
+        (await dbGetRubricById(orgId, activeScript.rubric_id)) ??
+        (await dbGetRubricById(null, activeScript.rubric_id));
+      if (rubric) {
+        const criteria = await dbGetCriteriaByRubric(rubric.id);
+        result = { rubric, criteria };
+      }
+    }
+  }
+  if (!result) {
+    console.warn(`[getRubric] No rubric resolvable for org=${orgId} (no local default, no active org_script with rubric). Returning trend-only.`);
+    return { sections: [], trend, trainerSectionScores: [] };
   }
 
   // ── Team averages ─────────────────────────────────────────────────────────
@@ -184,9 +208,6 @@ export async function getRubric(): Promise<{
       trainerScores: { marcus: 0, jamie: 0, jordan: 0, taylor: 0 },
     };
   });
-
-  // ── Weekly trend — janela = semanas reais cobertas pelas calls (até 6) ────
-  const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
 
   return { sections, trend, trainerSectionScores };
 }
