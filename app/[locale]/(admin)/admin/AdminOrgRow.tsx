@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Settings, Webhook, Loader2 } from 'lucide-react'
+import { Settings, Webhook, Loader2, X } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
@@ -16,6 +16,7 @@ interface Props {
   isSelected: boolean
   onToggleSelected: () => void
   onSendScript: () => void
+  onCancelScript: () => void
   // Já formatada pelo caller pra evitar Date parsing em cada row.
   lastActivityDate: string
 }
@@ -54,6 +55,7 @@ export function AdminOrgRow({
   isSelected,
   onToggleSelected,
   onSendScript,
+  onCancelScript,
   lastActivityDate,
 }: Props) {
   const t = useTranslations('Admin')
@@ -63,6 +65,7 @@ export function AdminOrgRow({
   const locale = useLocale()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
 
   const script = client.currentScript
   const scriptStatus: OrgScriptStatus = script?.status ?? 'none'
@@ -97,6 +100,28 @@ export function AdminOrgRow({
     } catch {
       setError(t('impersonateError'))
       setLoading(false)
+    }
+  }
+
+  const handleCancelScript = async () => {
+    if (cancelling || !script?.orgScriptId) return
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/admin/scripts/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgScriptId: script.orgScriptId }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json?.error?.message ?? 'Erro ao cancelar')
+      } else {
+        onCancelScript()
+      }
+    } catch {
+      setError('Erro ao cancelar')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -251,7 +276,8 @@ export function AdminOrgRow({
       </td>
 
       {/* Status do script */}
-      <td className="px-3 py-4 whitespace-nowrap">
+      <td className="px-3 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+        <div className="inline-flex items-center gap-1.5">
         {script?.analysisStatus === 'processing' ? (
           <span
             className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
@@ -289,6 +315,19 @@ export function AdminOrgRow({
             {tStatusScript(scriptStatus)}
           </span>
         )}
+        {(script?.analysisStatus === 'processing' || script?.analysisStatus === 'queued') && script?.orgScriptId && (
+          <button
+            type="button"
+            onClick={handleCancelScript}
+            disabled={cancelling}
+            className="inline-flex items-center justify-center w-5 h-5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
+            style={{ background: 'rgba(255,94,94,0.15)', color: 'var(--am-red)' }}
+            title="Cancelar envio"
+          >
+            {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
+          </button>
+        )}
+        </div>
       </td>
 
       {/* Plan */}
@@ -350,8 +389,8 @@ export function AdminOrgRow({
           <Link
             href={`/${locale}/admin/organizations/${client.id}`}
             onClick={(e) => e.stopPropagation()}
-            aria-label={t('orgConfig', { name: client.name })}
-            title={t('orgConfig', { name: client.name })}
+            aria-label={t('orgConfigLabel', { name: client.name })}
+            title={t('orgConfigLabel', { name: client.name })}
             className="inline-flex items-center justify-center w-7 h-7 rounded-md hover:opacity-80 transition-opacity"
             style={{ color: 'var(--am-muted)' }}
           >

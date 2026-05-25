@@ -789,7 +789,7 @@
     "subscriptionSettings": "Configurar plan de {name}",
     "ghlSettings": "Configurar integración GHL de {name}",
     "ownerSettings": "Gestionar el owner de {name}",
-    "orgConfig": "Configurar {name}",
+    "orgConfigLabel": "Configurar {name}",
     "scriptManagement": {
       "title": "Script de la organización",
       "subtitle": "Revisa el script activo y envía una nueva versión para análisis IA y aprobación del owner.",
@@ -800,6 +800,10 @@
       "statusAnalyzing": "Analizando…",
       "statusReady": "Listo p/ aprobación",
       "statusError": "Error en el análisis",
+      "statusNoAnalysis": "En espera de aprobación",
+      "cancel": "Cancelar envío",
+      "cancelSuccess": "Envío del script cancelado",
+      "cancelError": "No se pudo cancelar el envío. Inténtalo de nuevo.",
       "retry": "Reanalizar",
       "retrySuccess": "Análisis reprogramado",
       "retryError": "No se pudo reprogramar el análisis"

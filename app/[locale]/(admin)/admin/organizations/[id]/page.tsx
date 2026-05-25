@@ -226,6 +226,7 @@ async function loadPendingSnapshot(
   if (!script) return null
 
   return {
+    orgScriptId: pendingRow.id as string,
     name: script.name as string,
     version: `${script.rubric_version_snapshot}.${script.minor_version}`,
     analysisStatus:

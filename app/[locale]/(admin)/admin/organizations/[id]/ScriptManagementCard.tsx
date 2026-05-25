@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { FileText, Loader2, RefreshCw, Send } from 'lucide-react'
+import { FileText, Loader2, RefreshCw, Send, X } from 'lucide-react'
 import { SendScriptModal } from '../../SendScriptModal'
 import { useToast } from '@/hooks/use-toast'
 
@@ -13,6 +13,7 @@ export interface ScriptSnapshot {
 }
 
 export interface PendingSnapshot {
+  orgScriptId: string
   name: string
   version: string
   analysisStatus: 'processing' | 'queued' | 'ready' | 'error' | null
@@ -140,8 +141,33 @@ function PendingRow({ orgId, pending }: { orgId: string; pending: PendingSnapsho
   const router = useRouter()
   const { toast } = useToast()
   const [retrying, setRetrying] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const isStuck = pending.analysisStatus === 'processing' || pending.analysisStatus === 'queued'
+
+  const handleCancel = async () => {
+    if (cancelling) return
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/admin/scripts/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgScriptId: pending.orgScriptId }),
+      })
+      const json = (await res.json()) as { error: { message: string } | null }
+      if (!res.ok || json.error) throw new Error(json.error?.message ?? t('cancelError'))
+      toast({ title: t('cancelSuccess') })
+      router.refresh()
+    } catch (err) {
+      toast({
+        title: t('cancelError'),
+        description: err instanceof Error ? err.message : undefined,
+        variant: 'destructive',
+      })
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   const handleRetry = async () => {
     if (retrying) return
@@ -195,13 +221,21 @@ function PendingRow({ orgId, pending }: { orgId: string; pending: PendingSnapsho
           </span>
         )
       case 'ready':
-      default:
         return (
           <span
             className="text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap"
             style={{ background: 'rgba(255,171,46,0.15)', color: 'var(--am-amber)' }}
           >
             {t('statusReady')}
+          </span>
+        )
+      default:
+        return (
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap"
+            style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
+          >
+            {t('statusNoAnalysis')}
           </span>
         )
     }
@@ -231,16 +265,28 @@ function PendingRow({ orgId, pending }: { orgId: string; pending: PendingSnapsho
           </span>
           {statusBadge}
           {isStuck && (
-            <button
-              type="button"
-              onClick={handleRetry}
-              disabled={retrying}
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
-              style={{ background: 'var(--am-bg3)', color: 'var(--am-text)', border: '1px solid var(--am-border)' }}
-            >
-              {retrying ? <Loader2 size={9} className="animate-spin" /> : <RefreshCw size={9} />}
-              {t('retry')}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={retrying || cancelling}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'var(--am-bg3)', color: 'var(--am-text)', border: '1px solid var(--am-border)' }}
+              >
+                {retrying ? <Loader2 size={9} className="animate-spin" /> : <RefreshCw size={9} />}
+                {t('retry')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={cancelling || retrying}
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'rgba(255,94,94,0.1)', color: 'var(--am-red)', border: '1px solid rgba(255,94,94,0.3)' }}
+              >
+                {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
+                {t('cancel')}
+              </button>
+            </>
           )}
         </div>
       </div>
