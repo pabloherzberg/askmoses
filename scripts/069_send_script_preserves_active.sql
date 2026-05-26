@@ -131,7 +131,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.send_script_to_orgs IS
-  'Cria/atualiza pending por org. Active corrente NÃO é tocado (ended_at preservado). Fecha pending anterior como rejected. Snapshot do previous via fallback (org_scripts ativo → scripts.is_active). RETURNS TABLE com prefixo out_* (pro caller TS). Fix de 069 sobre 065.';
+  'Cria/atualiza pending por org. Active corrente NÃO é tocado (ended_at preservado). Fecha pending anterior (mantém status=''pending'' e seta ended_at — "rejected" é reservado pra reject_org_script). Snapshot do previous via fallback (org_scripts ativo → scripts.is_active). RETURNS TABLE com prefixo out_* (pro caller TS). Fix de 069 sobre 065.';
 
 GRANT EXECUTE ON FUNCTION public.send_script_to_orgs(UUID, UUID[], UUID) TO service_role;
 

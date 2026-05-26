@@ -301,21 +301,32 @@ export async function POST(request: NextRequest) {
     // A rubric (avaliação framework) vem associada ao script.rubric_id —
     // não há fallback pra rubric default da org, pra não mascarar orgs
     // inconsistentes.
+    // Diferencia "não há script ativo" (400 — input/estado da org) de
+    // "falhou a query do script" (500 — operacional). Antes ambos caíam
+    // no 400 e mascaravam erros de banco/rede como input inválido.
     let script: Awaited<ReturnType<typeof dbGetActiveOrgScript>> | null = null;
     try {
       script = await dbGetActiveOrgScript(orgId);
     } catch (e) {
       console.error(
-        "[analyze] org active script lookup failed:",
+        "[analyze] 500 — falha ao buscar script ativo:",
         e instanceof Error ? e.message : e,
+      );
+      return Response.json(
+        {
+          error: "Falha ao buscar o script ativo da organização",
+          details:
+            "Erro operacional ao consultar o banco. Tente novamente em instantes.",
+        },
+        { status: 500 },
       );
     }
 
     if (!script) {
-      // Estado inconsistente: org sem row em org_scripts (status='active'
-      // AND ended_at IS NULL). Não é cenário que o Owner consiga resolver
-      // sozinho — pode ser org criada via fluxo self-service antigo (sem
-      // template auto-linkado) ou backlog não-migrado. Direciona pro suporte.
+      // Query OK mas org realmente não tem row em org_scripts (status='active'
+      // AND ended_at IS NULL). Não é cenário que o Owner resolva sozinho —
+      // pode ser org criada via fluxo self-service antigo (sem template
+      // auto-linkado) ou backlog não-migrado. Direciona pro suporte.
       console.error("[analyze] 400 — org sem script ativo aprovado", {
         orgId,
       });
@@ -335,16 +346,25 @@ export async function POST(request: NextRequest) {
       // de tenant — permite rubric template (org_id=NULL).
       rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
     } catch (e) {
+      // Falha operacional na consulta da rubric → 500. Não mascara como 400.
       console.error(
-        "[analyze] rubric fetch failed for active script:",
+        "[analyze] 500 — falha ao buscar rubric do script ativo:",
         e instanceof Error ? e.message : e,
+      );
+      return Response.json(
+        {
+          error: "Falha ao buscar a rubric do script ativo",
+          details:
+            "Erro operacional ao consultar o banco. Tente novamente em instantes.",
+        },
+        { status: 500 },
       );
     }
 
     const rubricId = rubricData?.rubric.id ?? null;
 
     if (!rubricId) {
-      // Estado inconsistente: script ativo aponta pra rubric inexistente/inativa.
+      // Query OK mas script ativo aponta pra rubric inexistente/inativa.
       // Em vez de cair em rubric default (que mascara o problema), bloqueia.
       console.error("[analyze] 400 — script ativo sem rubric resolvível", {
         orgId,

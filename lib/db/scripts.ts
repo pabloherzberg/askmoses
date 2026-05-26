@@ -154,6 +154,50 @@ export async function dbGetActiveOrgScript(orgId: string): Promise<DbScript | nu
 }
 
 /**
+ * Versão LEVE de `dbGetActiveOrgScript` que retorna SÓ o id. Pra páginas
+ * que precisam apenas comparar `call.scriptId === activeId` (marcar pill
+ * de ativo na CallsTable / CallDetail) — evita carregar full_script,
+ * sections e criteria do banco quando o consumer não usa esses campos.
+ *
+ * Mesma cadeia de prioridade do dbGetActiveOrgScript:
+ *   1. org_scripts.status='active' AND ended_at IS NULL.
+ *   2. scripts.org_id=X AND is_active=true (fallback legado).
+ */
+export async function dbGetActiveOrgScriptId(orgId: string): Promise<string | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('org_scripts')
+    .select('script_id')
+    .eq('org_id', orgId)
+    .eq('status', 'active')
+    .is('ended_at', null)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`dbGetActiveOrgScriptId: ${error.message}`)
+  }
+
+  const fromOrgScripts = (data?.script_id as string | undefined) ?? null
+  if (fromOrgScripts) return fromOrgScripts
+
+  const { data: legacy, error: legacyErr } = await supabase
+    .from('scripts')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (legacyErr && legacyErr.code !== 'PGRST116') {
+    throw new Error(`dbGetActiveOrgScriptId (legacy fallback): ${legacyErr.message}`)
+  }
+
+  return (legacy?.id as string | undefined) ?? null
+}
+
+/**
  * Fetch a script by id. Pass `orgId` to enforce tenant isolation — required
  * defense-in-depth because dbCreateAdminClient bypasses RLS. Calling this
  * without `orgId` is a security bug; the parameter is required for that

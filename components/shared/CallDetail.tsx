@@ -99,7 +99,10 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
                       · {call.scriptVersion}
                     </span>
                   )}
-                  {!call.scriptIsActive && (
+                  {/* Strict check: só marca "legacy" quando a comparação
+                      retornou explicitamente false. undefined = enrichment
+                      não rodou / lookup falhou → não inferir legado. */}
+                  {call.scriptIsActive === false && (
                     <span style={{ opacity: 0.7 }}>· {t('legacyScriptHint')}</span>
                   )}
                 </span>

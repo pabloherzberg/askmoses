@@ -110,42 +110,59 @@ export function buildPerCallTrend(
 ): { trainer: TrendPoint[]; team: TrendPoint[] } {
   if (calls.length === 0) return { trainer: [], team: [] };
 
-  const sorted = [...calls].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
+  // Preserve timestamps em vez de recriar Date repetidas vezes.
+  const sortedTrainer = [...calls]
+    .map((c) => ({ ...c, _ts: new Date(c.date).getTime() }))
+    .sort((a, b) => a._ts - b._ts);
 
-  const trainerTrend: TrendPoint[] = sorted.map((_, i) => {
-    const upTo = sorted.slice(0, i + 1);
-    const closed = upTo.filter((c) => c.result === "closed").length;
-    const closeRate = Math.round((closed / upTo.length) * 100);
-    const score = Math.round(
-      upTo.reduce((s, c) => s + c.score, 0) / upTo.length,
-    );
-    return { week: `C${i + 1}`, closeRate, score };
-  });
+  // ─── Trainer: single-pass running totals ──────────────────────────────
+  const trainerTrend: TrendPoint[] = [];
+  let tClosed = 0;
+  let tScoreSum = 0;
+  for (let i = 0; i < sortedTrainer.length; i++) {
+    const c = sortedTrainer[i];
+    if (c.result === "closed") tClosed += 1;
+    tScoreSum += c.score;
+    const n = i + 1;
+    trainerTrend.push({
+      week: `C${n}`,
+      closeRate: Math.round((tClosed / n) * 100),
+      score: Math.round(tScoreSum / n),
+    });
+  }
 
-  // Time avg em cada ponto do trainer: cumulativo do time até o timestamp
-  // dessa call (inclusive) — usa as MESMAS labels do trainer pro chart
-  // alinhar por índice. Sem teamCalls → array vazio (chart trata como null).
-  const teamTrend: TrendPoint[] = teamCalls
-    ? sorted.map((c, i) => {
-        const ts = new Date(c.date).getTime();
-        const upTo = teamCalls.filter(
-          (tc) => new Date(tc.date).getTime() <= ts,
-        );
-        if (upTo.length === 0) {
-          return { week: `C${i + 1}`, closeRate: 0, score: 0 };
-        }
-        const closed = upTo.filter((tc) => tc.result === "closed").length;
-        return {
-          week: `C${i + 1}`,
-          closeRate: Math.round((closed / upTo.length) * 100),
-          score: Math.round(
-            upTo.reduce((s, tc) => s + tc.score, 0) / upTo.length,
-          ),
-        };
-      })
-    : [];
+  // ─── Team: pointer-based cumulative ───────────────────────────────────
+  // Team avg em cada ponto do trainer = cumulativo do time até o timestamp
+  // dessa call (inclusive). Antes era O(N×M) — pra cada call do trainer,
+  // varríamos teamCalls inteiro. Agora ordenamos team uma vez (M log M) e
+  // usamos um ponteiro `p` que só avança (total amortizado O(N + M)).
+  let teamTrend: TrendPoint[] = [];
+  if (teamCalls && teamCalls.length > 0) {
+    const sortedTeam = [...teamCalls]
+      .map((tc) => ({ ...tc, _ts: new Date(tc.date).getTime() }))
+      .sort((a, b) => a._ts - b._ts);
+
+    let p = 0;
+    let teamClosed = 0;
+    let teamScoreSum = 0;
+
+    teamTrend = sortedTrainer.map((c, i) => {
+      while (p < sortedTeam.length && sortedTeam[p]._ts <= c._ts) {
+        if (sortedTeam[p].result === "closed") teamClosed += 1;
+        teamScoreSum += sortedTeam[p].score;
+        p += 1;
+      }
+      const n = i + 1;
+      if (p === 0) {
+        return { week: `C${n}`, closeRate: 0, score: 0 };
+      }
+      return {
+        week: `C${n}`,
+        closeRate: Math.round((teamClosed / p) * 100),
+        score: Math.round(teamScoreSum / p),
+      };
+    });
+  }
 
   return { trainer: trainerTrend, team: teamTrend };
 }

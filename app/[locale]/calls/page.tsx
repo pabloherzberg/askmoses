@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { getTranslations } from 'next-intl/server'
 import { getCalls } from '@/lib/services/calls'
 import { getScripts } from '@/lib/services/scripts'
-import { dbGetActiveOrgScript } from '@/lib/db/scripts'
+import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
 import { getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
 import type { Call } from '@/lib/types'
 import { CallsTable } from './CallsTable'
@@ -34,20 +34,22 @@ export default async function CallsPage() {
 
   // Scripts são resolvidos por org separadamente das calls. `.catch` degrada
   // de forma graciosa caso a query de scripts falhe.
-  // `activeOrgScript` é a fonte da verdade do "script atual" — vem de
+  // `activeScriptId` é a fonte da verdade do "script atual" — vem de
   // org_scripts.status='active' AND ended_at IS NULL (não confunde com
   // scripts.is_active, que é legado e pode estar dessincronizado, marcando
   // como ativo um script que na verdade está pending pelo fluxo Admin).
-  const [calls, scripts, activeOrgScript] = await Promise.all([
+  // Usa o helper leve (só busca o id) — esta página não precisa do payload
+  // completo do script (sections, full_script, criteria).
+  const [calls, scripts, activeScriptId] = await Promise.all([
     getCalls(trainerId ? { trainerId } : undefined),
     getScripts().catch(() => []),
-    orgId ? dbGetActiveOrgScript(orgId).catch(() => null) : Promise.resolve(null),
+    orgId ? dbGetActiveOrgScriptId(orgId).catch(() => null) : Promise.resolve(null),
   ])
 
   // Migration 056 aplicada? Sim se ao menos uma call traz script_id do banco.
   const dbHasScripts = calls.some((c) => c.scriptId)
   const scriptMap = new Map(scripts.map((s) => [s.id, s]))
-  const activeId = activeOrgScript?.id ?? null
+  const activeId = activeScriptId
 
   const enrichedCalls: Call[] = calls.map((c) => {
     if (dbHasScripts) {

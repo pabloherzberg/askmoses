@@ -177,7 +177,8 @@ export async function getPerformanceTrends(
       result[tr.id] = toPoints(trainerPoints);
       // Override do team avg APENAS pra essa visualização — o key `team`
       // global continua weekly pra outros consumidores. Cliente seleciona
-      // `result[tr.id].team` por trainer (ver patch no PerformanceTrend).
+      // via `result[`${tr.id}__team`]` por trainer (ver labelWeek e o
+      // teamKey resolver em PerformanceTrend.tsx).
       result[`${tr.id}__team`] = toPoints(teamPoints);
     } else {
       result[tr.id] = toPoints(buildWeeklyTrend(trainerCalls, n));

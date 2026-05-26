@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { getTranslations } from 'next-intl/server'
 import { getCalls } from '@/lib/services/calls'
 import { getScripts } from '@/lib/services/scripts'
-import { dbGetActiveOrgScript } from '@/lib/db/scripts'
+import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
 import { getOrgId, getTrainerDbId } from '@/lib/auth'
 import type { Call } from '@/lib/types'
 import { CallsTable } from '@/app/[locale]/calls/CallsTable'
@@ -43,19 +43,20 @@ export default async function TrainerCallsPage() {
   }
 
   const orgId = await getOrgId()
-  const [calls, scripts, activeOrgScript] = await Promise.all([
+  const [calls, scripts, activeScriptId] = await Promise.all([
     getCalls({ trainerId }),
     getScripts().catch(() => []),
     // Mesma lógica da /calls do Owner — fonte da verdade é org_scripts
     // (status='active' AND ended_at IS NULL), não scripts.is_active legado.
     // Sem isso o trainer não via a pill verde, e podia ver scripts pending
-    // marcados como ativos.
-    orgId ? dbGetActiveOrgScript(orgId).catch(() => null) : Promise.resolve(null),
+    // marcados como ativos. Helper leve (só id) — não precisa carregar
+    // sections/full_script/criteria pra renderizar a tabela.
+    orgId ? dbGetActiveOrgScriptId(orgId).catch(() => null) : Promise.resolve(null),
   ])
 
   const dbHasScripts = calls.some((c) => c.scriptId)
   const scriptMap = new Map(scripts.map((s) => [s.id, s]))
-  const activeId = activeOrgScript?.id ?? null
+  const activeId = activeScriptId
 
   const enrichedCalls: Call[] = calls.map((c) => {
     if (dbHasScripts) {
