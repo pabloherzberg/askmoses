@@ -52,7 +52,6 @@ interface FormData {
   clientName: string;
   audioFile: File | null;
   transcript: string;
-  scriptId?: string;
   callOutcome: CallOutcome | "";
 }
 
@@ -73,14 +72,6 @@ interface AnalysisResult {
   transcript: string;
 }
 
-interface Script {
-  id: string;
-  name: string;
-  description: string;
-}
-
-const analysisMode = "scripts"; // Declare the analysisMode variable
-
 export default function UploadPage() {
   const t = useTranslations("Dashboard.upload");
   const tUpsell = useTranslations("Shared.upsell.uploadTwilio");
@@ -95,7 +86,6 @@ export default function UploadPage() {
     clientName: "",
     audioFile: null,
     transcript: "",
-    scriptId: "",
     callOutcome: "",
   });
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
@@ -107,7 +97,6 @@ export default function UploadPage() {
   const [processingStatus, setProcessingStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [scripts, setScripts] = useState<Script[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTrainer, setIsTrainer] = useState(false);
@@ -119,21 +108,9 @@ export default function UploadPage() {
 
   useEffect(() => {
     async function init() {
-      const [scriptsRes, meRes] = await Promise.all([
-        // O dropdown da upload page deixa o usuário escolher qual script
-        // usar pra essa call — então busca TODOS, não só `is_active=true`.
-        // Filtrar em `is_active` aqui zerava o select pra orgs que ainda não
-        // marcaram nenhum script como ativo, ou escondia scripts arquivados
-        // que continuam válidos pra reanálise.
-        fetch("/api/scripts"),
-        fetch("/api/me"),
-      ]);
-
-      const { data: scriptsData } = (await scriptsRes.json()) as {
-        data: { id: string; name: string; description: string }[] | null;
-        error: unknown;
-      };
-      if (scriptsData) setScripts(scriptsData);
+      // Script é resolvido server-side em /api/analyze via dbGetActiveOrgScript
+      // (org_scripts.status='active' AND ended_at IS NULL). Sem seleção manual.
+      const meRes = await fetch("/api/me");
 
       const { data: meData } = (await meRes.json()) as {
         data: {
@@ -323,7 +300,6 @@ export default function UploadPage() {
           trainerName: formData.trainerName,
           trainerEmail: formData.trainerEmail,
           clientName: formData.clientName,
-          scriptId: formData.scriptId,
           callOutcome: formData.callOutcome,
         }),
       });
@@ -432,7 +408,6 @@ export default function UploadPage() {
       clientName: "",
       audioFile: null,
       transcript: "",
-      scriptId: "",
       callOutcome: "",
     });
   };
@@ -751,39 +726,42 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        {/* Send Email Action */}
-        <Card className="border-primary/50 bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
-              <div>
-                <h3 className="font-semibold">{t("results.readyToSend")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("results.readyToSendSubtitle", {
-                    email: formData.trainerEmail,
-                  })}
-                </p>
+        {/* Send Email Action — owner/admin only. Trainer não dispara coaching
+            email (nem pra si mesmo) — função é do Owner. */}
+        {!isTrainer && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
+                <div>
+                  <h3 className="font-semibold">{t("results.readyToSend")}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t("results.readyToSendSubtitle", {
+                      email: formData.trainerEmail,
+                    })}
+                  </p>
+                </div>
+                <Button
+                  size="lg"
+                  className="mt-4 sm:mt-0"
+                  onClick={handleSendEmail}
+                  disabled={sendingEmail}
+                >
+                  {sendingEmail ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("results.sending")}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      {t("results.sendCoachingEmail")}
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                size="lg"
-                className="mt-4 sm:mt-0"
-                onClick={handleSendEmail}
-                disabled={sendingEmail}
-              >
-                {sendingEmail ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("results.sending")}
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    {t("results.sendCoachingEmail")}
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
@@ -898,43 +876,6 @@ export default function UploadPage() {
                 {t("form.clientNameHint")}
               </p>
             </div>
-            {scripts.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="scriptId">{t("form.salesScriptLabel")}</Label>
-                <select
-                  id="scriptId"
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  value={formData.scriptId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      scriptId: e.target.value,
-                    }))
-                  }
-                >
-                  <option value="">{t("form.selectScriptPlaceholder")}</option>
-                  {scripts.map((script) => (
-                    <option key={script.id} value={script.id}>
-                      {t("form.scriptOptionFormat", {
-                        name: script.name,
-                        description: script.description,
-                      })}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground">
-                  {t("form.salesScriptHint")}
-                </p>
-              </div>
-            )}
-            {scripts.length === 0 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  {t("form.noScriptsAvailable")}
-                </p>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label>{t("form.callOutcomeLabel")}</Label>
               <div className="grid grid-cols-2 gap-2">

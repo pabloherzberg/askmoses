@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notas internas — não visíveis ao vendedor.",
       "coachingNotesPlaceholder": "Adicione suas notas de coaching aqui...",
       "coachingNotesFooter": "As notas não são persistidas nesta demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilizado",
+      "legacyScriptHint": "legado"
     },
     "performanceTrend": {
       "title": "Tendência de performance",
@@ -369,7 +371,8 @@
       "team": "Time",
       "teamAvg": "Média do time",
       "closeRateLegend": "Taxa de fechamento",
-      "weekLabel": "Semana {n}"
+      "weekLabel": "Semana {n}",
+      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps no script",
