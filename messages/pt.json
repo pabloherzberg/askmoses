@@ -449,15 +449,16 @@
     "myScore": "Minha nota",
     "closeRate": "Taxa de fechamento",
     "myRubricTitle": "Minha rubrica vs média do time",
-    "myRubricSubtitle": "Verde = acima da média · Vermelho = abaixo da média",
+    "myRubricSubtitle": "Comparado com a média do seu time",
+    "rubricLegendTeam": "Média do time",
     "deltaVsTeam": "{delta} vs time ({teamAvg})",
-    "quickStats": "Estatísticas rápidas",
-    "stats": {
-      "closed": "Fechadas",
-      "partial": "Parcial",
-      "notClosed": "Não fechadas",
-      "noOutcome": "Sem outcome"
-    },
+    "callsKpi": "Chamadas",
+    "winsKpi": "Fechadas",
+    "kpiWindow": "Janela",
+    "kpiWindowWeeks": "{n}sem",
+    "kpiDeltaVsPrev": "vs ant.",
+    "kpiTotalSuffix": "de {count} no total",
+    "kpiAvgSuffix": "{value} histórico",
     "recentCalls": "Chamadas recentes",
     "noCallsYet": "Nenhuma chamada ainda.",
     "myCallsLabel": "Minhas chamadas",
@@ -681,7 +682,10 @@
       "deprecated": "Desatualizado",
       "rejected": "Recusado",
       "all": "Todos os status",
-      "pendingTooltip": "Esta org também tem um script pendente: {name}"
+      "pendingTooltip": "Esta org também tem um script pendente: {name}",
+      "analyzing": "Analisando...",
+      "queued": "Na fila",
+      "cancelSend": "Cancelar envio"
     },
     "cards": {
       "totalOrgs": "Total de organizações",

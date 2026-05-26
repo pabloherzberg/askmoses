@@ -449,15 +449,16 @@
     "myScore": "My Score",
     "closeRate": "Close Rate",
     "myRubricTitle": "My Rubric vs Team Average",
-    "myRubricSubtitle": "Green = above team avg · Red = below team avg",
+    "myRubricSubtitle": "Compared to your team average",
+    "rubricLegendTeam": "Team avg",
     "deltaVsTeam": "{delta} vs team ({teamAvg})",
-    "quickStats": "Quick Stats",
-    "stats": {
-      "closed": "Closed",
-      "partial": "Partial",
-      "notClosed": "Not Closed",
-      "noOutcome": "No Outcome"
-    },
+    "callsKpi": "Calls",
+    "winsKpi": "Wins",
+    "kpiWindow": "Window",
+    "kpiWindowWeeks": "{n}w",
+    "kpiDeltaVsPrev": "vs prev",
+    "kpiTotalSuffix": "of {count} total",
+    "kpiAvgSuffix": "{value} all-time",
     "recentCalls": "Recent Calls",
     "noCallsYet": "No calls yet.",
     "myCallsLabel": "My Calls",
@@ -681,7 +682,10 @@
       "deprecated": "Deprecated",
       "rejected": "Rejected",
       "all": "All statuses",
-      "pendingTooltip": "This org also has a pending script: {name}"
+      "pendingTooltip": "This org also has a pending script: {name}",
+      "analyzing": "Analyzing...",
+      "queued": "Queued",
+      "cancelSend": "Cancel send"
     },
     "cards": {
       "totalOrgs": "Total Organizations",

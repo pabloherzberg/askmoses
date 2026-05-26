@@ -15,6 +15,12 @@ export async function getTrainerById(id: string): Promise<Trainer | null> {
   return dbGetTrainerById(id);
 }
 
+export async function getTrainerProfile(trainerId: string): Promise<{ name: string; email?: string } | null> {
+  const trainer = await getTrainerById(trainerId);
+  if (!trainer) return null;
+  return { name: trainer.name, email: trainer.email };
+}
+
 export async function getTrainersWithMockData(): Promise<Trainer[]> {
   if (USE_MOCK) {
     const { trainers } = await import("@/lib/mock-data");
