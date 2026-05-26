@@ -521,11 +521,16 @@ export async function POST(request: NextRequest) {
 //   Owner: vê todos da própria org ativa
 //   Admin: vê todos; pode filtrar por org via ?orgId=…
 //   Filtros opcionais: ?status=pending|accepted, ?role=trainer|owner
+//   Busca:     ?q=texto  → ilike em users.name OR users.email
+//   Ordenação: ?sort=name|email|role|org|invited_at  &  ?dir=asc|desc
 //   Paginação: ?page=1&pageSize=20 (max 100)
 //   Lista é montada via memberships (canônica), com user e org resolvidos.
 
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
+
+type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
+const SORT_KEYS: readonly SortKey[] = ['name', 'email', 'role', 'org', 'invited_at']
 
 interface MembershipRow {
   user_id: string
@@ -554,6 +559,9 @@ export async function GET(request: NextRequest) {
   const orgIdParam = searchParams.get('orgId')
   const pageRaw = searchParams.get('page')
   const pageSizeRaw = searchParams.get('pageSize')
+  const qRaw = searchParams.get('q')
+  const sortRaw = searchParams.get('sort')
+  const dirRaw = searchParams.get('dir')
 
   if (status && status !== 'pending' && status !== 'accepted') {
     return badRequest('status inválido')
@@ -561,6 +569,21 @@ export async function GET(request: NextRequest) {
   if (role && role !== 'trainer' && role !== 'owner') {
     return badRequest('role inválido')
   }
+  if (sortRaw && !SORT_KEYS.includes(sortRaw as SortKey)) {
+    return badRequest('sort inválido')
+  }
+  if (dirRaw && dirRaw !== 'asc' && dirRaw !== 'desc') {
+    return badRequest('dir inválido')
+  }
+
+  const sortKey: SortKey = (sortRaw as SortKey) ?? 'invited_at'
+  const ascending = dirRaw === 'asc'
+
+  // Sanitiza q: corta espaços e remove chars que quebrariam a sintaxe do
+  // .or() do PostgREST (vírgula separa cláusulas, parens são agrupamento).
+  // % e _ continuam permitidos — funcionam como wildcards no ilike, o que
+  // é OK pra UX de busca.
+  const q = qRaw?.trim().replace(/[,()]/g, '') ?? ''
 
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1)
   const pageSize = Math.min(
@@ -572,22 +595,40 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
 
+  // ─── Filtro de busca: resolve user_ids antes de filtrar memberships ─────
+  // 2-query approach é mais previsível que .or() com foreignTable, e o set
+  // de user_ids é bounded (users globais é da ordem de centenas em prod).
+  let searchUserIds: string[] | null = null
+  if (q.length > 0) {
+    const { data: matchingUsers, error: searchErr } = await admin
+      .from('users')
+      .select('id')
+      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+    if (searchErr) return serverError('Não foi possível buscar usuários', searchErr)
+    searchUserIds = (matchingUsers ?? []).map((u: { id: string }) => u.id)
+    if (searchUserIds.length === 0) {
+      return ok({ items: [], page: 1, pageSize, total: 0 })
+    }
+  }
+
   // memberships tem 2 FKs pra users (user_id e invited_by) — sem o hint
   // !user_id, supabase-js não consegue desambiguar e a query retorna vazia
   // silenciosamente. Forçamos a relação explícita pelo nome da FK column.
+  //
+  // Ordenação + paginação em JS: PostgREST não ordena o pai por coluna de
+  // tabela embed (`?order=users.name.asc` ordena o embed, não o pai). Para
+  // sort por name/email/org precisaríamos de uma RPC/view dedicada. Como o
+  // dataset é bounded (Owner = sua org; Admin = todas, capado em 1000),
+  // puxa tudo e ordena em memória. Quando passar de ~500 memberships totais
+  // em prod, migrar pra RPC fica trivial — mantém o shape de resposta igual.
   let query = admin
     .from('memberships')
-    .select(
-      `
+    .select(`
       user_id, org_id, role, invite_status, invited_by, invited_at, created_at,
       users!user_id (id, name, email, avatar, avatar_color),
       organizations (id, name)
-    `,
-      { count: 'exact' }
-    )
-    .order('invited_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .range(from, to)
+    `)
+    .limit(1000)
 
   if (callerRole === 'owner') {
     const { data: callerUser } = await admin
@@ -602,11 +643,42 @@ export async function GET(request: NextRequest) {
 
   if (status) query = query.eq('invite_status', status)
   if (role) query = query.eq('role', role)
+  if (searchUserIds) query = query.in('user_id', searchUserIds)
 
-  const { data, error, count } = await query
+  const { data, error } = await query
   if (error) return serverError('Não foi possível listar os convites', error)
 
-  const rows = (data ?? []) as unknown as MembershipRow[]
+  // ─── Sort em memória ────────────────────────────────────────────────────
+  const allRows = (data ?? []) as unknown as MembershipRow[]
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base' })
+  const dirMul = ascending ? 1 : -1
+  const sortValue = (r: MembershipRow): string | number => {
+    switch (sortKey) {
+      case 'name':       return r.users?.name ?? ''
+      case 'email':      return r.users?.email ?? ''
+      case 'org':        return r.organizations?.name ?? ''
+      case 'role':       return r.role
+      case 'invited_at': return r.invited_at ? Date.parse(r.invited_at) : 0
+    }
+  }
+  allRows.sort((a, b) => {
+    const av = sortValue(a)
+    const bv = sortValue(b)
+    let cmp: number
+    if (typeof av === 'number' && typeof bv === 'number') {
+      cmp = av - bv
+    } else {
+      cmp = collator.compare(String(av), String(bv))
+    }
+    if (cmp !== 0) return cmp * dirMul
+    // Tie-breaker determinístico — sem isso ordenações com empates
+    // (ex: dois trainers com nome igual) ficam não-determinísticas
+    // entre requests, com efeito visual em quem aparece em qual página.
+    return Date.parse(b.created_at) - Date.parse(a.created_at)
+  })
+
+  const total = allRows.length
+  const rows = allRows.slice(from, to + 1)
   const inviterIds = Array.from(new Set(rows.map((r) => r.invited_by).filter((v): v is string => !!v)))
 
   const invitersRes = inviterIds.length > 0
@@ -637,5 +709,5 @@ export async function GET(request: NextRequest) {
     invitedBy: r.invited_by ? inviterById.get(r.invited_by) ?? null : null,
   }))
 
-  return ok({ items, page, pageSize, total: count ?? items.length })
+  return ok({ items, page, pageSize, total })
 }

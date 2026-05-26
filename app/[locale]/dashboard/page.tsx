@@ -1,86 +1,120 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   getTrainers,
   getPerformanceTrends,
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
-import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
+import type { Locale } from "@/i18n/routing";
+import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
-import { RubricBar } from "@/components/shared/RubricBar";
+import { scoreLevel, toDisplay5, toNumber5 } from "@/lib/score-display";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import {
-  rubricGaps,
-  activeAlerts,
-  estimatedRevenue,
-  revenueBaseline,
-  closeRateTrend,
-  closeRateTrendSummary,
-} from "@/lib/mock-data";
+import { rubricGaps } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
-import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
+import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
+import { getActiveOrgContext } from "@/lib/auth";
 
 export default async function DashboardPage() {
+  const locale = (await getLocale()) as Locale;
   const [
     trainers,
     insights,
-    { sections: rubric, trainerSectionScores },
-    revenueData,
+    { sections: rubric, trend: teamTrend, trainerSectionScores },
     teamHealth,
+    ctx,
     t,
     tMetrics,
     tHealth,
-    tAlerts,
   ] = await Promise.all([
     getTrainers(),
-    getInsights(),
+    getInsights(locale),
     getRubric(),
-    getRevenueEstimator(),
     getTeamHealth(),
+    getActiveOrgContext(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
-    getTranslations("Owner.activeAlerts"),
   ]);
+
+  // Banner só pra Owner real — Admin impersonando não tem poder de
+  // accept/reject, então esconder evita CTA frustrante.
+  const showPendingBanner = ctx?.role === "owner" && !ctx.isImpersonating;
 
   const coachingDrivers = buildCoachingDrivers(rubric);
 
   const performanceTrends = await getPerformanceTrends(trainers);
 
-  const sorted = [...trainers].sort((a, b) => b.score - a.score);
-  const totalCalls = trainers.reduce((s, t) => s + t.totalCalls, 0);
-  console.log('[dashboard] totalCalls por trainer:', trainers.map((t) => ({ name: t.name, calls: t.totalCalls })), '→ totalCalls=', totalCalls);
+  const totalCalls = trainers.reduce((s, tr) => s + tr.totalCalls, 0);
+
+  // Médias do time consideram só vendedores que já fizeram ao menos 1 call —
+  // um trainer recém-adicionado (0 calls → score/closeRate 0) não deve puxar
+  // os KPIs do time pra baixo.
+  const ratedTrainers = trainers.filter((tr) => tr.totalCalls > 0);
   const avgClose =
-    trainers.length > 0
+    ratedTrainers.length > 0
       ? Math.round(
-          trainers.reduce((s, t) => s + t.closeRate, 0) / trainers.length,
+          ratedTrainers.reduce((s, tr) => s + tr.closeRate, 0) /
+            ratedTrainers.length,
         )
       : 0;
   const avgScore =
-    trainers.length > 0
+    ratedTrainers.length > 0
       ? Math.round(
-          (trainers.reduce((s, t) => s + t.score, 0) / trainers.length) * 10,
+          (ratedTrainers.reduce((s, tr) => s + tr.score, 0) /
+            ratedTrainers.length) *
+            10,
         ) / 10
       : 0;
-  const topTrainer = sorted[0] ?? null;
 
-  const activeSalesPeopleLabel =
-    trainers.length === 1
-      ? tMetrics("activeSalesPeopleOne", { count: trainers.length })
-      : tMetrics("activeSalesPeopleOther", { count: trainers.length });
+  // Tendência de close rate do time — 6 semanas reais (getRubric().trend).
+  // buildWeeklyTrend emite closeRate/score = 0 para semanas SEM calls. Usar
+  // uma semana vazia como ponta do delta gera lixo (ex.: -100pts quando a
+  // semana atual ainda não teve calls). Por isso o delta "desde a semana 1" só
+  // olha semanas com calls de fato (score > 0) e some se houver menos de 2.
+  const populatedWeeks = teamTrend.filter((w) => w.score > 0);
+  const firstWeek = populatedWeeks[0];
+  const lastWeek = populatedWeeks[populatedWeeks.length - 1];
+  const hasTrend = populatedWeeks.length >= 2;
+  const closeRateDelta = hasTrend
+    ? lastWeek.closeRate - firstWeek.closeRate
+    : undefined;
+  const scoreDelta = hasTrend
+    ? Math.round(
+        (toNumber5(lastWeek.score) - toNumber5(firstWeek.score)) * 10,
+      ) / 10
+    : undefined;
+  const trendSummary = {
+    from: firstWeek?.closeRate ?? 0,
+    to: lastWeek?.closeRate ?? 0,
+    delta: closeRateDelta ?? 0,
+  };
 
-  const alertsCountLabel =
-    activeAlerts.length === 1
-      ? tAlerts("itemsCountOne", { count: activeAlerts.length })
-      : tAlerts("itemsCountOther", { count: activeAlerts.length });
+  // Gráfico de tendência: mantém as 6 semanas no eixo; semana sem call vira
+  // null (lacuna no gráfico) em vez de uma barra de 0% que confundiria.
+  const closeRateChartData = teamTrend.map((w) => ({
+    week: w.week,
+    closeRate: w.score > 0 ? w.closeRate : null,
+  }));
+
+  // Maior nota por seção — destaca o melhor vendedor de cada coluna.
+  const sectionMax: Record<string, number> = {};
+  for (const section of rubric) {
+    sectionMax[section.name] = Math.max(
+      0,
+      ...trainerSectionScores.map((tr) => tr.scores[section.name] ?? 0),
+    );
+  }
 
   return (
     <div>
+      {showPendingBanner && <PendingScriptBanner />}
+
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
 
@@ -91,8 +125,10 @@ export default async function DashboardPage() {
           label={tMetrics("avgCloseRate")}
           value={`${avgClose}%`}
           valueColor="var(--am-green)"
-          delta={7}
-          deltaLabel={tMetrics("ptsSinceWeek1")}
+          delta={closeRateDelta}
+          deltaLabel={
+            closeRateDelta !== undefined ? tMetrics("ptsSinceWeek1") : undefined
+          }
           className="col-span-1"
           style={{
             background:
@@ -104,23 +140,17 @@ export default async function DashboardPage() {
         />
         <ScoreCard
           label={tMetrics("teamAvgCallScore")}
-          value={avgScore}
+          value={toDisplay5(avgScore)}
           valueColor="var(--am-accent2)"
-          delta={11}
-          deltaLabel={tMetrics("ptsSinceWeek1")}
+          delta={scoreDelta}
+          deltaLabel={
+            scoreDelta !== undefined ? tMetrics("ptsSinceWeek1") : undefined
+          }
         />
+        <ScoreCard label={tMetrics("totalCalls")} value={totalCalls} />
         <ScoreCard
-          label={tMetrics("totalCalls")}
-          value={totalCalls}
-          deltaLabel={activeSalesPeopleLabel}
-        />
-        <ScoreCard
-          label={tMetrics("monthlyRevenue")}
-          value={`$${estimatedRevenue.toLocaleString("en-US")}`}
-          valueColor="var(--am-green)"
-          delta={estimatedRevenue - revenueBaseline}
-          deltaPrefix="$"
-          deltaLabel={tMetrics("vsBaselineCurrency")}
+          label={tMetrics("activeSalesPeople")}
+          value={trainers.length}
         />
       </div>
 
@@ -129,315 +159,197 @@ export default async function DashboardPage() {
         <CorrelationEngine factors={coachingDrivers} totalCalls={totalCalls} />
       </div>
 
-      {/* ── Main grid: team health + alerts ──────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-4">
-        {/* Team Health */}
-        <div
-          className="rounded-2xl p-5 border shadow-md"
-          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
-            <p
-              className="text-[13px] font-medium"
-              style={{ color: "var(--am-text)" }}
-            >
-              {tHealth("title")}
-            </p>
-          </div>
-          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            {tHealth("subtitle")}
-          </p>
-
-          {/* Column headers */}
-          <div
-            className="grid mb-2"
-            style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
-          >
-            <span
-              className="text-[10px] font-medium"
-              style={{ color: "var(--am-muted)" }}
-            >
-              {tHealth("th.trainer")}
-            </span>
-            <span
-              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
-              style={{ color: "var(--am-muted)" }}
-            >
-              {tHealth("th.status")}
-            </span>
-            <span
-              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
-              style={{ color: "var(--am-muted)" }}
-            >
-              {tHealth("th.closeRate")}
-            </span>
-            <span
-              className="text-[10px] font-medium text-right pr-4 hidden sm:block"
-              style={{ color: "var(--am-muted)" }}
-            >
-              {tHealth("th.delta")}
-            </span>
-            <span
-              className="text-[10px] font-medium text-right"
-              style={{ color: "var(--am-muted)" }}
-            >
-              ↑↓
-            </span>
-          </div>
-
-          {/* Rows */}
-          {teamHealth.map((entry, i) => {
-            const ringColor =
-              entry.trend === "up" ? "var(--am-green)" : "var(--am-red)";
-            const dotColor =
-              entry.statusType === "active"
-                ? "var(--am-green)"
-                : entry.statusType === "away"
-                  ? "var(--am-red)"
-                  : "var(--am-muted)";
-            const deltaColor =
-              entry.delta >= 0 ? "var(--am-green)" : "var(--am-red)";
-            const ptsLabel =
-              Math.abs(entry.delta) === 1
-                ? tHealth("ptsOne")
-                : tHealth("ptsOther");
-            const deltaLabel =
-              entry.delta > 0
-                ? `+${entry.delta} ${ptsLabel}`
-                : `${entry.delta} ${ptsLabel}`;
-            const callsLabel =
-              entry.calls === 1
-                ? tHealth("callsLabelOne", { count: entry.calls })
-                : tHealth("callsLabelOther", { count: entry.calls });
-
-            const avatarBg: Record<string, string> = {
-              blue: "var(--am-blue-bg)",
-              purple: "rgba(110,86,255,0.15)",
-              green: "var(--am-green-bg)",
-              red: "var(--am-red-bg)",
-              amber: "rgba(255,171,46,0.15)",
-            };
-            const avatarText: Record<string, string> = {
-              blue: "var(--am-blue)",
-              purple: "var(--am-accent2)",
-              green: "var(--am-green)",
-              red: "var(--am-red)",
-              amber: "var(--am-amber)",
-            };
-
-            return (
-              <div
-                key={entry.name}
-                className="grid items-center py-2.5"
-                style={{
-                  gridTemplateColumns: "1fr auto auto auto auto",
-                  borderTop: i > 0 ? "1px solid var(--am-border)" : "none",
-                }}
-              >
-                {/* Avatar + name + calls */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative flex-shrink-0">
-                    <div
-                      className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono"
-                      style={{
-                        background: avatarBg[entry.avatarColor],
-                        color: avatarText[entry.avatarColor],
-                      }}
-                    >
-                      {entry.initials}
-                    </div>
-                    <span
-                      className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
-                      style={{
-                        background: ringColor,
-                        borderColor: "var(--card)",
-                      }}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className="text-[13px] font-medium truncate"
-                      style={{ color: "var(--am-text)" }}
-                    >
-                      {entry.name}
-                    </p>
-                    <p
-                      className="text-[11px]"
-                      style={{ color: "var(--am-muted)" }}
-                    >
-                      {callsLabel}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div className="pr-4 hidden sm:flex items-center gap-1.5">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: dotColor }}
-                  />
-                  <span
-                    className="text-[12px] whitespace-nowrap"
-                    style={{ color: dotColor }}
-                  >
-                    {entry.status}
-                  </span>
-                </div>
-
-                {/* Close rate */}
-                <span
-                  className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
-                  style={{ color: "var(--am-text)" }}
-                >
-                  {entry.closeRate}%
-                </span>
-
-                {/* Delta */}
-                <span
-                  className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
-                  style={{ color: deltaColor }}
-                >
-                  {deltaLabel}
-                </span>
-
-                {/* Trend arrow */}
-                <span
-                  className="text-[16px] font-bold text-right"
-                  style={{ color: deltaColor }}
-                >
-                  {entry.trend === "up" ? "↑" : "↓"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Active alerts */}
-        <div
-          className="rounded-2xl p-5 border shadow-md flex flex-col"
-          style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-1">
-            <p
-              className="text-[13px] font-medium"
-              style={{ color: "var(--am-text)" }}
-            >
-              {tAlerts("title")}
-            </p>
-          </div>
-          <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
-            {alertsCountLabel}
-          </p>
-
-          {/* Alert items */}
-          <div className="flex flex-col gap-0 flex-1">
-            {activeAlerts.map((alert, i) => {
-              const dotColor =
-                alert.dotColor === "red"
-                  ? "var(--am-red)"
-                  : alert.dotColor === "amber"
-                    ? "var(--am-amber)"
-                    : "var(--am-green)";
-              const ctaColor =
-                alert.dotColor === "red"
-                  ? "var(--am-red)"
-                  : alert.dotColor === "amber"
-                    ? "var(--am-amber)"
-                    : "var(--am-green)";
-              const ctaBorder =
-                alert.dotColor === "red"
-                  ? "rgba(255,94,94,0.35)"
-                  : alert.dotColor === "amber"
-                    ? "rgba(255,171,46,0.35)"
-                    : "rgba(34,217,160,0.35)";
-              const ctaBg =
-                alert.dotColor === "red"
-                  ? "rgba(255,94,94,0.08)"
-                  : alert.dotColor === "amber"
-                    ? "rgba(255,171,46,0.08)"
-                    : "rgba(34,217,160,0.08)";
-
-              return (
-                <div
-                  key={alert.message}
-                  className="py-3"
-                  style={{
-                    borderBottom:
-                      i < activeAlerts.length - 1
-                        ? "1px solid var(--am-border)"
-                        : "none",
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{
-                        background: dotColor,
-                        boxShadow: `0 0 5px ${dotColor}`,
-                      }}
-                    />
-                    <span
-                      className="text-[12px] font-medium"
-                      style={{ color: "var(--am-text)" }}
-                    >
-                      {alert.message}
-                    </span>
-                  </div>
-                  <button
-                    className="text-[11px] font-medium px-3 py-1 rounded border ml-[18px]"
-                    style={{
-                      color: ctaColor,
-                      borderColor: ctaBorder,
-                      background: ctaBg,
-                    }}
-                  >
-                    {alert.cta} →
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Rubric by section ─────────────────────────────────── */}
+      {/* ── Team Health ───────────────────────────────────────── */}
       <div
         className="rounded-2xl p-5 border shadow-md mb-4"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
       >
-        <p
-          className="text-[13px] font-medium mb-4"
-          style={{ color: "var(--am-text)" }}
-        >
-          {t("rubricBySection")}
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
-          {rubric.map((section) => (
-            <RubricBar
-              key={section.id}
-              label={section.name}
-              value={section.teamAvg}
-              color={section.color}
-            />
-          ))}
+        {/* Header */}
+        <div className="flex items-center justify-between mb-1 gap-3 flex-wrap">
+          <p
+            className="text-[13px] font-medium"
+            style={{ color: "var(--am-text)" }}
+          >
+            {tHealth("title")}
+          </p>
         </div>
+        <p className="text-[11px] mb-4" style={{ color: "var(--am-muted)" }}>
+          {tHealth("subtitle")}
+        </p>
+
+        {/* Column headers */}
+        <div
+          className="grid mb-2"
+          style={{ gridTemplateColumns: "1fr auto auto auto auto" }}
+        >
+          <span
+            className="text-[10px] font-medium"
+            style={{ color: "var(--am-muted)" }}
+          >
+            {tHealth("th.trainer")}
+          </span>
+          <span
+            className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+            style={{ color: "var(--am-muted)" }}
+          >
+            {tHealth("th.status")}
+          </span>
+          <span
+            className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+            style={{ color: "var(--am-muted)" }}
+          >
+            {tHealth("th.closeRate")}
+          </span>
+          <span
+            className="text-[10px] font-medium text-right pr-4 hidden sm:block"
+            style={{ color: "var(--am-muted)" }}
+          >
+            {tHealth("th.delta")}
+          </span>
+          <span
+            className="text-[10px] font-medium text-right"
+            style={{ color: "var(--am-muted)" }}
+          >
+            ↑↓
+          </span>
+        </div>
+
+        {/* Rows */}
+        {teamHealth.map((entry, i) => {
+          const ringColor =
+            entry.trend === "up" ? "var(--am-green)" : "var(--am-red)";
+          const dotColor =
+            entry.statusType === "active"
+              ? "var(--am-green)"
+              : entry.statusType === "away"
+                ? "var(--am-red)"
+                : "var(--am-muted)";
+          const deltaColor =
+            entry.delta >= 0 ? "var(--am-green)" : "var(--am-red)";
+          const ptsLabel =
+            Math.abs(entry.delta) === 1 ? tHealth("ptsOne") : tHealth("ptsOther");
+          const deltaLabel =
+            entry.delta > 0
+              ? `+${entry.delta} ${ptsLabel}`
+              : `${entry.delta} ${ptsLabel}`;
+          const callsLabel =
+            entry.calls === 1
+              ? tHealth("callsLabelOne", { count: entry.calls })
+              : tHealth("callsLabelOther", { count: entry.calls });
+
+          const avatarBg: Record<string, string> = {
+            blue: "var(--am-blue-bg)",
+            purple: "rgba(110,86,255,0.15)",
+            green: "var(--am-green-bg)",
+            red: "var(--am-red-bg)",
+            amber: "rgba(255,171,46,0.15)",
+          };
+          const avatarText: Record<string, string> = {
+            blue: "var(--am-blue)",
+            purple: "var(--am-accent2)",
+            green: "var(--am-green)",
+            red: "var(--am-red)",
+            amber: "var(--am-amber)",
+          };
+
+          return (
+            <div
+              key={entry.name}
+              className="grid items-center py-2.5"
+              style={{
+                gridTemplateColumns: "1fr auto auto auto auto",
+                borderTop: i > 0 ? "1px solid var(--am-border)" : "none",
+              }}
+            >
+              {/* Avatar + name + calls */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative flex-shrink-0">
+                  <div
+                    className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-xs font-semibold font-mono"
+                    style={{
+                      background: avatarBg[entry.avatarColor],
+                      color: avatarText[entry.avatarColor],
+                    }}
+                  >
+                    {entry.initials}
+                  </div>
+                  <span
+                    className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                    style={{
+                      background: ringColor,
+                      borderColor: "var(--card)",
+                    }}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="text-[13px] font-medium truncate"
+                    style={{ color: "var(--am-text)" }}
+                  >
+                    {entry.name}
+                  </p>
+                  <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
+                    {callsLabel}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="pr-4 hidden sm:flex items-center gap-1.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: dotColor }}
+                />
+                <span
+                  className="text-[12px] whitespace-nowrap"
+                  style={{ color: dotColor }}
+                >
+                  {entry.status}
+                </span>
+              </div>
+
+              {/* Close rate */}
+              <span
+                className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
+                style={{ color: "var(--am-text)" }}
+              >
+                {entry.closeRate}%
+              </span>
+
+              {/* Delta */}
+              <span
+                className="text-[13px] font-mono font-semibold text-right pr-4 hidden sm:block"
+                style={{ color: deltaColor }}
+              >
+                {deltaLabel}
+              </span>
+
+              {/* Trend arrow */}
+              <span
+                className="text-[16px] font-bold text-right"
+                style={{ color: deltaColor }}
+              >
+                {entry.trend === "up" ? "↑" : "↓"}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* ── Bottom stack: Revenue → CloseRateTrend → RubricGap ── */}
-      <RevenueEstimator items={revenueData.items} total={revenueData.total} />
+      {/* ── Close Rate Trend ──────────────────────────────────── */}
       <CloseRateTrend
-        data={closeRateTrend}
-        summary={closeRateTrendSummary}
+        data={closeRateChartData}
+        summary={trendSummary}
         trainerTrends={performanceTrends}
         salesPeople={trainers.map((t) => ({ id: t.id, name: t.name }))}
       />
+
+      {/* ── Script Gap Detection ──────────────────────────────── */}
       <div className="mb-4">
         <RubricGapDetection gaps={rubricGaps} />
       </div>
 
-      {/* ── Detailed rubric table ──────────────────────────────── */}
+      {/* ── Score by Sales Person ─────────────────────────────── */}
       <div
         className="rounded-2xl p-5 border mb-4 overflow-x-auto"
         style={{ background: "var(--card)", borderColor: "var(--am-border)" }}
@@ -458,83 +370,58 @@ export default async function DashboardPage() {
                   borderBottom: "1px solid var(--am-border)",
                 }}
               >
-                {t("detailedRubricTh.section")}
+                {t("detailedRubricTh.salesPerson")}
               </th>
-              <th
-                className="text-[11px] font-medium text-right pb-2.5 px-2"
-                style={{
-                  color: "var(--am-muted)",
-                  borderBottom: "1px solid var(--am-border)",
-                }}
-              >
-                {t("detailedRubricTh.team")}
-              </th>
-              {trainerSectionScores.map((tr) => (
+              {rubric.map((section) => (
                 <th
-                  key={tr.trainerId}
+                  key={section.id}
                   className="text-[11px] font-medium text-right pb-2.5 px-2"
                   style={{
                     color: "var(--am-muted)",
                     borderBottom: "1px solid var(--am-border)",
                   }}
                 >
-                  {tr.trainerName}
+                  {section.name}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rubric.map((section) => {
-              const trainerScores = trainerSectionScores.map(
-                (tr) => tr.scores[section.name] ?? 0,
-              );
-              const maxScore =
-                trainerScores.length > 0 ? Math.max(...trainerScores) : 0;
-
-              return (
-                <tr key={section.id}>
-                  <td
-                    className="text-xs py-2.5 pr-2"
-                    style={{
-                      color: "var(--am-muted)",
-                      borderBottom: "1px solid var(--am-border)",
-                    }}
-                  >
-                    {section.name}
-                  </td>
-                  <td
-                    className="text-xs text-right font-mono px-2 py-2.5"
-                    style={{
-                      color:
-                        section.teamAvg < 3.25
-                          ? "var(--am-red)"
-                          : "var(--am-text)",
-                      borderBottom: "1px solid var(--am-border)",
-                    }}
-                  >
-                    {section.teamAvg.toFixed(1)}
-                  </td>
-                  {trainerScores.map((s, idx) => (
+            {trainerSectionScores.map((tr) => (
+              <tr key={tr.trainerId}>
+                <td
+                  className="text-xs py-2.5 pr-2"
+                  style={{
+                    color: "var(--am-muted)",
+                    borderBottom: "1px solid var(--am-border)",
+                  }}
+                >
+                  {tr.trainerName}
+                </td>
+                {rubric.map((section) => {
+                  const s = tr.scores[section.name] ?? 0;
+                  const columnMax = sectionMax[section.name] ?? 0;
+                  const isBest = s > 0 && s === columnMax;
+                  return (
                     <td
-                      key={idx}
+                      key={section.id}
                       className="text-xs text-right font-mono px-2 py-2.5"
                       style={{
-                        color:
-                          s === maxScore
-                            ? "var(--am-green)"
-                            : s < 3.25
-                              ? "var(--am-red)"
-                              : "var(--am-text)",
-                        fontWeight: s === maxScore ? 600 : 400,
+                        color: isBest
+                          ? "var(--am-green)"
+                          : scoreLevel(s) === "low"
+                            ? "var(--am-red)"
+                            : "var(--am-text)",
+                        fontWeight: isBest ? 600 : 400,
                         borderBottom: "1px solid var(--am-border)",
                       }}
                     >
-                      {s.toFixed(1)}
+                      {toDisplay5(s)}
                     </td>
-                  ))}
-                </tr>
-              );
-            })}
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

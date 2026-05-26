@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, forbidden } from '@/lib/auth'
 import { getSession, getRole, requireOwnerWrite } from '@/lib/auth'
-import { getRubric, getRubricConfig, updateRubricConfig } from '@/lib/services/rubric'
+import { getRubric, getRubricConfig, listRubrics, updateRubricConfig } from '@/lib/services/rubric'
 import type { UpdateRubricInput } from '@/lib/db/rubric'
 
 export async function GET(request: NextRequest) {
@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl
   const configOnly = searchParams.get('config') === 'true'
+  const listOnly = searchParams.get('list') === 'true'
+
+  if (listOnly) {
+    const data = await listRubrics()
+    return ok(data)
+  }
 
   if (configOnly) {
     const data = await getRubricConfig()

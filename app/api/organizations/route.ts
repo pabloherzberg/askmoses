@@ -6,13 +6,8 @@ import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { MAX_ORG_NAME_LENGTH, MAX_MRR_USD, RATE_LIMITS } from '@/lib/constants/limits'
 import type { Role } from '@/lib/types'
-
-// 10 orgs/admin/min. Cada criação dispara email (custa Resend) + auth user
-// (custa Supabase quota); aceitamos burst pra Ariel cadastrando vários
-// clientes seguidos, mas bot abusivo trava antes de gerar custo significativo.
-const CREATE_ORG_RATE_MAX = 10
-const CREATE_ORG_RATE_WINDOW_SECONDS = 60
 
 interface OrgOption {
   id: string
@@ -37,10 +32,19 @@ interface CreateOrgBody {
   ownerName?: string
   ownerEmail?: string
   locale?: string
+  // MRR opcional informado pelo Ariel no momento da criação (sweetheart
+  // deals, valores customizados que não batem com o price_cents do plano).
+  // Se omitido, fica 0 e o Admin pode ajustar depois via subscription override.
+  mrr?: number
+  // Script ativo obrigatório — toda org nasce com 1 script ativo (e logo
+  // uma rubric, derivada via scripts.rubric_id). Ambos fundamentais pra
+  // análise. O scriptId vem do catálogo (/api/admin/scripts/catalog).
+  scriptId?: string
 }
 
 const PLAN_CODES = ['starter', 'pro', 'pro_rag'] as const
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Avatar helpers — duplicados de app/api/invites/route.ts pra manter o
 // patch local. Se aparecer um 3º endpoint que precisa, extrair pra lib/.
@@ -145,8 +149,8 @@ export async function POST(request: NextRequest) {
 
   const rl = await checkRateLimitDb(
     `create_org:${session.user.id}`,
-    CREATE_ORG_RATE_MAX,
-    CREATE_ORG_RATE_WINDOW_SECONDS,
+    RATE_LIMITS.createOrg.max,
+    RATE_LIMITS.createOrg.windowSeconds,
   )
   if (!rl.allowed) return rateLimitedResponse(rl)
 
@@ -161,13 +165,31 @@ export async function POST(request: NextRequest) {
   const planCode = body.planCode
   const ownerName = body.ownerName?.trim()
   const ownerEmail = body.ownerEmail?.trim().toLowerCase()
+  const mrr = body.mrr
+  const scriptId = body.scriptId?.trim()
 
   if (!name) return badRequest('name é obrigatório')
+  if (name.length > MAX_ORG_NAME_LENGTH) {
+    return badRequest(`name muito longo (máx ${MAX_ORG_NAME_LENGTH})`)
+  }
   if (!planCode || !PLAN_CODES.includes(planCode)) {
     return badRequest('planCode deve ser "starter", "pro" ou "pro_rag"')
   }
   if (!ownerName) return badRequest('ownerName é obrigatório')
+  if (ownerName.length > MAX_ORG_NAME_LENGTH) {
+    return badRequest(`ownerName muito longo (máx ${MAX_ORG_NAME_LENGTH})`)
+  }
   if (!ownerEmail || !EMAIL_RE.test(ownerEmail)) return badRequest('ownerEmail inválido')
+  if (mrr !== undefined) {
+    if (typeof mrr !== 'number' || !isFinite(mrr) || mrr < 0) {
+      return badRequest('mrr deve ser um número >= 0')
+    }
+    if (mrr > MAX_MRR_USD) return badRequest('mrr muito alto')
+  }
+  // Script ativo é obrigatório — toda org nasce com um script.
+  if (!scriptId || !UUID_RE.test(scriptId)) {
+    return badRequest('scriptId é obrigatório')
+  }
 
   const admin = createAdminClient()
   const origin = request.nextUrl.origin
@@ -182,6 +204,16 @@ export async function POST(request: NextRequest) {
   if (planErr) return serverError('Não foi possível resolver o plano', planErr)
   if (!plan) return badRequest('plano não encontrado')
 
+  // ─── 1b. Valida script ───────────────────────────────────────────────────
+
+  const { data: scriptRow, error: scriptErr } = await admin
+    .from('scripts')
+    .select('id')
+    .eq('id', scriptId)
+    .maybeSingle()
+  if (scriptErr) return serverError('Não foi possível validar o script', scriptErr)
+  if (!scriptRow) return badRequest('script não encontrado')
+
   // ─── 2. Cria org ─────────────────────────────────────────────────────────
 
   const { data: org, error: orgErr } = await admin
@@ -191,15 +223,33 @@ export async function POST(request: NextRequest) {
       plan_id: plan.id,
       subscription_status: 'active',
       health: 'healthy',
+      ...(mrr !== undefined ? { mrr } : {}),
     })
     .select('id, name')
     .single()
   if (orgErr || !org) return serverError('Não foi possível criar a organização', orgErr)
 
   // Rollback da org (usado por todos os caminhos de erro abaixo). Defina
-  // antes de qualquer step que possa falhar.
+  // antes de qualquer step que possa falhar. org_scripts tem FK
+  // ON DELETE CASCADE → deletar a org já limpa a linha de script.
   const rollbackOrg = async () => {
     await admin.from('organizations').delete().eq('id', org.id)
+  }
+
+  // ─── 2b. Vincula o script ativo ──────────────────────────────────────────
+  // Toda org nasce com 1 script ativo. status='active' direto (não pending) —
+  // pending é só pra updates posteriores via Script Intelligence.
+
+  const { error: orgScriptErr } = await admin.from('org_scripts').insert({
+    org_id: org.id,
+    script_id: scriptId,
+    status: 'active',
+    started_at: new Date().toISOString(),
+    sent_by: session.user.id,
+  })
+  if (orgScriptErr) {
+    await rollbackOrg()
+    return serverError('Não foi possível vincular o script à organização', orgScriptErr)
   }
 
   // ─── 3. Owner: branch por estado do email ────────────────────────────────
@@ -234,9 +284,10 @@ export async function POST(request: NextRequest) {
       user_id: existingUser.id,
       org_id: org.id,
       company: org.name,
-      // owners.plan é o campo de display legado — usa o nome do plano que o
-      // Admin selecionou ('Starter' | 'Pro' | 'Pro + RAG'), não um fixo.
-      plan: plan.name,
+      // owners.plan é campo legacy write-only; fonte canônica é
+      // organizations.plan_id. Setado fixo pra satisfazer o CHECK constraint
+      // em prod (alinhado com onboarding/organization, invites).
+      plan: 'Starter',
     })
     if (ownerInsertErr) {
       await admin.from('memberships').delete()
@@ -356,8 +407,8 @@ export async function POST(request: NextRequest) {
     user_id: newUserId,
     org_id: org.id,
     company: org.name,
-    // owners.plan = nome de display do plano selecionado (ver branch 3A).
-    plan: plan.name,
+    // owners.plan = campo legacy write-only (ver branch 3A).
+    plan: 'Starter',
   })
   if (ownerInsertErr) {
     await rollbackFull()

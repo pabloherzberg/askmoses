@@ -2,8 +2,10 @@ import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
 import { getGeminiModel } from "@/lib/gemini";
 import { getOrgId } from "@/lib/auth";
+import { translateInsightCards } from "@/lib/i18n/translate-coaching";
+import type { Locale } from "@/i18n/routing";
 
-export async function getInsights(): Promise<Insight[]> {
+export async function getInsights(locale?: Locale): Promise<Insight[]> {
   // Always compute from real data
   const { dbGetTrainers } = await import("@/lib/db/trainers");
   const orgId = await getOrgId();
@@ -16,7 +18,13 @@ export async function getInsights(): Promise<Insight[]> {
     return [];
   }
 
-  return buildInsightsFromData(trainers, calls);
+  const insights = buildInsightsFromData(trainers, calls);
+  // Insight strings are built server-side in English (with interpolated names
+  // and numbers). Translate the user-facing fields when a non-en locale is
+  // requested — one batched LLM call covers all cards.
+  return locale && locale !== "en"
+    ? translateInsightCards(insights, locale)
+    : insights;
 }
 
 // ─── Compute insights from real trainer + call data ─────────────────────────

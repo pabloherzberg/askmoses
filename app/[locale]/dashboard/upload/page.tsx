@@ -39,6 +39,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { CallResult as CallOutcome, Trainer } from "@/lib/types";
+import { toNumber5 } from "@/lib/score-display";
 import { UpsellCard } from "@/components/shared/UpsellCard";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
 
@@ -461,7 +462,7 @@ export default function UploadPage() {
   }
 
   if (step === "results" && analysisResult) {
-    const overallScore = Math.round(analysisResult.overallScore * 10) / 10;
+    const overallScore = Math.round(toNumber5(analysisResult.overallScore) * 10) / 10;
     const overallLabel =
       overallScore >= 4
         ? t("results.badges.strong")
@@ -583,7 +584,7 @@ export default function UploadPage() {
           <CardContent className="space-y-2">
             {(analysisResult.sections ?? []).map(
               (section, index) => {
-                const score = section.score ?? 0;
+                const score = Math.round(toNumber5(section.score ?? 0) * 10) / 10;
                 const pct = (score / 5) * 100;
                 const isCriticalAlert = section.critical && score <= 2;
                 const isExpanded = expandedSections.has(index);

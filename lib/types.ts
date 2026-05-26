@@ -36,6 +36,10 @@ export interface Trainer {
   score: number
   scoreDelta: number
   lastActive: string
+  /** ISO timestamp of the trainer's most recent call (preferred for display —
+   *  format on the client via Intl per active locale). `lastActive` is kept
+   *  for back-compat with pre-formatted EN cache in `trainers.last_active`. */
+  lastActiveAt?: string | null
   ownerId: string
   orgId?: string
   rubricScores: RubricScores
@@ -71,6 +75,13 @@ export interface Call {
   improvements: string[]
   transcript: string
   orgId?: string
+  // Script usado na análise da call (migration 056). `scriptId` vem do DB;
+  // `scriptName`/`scriptIsActive` são resolvidos pela página /calls a partir
+  // da lista de scripts da org. Todos opcionais — calls sem script (rubric)
+  // ou consumidores que não enriquecem deixam undefined.
+  scriptId?: string | null
+  scriptName?: string | null
+  scriptIsActive?: boolean
 }
 
 export interface TrainerScore {
@@ -117,6 +128,27 @@ export interface Plan {
   features: string[]
 }
 
+// Status efetivo do script associado a uma org. 'none' = org nunca recebeu
+// script via Admin. 'deprecated' é derivado: status='active' + existe script
+// mais novo na mesma rubric (ver view org_scripts_current na migration 044).
+export type OrgScriptStatus = 'none' | 'pending' | 'active' | 'deprecated' | 'rejected'
+
+export interface OrgScriptInfo {
+  scriptId: string
+  scriptName: string
+  version: string // ex: "1.2", "2.0"
+  // Quando status='pending' e havia um script anterior aceito, populamos o
+  // previousVersion pra UI poder mostrar "v2.0 → v2.1". Null em outros casos.
+  previousVersion: string | null
+  status: OrgScriptStatus
+  startedAt: string | null
+  // Preenchido apenas quando status='pending'.
+  // 'queued' = aguardando na fila | 'processing' = IA rodando | null = pronto ou sem cache.
+  analysisStatus?: 'queued' | 'processing' | null
+  // org_scripts.id — necessário para cruzar com o cache de análise
+  orgScriptId?: string | null
+}
+
 export interface Client {
   id: string
   name: string
@@ -134,6 +166,18 @@ export interface Client {
   // não clicou no magic link).
   ownerAccepted: boolean
   subscriptionStatus: 'active' | 'inactive' | 'trial'
+  // Script ativo associado à org (mais recente em org_scripts via started_at
+  // desc, ended_at IS NULL). null quando a org nunca recebeu script.
+  currentScript: OrgScriptInfo | null
+  // Pending coexistindo com o active (modelo 059). Nome do script pendente
+  // pra UI exibir ícone informativo. Optional/null em paths que não
+  // computam o pending (single-org fetch, mocks) — só dbListClients popula.
+  pendingScriptName?: string | null
+  // ISO timestamp da última atividade na org (max(calls.created_at)).
+  // Usado na coluna Last Activity da tabela admin. null se nunca teve calls
+  // — cai pra organizations.created_at no caller.
+  lastCallAt: string | null
+  createdAt: string
 }
 
 export interface TrendPoint {
@@ -181,8 +225,9 @@ export type CallsByTrainerMap = Record<string, BestCall[]>
 
 export interface PerformanceTrendPoint {
   week: string
-  closeRate: number
-  avgScore: number
+  // null = semana sem nenhuma call — vira lacuna no gráfico, não uma barra de 0%.
+  closeRate: number | null
+  avgScore: number | null
 }
 
 export interface RevenueEstimatorItem {

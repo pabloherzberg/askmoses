@@ -29,10 +29,10 @@ import {
   CheckCircle,
   Save,
   Lightbulb,
+  EyeOff,
+  Eye,
+  Plus,
 } from "lucide-react"
-import { UpsellCard } from "@/components/shared/UpsellCard"
-import { UpsellBadge } from "@/components/shared/UpsellBadge"
-import { useCurrentClient } from "@/lib/hooks/use-current-client"
 
 interface AudioFile {
   file: File
@@ -65,7 +65,6 @@ type BuilderStep = "input" | "processing" | "preview" | "confirm"
 export default function ScriptBuilderPage() {
   const router = useRouter()
   const t = useTranslations("Dashboard.scriptBuilder")
-  const tUpsell = useTranslations("Shared.upsell.scriptBuilderAuto")
   const locale = useLocale()
 
   const LLM_MODELS = [
@@ -85,11 +84,21 @@ export default function ScriptBuilderPage() {
   const [editedDescription, setEditedDescription] = useState("")
   const [saving, setSaving] = useState(false)
 
+  // Preview step — editable sections/criteria with enabled toggle
+  const [previewSections, setPreviewSections] = useState<Array<{ name: string; instructions: string; tips: string; weight: number; critical: boolean; enabled: boolean }>>([])
+  const [previewCriteria, setPreviewCriteria] = useState<Array<{ name: string; description: string; enabled: boolean }>>([])
+  const [newSection, setNewSection] = useState({ name: "", instructions: "", tips: "", weight: 0, critical: false })
+  const [newCriterion, setNewCriterion] = useState({ name: "", description: "" })
+  const [showAddSection, setShowAddSection] = useState(false)
+  const [showAddCriterion, setShowAddCriterion] = useState(false)
+
   // Confirm step state
   const [confirmSections, setConfirmSections] = useState<Array<{ name: string; instructions: string; tips: string; weight: number; critical: boolean }>>([])
   const [confirmCriteria, setConfirmCriteria] = useState<Array<{ name: string; description: string }>>([])
   const [confirmLlmModel, setConfirmLlmModel] = useState("openai/gpt-4o-mini")
   const [confirmSystemPrompt, setConfirmSystemPrompt] = useState("")
+  const [rubrics, setRubrics] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedRubricId, setSelectedRubricId] = useState<string>("")
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -222,6 +231,12 @@ export default function ScriptBuilderPage() {
       setGeneratedScript(script)
       setEditedName(script.name)
       setEditedDescription(script.description)
+      setPreviewSections(script.sections.map((s: GeneratedScript["sections"][number]) => ({ ...s, enabled: true })))
+      setPreviewCriteria(script.criteria.map((c: GeneratedScript["criteria"][number]) => ({ ...c, enabled: true })))
+      setShowAddSection(false)
+      setShowAddCriterion(false)
+      setNewSection({ name: "", instructions: "", tips: "", weight: 0, critical: false })
+      setNewCriterion({ name: "", description: "" })
       setProgress(100)
       setStep("preview")
     } catch (error) {
@@ -237,12 +252,11 @@ export default function ScriptBuilderPage() {
 
     setSaving(true)
     try {
-      // Busca rubric ativa via MSW
       const rubricRes = await fetch("/api/rubric?config=true")
       const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
-      const rubricId = rubricData?.id ?? 'rubric-001'
+      if (!rubricData?.id) throw new Error(t("confirm.saveFailed"))
+      const rubricId = rubricData.id
 
-      // Cria o script via MSW
       const res = await fetch("/api/scripts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -265,42 +279,19 @@ export default function ScriptBuilderPage() {
     setSaving(false)
   }
 
-  const { client: currentClient, loading: clientLoading } = useCurrentClient()
-  // Auto-script generation lives behind Pro: Starter only ships "Script &
-  // Rubric Manager" (CRUD), while AI-driven generation from real calls is a
-  // Pro/Pro+RAG capability that pairs with auto-ingestion.
-  // Fail closed: while plan is unknown (loading or fetch failure) treat it as
-  // locked so the premium action never briefly enables.
-  const isLockedByPlan = !currentClient?.plan.hasTwilio
-  // Show the upsell card only once we've confirmed the plan lacks the feature
-  // — don't flicker it during the initial fetch.
-  const showLockedUpsell = !clientLoading && isLockedByPlan
-
-  const canGenerate =
-    !isLockedByPlan && (audioFiles.length > 0 || textInput.trim().length > 50)
+  const canGenerate = audioFiles.length > 0 || textInput.trim().length > 50
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          {t("title")}
-          {showLockedUpsell && <UpsellBadge requires="pro" compact />}
-        </h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
           {t("subtitle")}
         </p>
       </div>
 
-      {showLockedUpsell && (
-        <UpsellCard
-          requires="pro"
-          title={tUpsell("title")}
-          description={tUpsell("description")}
-        />
-      )}
-
       {step === "input" && (
-        <Card aria-disabled={isLockedByPlan} className={isLockedByPlan ? "opacity-60 pointer-events-none select-none" : undefined}>
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5" />
@@ -512,15 +503,27 @@ export default function ScriptBuilderPage() {
 
               {/* Sections */}
               <div className="space-y-4">
-                <Label>{t("preview.sections", { count: generatedScript.sections.length })}</Label>
-                {generatedScript.sections.map((section, index) => (
+                <Label>{t("preview.sections", { count: previewSections.filter(s => s.enabled).length })}</Label>
+                {previewSections.map((section, index) => (
                   <div
                     key={index}
-                    className="p-4 rounded-lg border bg-card space-y-2"
+                    className={`p-4 rounded-lg border bg-card space-y-2 transition-opacity ${!section.enabled ? "opacity-40" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{index + 1}</Badge>
-                      <h4 className="font-semibold">{section.name}</h4>
+                      <h4 className="font-semibold flex-1">{section.name}</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const updated = [...previewSections]
+                          updated[index].enabled = !updated[index].enabled
+                          setPreviewSections(updated)
+                        }}
+                        title={section.enabled ? "Disable section" : "Enable section"}
+                      >
+                        {section.enabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
                     </div>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {section.instructions}
@@ -532,6 +535,49 @@ export default function ScriptBuilderPage() {
                     )}
                   </div>
                 ))}
+
+                {/* Add new section */}
+                {!showAddSection ? (
+                  <Button variant="outline" size="sm" onClick={() => setShowAddSection(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Section
+                  </Button>
+                ) : (
+                  <div className="p-4 rounded-lg border border-dashed space-y-3">
+                    <p className="text-sm font-medium">New Section</p>
+                    <Input
+                      placeholder="Section name"
+                      value={newSection.name}
+                      onChange={(e) => setNewSection({ ...newSection, name: e.target.value })}
+                    />
+                    <Textarea
+                      placeholder="Instructions"
+                      className="min-h-20 text-sm"
+                      value={newSection.instructions}
+                      onChange={(e) => setNewSection({ ...newSection, instructions: e.target.value })}
+                    />
+                    <Input
+                      placeholder="Tips (optional)"
+                      value={newSection.tips}
+                      onChange={(e) => setNewSection({ ...newSection, tips: e.target.value })}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!newSection.name.trim()}
+                        onClick={() => {
+                          setPreviewSections([...previewSections, { ...newSection, enabled: true }])
+                          setNewSection({ name: "", instructions: "", tips: "", weight: 0, critical: false })
+                          setShowAddSection(false)
+                        }}
+                      >
+                        Add
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddSection(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Full Script */}
@@ -546,33 +592,92 @@ export default function ScriptBuilderPage() {
 
               {/* Criteria */}
               <div className="space-y-2">
-                <Label>{t("preview.evaluationCriteria", { count: generatedScript.criteria.length })}</Label>
+                <Label>{t("preview.evaluationCriteria", { count: previewCriteria.filter(c => c.enabled).length })}</Label>
                 <div className="grid gap-2 md:grid-cols-2">
-                  {generatedScript.criteria.map((criterion, index) => (
+                  {previewCriteria.map((criterion, index) => (
                     <div
                       key={index}
-                      className="p-3 rounded-lg border bg-card"
+                      className={`p-3 rounded-lg border bg-card transition-opacity ${!criterion.enabled ? "opacity-40" : ""}`}
                     >
-                      <p className="font-medium text-sm">{criterion.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {criterion.description}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{criterion.name}</p>
+                          <p className="text-xs text-muted-foreground">{criterion.description}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 shrink-0"
+                          onClick={() => {
+                            const updated = [...previewCriteria]
+                            updated[index].enabled = !updated[index].enabled
+                            setPreviewCriteria(updated)
+                          }}
+                          title={criterion.enabled ? "Disable criterion" : "Enable criterion"}
+                        >
+                          {criterion.enabled ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Add new criterion */}
+                {!showAddCriterion ? (
+                  <Button variant="outline" size="sm" onClick={() => setShowAddCriterion(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Criterion
+                  </Button>
+                ) : (
+                  <div className="p-4 rounded-lg border border-dashed space-y-3">
+                    <p className="text-sm font-medium">New Criterion</p>
+                    <Input
+                      placeholder="Criterion name"
+                      value={newCriterion.name}
+                      onChange={(e) => setNewCriterion({ ...newCriterion, name: e.target.value })}
+                    />
+                    <Input
+                      placeholder="Description"
+                      value={newCriterion.description}
+                      onChange={(e) => setNewCriterion({ ...newCriterion, description: e.target.value })}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!newCriterion.name.trim()}
+                        onClick={() => {
+                          setPreviewCriteria([...previewCriteria, { ...newCriterion, enabled: true }])
+                          setNewCriterion({ name: "", description: "" })
+                          setShowAddCriterion(false)
+                        }}
+                      >
+                        Add
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAddCriterion(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t">
                 <Button
                   onClick={async () => {
-                    // Load rubric system prompt and llm model
-                    const rubricRes = await fetch("/api/rubric?config=true")
-                    const { data: rubricData } = (await rubricRes.json()) as { data: { system_prompt?: string; llm_model?: string } | null; error: unknown }
+                    // Load rubric system prompt, llm model, and rubric list in parallel
+                    const [rubricRes, rubricListRes] = await Promise.all([
+                      fetch("/api/rubric?config=true"),
+                      fetch("/api/rubric?list=true"),
+                    ])
+                    const { data: rubricData } = (await rubricRes.json()) as { data: { id?: string; system_prompt?: string; llm_model?: string } | null; error: unknown }
+                    const { data: rubricList } = (await rubricListRes.json()) as { data: Array<{ id: string; name: string }> | null; error: unknown }
                     setConfirmSystemPrompt(rubricData?.system_prompt || "")
                     setConfirmLlmModel(rubricData?.llm_model || "openai/gpt-4o-mini")
-                    setConfirmSections(generatedScript.sections)
-                    setConfirmCriteria(generatedScript.criteria)
+                    setConfirmSections(previewSections.filter(s => s.enabled).map(s => ({ name: s.name, instructions: s.instructions, tips: s.tips, weight: s.weight, critical: s.critical })))
+                    setConfirmCriteria(previewCriteria.filter(c => c.enabled).map(c => ({ name: c.name, description: c.description })))
+                    const list = rubricList ?? []
+                    setRubrics(list)
+                    setSelectedRubricId(rubricData?.id ?? list[0]?.id ?? "")
                     setStep("confirm")
                   }}
                   className="flex-1"
@@ -587,6 +692,10 @@ export default function ScriptBuilderPage() {
                     setGeneratedScript(null)
                     setAudioFiles([])
                     setTextInput("")
+                    setPreviewSections([])
+                    setPreviewCriteria([])
+                    setShowAddSection(false)
+                    setShowAddCriterion(false)
                   }}
                 >
                   {t("preview.startOver")}
@@ -633,33 +742,26 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* LLM & System Prompt */}
+          {/* Rubric selector */}
           <Card>
             <CardHeader>
-              <CardTitle>{t("confirm.aiConfiguration")}</CardTitle>
-              <CardDescription>{t("confirm.aiConfigurationSubtitle")}</CardDescription>
+              <CardTitle>{t("confirm.rubricLabel")}</CardTitle>
+              <CardDescription>{t("confirm.rubricSubtitle")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t("confirm.llmModelLabel")}</Label>
+            <CardContent>
+              {rubrics.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("confirm.rubricNone")}</p>
+              ) : (
                 <select
-                  value={confirmLlmModel}
-                  onChange={(e) => setConfirmLlmModel(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  value={selectedRubricId}
+                  onChange={(e) => setSelectedRubricId(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
                 >
-                  {LLM_MODELS.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
+                  {rubrics.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t("confirm.systemPromptLabel")}</Label>
-                <Textarea
-                  value={confirmSystemPrompt}
-                  onChange={(e) => setConfirmSystemPrompt(e.target.value)}
-                  className="min-h-32 text-sm"
-                />
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -820,13 +922,12 @@ export default function ScriptBuilderPage() {
             <Button
               onClick={async () => {
                 if (!editedName) return
+                if (!selectedRubricId) return
                 const weightTotal = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
                 if (confirmSections.length > 0 && weightTotal !== 100) return
                 setSaving(true)
                 try {
-                  const rubricRes = await fetch("/api/rubric?config=true")
-                  const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
-                  const rubricId = rubricData?.id ?? 'rubric-001'
+                  const rubricId = selectedRubricId
 
                   const fullScriptText = confirmSections
                     .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\n" + t("preview.tipPrefix", { tip: s.tips }) : ""}`)
@@ -852,7 +953,7 @@ export default function ScriptBuilderPage() {
                 }
                 setSaving(false)
               }}
-              disabled={saving || !editedName || (confirmSections.length > 0 && confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0) !== 100)}
+              disabled={saving || !editedName || !selectedRubricId || (confirmSections.length > 0 && confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0) !== 100)}
               className="flex-1"
               size="lg"
             >

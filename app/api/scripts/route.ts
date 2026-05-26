@@ -7,14 +7,12 @@ import { dbGetRubricById } from '@/lib/db/rubric'
 export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
-  const orgId = await getOrgId()
-  if (!orgId) return forbidden()
 
   const { searchParams } = request.nextUrl
   const active = searchParams.get('active') === 'true' ? true : undefined
   const rubricId = searchParams.get('rubricId') ?? undefined
 
-  const data = await getScripts({ orgId, active, rubricId })
+  const data = await getScripts({ active, rubricId })
   return ok(data)
 }
 
@@ -25,12 +23,11 @@ export async function POST(request: NextRequest) {
   const writeErr = await requireOwnerWrite()
   if (writeErr) return writeErr
 
+  // null = admin sem org → cria script global (org_id IS NULL)
   const orgId = await getOrgId()
-  if (!orgId) return forbidden()
 
-  // Role guard: scripts são configuração de rubric — só owner/admin criam,
-  // alinha com /api/rubric, /api/rubric/criteria, /api/calls. Trainer
-  // não tem permissão de mexer em playbooks da org.
+  // Role guard: scripts são configuração de rubric — só owner/admin criam.
+  // Trainer não tem permissão de mexer em playbooks da org.
   const role = await getRole()
   if (role === 'trainer') return forbidden()
 
@@ -38,21 +35,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as Record<string, unknown>
 
     // Cross-tenant guard: garante que rubric_id pertence à org da sessão
-    // antes de criar o script. createAdminClient() bypassa RLS, então a
-    // checagem aqui é a única defesa contra um owner apontar pra rubric
-    // de outra org e quebrar isolamento de tenant.
+    // (owner) ou à rubric global sem org (admin). createAdminClient() bypassa
+    // RLS, então esta checagem é a única defesa contra tenant-hopping.
     const rubricId = body.rubric_id as string | undefined
-    if (!rubricId) {
-      return Response.json(
-        { data: null, error: { message: 'rubric_id is required', code: 400 } },
-        { status: 400 },
-      )
+
+    // Admin (orgId=null) pode criar scripts globais sem rubric_id.
+    // Owner deve sempre fornecer rubric_id e o cross-tenant guard valida que
+    // a rubric pertence à org da sessão.
+    if (orgId !== null) {
+      if (!rubricId) {
+        return Response.json(
+          { data: null, error: { message: 'rubric_id is required', code: 400 } },
+          { status: 400 },
+        )
+      }
+      const rubric = await dbGetRubricById(orgId, rubricId)
+      if (!rubric) return forbidden()
     }
-    const rubric = await dbGetRubricById(orgId, rubricId)
-    if (!rubric) return forbidden()
 
     const newScript = await dbCreateScript({
-      orgId,
+      orgId: orgId ?? undefined,
       rubricId,
       name: body.name as string,
       description: body.description as string | undefined,

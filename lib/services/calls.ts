@@ -55,8 +55,7 @@ function parseSectionsToRubricScores(sections: unknown): RubricScores {
     const key = SECTION_NAME_MAP[rawName];
     if (key) {
       const raw = item.score ?? 0;
-      const normalised = raw > 5 ? raw / 20 : raw;
-      result[key] = Math.round(normalised * 10) / 10;
+      result[key] = Math.round(raw * 10) / 10;
     }
   }
   return result;
@@ -104,7 +103,7 @@ function toCall(db: DbCall): Call {
     trainerName: db.trainer_name,
     date: db.created_at,
     duration: "—",
-    score: (() => { const s = db.overall_score ?? 0; return Math.round((s > 5 ? s / 20 : s) * 10) / 10; })(),
+    score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
     lead_name: db.lead_name?.trim() || null,
@@ -115,6 +114,7 @@ function toCall(db: DbCall): Call {
     strengths: db.strengths ?? [],
     improvements: db.improvements ?? [],
     transcript: db.transcript ?? "",
+    scriptId: db.script_id ?? null,
   };
 }
 

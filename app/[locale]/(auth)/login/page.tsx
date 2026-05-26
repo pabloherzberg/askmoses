@@ -209,6 +209,15 @@ export default function LoginPage() {
               style={{ background: 'var(--am-bg3)', border: '1px solid var(--am-border2)', color: 'var(--am-text)' }}
               placeholder={t('passwordPlaceholder')}
             />
+            <div className="mt-1.5 text-right">
+              <Link
+                href={`/${locale}/forgot-password`}
+                className="text-xs underline opacity-80 hover:opacity-100"
+                style={{ color: 'var(--am-muted)' }}
+              >
+                {t('forgotPasswordLink')}
+              </Link>
+            </div>
           </div>
         )}
 
@@ -244,8 +253,8 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      {/* Demo shortcuts — Client tabs + per-client users */}
-      <div
+      {/* Demo shortcuts — only visible in local dev */}
+      {process.env.NODE_ENV === 'development' && <div
         className="mt-8 mb-8 p-4 rounded-xl border"
         style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border)' }}
       >
@@ -309,7 +318,7 @@ export default function LoginPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

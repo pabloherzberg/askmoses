@@ -10,7 +10,7 @@ function resolveLocale(raw: string | null): Locale {
   return routing.defaultLocale
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
 
@@ -18,7 +18,8 @@ export async function GET() {
   const subErr = await requireActiveSubscription()
   if (subErr) return subErr
 
-  const data = await getInsights()
+  const locale = resolveLocale(request.headers.get('x-locale'))
+  const data = await getInsights(locale)
   return ok(data)
 }
 

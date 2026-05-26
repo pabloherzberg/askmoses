@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle } from 'lucide-reac
 import { RubricBar } from '@/components/shared/RubricBar'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
+import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
 import type { Call, Role, RubricColor } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
@@ -18,12 +19,6 @@ const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: 
 ]
 
 const SECTION_COLORS: RubricColor[] = ['blue', 'amber', 'green', 'red', 'accent2']
-
-function scoreColor(score: number) {
-  if (score >= 4.25) return 'var(--am-green)'
-  if (score >= 3.75) return 'var(--am-amber)'
-  return 'var(--am-red)'
-}
 
 interface CallDetailProps {
   call: Call
@@ -93,9 +88,9 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
         <div className="flex items-center gap-3">
           <span
             className="text-5xl font-semibold font-mono leading-none"
-            style={{ color: scoreColor(call.score) }}
+            style={{ color: scoreColorVar(call.score) }}
           >
-            {call.score.toFixed(1)}
+            {toDisplay5(call.score)}
           </span>
           <span
             className="text-xs font-medium px-2.5 py-1 rounded-full font-mono"
@@ -120,7 +115,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           {call.sections && call.sections.length > 0 ? (
             <div className="flex flex-col gap-4">
               {call.sections.map((section, i) => {
-                const isCriticalAlert = section.critical && section.score <= 2
+                const isCriticalAlert = section.critical && section.score <= 40
                 const color = SECTION_COLORS[i % SECTION_COLORS.length]
                 return (
                   <div key={section.name}>
@@ -143,7 +138,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
                         const nameLower = section.name.toLowerCase()
                         const tiers = Object.entries(sectionFeedbackFallback).find(([k]) => nameLower.includes(k))?.[1]
                         if (!tiers) return null
-                        return section.score >= 80 ? tiers.high : section.score >= 60 ? tiers.mid : tiers.low
+                        return tiers[feedbackTier(section.score)]
                       })()}
                     </p>
                   </div>

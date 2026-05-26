@@ -7,7 +7,7 @@ import {
   dbGetCriteriaByRubric,
 } from "@/lib/db/rubric";
 import { dbCreateCall } from "@/lib/db/calls";
-import { dbGetScriptById } from "@/lib/db/scripts";
+import { dbGetScriptById, dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
   forbidden,
@@ -20,6 +20,7 @@ import {
   unauthorized,
 } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { DbRubric } from "@/lib/db/rubric";
 import {
   OUTCOME_OVERALL_CAP,
   normaliseOutcome,
@@ -131,7 +132,7 @@ interface ValidationResult {
 /**
  * Enforce DoD: sections must match the rubric exactly (no inventions, no
  * missing entries — see FB-003), every section must carry non-empty
- * feedback, scores must be in [1, 5].
+ * feedback, scores must be in [0, 100].
  */
 function validateAnalysis(
   raw: unknown,
@@ -310,10 +311,45 @@ export async function POST(request: NextRequest) {
     let script: Awaited<ReturnType<typeof dbGetScriptById>> | null = null;
 
     if (body.scriptId) {
+      // 1ª tentativa: script local da org (org_id = X). Strict cross-tenant.
       script = await dbGetScriptById(body.scriptId, orgId);
-      if (!script) return forbidden();
+
+      // 2ª tentativa: template (org_id=NULL) que a org tem linkado via
+      // org_scripts. Necessário porque o dropdown de upload (getScripts em
+      // lib/services/scripts.ts) une scripts owned + templates linkados —
+      // se o owner picou um template, o filtro estrito acima falhava.
+      if (!script) {
+        const admin = createAdminClient();
+        const { data: link } = await admin
+          .from("org_scripts")
+          .select("script_id")
+          .eq("org_id", orgId)
+          .eq("script_id", body.scriptId)
+          .is("ended_at", null)
+          .in("status", ["active", "pending"])
+          .maybeSingle();
+        if (link) {
+          const { data: tpl } = await admin
+            .from("scripts")
+            .select("*")
+            .eq("id", body.scriptId)
+            .maybeSingle();
+          if (tpl) script = tpl as typeof script;
+        }
+      }
+
+      if (!script) {
+        console.warn("[analyze] 403 — scriptId não pertence à org nem via org_scripts", {
+          orgId,
+          scriptId: body.scriptId,
+        });
+        return forbidden();
+      }
       try {
-        rubricData = await resolveRubricForOrg(orgId, script.rubric_id);
+        // trusted=true: script.rubric_id vem de um link já validado (script
+        // foi carregado via dbGetScriptById com tenant check ou via lookup
+        // do org_scripts). Permite resolver rubric mesmo se for de outra org.
+        rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
       } catch (e) {
         console.warn(
           "[analyze] script rubric fetch failed, using org default:",
@@ -322,10 +358,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-fill: toda org nasce com 1 script linkado em org_scripts
+    // (status='active', garantido pelo fluxo de criação de org). Se o caller
+    // não mandou scriptId, herda esse — evita call órfã (script_id/rubric_id
+    // nulos faziam a tela de tendência ficar em branco). Lê de org_scripts
+    // porque o script linkado costuma ser um template (org_id=NULL em
+    // scripts), invisível pro filtro orgId+is_active de dbGetScripts.
+    if (!script) {
+      try {
+        const activeOrgScript = await dbGetActiveOrgScript(orgId);
+        if (activeOrgScript) {
+          script = activeOrgScript;
+          if (!rubricData) {
+            // trusted=true: idem acima, link via org_scripts.status='active'.
+            rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "[analyze] org active script lookup failed:",
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+
     if (!rubricData) {
       try {
+        // body.rubricId é input não-validado → trusted=false força filtro
+        // de tenant no fallback (impede leak cross-org).
         rubricData = body.rubricId
-          ? await resolveRubricForOrg(orgId, body.rubricId)
+          ? await resolveRubricForOrg(orgId, body.rubricId, false)
           : await dbGetDefaultRubricWithCriteria(orgId);
       } catch (e) {
         console.warn(
@@ -336,6 +398,32 @@ export async function POST(request: NextRequest) {
     }
 
     const rubricId = rubricData?.rubric.id ?? null;
+
+    // Guard: org sem script ativo E sem rubric default não pode salvar call —
+    // toda call precisa ser ancorada em algo pra a tendência/score serem
+    // computáveis. Em vez de salvar com null silenciosamente (o que fazia o QA
+    // ver gráfico em branco), bloqueia com 400 pra Owner/Admin configurar a org.
+    if (!rubricId) {
+      // Diagnóstico: log cada etapa que falhou pra o dev entender por que a
+      // cadeia chegou aqui (script template? rubric global? rubric inativa?).
+      console.error("[analyze] 400 — cadeia de resolução não encontrou rubric:", {
+        orgId,
+        bodyScriptId: body.scriptId ?? null,
+        bodyRubricId: body.rubricId ?? null,
+        scriptResolved: script
+          ? { id: script.id, rubric_id: script.rubric_id, is_active: script.is_active }
+          : null,
+        rubricResolved: rubricData?.rubric.id ?? null,
+      });
+      return Response.json(
+        {
+          error: "Org sem script ativo ou rubric default configurado",
+          details:
+            "Vá em Settings → Scripts e ative um script, ou configure uma rubric default antes de subir calls.",
+        },
+        { status: 400 },
+      );
+    }
     const systemPrompt =
       rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt();
     const llmModel = rubricData?.rubric.llm_model ?? null;
@@ -476,7 +564,8 @@ export async function POST(request: NextRequest) {
 
     const parsed = reorderSectionsToRubric(validation.data, allowedSections);
 
-    // ── 4. Compute overallScore: average rounded to 1 decimal, capped by outcome ─
+    // ── 4. Compute overallScore (0–100, integer): average of section scores,
+    //       rounded and capped by outcome ─
     const scores = parsed.sections.map((s) => s.score);
     const avg =
       scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
@@ -528,6 +617,7 @@ export async function POST(request: NextRequest) {
       savedCall = await dbCreateCall({
         orgId,
         rubricId: rubricId ?? undefined,
+        scriptId: script?.id ?? undefined,
         trainerId: sessionTrainerId ?? undefined,
         trainerName: trainerName ?? "Unknown",
         trainerEmail: trainerEmail ?? undefined,
@@ -598,8 +688,38 @@ export async function POST(request: NextRequest) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-async function resolveRubricForOrg(orgId: string, rubricId: string) {
-  const rubric = await dbGetRubricById(orgId, rubricId);
+async function resolveRubricForOrg(
+  orgId: string,
+  rubricId: string,
+  // `trusted=true` quando o rubricId veio de um link já validado
+  // (script.rubric_id depois de dbGetActiveOrgScript/dbGetScriptById passar).
+  // `trusted=false` quando veio do body do request — neste caso o último
+  // fallback aplica filtro de tenant pra impedir leak cross-org via
+  // body.rubricId arbitrário.
+  trusted = false,
+) {
+  // Tenta primeiro como rubric local da org, depois como global (org_id
+  // IS NULL) — ambas com is_active=true. Pra scripts template a 2ª
+  // tentativa é a que casa.
+  let rubric = await dbGetRubricById(orgId, rubricId);
+  if (!rubric) rubric = await dbGetRubricById(null, rubricId);
+
+  // Último fallback: rubric existe mas está com is_active=FALSE OU pertence
+  // a outra org (template clonado de uma org A pra org B). Só executa quando
+  // trusted=true — ou seja, o link foi previamente validado via org_scripts.
+  // Sem este gate (e com filtro de tenant aplicado abaixo) um owner que
+  // enviasse rubricId arbitrário no body conseguiria ler system_prompt/
+  // metadata de rubrica de OUTRA org.
+  if (!rubric && trusted) {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("rubrics")
+      .select("*")
+      .eq("id", rubricId)
+      .maybeSingle();
+    if (data) rubric = data as DbRubric;
+  }
+
   if (!rubric) return dbGetDefaultRubricWithCriteria(orgId);
 
   const criteria = await dbGetCriteriaByRubric(rubric.id);
@@ -607,9 +727,11 @@ async function resolveRubricForOrg(orgId: string, rubricId: string) {
 }
 
 function buildDefaultSystemPrompt(): string {
-  return `You are a senior sales coach specialising in dog training businesses.
-Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback.
-You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.`;
+  return `You are a senior sales coach. Your client uses this evaluation to improve how their sales team approaches prospects — across any industry, product, or service.
+Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback grounded in the call transcript.
+You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.
+
+The script/rubric the salesperson was supposed to follow is the source of truth for "good execution"; do not impose assumptions from a specific industry (this product is vertical-agnostic — calls may be SaaS, services, training, healthcare, real estate, e-commerce, or anything else).`;
 }
 
 const DEFAULT_SECTIONS: Array<{
@@ -679,7 +801,7 @@ ${frameworkList}
 
   return `${input.systemPrompt}
 
-You are an expert sales coach. Score this dog-training sales call honestly. Your output drives coaching feedback the salesperson will actually read — vague scores hurt more than honest ones.
+You are an expert sales coach. Score this sales call honestly. Your output drives coaching feedback the salesperson will actually read — vague scores hurt more than honest ones.
 
 ${frameworkBlock}## Sections to Score (THE OUTPUT — score each)
 The salesperson was following this playbook. Score each section against the

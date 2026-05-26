@@ -1,11 +1,29 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { toDisplay5Suffixed } from '@/lib/score-display'
+import { normaliseOutcome } from '@/lib/constants'
 import type { BestCall } from '@/lib/types'
 
 interface Props {
   call: BestCall
   variant?: 'best' | 'worst'
+}
+
+// ISO date → "15 set" / "Sep 15" / etc. Returns the original string if it
+// isn't a parseable date (preserves the upstream "—" placeholder).
+function formatDate(value: string, locale: string): string {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+}
+
+// Resolve any historical/legacy outcome shape ("Closed", "Not closed",
+// "no_close", "follow_up"…) to a canonical CallOutcome key for the i18n
+// lookup. Returns null when no mapping fits — caller falls back to raw.
+function canonicalOutcome(raw: string): string | null {
+  const lc = raw.toLowerCase().replace(/ /g, '_')
+  return normaliseOutcome(lc)
 }
 
 const palette = {
@@ -14,21 +32,26 @@ const palette = {
     border:   'rgba(34,217,160,0.2)',
     scoreFg:  'var(--am-green)',
     resultFg: 'var(--am-green)',
-    ctaFg:    'var(--am-green)',
   },
   worst: {
     bg:       'rgba(255,94,94,0.07)',
     border:   'rgba(255,94,94,0.2)',
     scoreFg:  'var(--am-red)',
     resultFg: 'var(--am-amber)',
-    ctaFg:    'var(--am-green)',
   },
 } as const
 
 export function CallCard({ call, variant = 'best' }: Props) {
-  const t = useTranslations('Shared.callCard')
   const p = palette[variant]
-  const ctaPrefix = t(`${variant}.ctaPrefix` as 'best.ctaPrefix' | 'worst.ctaPrefix')
+  const locale = useLocale()
+  const tOutcomes = useTranslations('Shared.outcomes')
+
+  const formattedDate = formatDate(call.date, locale)
+  // Server emits canonical outcome enum, but old cached responses or seed data
+  // may still carry prettified shapes ("Closed", "Not closed"). Normalise here
+  // before the i18n lookup so we don't blow up on `Shared.outcomes.short.Closed`.
+  const outcomeKey = canonicalOutcome(call.result)
+  const resultLabel = outcomeKey ? tOutcomes(`short.${outcomeKey}`) : call.result
 
   return (
     <div
@@ -60,16 +83,16 @@ export function CallCard({ call, variant = 'best' }: Props) {
             {call.prospect}
           </span>
           <span className="text-[11px] ml-1.5" style={{ color: 'var(--am-muted)' }}>
-            · {call.date}
+            · {formattedDate}
           </span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <span className="text-[12px] font-mono font-semibold" style={{ color: p.scoreFg }}>
-            {(call.score / 20).toFixed(1)}/5
+            {toDisplay5Suffixed(call.score)}
           </span>
           <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>·</span>
           <span className="text-[11px] font-semibold" style={{ color: p.resultFg }}>
-            {call.result}
+            {resultLabel}
           </span>
         </div>
       </div>
@@ -78,14 +101,6 @@ export function CallCard({ call, variant = 'best' }: Props) {
       <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-text)', opacity: 0.85 }}>
         {call.analysis}
       </p>
-
-      {/* CTA as plain link */}
-      <span
-        className="text-[11px] font-medium cursor-default"
-        style={{ color: p.ctaFg }}
-      >
-        {ctaPrefix} {call.listenAt} →
-      </span>
     </div>
   )
 }

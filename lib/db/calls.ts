@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface DbCall {
   id: string
+  org_id: string | null
   rubric_id: string | null
   trainer_id: string | null
   trainer_name: string
@@ -28,14 +29,19 @@ export interface DbCall {
   closed: boolean | null
   call_date: string | null
   duration_seconds: number | null
-  // GHL/Pepper CRM lead enrichment — added in migration 037
+  // GHL/Pepper CRM lead enrichment — added in migration 043
   lead_name: string | null
   lead_source: string | null
+  // Script usado na análise — added in migration 056. Opcional no tipo
+  // porque `select('*')` em bancos sem a migration aplicada não retorna a
+  // coluna; o mapper trata `undefined` como `null`.
+  script_id?: string | null
 }
 
 export interface CreateCallInput {
   orgId?: string
   rubricId?: string
+  scriptId?: string
   trainerId?: string
   trainerName: string
   trainerEmail?: string
@@ -142,6 +148,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
     .insert({
       org_id: input.orgId ?? null,
       rubric_id: input.rubricId ?? null,
+      script_id: input.scriptId ?? null,
       trainer_id: input.trainerId ?? null,
       trainer_name: input.trainerName,
       trainer_email: input.trainerEmail ?? '',
@@ -229,4 +236,157 @@ export async function dbDeleteCall(id: string, scope?: CallMutationScope): Promi
 
   if (error) throw new Error(`dbDeleteCall: ${error.message}`)
   return (count ?? 0) > 0
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GHL ingestion helpers
+// Mantidos separados de dbCreateCall para não inflar a função canônica com
+// opcionais que só fazem sentido na rota do webhook.
+// ────────────────────────────────────────────────────────────────────────────
+
+export type ProcessingStatus =
+  | 'pending'
+  | 'processing'
+  | 'transcribed'
+  | 'no_recording'
+  | 'transcription_failed'
+  | 'webhook_failed'
+  | 'auth_expired'
+
+export interface CreateGhlCallInput {
+  orgId: string
+  externalCallId: string
+  ghlPayload: Record<string, unknown>
+  trainerName: string
+  trainerEmail?: string | null
+  clientName?: string | null
+  leadName?: string | null
+  leadSource?: string | null
+  callOutcome?: string | null
+  durationSeconds?: number | null
+}
+
+export interface UpsertResult {
+  call: DbCall
+  isNew: boolean
+}
+
+/**
+ * Insere uma call ingerida pelo webhook GHL marcada como pending.
+ * Idempotente: se já existe linha com o mesmo external_call_id, retorna
+ * essa linha e isNew=false (o pipeline NÃO deve reprocessar).
+ */
+export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<UpsertResult> {
+  const supabase = createAdminClient()
+
+  const existing = await supabase
+    .from('calls')
+    .select('*')
+    .eq('external_call_id', input.externalCallId)
+    .maybeSingle()
+
+  if (existing.error && existing.error.code !== 'PGRST116') {
+    throw new Error(`dbUpsertGhlCall lookup: ${existing.error.message}`)
+  }
+  if (existing.data) {
+    return { call: existing.data as DbCall, isNew: false }
+  }
+
+  const { data, error } = await supabase
+    .from('calls')
+    .insert({
+      org_id: input.orgId,
+      external_call_id: input.externalCallId,
+      ghl_payload: input.ghlPayload,
+      ingest_source: 'ghl',
+      processing_status: 'pending',
+      transcript_source: 'whisper',
+      trainer_name: input.trainerName,
+      trainer_email: input.trainerEmail ?? '',
+      client_name: input.clientName ?? null,
+      lead_name: input.leadName ?? null,
+      lead_source: input.leadSource ?? null,
+      call_outcome: input.callOutcome ?? null,
+      duration_seconds: input.durationSeconds ?? null,
+      email_sent: false,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    // Corrida: outra requisição inseriu entre o lookup e o insert.
+    // Reler a linha existente garante idempotência.
+    if (error.code === '23505') {
+      const retry = await supabase
+        .from('calls')
+        .select('*')
+        .eq('external_call_id', input.externalCallId)
+        .single()
+      if (retry.data) {
+        return { call: retry.data as DbCall, isNew: false }
+      }
+    }
+    throw new Error(`dbUpsertGhlCall insert: ${error.message}`)
+  }
+
+  return { call: data as DbCall, isNew: true }
+}
+
+export interface UpdateGhlPipelineInput {
+  processingStatus?: ProcessingStatus
+  recordingUrl?: string | null
+  transcript?: string | null
+  transcriptSource?: 'whisper' | 'manual' | 'ghl'
+  // Campos populados pela fase de scoring (após o transcribed).
+  rubricId?: string | null
+  scriptId?: string | null
+  overallScore?: number | null
+  detectedOutcome?: string | null
+  /** Em calls vindas de webhook (sem revisão humana), espelha
+   *  detectedOutcome — a UI lê esse campo como "outcome final". */
+  callOutcome?: string | null
+  summary?: string | null
+  strengths?: string[] | null
+  improvements?: string[] | null
+  sections?: Record<string, unknown>[] | null
+  modelUsed?: string | null
+  inputTokens?: number | null
+  outputTokens?: number | null
+  costUsd?: number | null
+  promptVersion?: string | null
+  // Campos populados pela fase de coaching email (após scoring).
+  emailSent?: boolean
+  emailId?: string | null
+}
+
+export async function dbUpdateGhlCallPipeline(
+  id: string,
+  input: UpdateGhlPipelineInput,
+): Promise<void> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (input.processingStatus !== undefined) patch.processing_status = input.processingStatus
+  if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
+  if (input.transcript !== undefined) patch.transcript = input.transcript
+  if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
+  if (input.rubricId !== undefined) patch.rubric_id = input.rubricId
+  if (input.scriptId !== undefined) patch.script_id = input.scriptId
+  if (input.overallScore !== undefined) patch.overall_score = input.overallScore
+  if (input.detectedOutcome !== undefined) patch.detected_outcome = input.detectedOutcome
+  if (input.callOutcome !== undefined) patch.call_outcome = input.callOutcome
+  if (input.summary !== undefined) patch.summary = input.summary
+  if (input.strengths !== undefined) patch.strengths = input.strengths
+  if (input.improvements !== undefined) patch.improvements = input.improvements
+  if (input.sections !== undefined) patch.sections = input.sections
+  if (input.modelUsed !== undefined) patch.model_used = input.modelUsed
+  if (input.inputTokens !== undefined) patch.input_tokens = input.inputTokens
+  if (input.outputTokens !== undefined) patch.output_tokens = input.outputTokens
+  if (input.costUsd !== undefined) patch.cost_usd = input.costUsd
+  if (input.promptVersion !== undefined) patch.prompt_version = input.promptVersion
+  if (input.emailSent !== undefined) patch.email_sent = input.emailSent
+  if (input.emailId !== undefined) patch.email_id = input.emailId
+
+  const { error } = await supabase.from('calls').update(patch).eq('id', id)
+  if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
 }

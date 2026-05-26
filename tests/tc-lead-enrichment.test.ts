@@ -100,7 +100,7 @@ describe('TC-01 › Payload completo é processado corretamente', () => {
       trainer_name: 'Marcus R.',
       trainer_email: null,
       transcript: null,
-      overall_score: 4.7,
+      overall_score: 94,
       summary: null,
       strengths: null,
       improvements: null,

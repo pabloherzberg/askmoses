@@ -1,11 +1,13 @@
 export const dynamic = "force-dynamic";
 
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getTrainers, getPerformanceTrends, getTeamHealth } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
+import type { Locale } from "@/i18n/routing";
 import { getRubric, getRevenueEstimator, buildCoachingDrivers } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { RubricBar } from "@/components/shared/RubricBar";
+import { scoreLevel, toDisplay5 } from "@/lib/score-display";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
@@ -15,25 +17,30 @@ import { RevenueEstimator } from "@/components/shared/RevenueEstimator";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 import { BestCallsTeamWeekly } from "@/components/shared/BestCallsTeamWeekly";
 import { WorstCallsTeamWeekly } from "@/components/shared/WorstCallsTeamWeekly";
+import { ScriptAnalysisBanner } from "@/components/shared/ScriptAnalysisBanner";
+import { isSuperAdmin } from "@/lib/auth";
 
 
 export default async function OverviewPage() {
+  const locale = (await getLocale()) as Locale;
   const [
     trainers,
     insights,
     { sections: rubric, trainerSectionScores },
     revenueData,
     teamHealth,
+    isAdmin,
     t,
     tMetrics,
     tHealth,
     tAlerts,
   ] = await Promise.all([
     getTrainers(),
-    getInsights(),
+    getInsights(locale),
     getRubric(),
     getRevenueEstimator(),
     getTeamHealth(),
+    isSuperAdmin(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
@@ -68,6 +75,9 @@ export default async function OverviewPage() {
 
   return (
     <div>
+      {/* ── Banner de análise IA (só admin) ───────────────────── */}
+      {isAdmin && <ScriptAnalysisBanner />}
+
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
@@ -87,7 +97,7 @@ export default async function OverviewPage() {
         />
         <ScoreCard
           label={tMetrics("avgScore")}
-          value={avgScore}
+          value={toDisplay5(avgScore)}
           valueColor="var(--am-accent2)"
           delta={11}
           deltaLabel={tMetrics("ptsSinceWeek1")}
@@ -434,13 +444,13 @@ export default async function OverviewPage() {
                     className="text-xs text-right font-mono px-2 py-2.5"
                     style={{
                       color:
-                        section.teamAvg < 3.25
+                        scoreLevel(section.teamAvg) === 'low'
                           ? "var(--am-red)"
                           : "var(--am-text)",
                       borderBottom: "1px solid var(--am-border)",
                     }}
                   >
-                    {section.teamAvg.toFixed(1)}
+                    {toDisplay5(section.teamAvg)}
                   </td>
                   {trainerScores.map((s, idx) => (
                     <td
@@ -450,14 +460,14 @@ export default async function OverviewPage() {
                         color:
                           s === maxScore
                             ? "var(--am-green)"
-                            : s < 3.25
+                            : scoreLevel(s) === 'low'
                               ? "var(--am-red)"
                               : "var(--am-text)",
                         fontWeight: s === maxScore ? 600 : 400,
                         borderBottom: "1px solid var(--am-border)",
                       }}
                     >
-                      {s.toFixed(1)}
+                      {toDisplay5(s)}
                     </td>
                   ))}
                 </tr>

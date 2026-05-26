@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   XAxis,
   YAxis,
@@ -23,27 +24,19 @@ interface PerformanceTrendProps {
   chartHeight?: number
 }
 
-type TimeRange = '6w' | '3m' | '6m'
-
-function sliceByRange(data: PerformanceTrendPoint[], range: TimeRange): PerformanceTrendPoint[] {
-  if (range === '6w') return data.slice(-6)
-  if (range === '3m') return data.slice(-12)
-  return data
-}
-
-function labelWeek(w: string) {
-  const num = parseInt(w.replace(/\D/g, ''), 10)
-  if (!isNaN(num)) return `Week ${num}`
-  return w
-}
-
 export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 200 }: PerformanceTrendProps) {
+  const t = useTranslations('Shared.performanceTrend')
   const [selected, setSelected] = useState<string>('team')
-  const [range, setRange] = useState<TimeRange>('6w')
+
+  // Week label localizado — número extraído da chave (`week3` → 3) e jogado
+  // no template `Semana {n}` do i18n. Sem n numérico fallback p/ string crua.
+  const labelWeek = (w: string) => {
+    const num = parseInt(w.replace(/\D/g, ''), 10)
+    return Number.isNaN(num) ? w : t('weekLabel', { n: num })
+  }
 
   const activeId = fixedId ?? selected
-  const rawData = trends[activeId] ?? []
-  const data = sliceByRange(rawData, range).map((d) => ({
+  const data = (trends[activeId] ?? []).map((d) => ({
     ...d,
     weekLabel: labelWeek(d.week),
   }))
@@ -55,19 +48,32 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
     : salesPeople?.find((s) => s.id === selected)?.name ?? null
 
   // Team avg data for overlay (only in fixedId mode — show trainer vs team)
-  const teamData = sliceByRange(trends['team'] ?? [], range).map((d) => ({
+  const teamData = (trends['team'] ?? []).map((d) => ({
     ...d,
     weekLabel: labelWeek(d.week),
   }))
 
-  // Merge trainer data with team avg into single series for chart
-  const merged = data.map((d, i) => ({
-    ...d,
-    teamCloseRate: teamData[i]?.closeRate ?? null,
-  }))
+  // Merge trainer + team avg numa série só. Semanas sem call vão pra 0 no
+  // dataset — mantém a linha contínua e o gráfico visualmente íntegro
+  // (passar `null` quebra o `connectNulls` quando o gap é no início/fim).
+  // O flag *Missing faz o tooltip mostrar "Sem chamadas" no lugar do "0%",
+  // respeitando o locale via `t('noCalls')`.
+  const merged = data.map((d, i) => {
+    const teamRaw = teamData[i]?.closeRate ?? null
+    return {
+      weekLabel: d.weekLabel,
+      closeRate: d.closeRate ?? 0,
+      closeRateMissing: d.closeRate == null,
+      teamCloseRate: teamRaw ?? 0,
+      teamCloseRateMissing: teamRaw == null,
+    }
+  })
 
-  const lastTrainer = data[data.length - 1]?.closeRate
-  const lastTeam = teamData[teamData.length - 1]?.closeRate
+  // Última semana COM dado (a semana corrente costuma estar vazia).
+  const lastTrainer =
+    [...data].reverse().find((d) => d.closeRate != null)?.closeRate ?? null
+  const lastTeam =
+    [...teamData].reverse().find((d) => d.closeRate != null)?.closeRate ?? null
 
   return (
     <div
@@ -75,41 +81,12 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
       style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <p
-          className="text-[11px] font-semibold tracking-widest uppercase"
-          style={{ color: 'var(--am-muted)' }}
-        >
-          Conversion Rate Trend
-        </p>
-
-        {/* Time range pills */}
-        <div className="flex items-center gap-1">
-          {(['6w', '3m', '6m'] as TimeRange[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRange(r)}
-              className="text-[11px] font-semibold px-3 py-1 rounded-full border transition-colors"
-              style={
-                range === r
-                  ? {
-                      background: 'var(--am-green)',
-                      color: '#fff',
-                      borderColor: 'var(--am-green)',
-                    }
-                  : {
-                      background: 'transparent',
-                      color: 'var(--am-muted)',
-                      borderColor: 'var(--am-border)',
-                    }
-              }
-            >
-              {r.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+      <p
+        className="text-[11px] font-semibold tracking-widest uppercase mb-4"
+        style={{ color: 'var(--am-muted)' }}
+      >
+        {t('title')}
+      </p>
 
       {/* Pill selector — owner view only (no fixedId) */}
       {!fixedId && salesPeople && salesPeople.length > 0 && (
@@ -122,7 +99,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
               color: selected === 'team' ? '#fff' : 'var(--am-muted)',
             }}
           >
-            Team
+            {t('team')}
           </button>
           {salesPeople.map((sp) => (
             <button
@@ -158,7 +135,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
               tickLine={false}
             />
             <YAxis
-              domain={[50, 'auto']}
+              domain={[0, 100]}
               tick={{ fill: 'var(--am-muted)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
@@ -173,10 +150,21 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
                 color: 'var(--am-text)',
               }}
               labelStyle={{ color: 'var(--am-muted)', fontSize: 11 }}
-              formatter={(value: number, name: string) => {
-                if (name === 'closeRate') return [`${value}%`, trainerName ?? 'Close Rate']
-                if (name === 'teamCloseRate') return [`${value}%`, 'Team avg']
-                return [`${value}`, name]
+              formatter={(value, name, item) => {
+                const row = item?.payload as Record<string, unknown> | undefined
+                if (name === 'closeRate') {
+                  return [
+                    row?.closeRateMissing ? t('noCalls') : `${value}%`,
+                    trainerName ?? t('closeRateLegend'),
+                  ]
+                }
+                if (name === 'teamCloseRate') {
+                  return [
+                    row?.teamCloseRateMissing ? t('noCalls') : `${value}%`,
+                    t('teamAvg'),
+                  ]
+                }
+                return [`${value}`, name as string]
               }}
             />
 
@@ -190,6 +178,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
               strokeDasharray="6 3"
               fill="none"
               dot={false}
+              connectNulls
               activeDot={{ r: 4, fill: 'var(--am-muted)' }}
             />
 
@@ -201,6 +190,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
               stroke="var(--am-green)"
               strokeWidth={2.5}
               fill="url(#trainerFill)"
+              connectNulls
               dot={{ r: 4, fill: 'var(--am-green)', strokeWidth: 0 }}
               activeDot={{ r: 5 }}
             />
@@ -234,7 +224,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
           <svg width="24" height="2" className="inline-block flex-shrink-0">
             <line x1="0" y1="1" x2="24" y2="1" stroke="var(--am-muted)" strokeWidth="1.5" strokeDasharray="5 3" />
           </svg>
-          Team avg
+          {t('teamAvg')}
         </span>
       </div>
     </div>

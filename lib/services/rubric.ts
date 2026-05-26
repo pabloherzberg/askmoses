@@ -1,6 +1,7 @@
 import {
   dbGetDefaultRubric,
   dbGetDefaultRubricWithCriteria,
+  dbGetRubrics,
   dbUpdateRubric,
   dbCreateCriterion,
   dbUpdateCriterion,
@@ -16,13 +17,13 @@ import type {
 } from "@/lib/db/rubric";
 import { getOrgId } from "@/lib/auth";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
+import { toCorrelationLevel } from "@/lib/score-display";
 import type {
   RubricSection,
   RubricScores,
   TrendPoint,
   RevenueEstimatorItem,
   CorrelationFactor,
-  CorrelationLevel,
 } from "@/lib/types";
 
 const CRITERION_KEY_MAP: Record<string, keyof RubricScores> = {
@@ -45,12 +46,12 @@ const SECTION_COLORS: RubricSection["color"][] = [
 export interface TrainerSectionScore {
   trainerId: string;
   trainerName: string;
-  scores: Record<string, number>; // criterionName → avg score 0–5
+  scores: Record<string, number>; // criterionName → avg score 0–100
 }
 
 // ─── Trend computation ───────────────────────────────────────────────────────
 
-function buildWeeklyTrend(
+export function buildWeeklyTrend(
   calls: { date: string; score: number; result: string }[],
   weeks: number,
 ): TrendPoint[] {
@@ -94,6 +95,34 @@ function buildWeeklyTrend(
   return trend;
 }
 
+// Quantas semanas (1–maxWeeks) a janela do gráfico deve ter, com base no
+// período real coberto pelas calls — evita semanas vazias "fantasma" no início
+// do gráfico quando a org tem menos de maxWeeks semanas de dados.
+export function weeksSpanned(
+  calls: { date: string }[],
+  maxWeeks: number,
+): number {
+  if (calls.length === 0) return 0;
+  const mondayOf = (d: Date): number => {
+    const m = new Date(d);
+    m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    m.setHours(0, 0, 0, 0);
+    return m.getTime();
+  };
+  const currentMonday = mondayOf(new Date());
+  let oldest = Number.POSITIVE_INFINITY;
+  for (const c of calls) {
+    const t = new Date(c.date).getTime();
+    if (Number.isFinite(t) && t < oldest) oldest = t;
+  }
+  if (!Number.isFinite(oldest)) return Math.min(maxWeeks, 1);
+  const span =
+    Math.round(
+      (currentMonday - mondayOf(new Date(oldest))) / (7 * 24 * 60 * 60 * 1000),
+    ) + 1;
+  return Math.max(1, Math.min(maxWeeks, span));
+}
+
 export async function getRubric(): Promise<{
   sections: RubricSection[];
   trend: TrendPoint[];
@@ -104,18 +133,42 @@ export async function getRubric(): Promise<{
     console.warn('[getRubric] getOrgId() returned null — user has no active org. Returning empty rubric.')
     return { sections: [], trend: [], trainerSectionScores: [] };
   }
-  const [result, calls] = await Promise.all([
+  const [defaultRubric, calls] = await Promise.all([
     dbGetDefaultRubricWithCriteria(orgId),
     getCalls({ limit: 200, orgId }),
   ]);
 
+  // Trend é puro stats de calls — não depende da rubric existir localmente.
+  // Pré-fix, faltar rubric default zerava o gráfico do time mesmo com calls
+  // analisadas (orgs novas só têm rubric via org_scripts → script.rubric_id,
+  // sem default local). Computa SEMPRE.
+  const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
+
+  // Fallback da rubric: default local → rubric do script ativo via org_scripts
+  // → rubric global. Garante que sections/trainerSectionScores tenham
+  // conteúdo mesmo pra orgs criadas com script template.
+  let result = defaultRubric;
   if (!result) {
-    console.warn(`[getRubric] No default rubric found for org=${orgId}. Check rubrics table: is_default=true, is_active=true, org_id set.`)
-    return { sections: [], trend: [], trainerSectionScores: [] };
+    const { dbGetActiveOrgScript } = await import('@/lib/db/scripts');
+    const activeScript = await dbGetActiveOrgScript(orgId);
+    if (activeScript) {
+      const { dbGetRubricById, dbGetCriteriaByRubric } = await import('@/lib/db/rubric');
+      const rubric =
+        (await dbGetRubricById(orgId, activeScript.rubric_id)) ??
+        (await dbGetRubricById(null, activeScript.rubric_id));
+      if (rubric) {
+        const criteria = await dbGetCriteriaByRubric(rubric.id);
+        result = { rubric, criteria };
+      }
+    }
+  }
+  if (!result) {
+    console.warn(`[getRubric] No rubric resolvable for org=${orgId} (no local default, no active org_script with rubric). Returning trend-only.`);
+    return { sections: [], trend, trainerSectionScores: [] };
   }
 
   // ── Team averages ─────────────────────────────────────────────────────────
-  const teamAvg = avgRubricScores(calls); // 0–5 scale
+  const teamAvg = avgRubricScores(calls); // 0–100 scale
 
   // ── Per-trainer averages ──────────────────────────────────────────────────
   const trainerCallsMap = new Map<string, typeof calls>();
@@ -156,9 +209,6 @@ export async function getRubric(): Promise<{
     };
   });
 
-  // ── 6-week trend ──────────────────────────────────────────────────────────
-  const trend = buildWeeklyTrend(calls, 6);
-
   return { sections, trend, trainerSectionScores };
 }
 
@@ -166,15 +216,9 @@ export async function getRubric(): Promise<{
 // do critério na rubrica. Enquanto não há volume para correlação estatística
 // real (ver disclaimer no CorrelationEngine), as badges refletem apenas a
 // força do score — não uma correlação validada.
-function levelFromScore(score: number): CorrelationLevel {
-  if (score >= 4) return 'High'
-  if (score >= 3) return 'Med'
-  return 'Low'
-}
-
 export function buildCoachingDrivers(sections: RubricSection[]): CorrelationFactor[] {
   return sections.map((s) => {
-    const level = levelFromScore(s.teamAvg)
+    const level = toCorrelationLevel(s.teamAvg)
     return {
       label: s.name,
       score: s.teamAvg,
@@ -199,9 +243,13 @@ export async function getRevenueEstimator(): Promise<{
 }
 
 export async function getRubricConfig() {
-  const orgId = await getOrgId();
-  if (!orgId) return null;
+  const orgId = await getOrgId(); // null → admin sem org → rubric global
   return dbGetDefaultRubricWithCriteria(orgId);
+}
+
+export async function listRubrics() {
+  const orgId = await getOrgId();
+  return dbGetRubrics(orgId);
 }
 
 // ─── Write operations ────────────────────────────────────────────────────────
@@ -209,8 +257,7 @@ export async function getRubricConfig() {
 export async function updateRubricConfig(
   input: UpdateRubricInput,
 ): Promise<DbRubric> {
-  const orgId = await getOrgId();
-  if (!orgId) throw new Error("No org in session");
+  const orgId = await getOrgId(); // null → admin → rubric global
   const rubric = await dbGetDefaultRubric(orgId);
   if (!rubric) throw new Error("No default rubric found for org");
   return dbUpdateRubric(rubric.id, input);

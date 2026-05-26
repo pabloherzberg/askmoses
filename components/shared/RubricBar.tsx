@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { toBarWidth, toDisplay5 } from '@/lib/score-display'
 import type { RubricColor } from '@/lib/types'
 
 const colorMap: Record<RubricColor, string> = {
@@ -25,8 +26,8 @@ export function RubricBar({
   showValue = true,
   className,
 }: RubricBarProps) {
-  const widthPct = Math.max(0, Math.min(100, value))
-  const displayValue = (value / 20).toFixed(1)
+  const widthPct = toBarWidth(value)
+  const displayValue = toDisplay5(value)
   return (
     <div className={cn('flex items-center gap-3', className)}>
       <span className="text-xs w-36 flex-shrink-0" style={{ color: 'var(--am-muted)' }}>

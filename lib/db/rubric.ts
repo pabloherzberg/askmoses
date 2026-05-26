@@ -27,19 +27,22 @@ export interface DbCriterion {
   created_at: string;
 }
 
-/** Returns the default (active) rubric for an org. Replaces dbGetActiveRubric (RB-06). */
+/** Returns the default (active) rubric for an org. Pass null for the global admin rubric (org_id IS NULL). */
 export async function dbGetDefaultRubric(
-  orgId: string,
+  orgId: string | null,
 ): Promise<DbRubric | null> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("rubrics")
     .select("*")
-    .eq("org_id", orgId)
     .eq("is_default", true)
-    .eq("is_active", true)
-    .single();
+    .eq("is_active", true);
+
+  if (orgId) query = query.eq("org_id", orgId);
+  else query = query.is("org_id", null);
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === "PGRST116") return null;
@@ -50,18 +53,21 @@ export async function dbGetDefaultRubric(
 }
 
 export async function dbGetRubricById(
-  orgId: string,
+  orgId: string | null,
   rubricId: string,
 ): Promise<DbRubric | null> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("rubrics")
     .select("*")
-    .eq("org_id", orgId)
     .eq("id", rubricId)
-    .eq("is_active", true)
-    .single();
+    .eq("is_active", true);
+
+  if (orgId) query = query.eq("org_id", orgId);
+  else query = query.is("org_id", null);
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === "PGRST116") return null;
@@ -71,16 +77,17 @@ export async function dbGetRubricById(
   return data as DbRubric;
 }
 
-/** Lists all active rubrics for an org (RB-05). */
-export async function dbGetRubrics(orgId: string): Promise<DbRubric[]> {
+/** Lists all active rubrics for an org, including globals (org_id IS NULL). */
+export async function dbGetRubrics(orgId: string | null): Promise<DbRubric[]> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase
-    .from("rubrics")
-    .select("*")
-    .eq("org_id", orgId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("rubrics").select("*").eq("is_active", true)
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},org_id.is.null`)
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) throw new Error(`dbGetRubrics: ${error.message}`);
 
@@ -103,7 +110,7 @@ export async function dbGetCriteriaByRubric(
   return (data ?? []) as DbCriterion[];
 }
 
-export async function dbGetDefaultRubricWithCriteria(orgId: string): Promise<{
+export async function dbGetDefaultRubricWithCriteria(orgId: string | null): Promise<{
   rubric: DbRubric;
   criteria: DbCriterion[];
 } | null> {
@@ -117,7 +124,7 @@ export async function dbGetDefaultRubricWithCriteria(orgId: string): Promise<{
 // ─── Input interfaces ────────────────────────────────────────────────────────
 
 export interface CreateRubricInput {
-  orgId: string;
+  orgId: string | null;
   name: string;
   description?: string | null;
   isDefault?: boolean;

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import createIntlMiddleware from 'next-intl/middleware'
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { routing, type Locale } from '@/i18n/routing'
 import type { Role } from '@/lib/types'
 
@@ -28,8 +29,10 @@ function redirectByRole(role: Role, locale: Locale, baseUrl: string) {
 
 // Rotas que NÃO precisam de login (qualquer visitante pode acessar).
 // /signup é público porque é onde o user cria a conta antes de existir
-// sessão. Logged-in users são redirecionados via lógica no bloco isPublic.
-const PUBLIC_PATHS = ['/login', '/signup', '/presentation', '/demobiz', '/tech']
+// sessão. /forgot-password é público porque é onde o user pede recovery
+// quando ainda não conseguiu entrar. Logged-in users são redirecionados
+// via lógica no bloco isPublic.
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/presentation', '/demobiz', '/tech']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -137,13 +140,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
   }
 
+  // ── Owner sem senha definida: trava em /password ─────────────────────────
+  // app_metadata.password_set é setado em POST /api/me/password após save OK.
+  // Default false pra owners criados via admin invite — a senha é exigida
+  // antes de qualquer rota protegida. Trainer continua opcional (decisão
+  // 2026-05-13). Recovery (?recovery=1) cai aqui também — owner sobrescreve
+  // senha e o flag fica true depois do POST.
+  if (role === 'owner' && user.app_metadata?.password_set !== true) {
+    const onPasswordPage = rawPath === '/password' || rawPath.startsWith('/password/')
+    if (!onPasswordPage) {
+      const target = new URL(`/${locale}/password`, request.url)
+      target.searchParams.set('welcome', '1')
+      target.searchParams.set('forced', '1')
+      target.searchParams.set('next', '/dashboard')
+      return NextResponse.redirect(target)
+    }
+  }
+
   // ── Admin impersonando: whitelist de paths read-only ─────────────────────
   // Admin vê só /dashboard e /team-command-center (e drilldowns de call) quando
   // está numa org cliente. Telas operacionais (upload, settings, marketing
   // intelligence, etc.) redirecionam pra /admin pra não dar impressão de que
   // ele pode operar a org. /admin continua acessível pra Admin sair do modo.
   if (impersonatingOrgId) {
-    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls']
+    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls', '/marketing-intelligence']
     const isAllowed =
       rawPath === '/' ||
       rawPath.startsWith('/admin') ||
@@ -168,7 +188,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin-only pages — owner and trainer are redirected out
-  if (rawPath.startsWith('/dashboard/script-builder') && role !== 'admin' && role !== 'owner') {
+  if (rawPath.startsWith('/dashboard/script-builder') && role !== 'admin') {
     return NextResponse.redirect(redirectByRole(role!, locale, request.url))
   }
 
@@ -180,10 +200,74 @@ export async function middleware(request: NextRequest) {
     role === 'trainer' &&
     (trainerBlocked.some((p) => rawPath.startsWith(p)) || trainerDashboardBlocked)
   ) {
+    // ── Guard defensivo: JWT pode estar stale ────────────────────────────
+    // Cenário conhecido (Branch 3A multi-org): user era trainer numa org,
+    // foi convidado como owner pra outra org, aceitou o invite via
+    // /api/auth/verify-invite-token. O endpoint atualiza app_metadata.role
+    // pra 'owner' e gera magic link → /api/auth/verify-otp deveria criar
+    // sessão fresca. Mas se os cookies novos não chegarem nessa request
+    // (cookie propagation issue, ou outra aba ainda com sessão antiga), o
+    // JWT aqui continua 'trainer' → redirect indevido pra /me com sidebar
+    // de trainer (Bug reportado pelo Vitor, validação SP-03/SP-04).
+    //
+    // Antes de redirecionar, confere DB: se o user tem membership de owner
+    // aceita pra sua active_org_id, é o caso do bug. Sync app_metadata e
+    // força refresh da sessão; deixa request seguir como owner. Custo extra
+    // (2 queries + refresh) só nesse caminho específico (trainer tentando
+    // /dashboard) — happy path do trainer real (acessando /me) é inalterado.
+    const actuallyOwner = await isActuallyOwner(supabase, user.id)
+    if (actuallyOwner) {
+      console.warn(
+        '[middleware] JWT role=trainer mas DB diz owner — sincronizando',
+        { userId: user.id, path: rawPath },
+      )
+      try {
+        const admin = createSupabaseClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } },
+        )
+        const currentMeta = (user.app_metadata ?? {}) as Record<string, unknown>
+        await admin.auth.admin.updateUserById(user.id, {
+          app_metadata: { ...currentMeta, role: 'owner' },
+        })
+        // refreshSession lê o app_metadata atualizado e devolve um JWT novo.
+        // Cookies escrevem na response via setAll já configurado acima.
+        await supabase.auth.refreshSession()
+        return supabaseResponse
+      } catch (err) {
+        console.error('[middleware] sync app_metadata falhou — caindo no redirect padrão', err)
+        // Cai pro redirect abaixo — pelo menos o user não fica em loop.
+      }
+    }
     return NextResponse.redirect(localized('/me', locale, request.url))
   }
 
   return supabaseResponse
+}
+
+// Checa se o user tem membership de owner aceita pra sua active_org_id.
+// Roda só quando há suspeita de JWT stale — não no happy path. RLS deixa
+// o user ler suas próprias rows em users + memberships (select_self/select_own).
+async function isActuallyOwner(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+): Promise<boolean> {
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('active_org_id')
+    .eq('id', userId)
+    .maybeSingle()
+  const activeOrgId = (userRow as { active_org_id: string | null } | null)?.active_org_id
+  if (!activeOrgId) return false
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('org_id', activeOrgId)
+    .eq('invite_status', 'accepted')
+    .maybeSingle()
+  return (membership as { role: string } | null)?.role === 'owner'
 }
 
 export const config = {

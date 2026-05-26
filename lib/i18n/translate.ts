@@ -3,6 +3,7 @@ import { generateObject } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { z } from 'zod'
 import type { Locale } from '@/i18n/routing'
+import { runWithGeminiChain } from '@/lib/gemini-chain'
 
 const LOCALE_NAMES: Record<Locale, string> = {
   en: 'English',
@@ -20,110 +21,41 @@ Rules:
 - Preserve inline formatting: line breaks, numeric values, percentages, currency, bullet prefixes ("-", "•", "1.").
 - Keep the output count EXACTLY equal to the input count; never merge or split entries.`
 
-// ─── Model chain ────────────────────────────────────────────────────────────
-
-interface ModelAdapter {
-  id: string
-  run(system: string, items: string[]): Promise<string[] | null>
-  isAvailable(): boolean
-}
-
 const TranslatedSchema = z.object({
   translations: z.array(z.string()),
 })
 
-const googleAdapter = (model: string): ModelAdapter => ({
-  id: `google:${model}`,
-  isAvailable: () => !!process.env.GOOGLE_AI_API_KEY,
-  async run(system, items) {
-    const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-    // `generateObject` forces a response shape — Gemini cannot return prose or
-    // malformed JSON. It also lifts the default text limit enough for large
-    // batches of coaching text (~100+ strings).
-    const { object } = await generateObject({
-      model: google(model),
-      system,
-      prompt: JSON.stringify(items),
-      schema: TranslatedSchema,
-      temperature: 0,
-      maxOutputTokens: 8192,
-    })
-    return object.translations
-  },
-})
-
-// Preference order: higher-quota first. `gemini-2.5-flash` is intentionally
-// NOT included — its free tier is only 20 req/day, which is exhausted in
-// minutes of normal use and provides no practical fallback benefit.
-const MODEL_CHAIN: ModelAdapter[] = [
-  googleAdapter('gemini-2.5-flash-lite'), // free tier: 1,000 req/day
-  googleAdapter('gemini-2.0-flash'),      // free tier: 1,500 req/day
-]
-
-// ─── Cooldown tracking (per model, per process) ────────────────────────────
-//
-// State is attached to `globalThis` so it survives Next.js dev HMR cycles —
-// otherwise a hot reload would wipe the cooldown map and immediately retry
-// models that are still rate-limited.
-
-type TranslateState = {
-  cooldowns: Map<string, number>
-  cache: Map<string, { value: string[]; expiresAt: number }>
-}
-
-const globalKey = Symbol.for('askmoses.translate.state')
-type GlobalWithState = typeof globalThis & { [globalKey]?: TranslateState }
-const g = globalThis as GlobalWithState
-const state: TranslateState = g[globalKey] ?? (g[globalKey] = {
-  cooldowns: new Map(),
-  cache: new Map(),
-})
-
-const cooldowns = state.cooldowns
-
-function isOnCooldown(id: string): boolean {
-  const until = cooldowns.get(id)
-  if (!until) return false
-  if (Date.now() >= until) {
-    cooldowns.delete(id)
-    return false
-  }
-  return true
-}
-
-function setCooldown(id: string, ms: number) {
-  cooldowns.set(id, Date.now() + ms)
-}
-
-function isRateLimitError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err)
-  return /\b429\b/.test(msg) || /rate.?limit/i.test(msg) || /quota/i.test(msg) || /Too Many Requests/i.test(msg)
-}
-
-function parseRetryDelayMs(err: unknown): number {
-  const msg = err instanceof Error ? err.message : String(err)
-  // Google returns `"retryDelay":"46s"` or `Please retry in 46.695509398s`
-  const s1 = msg.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/)
-  if (s1) return Math.ceil(parseFloat(s1[1])) * 1000
-  const s2 = msg.match(/retry in (\d+(?:\.\d+)?)s/i)
-  if (s2) return Math.ceil(parseFloat(s2[1])) * 1000
-  // OpenAI: "Please try again in 20.5s"
-  const s3 = msg.match(/try again in (\d+(?:\.\d+)?)s/i)
-  if (s3) return Math.ceil(parseFloat(s3[1])) * 1000
-  return 60_000 // default: 1 min
-}
-
 // ─── In-memory cache with TTL ──────────────────────────────────────────────
 //
 // Respects the product decision of "no DB persistence": cache lives in the
-// Node process and is wiped on restart/deploy. TTL is short (10 min) so the
-// first request after a locale change IS always a cache miss — only repeat
-// views of the same content within the TTL benefit.
+// Node process and is wiped on restart/deploy.
+//
+// Two TTLs:
+//   - Success: 24h. The source text rarely changes — long TTL maximises hits
+//     and keeps us well under the Gemini RPM/RPD limits across page reloads.
+//   - Failure (all models on cooldown): 60s. Short cache of the source so
+//     concurrent/subsequent requests don't re-hit Gemini while the per-minute
+//     rate-limit bucket recovers.
 
-const CACHE_TTL_MS = 10 * 60 * 1000
-const CACHE_MAX_SIZE = 500
+const CACHE_TTL_SUCCESS_MS = 24 * 60 * 60 * 1000
+const CACHE_TTL_FAILURE_MS = 60 * 1000
+const CACHE_MAX_SIZE = 2000
 
-const cache = state.cache
+// Cache lives on globalThis to survive Next.js dev HMR (model cooldowns are
+// shared in @/lib/gemini-chain — this state is just translate-specific cache).
+// `inflight` tracks Promises for cache keys currently being resolved, so two
+// concurrent requests with the same payload (very common in React Strict Mode
+// double-fire + parallel page loads) share one LLM call instead of racing.
+type TranslateCacheState = {
+  cache: Map<string, { value: string[]; expiresAt: number }>
+  inflight: Map<string, Promise<string[]>>
+}
+const cacheKey_ = Symbol.for('askmoses.translate.cache')
+type GlobalWithCache = typeof globalThis & { [cacheKey_]?: TranslateCacheState }
+const gc = globalThis as GlobalWithCache
+const _state = gc[cacheKey_] ?? (gc[cacheKey_] = { cache: new Map(), inflight: new Map() })
+const cache = _state.cache
+const inflight = _state.inflight
 
 function cacheKey(strings: string[], sourceLocale: Locale, targetLocale: Locale): string {
   const h = createHash('sha1')
@@ -145,13 +77,13 @@ function cacheGet(key: string): string[] | null {
   return hit.value
 }
 
-function cacheSet(key: string, value: string[]): void {
+function cacheSet(key: string, value: string[], ttlMs: number = CACHE_TTL_SUCCESS_MS): void {
   if (cache.size >= CACHE_MAX_SIZE) {
     // Evict oldest entry (Map iteration is insertion order)
     const oldest = cache.keys().next().value
     if (oldest !== undefined) cache.delete(oldest)
   }
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs })
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────
@@ -194,49 +126,85 @@ export async function translateStrings(
     return mergeTranslations(strings, toTranslate, cached)
   }
 
-  // Model chain with cooldown skipping
+  // In-flight dedup: if another request is already translating this exact
+  // payload, await its Promise instead of firing a parallel LLM call. Saves
+  // duplicate cost from Strict Mode double-fire and concurrent page loads.
+  const ongoing = inflight.get(key)
+  if (ongoing) {
+    const result = await ongoing
+    return mergeTranslations(strings, toTranslate, result)
+  }
+
   const system = SYSTEM_PROMPT
     .replace(/\{source\}/g, LOCALE_NAMES[sourceLocale])
     .replace(/\{target\}/g, LOCALE_NAMES[targetLocale])
 
-  for (const adapter of MODEL_CHAIN) {
-    if (!adapter.isAvailable()) continue
-    if (isOnCooldown(adapter.id)) continue
-
-    try {
-      const translated = await adapter.run(system, payload)
-      if (!translated) {
-        console.warn(`[translate] ${adapter.id} returned no output, trying next model`)
-        continue
+  // Wrap the chain + post-processing in a single Promise so concurrent callers
+  // (Strict Mode dup, parallel page loads) share one LLM call via `inflight`.
+  // The wrapped Promise always resolves to a string[] of payload.length —
+  // translated on success, source on failure — caller merges back into `strings`.
+  const work: Promise<string[]> = (async () => {
+    // `generateObject` forces a response shape — Gemini cannot return prose or
+    // malformed JSON. `maxOutputTokens: 8192` lifts the default limit enough
+    // for large batches of coaching text (~100+ strings).
+    const result = await runWithGeminiChain<string[]>(async (modelName) => {
+      const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
+      const { object } = await generateObject({
+        model: google(modelName),
+        system,
+        prompt: JSON.stringify(payload),
+        schema: TranslatedSchema,
+        temperature: 0,
+        maxOutputTokens: 8192,
+      })
+      const translated = object.translations
+      // Empty / drastically-truncated output → throw so the chain tries the
+      // next model instead of "succeeding" with all-source strings.
+      if (translated.length === 0) {
+        throw new Error(`${modelName} returned 0 translations for ${payload.length} inputs`)
       }
-      // Accept partial responses. If the LLM returned fewer items than we sent,
-      // fill the tail with source strings instead of rejecting the whole batch.
-      if (translated.length !== payload.length) {
+      if (translated.length < payload.length) {
         console.warn(
-          `[translate] ${adapter.id} returned ${translated.length}/${payload.length} items — padding with source for missing`,
+          `[translate] ${modelName} returned ${translated.length}/${payload.length} items — padding tail with source`,
         )
       }
-      const result = payload.map((original, i) => {
+      return payload.map((original, i) => {
         const t = translated[i]
         return typeof t === 'string' && t.length > 0 ? t : original
       })
-      cacheSet(key, result)
-      return mergeTranslations(strings, toTranslate, result)
-    } catch (err) {
-      if (isRateLimitError(err)) {
-        const ms = parseRetryDelayMs(err)
-        setCooldown(adapter.id, ms)
-        console.warn(`[translate] ${adapter.id} hit rate limit, cooling down for ${Math.round(ms / 1000)}s`)
-        continue
-      }
-      console.error(`[translate] ${adapter.id} failed:`, err instanceof Error ? err.message : err)
-      continue
-    }
+    })
+    return result ?? payload
+  })()
+
+  inflight.set(key, work)
+  let result: string[]
+  try {
+    result = await work
+  } finally {
+    inflight.delete(key)
   }
 
-  // All models exhausted → graceful fallback
-  console.warn('[translate] all models unavailable, returning source strings')
-  return strings
+  // Chain returned source (null path) → cache short and bail.
+  if (result === payload) {
+    console.warn('[translate] all models unavailable, returning source (short cache)')
+    cacheSet(key, payload, CACHE_TTL_FAILURE_MS)
+    return strings
+  }
+
+  // Don't cache identity results — happens when the LLM returned a usable
+  // shape but every entry got padded to source (degraded quality, language
+  // mismatch). Caching would lock the page in source for the long TTL.
+  const translatedCount = result.reduce(
+    (n, v, i) => (v !== payload[i] ? n + 1 : n),
+    0,
+  )
+  if (translatedCount === 0) {
+    console.warn('[translate] result identical to source — not caching')
+    return strings
+  }
+
+  cacheSet(key, result)
+  return mergeTranslations(strings, toTranslate, result)
 }
 
 function mergeTranslations(
