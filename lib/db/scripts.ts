@@ -30,6 +30,12 @@ export interface DbScript {
   is_active: boolean
   created_at: string
   updated_at: string
+  // Three-part versioning (migrations 044, 063). Opcionais para back-compat
+  // com scripts criados antes do schema receber as colunas — backfill da
+  // 063 garante owner_edit_version=0 em scripts existentes.
+  rubric_version_snapshot?: number | null
+  minor_version?: number | null
+  owner_edit_version?: number | null
 }
 
 export interface CreateScriptInput {

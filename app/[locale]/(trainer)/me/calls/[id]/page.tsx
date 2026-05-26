@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
-import { getScripts } from '@/lib/services/scripts'
+import { getScripts, formatScriptVersion } from '@/lib/services/scripts'
 import { getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 import type { Locale } from '@/i18n/routing'
@@ -24,12 +24,13 @@ export default async function TrainerCallDetailPage({ params }: Props) {
   ])
   if (!call) notFound()
 
-  // Enriquecer com nome/active do script — toCall só carrega scriptId.
+  // Enriquecer com nome/active/versão do script — toCall só carrega scriptId.
   const script = call.scriptId ? scripts.find((s) => s.id === call.scriptId) : undefined
   const enrichedCall = {
     ...call,
     scriptName: script?.name ?? null,
     scriptIsActive: script?.is_active ?? false,
+    scriptVersion: formatScriptVersion(script),
   }
 
   return <CallDetail call={enrichedCall} viewerRole="trainer" backHref="/me" />

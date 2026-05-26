@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle, FileText } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
@@ -19,6 +19,8 @@ const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: 
 ]
 
 const SECTION_COLORS: RubricColor[] = ['blue', 'amber', 'green', 'red', 'accent2']
+
+const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
 
 interface CallDetailProps {
   call: Call
@@ -65,7 +67,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           <h1 className="text-xl font-semibold" style={{ color: 'var(--am-text)' }}>
             {call.trainerName}
           </h1>
-          {(call.lead_name || call.lead_source) && (
+          {(call.lead_name || call.lead_source || call.scriptName) && (
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {call.lead_name && (
                 <span className="text-xs" style={{ color: 'var(--am-muted)' }}>
@@ -78,6 +80,28 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
                   style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
                 >
                   {LEAD_SOURCE_LABELS[call.lead_source]}
+                </span>
+              )}
+              {call.scriptName && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                  style={
+                    call.scriptIsActive
+                      ? { background: GREEN_BG, color: 'var(--am-green)' }
+                      : { background: 'var(--am-bg4)', color: 'var(--am-muted)' }
+                  }
+                  title={t('scriptUsed')}
+                >
+                  <FileText size={11} />
+                  {call.scriptName}
+                  {call.scriptVersion && (
+                    <span className="font-mono" style={{ opacity: 0.75 }}>
+                      · {call.scriptVersion}
+                    </span>
+                  )}
+                  {!call.scriptIsActive && (
+                    <span style={{ opacity: 0.7 }}>· {t('legacyScriptHint')}</span>
+                  )}
                 </span>
               )}
             </div>
