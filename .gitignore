@@ -19,6 +19,12 @@ yarn-error.log*
 # env files
 .env*
 
+# database dumps — podem conter PII de clientes, NUNCA commitar
+backups/
+
+# binários baixados localmente (e.g. PostgreSQL client tools) — não comitamos
+.tools/
+
 # vercel
 .vercel
 
