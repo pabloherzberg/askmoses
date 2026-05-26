@@ -12,13 +12,24 @@ import type { Call } from '@/lib/types'
 interface CallsTableProps {
   calls: Call[]
   showTrainerColumn?: boolean
+  /**
+   * Quando false, esconde filtros de Sources/Scripts e a pill de "active script".
+   * As colunas permanecem visíveis. Default true (visão Owner/Admin).
+   */
+  showAdvancedFilters?: boolean
   sectionLabel: string
   title: string
 }
 
 const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
 
-export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, title }: CallsTableProps) {
+export function CallsTable({
+  calls,
+  showTrainerColumn = true,
+  showAdvancedFilters = true,
+  sectionLabel,
+  title,
+}: CallsTableProps) {
   const router = useRouter()
   const locale = useLocale()
   const t = useTranslations('Owner.calls')
@@ -101,13 +112,15 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
             {trainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
           </select>
         )}
-        <select className={selectClass} style={selectStyle} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
-          <option value="all">{t('filterAllSources')}</option>
-          {LEAD_SOURCES.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-        {hasScripts && (
+        {showAdvancedFilters && (
+          <select className={selectClass} style={selectStyle} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
+            <option value="all">{t('filterAllSources')}</option>
+            {LEAD_SOURCES.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        )}
+        {showAdvancedFilters && hasScripts && (
           <select className={selectClass} style={selectStyle} value={scriptFilter} onChange={(e) => setScriptFilter(e.target.value)}>
             <option value="all">{t('filterAllScripts')}</option>
             {scriptsInCalls.map((s) => (
@@ -116,7 +129,7 @@ export function CallsTable({ calls, showTrainerColumn = true, sectionLabel, titl
           </select>
         )}
 
-        {activeScript && (
+        {showAdvancedFilters && activeScript && (
           <span
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg sm:ml-auto"
             style={{ background: GREEN_BG, color: 'var(--am-green)' }}
