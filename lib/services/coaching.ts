@@ -103,43 +103,57 @@ export function withLiveTrainerStats(
 // ─── Behavioral Correlation Profile ──────────────────────────────────────────
 // Por seção: nota do trainer vs. média do time (delta = trainer − time).
 //
-// Os nomes das seções vêm das CALLS reais (campo sections[].name) — antes
-// eram 5 labels hardcoded ("Discovery", "Problem Agitation", …) que só
-// casavam com o script v0/seed. Scripts novos (template admin, scripts
-// editados por owner) usam outros nomes (ex: "Open the Call", "Discovery
-// & Qualification"). Aggregator agnóstico:
+// Source of truth das DIMENSIONS: as sections do SCRIPT ATIVO da org. Isso
+// garante que todo trainer é avaliado nas MESMAS dimensões (na ordem do
+// script), independente de qual versão do script foi usada em cada call
+// histórica. Vantagens:
 //
-//   1. Coleta o conjunto de section names vistas nas calls do trainer.
-//   2. Pra cada uma: média do trainer (das próprias calls) vs. média do
-//      time (de TODAS as calls da org com aquele mesmo nome).
-//   3. Score=0 + teamAvg>0 deixa de acontecer pela divergência de labels
-//      — agora se o trainer tem calls com seção X, o teamAvg de X é
-//      computado das mesmas calls (do trainer + outros) onde a seção X
-//      apareceu.
+//   - Consistência horizontal: a comparação trainer × time mostra exatamente
+//     as mesmas linhas pra todos os trainers da org.
+//   - Estabilidade: trocar o script ativo redefine as dimensions sem mexer
+//     em código.
+//   - Sem viés por antiguidade: trainer com 1 call antiga e outro com 5
+//     calls recentes seguem o mesmo eixo.
 //
-// Mantém compat com calls antigas (que não populam sections[]) caindo
-// no trainer.rubricScores cacheado quando trainerCalls não tem sections.
+// Score do trainer e teamAvg vêm das CALLS (sections[].name + score),
+// agregando QUALQUER call cuja seção case com o nome do script ativo
+// (case-insensitive). Calls feitas com scripts antigos cujas seções
+// coincidem com as do ativo contribuem; as que não coincidem ficam fora
+// — comportamento desejável (script mudou, métricas seguem o atual).
+//
+// Fallback (sem script ativo): deriva nomes da call mais recente do
+// trainer com sections populadas. Último recurso: trainer.rubricScores
+// cacheado com as 5 labels legadas.
+export interface BehavioralProfileScript {
+  sections: { name: string }[]
+}
+
 export function buildBehavioralProfile(
   trainer: Trainer,
   trainerCalls: Call[],
   allCalls: Call[],
+  activeScript?: BehavioralProfileScript | null,
 ): BehavioralDimension[] {
   if ((trainer.totalCalls ?? 0) === 0) return []
 
-  // Coleta dimensions na ORDEM da call mais recente do trainer com sections —
-  // dá um sequenciamento estável (script atual define a ordem).
-  const recentWithSections = [...trainerCalls]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .find((c) => Array.isArray(c.sections) && c.sections.length > 0)
-
+  // 1) Preferência: script ativo da org define dimensões + ordem.
   let orderedNames: string[] = []
-  if (recentWithSections?.sections) {
-    orderedNames = recentWithSections.sections.map((s) => s.name).filter(Boolean)
+  if (activeScript && Array.isArray(activeScript.sections)) {
+    orderedNames = activeScript.sections.map((s) => s.name).filter(Boolean)
   }
 
-  // Fallback p/ calls sem sections[] populadas: usa as 5 labels legadas
-  // sobre trainer.rubricScores cacheado. Preserva visualização pra dados
-  // pré-migration.
+  // 2) Fallback: ordem da call mais recente do trainer com sections.
+  if (orderedNames.length === 0) {
+    const recentWithSections = [...trainerCalls]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .find((c) => Array.isArray(c.sections) && c.sections.length > 0)
+    if (recentWithSections?.sections) {
+      orderedNames = recentWithSections.sections.map((s) => s.name).filter(Boolean)
+    }
+  }
+
+  // 3) Último recurso: rubric cacheado com 5 labels legadas. Preserva
+  //    visualização pra dados pré-migration.
   if (orderedNames.length === 0) {
     const rubric = trainer.rubricScores
     const hasAnyCached =

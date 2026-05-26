@@ -1,6 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, getSession, getOrgId } from '@/lib/auth'
 import { dbGetTrainers } from '@/lib/db/trainers'
+import { dbGetActiveOrgScript } from '@/lib/db/scripts'
 import { getCalls } from '@/lib/services/calls'
 import { getPerformanceTrends } from '@/lib/services/trainers'
 import {
@@ -60,7 +61,14 @@ export async function GET(request: NextRequest) {
   // strings per trainer that actually render, in a tiny dedicated batch below.
   // Reaproveitamos o mesmo array `calls` em getPerformanceTrends pra evitar
   // duas queries idênticas pro Supabase em paralelo.
-  const calls = await getCalls({ orgId, limit: 200 })
+  //
+  // activeScript define as DIMENSIONS do Behavioral Profile pra TODOS os
+  // trainers da org (consistência horizontal). Sem ele, o builder cai pro
+  // fallback (call mais recente do trainer) — comportamento legado.
+  const [calls, activeScript] = await Promise.all([
+    getCalls({ orgId, limit: 200 }),
+    dbGetActiveOrgScript(orgId).catch(() => null),
+  ])
   const performanceTrends = await getPerformanceTrends(trainers, calls)
 
   // Calls agrupadas por trainer.
@@ -108,10 +116,10 @@ export async function GET(request: NextRequest) {
 
   for (const trainer of enrichedTrainers) {
     const tc = callsByTrainer.get(trainer.id) ?? []
-    // Behavioral usa as section names REAIS das calls — agnóstico ao
-    // script. allCalls = todas as calls da org (não só do trainer) pro
-    // teamAvg ser baseado nas mesmas seções.
-    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, tc, calls)
+    // Behavioral usa as sections do script ATIVO como source of truth pra
+    // dimensions (mesmas linhas pra todos os trainers). Score e teamAvg
+    // são agregados das calls reais por nome (case-insensitive).
+    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, tc, calls, activeScript)
     const { best, worst } = buildBestWorstCalls(tc)
     outBest[trainer.id] = best
     outWorst[trainer.id] = worst
