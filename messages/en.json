@@ -681,7 +681,10 @@
       "deprecated": "Deprecated",
       "rejected": "Rejected",
       "all": "All statuses",
-      "pendingTooltip": "This org also has a pending script: {name}"
+      "pendingTooltip": "This org also has a pending script: {name}",
+      "analyzing": "Analyzing...",
+      "queued": "Queued",
+      "cancelSend": "Cancel send"
     },
     "cards": {
       "totalOrgs": "Total Organizations",

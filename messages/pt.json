@@ -681,7 +681,10 @@
       "deprecated": "Desatualizado",
       "rejected": "Recusado",
       "all": "Todos os status",
-      "pendingTooltip": "Esta org também tem um script pendente: {name}"
+      "pendingTooltip": "Esta org também tem um script pendente: {name}",
+      "analyzing": "Analisando...",
+      "queued": "Na fila",
+      "cancelSend": "Cancelar envio"
     },
     "cards": {
       "totalOrgs": "Total de organizações",
