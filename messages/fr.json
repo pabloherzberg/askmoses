@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notes internes — non visibles par le commercial.",
       "coachingNotesPlaceholder": "Ajoutez vos notes de coaching ici...",
       "coachingNotesFooter": "Les notes ne sont pas persistées dans cette démo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilisé",
+      "legacyScriptHint": "ancien"
     },
     "performanceTrend": {
       "title": "Tendance de performance",

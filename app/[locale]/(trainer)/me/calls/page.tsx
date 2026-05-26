@@ -34,8 +34,7 @@ export default async function TrainerCallsPage() {
         <CallsTable
           calls={[]}
           showTrainerColumn={false}
-          showAdvancedFilters={false}
-          sectionLabel={t('myCallsLabel')}
+            sectionLabel={t('myCallsLabel')}
           title={t('myCalls')}
         />
       </div>
@@ -67,7 +66,6 @@ export default async function TrainerCallsPage() {
       <CallsTable
         calls={enrichedCalls}
         showTrainerColumn={false}
-        showAdvancedFilters={false}
         sectionLabel={t('myCallsLabel')}
         title={t('myCalls')}
       />

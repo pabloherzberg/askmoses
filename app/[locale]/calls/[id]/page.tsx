@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
+import { getScripts } from '@/lib/services/scripts'
 import { getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 import type { Locale } from '@/i18n/routing'
@@ -29,8 +30,21 @@ export default async function CallDetailPage({ params }: Props) {
     scope = { orgId }
   }
 
-  const call = await getCallById(id, { locale, ...scope })
+  const [call, scripts] = await Promise.all([
+    getCallById(id, { locale, ...scope }),
+    getScripts().catch(() => []),
+  ])
   if (!call) notFound()
 
-  return <CallDetail call={call} viewerRole={role ?? 'owner'} backHref="/calls" />
+  // Enrich call with scriptName/scriptIsActive (toCall mapper só preenche
+  // scriptId — nome/ativo são resolvidos aqui a partir da lista de scripts
+  // da org, igual à página /calls).
+  const script = call.scriptId ? scripts.find((s) => s.id === call.scriptId) : undefined
+  const enrichedCall = {
+    ...call,
+    scriptName: script?.name ?? null,
+    scriptIsActive: script?.is_active ?? false,
+  }
+
+  return <CallDetail call={enrichedCall} viewerRole={role ?? 'owner'} backHref="/calls" />
 }
