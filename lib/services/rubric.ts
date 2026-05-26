@@ -95,6 +95,61 @@ export function buildWeeklyTrend(
   return trend;
 }
 
+// ─── Per-call trend (fallback p/ dados esparsos) ─────────────────────────────
+// Quando todas as calls do trainer caem na mesma semana, buildWeeklyTrend
+// gera 1 só ponto e o Recharts AreaChart fica com um dot solto (não tem como
+// desenhar linha com 1 ponto). Aqui cada call vira um ponto da X-axis com
+// closeRate/score CUMULATIVOS — assim 2 calls já mostram uma tendência real
+// (closed=2/2=100%, depois closed=2/3=67%, etc).
+//
+// O label é prefixado com "C" pra o tradutor de eixos (PerformanceTrend.tsx
+// labelWeek) tratar como label de call e não confundir com "W"/Week.
+export function buildPerCallTrend(
+  calls: { date: string; score: number; result: string }[],
+  teamCalls?: { date: string; score: number; result: string }[],
+): { trainer: TrendPoint[]; team: TrendPoint[] } {
+  if (calls.length === 0) return { trainer: [], team: [] };
+
+  const sorted = [...calls].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+
+  const trainerTrend: TrendPoint[] = sorted.map((_, i) => {
+    const upTo = sorted.slice(0, i + 1);
+    const closed = upTo.filter((c) => c.result === "closed").length;
+    const closeRate = Math.round((closed / upTo.length) * 100);
+    const score = Math.round(
+      upTo.reduce((s, c) => s + c.score, 0) / upTo.length,
+    );
+    return { week: `C${i + 1}`, closeRate, score };
+  });
+
+  // Time avg em cada ponto do trainer: cumulativo do time até o timestamp
+  // dessa call (inclusive) — usa as MESMAS labels do trainer pro chart
+  // alinhar por índice. Sem teamCalls → array vazio (chart trata como null).
+  const teamTrend: TrendPoint[] = teamCalls
+    ? sorted.map((c, i) => {
+        const ts = new Date(c.date).getTime();
+        const upTo = teamCalls.filter(
+          (tc) => new Date(tc.date).getTime() <= ts,
+        );
+        if (upTo.length === 0) {
+          return { week: `C${i + 1}`, closeRate: 0, score: 0 };
+        }
+        const closed = upTo.filter((tc) => tc.result === "closed").length;
+        return {
+          week: `C${i + 1}`,
+          closeRate: Math.round((closed / upTo.length) * 100),
+          score: Math.round(
+            upTo.reduce((s, tc) => s + tc.score, 0) / upTo.length,
+          ),
+        };
+      })
+    : [];
+
+  return { trainer: trainerTrend, team: teamTrend };
+}
+
 // Quantas semanas (1–maxWeeks) a janela do gráfico deve ter, com base no
 // período real coberto pelas calls — evita semanas vazias "fantasma" no início
 // do gráfico quando a org tem menos de maxWeeks semanas de dados.

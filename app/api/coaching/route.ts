@@ -3,7 +3,11 @@ import { ok, unauthorized, getSession, getOrgId } from '@/lib/auth'
 import { dbGetTrainers } from '@/lib/db/trainers'
 import { getCalls } from '@/lib/services/calls'
 import { getPerformanceTrends } from '@/lib/services/trainers'
-import { buildBehavioralProfile, buildBestWorstCalls } from '@/lib/services/coaching'
+import {
+  buildBehavioralProfile,
+  buildBestWorstCalls,
+  withLiveTrainerStats,
+} from '@/lib/services/coaching'
 import { translateStrings } from '@/lib/i18n/translate'
 import { routing, type Locale } from '@/i18n/routing'
 import type {
@@ -70,13 +74,15 @@ export async function GET(request: NextRequest) {
 
   const weekStart = startOfWeek(new Date())
 
-  // Enriquece todos os trainers PRIMEIRO (totalCalls = max(cache, real),
-  // lastActiveAt = data ISO da call mais recente real) e usa esse array
-  // enriquecido em buildBehavioralProfile — assim a comparação do trainer x
-  // média do time não bate com objetos que têm totalCalls stale (ex.: seeds
-  // onde syncTrainerStats não rodou).
+  // Enriquece todos os trainers PRIMEIRO (stats live + callsThisWeek +
+  // lastActiveAt) — usa esse array em buildBehavioralProfile, hero card e
+  // outBest/outWorst. Sem isso, qualquer trainer onde syncTrainerStats não
+  // rodou (seed, GHL pipeline, retry, sync silenciosamente quebrado)
+  // apareceria com close_rate/score/rubric=0 no Team Command Center mesmo
+  // com 2+ calls reais analisadas.
   const enrichedTrainers: Trainer[] = trainers.map((trainer) => {
     const tc = callsByTrainer.get(trainer.id) ?? []
+    const live = withLiveTrainerStats(trainer, tc)
     const callsThisWeek = tc.filter(
       (c) => new Date(c.date).getTime() >= weekStart,
     ).length
@@ -89,8 +95,7 @@ export async function GET(request: NextRequest) {
         }, 0)
       : 0
     return {
-      ...trainer,
-      totalCalls: Math.max(trainer.totalCalls ?? 0, tc.length),
+      ...live,
       callsThisWeek,
       lastActiveAt: lastAt > 0 ? new Date(lastAt).toISOString() : null,
     }
@@ -103,7 +108,10 @@ export async function GET(request: NextRequest) {
 
   for (const trainer of enrichedTrainers) {
     const tc = callsByTrainer.get(trainer.id) ?? []
-    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, enrichedTrainers)
+    // Behavioral usa as section names REAIS das calls — agnóstico ao
+    // script. allCalls = todas as calls da org (não só do trainer) pro
+    // teamAvg ser baseado nas mesmas seções.
+    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, tc, calls)
     const { best, worst } = buildBestWorstCalls(tc)
     outBest[trainer.id] = best
     outWorst[trainer.id] = worst

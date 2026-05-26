@@ -38,26 +38,150 @@ function norm(v: number): number {
   return v > 5 ? v : v * 20
 }
 
+// ─── Trainer stats computed LIVE from the trainer's calls ────────────────────
+// O cache em `trainers.*` (close_rate, score, score_discovery, …) só atualiza
+// quando syncTrainerStats roda — tipicamente após /api/analyze. Calls inseridas
+// por outros caminhos (seed, GHL pipeline, retry, sync que falhou silenciosa)
+// deixam o cache zerado e a UI mostrando 0.0 mesmo com calls reais.
+//
+// Esta função recomputa SEMPRE a partir das calls em memória — mesma lógica
+// do syncTrainerStats (closeRate por outcome='closed', score = avg, rubric
+// por seção). Quando o trainer não tem calls, retorna o trainer original
+// (sem alteração).
+export function withLiveTrainerStats(
+  trainer: Trainer,
+  calls: Call[],
+): Trainer {
+  if (calls.length === 0) return trainer
+
+  const total = calls.length
+  const closed = calls.filter((c) => c.result === 'closed').length
+  const closeRate = Math.round((closed / total) * 100)
+  const score = Math.round(
+    calls.reduce((s, c) => s + (c.score ?? 0), 0) / total,
+  )
+
+  // Rubric por seção: tenta primeiro o array `sections` (já em 0-100 do
+  // banco); fallback pro objeto `rubricScores` parseado (mistura 0-5 / 0-100,
+  // normalizado por `norm`). Idêntico à heurística do syncTrainerStats.
+  const sectionByLabel: Record<string, { sum: number; count: number }> = {}
+  for (const c of calls) {
+    if (Array.isArray(c.sections) && c.sections.length > 0) {
+      for (const s of c.sections) {
+        const label = (s.name ?? '').toLowerCase().trim()
+        if (!label) continue
+        const v = norm(s.score ?? 0)
+        if (v <= 0) continue
+        if (!sectionByLabel[label]) sectionByLabel[label] = { sum: 0, count: 0 }
+        sectionByLabel[label].sum += v
+        sectionByLabel[label].count += 1
+      }
+    }
+  }
+
+  const rubricScores: RubricScores = { ...trainer.rubricScores }
+  for (const { key, label } of SECTIONS) {
+    const labelLower = label.toLowerCase()
+    const bucket =
+      sectionByLabel[labelLower] ??
+      sectionByLabel[labelLower.replace(' & ', ' and ')] ??
+      sectionByLabel[labelLower.replace(' and ', ' & ')]
+    if (bucket && bucket.count > 0) {
+      rubricScores[key] = Math.round(bucket.sum / bucket.count)
+    }
+  }
+
+  return {
+    ...trainer,
+    totalCalls: Math.max(trainer.totalCalls ?? 0, total),
+    closeRate,
+    score,
+    rubricScores,
+  }
+}
+
 // ─── Behavioral Correlation Profile ──────────────────────────────────────────
 // Por seção: nota do trainer vs. média do time (delta = trainer − time).
+//
+// Os nomes das seções vêm das CALLS reais (campo sections[].name) — antes
+// eram 5 labels hardcoded ("Discovery", "Problem Agitation", …) que só
+// casavam com o script v0/seed. Scripts novos (template admin, scripts
+// editados por owner) usam outros nomes (ex: "Open the Call", "Discovery
+// & Qualification"). Aggregator agnóstico:
+//
+//   1. Coleta o conjunto de section names vistas nas calls do trainer.
+//   2. Pra cada uma: média do trainer (das próprias calls) vs. média do
+//      time (de TODAS as calls da org com aquele mesmo nome).
+//   3. Score=0 + teamAvg>0 deixa de acontecer pela divergência de labels
+//      — agora se o trainer tem calls com seção X, o teamAvg de X é
+//      computado das mesmas calls (do trainer + outros) onde a seção X
+//      apareceu.
+//
+// Mantém compat com calls antigas (que não populam sections[]) caindo
+// no trainer.rubricScores cacheado quando trainerCalls não tem sections.
 export function buildBehavioralProfile(
   trainer: Trainer,
-  allTrainers: Trainer[],
+  trainerCalls: Call[],
+  allCalls: Call[],
 ): BehavioralDimension[] {
   if ((trainer.totalCalls ?? 0) === 0) return []
 
-  const rated = allTrainers.filter((t) => (t.totalCalls ?? 0) > 0)
+  // Coleta dimensions na ORDEM da call mais recente do trainer com sections —
+  // dá um sequenciamento estável (script atual define a ordem).
+  const recentWithSections = [...trainerCalls]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .find((c) => Array.isArray(c.sections) && c.sections.length > 0)
 
-  return SECTIONS.map(({ key, label }) => {
-    const score = Math.round(trainer.rubricScores[key] ?? 0)
-    const teamAvg =
-      rated.length > 0
-        ? Math.round(
-            rated.reduce((s, t) => s + (t.rubricScores[key] ?? 0), 0) / rated.length,
-          )
-        : 0
+  let orderedNames: string[] = []
+  if (recentWithSections?.sections) {
+    orderedNames = recentWithSections.sections.map((s) => s.name).filter(Boolean)
+  }
+
+  // Fallback p/ calls sem sections[] populadas: usa as 5 labels legadas
+  // sobre trainer.rubricScores cacheado. Preserva visualização pra dados
+  // pré-migration.
+  if (orderedNames.length === 0) {
+    const rubric = trainer.rubricScores
+    const hasAnyCached =
+      (rubric.discovery ?? 0) +
+        (rubric.problemAgitation ?? 0) +
+        (rubric.offerPresentation ?? 0) +
+        (rubric.objectionHandling ?? 0) +
+        (rubric.closeAndNextSteps ?? 0) >
+      0
+    if (!hasAnyCached) return []
+    return SECTIONS.map(({ key, label }) => {
+      const score = Math.round(rubric[key] ?? 0)
+      return {
+        dimension: label,
+        score,
+        delta: 0,
+        teamAvg: score,
+        source: 'Rubric' as const,
+      }
+    })
+  }
+
+  const avgForName = (calls: Call[], name: string): number => {
+    const lower = name.toLowerCase()
+    const vals: number[] = []
+    for (const c of calls) {
+      if (!Array.isArray(c.sections)) continue
+      for (const s of c.sections) {
+        if ((s.name ?? '').toLowerCase() !== lower) continue
+        const v = norm(s.score ?? 0)
+        if (v > 0) vals.push(v)
+      }
+    }
+    if (vals.length === 0) return 0
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+  }
+
+  return orderedNames.map((name) => {
+    const score = avgForName(trainerCalls, name)
+    const teamAvg = avgForName(allCalls, name)
     return {
-      dimension: label,
+      dimension: name,
       score,
       delta: score - teamAvg,
       teamAvg,

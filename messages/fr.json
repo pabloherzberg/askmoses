@@ -371,7 +371,8 @@
       "team": "Équipe",
       "teamAvg": "Moyenne de l'équipe",
       "closeRateLegend": "Taux de conversion",
-      "weekLabel": "Semaine {n}"
+      "weekLabel": "Semaine {n}",
+      "callLabel": "Appel {n}"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes du script",

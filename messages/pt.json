@@ -371,7 +371,8 @@
       "team": "Time",
       "teamAvg": "Média do time",
       "closeRateLegend": "Taxa de fechamento",
-      "weekLabel": "Semana {n}"
+      "weekLabel": "Semana {n}",
+      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps no script",

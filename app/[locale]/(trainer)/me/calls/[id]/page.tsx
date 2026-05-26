@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
 import { getScripts, formatScriptVersion } from '@/lib/services/scripts'
-import { getTrainerDbId } from '@/lib/auth'
+import { dbGetActiveOrgScript } from '@/lib/db/scripts'
+import { getOrgId, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 import type { Locale } from '@/i18n/routing'
 
@@ -18,18 +19,22 @@ export default async function TrainerCallDetailPage({ params }: Props) {
   const trainerId = await getTrainerDbId()
   if (!trainerId) notFound()
 
-  const [call, scripts] = await Promise.all([
+  const orgId = await getOrgId()
+  const [call, scripts, activeOrgScript] = await Promise.all([
     getCallById(id, { locale, trainerId }),
     getScripts().catch(() => []),
+    orgId ? dbGetActiveOrgScript(orgId).catch(() => null) : Promise.resolve(null),
   ])
   if (!call) notFound()
 
-  // Enriquecer com nome/active/versão do script — toCall só carrega scriptId.
+  // scriptIsActive baseado em org_scripts (status='active' AND ended_at IS
+  // NULL), não no scripts.is_active legado — alinha com a página de listagem.
   const script = call.scriptId ? scripts.find((s) => s.id === call.scriptId) : undefined
+  const activeId = activeOrgScript?.id ?? null
   const enrichedCall = {
     ...call,
     scriptName: script?.name ?? null,
-    scriptIsActive: script?.is_active ?? false,
+    scriptIsActive: !!(call.scriptId && activeId && call.scriptId === activeId),
     scriptVersion: formatScriptVersion(script),
   }
 

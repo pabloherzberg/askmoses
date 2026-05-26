@@ -116,15 +116,29 @@ export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
   });
 }
 
-// Tendências semanais de close rate, calculadas das calls reais via
-// buildWeeklyTrend (6 semanas). Inclui a curva "team" + uma por trainer.
-// Aceita `calls` pré-carregadas — quando o caller já fez o getCalls (ex.: rota
-// /api/coaching), evita disparar uma 2ª query duplicada pro Supabase.
+// Tendências de close rate / score do trainer e do time, calculadas das
+// calls reais. Dois modos:
+//
+//   - Weekly (default): buildWeeklyTrend gera 1 ponto por semana. Quando o
+//     trainer cobre ≥2 semanas de calls, é o que faz sentido — comparação
+//     temporal alinha com a janela do time.
+//
+//   - Per-call (fallback p/ esparso): trainer com calls só em 1 semana
+//     resulta em 1 ponto solto no AreaChart (Recharts não desenha linha
+//     com 1 ponto). Nesses casos cada call vira um ponto na X-axis com
+//     close rate e score CUMULATIVOS. Mostra progressão real mesmo com
+//     2-3 calls. Team avg é reconstruído per-call (cumulativo até cada
+//     timestamp) pra alinhar.
+//
+// Aceita `calls` pré-carregadas — quando o caller já fez o getCalls (ex.:
+// rota /api/coaching), evita disparar uma 2ª query duplicada pro Supabase.
 export async function getPerformanceTrends(
   realTrainers: { id: string; email?: string }[],
   preloadedCalls?: import("@/lib/types").Call[],
 ): Promise<Record<string, PerformanceTrendPoint[]>> {
-  const { buildWeeklyTrend, weeksSpanned } = await import("@/lib/services/rubric");
+  const { buildWeeklyTrend, buildPerCallTrend, weeksSpanned } = await import(
+    "@/lib/services/rubric"
+  );
 
   let calls = preloadedCalls;
   if (!calls) {
@@ -134,9 +148,8 @@ export async function getPerformanceTrends(
     calls = await getCalls({ limit: 200, orgId });
   }
 
-  // Janela do gráfico = nº de semanas que as calls da org realmente cobrem
-  // (1–6) — a MESMA para o time e para cada trainer, pra os pontos alinharem
-  // por índice. Semanas sem call DENTRO da janela viram null (lacuna).
+  // Janela do gráfico em modo weekly = nº de semanas que as calls da org
+  // realmente cobrem (1–6). Semanas sem call viram null (lacuna).
   const n = weeksSpanned(calls, 6);
   const toPoints = (tp: TrendPoint[]): PerformanceTrendPoint[] =>
     tp.map((p) => ({
@@ -151,7 +164,22 @@ export async function getPerformanceTrends(
 
   for (const tr of realTrainers) {
     const trainerCalls = calls.filter((c) => c.trainerId === tr.id);
-    if (trainerCalls.length > 0) {
+    if (trainerCalls.length === 0) continue;
+
+    const span = weeksSpanned(trainerCalls, 6);
+    if (span <= 1 && trainerCalls.length >= 2) {
+      // Esparso: per-call cumulativo. Team é reconstruído pra alinhar
+      // (mesmas labels C1, C2, ... → merge por índice no chart funciona).
+      const { trainer: trainerPoints, team: teamPoints } = buildPerCallTrend(
+        trainerCalls,
+        calls,
+      );
+      result[tr.id] = toPoints(trainerPoints);
+      // Override do team avg APENAS pra essa visualização — o key `team`
+      // global continua weekly pra outros consumidores. Cliente seleciona
+      // `result[tr.id].team` por trainer (ver patch no PerformanceTrend).
+      result[`${tr.id}__team`] = toPoints(teamPoints);
+    } else {
       result[tr.id] = toPoints(buildWeeklyTrend(trainerCalls, n));
     }
   }
