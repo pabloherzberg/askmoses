@@ -701,42 +701,39 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        {/* Send Email Action — owner/admin only. Trainer não dispara coaching
-            email (nem pra si mesmo) — função é do Owner. */}
-        {!isTrainer && (
-          <Card className="border-primary/50 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
-                <div>
-                  <h3 className="font-semibold">{t("results.readyToSend")}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t("results.readyToSendSubtitle", {
-                      email: formData.trainerEmail,
-                    })}
-                  </p>
-                </div>
-                <Button
-                  size="lg"
-                  className="mt-4 sm:mt-0"
-                  onClick={handleSendEmail}
-                  disabled={sendingEmail}
-                >
-                  {sendingEmail ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("results.sending")}
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      {t("results.sendCoachingEmail")}
-                    </>
-                  )}
-                </Button>
+        {/* Send Email Action */}
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <h3 className="font-semibold">{t("results.readyToSend")}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t("results.readyToSendSubtitle", {
+                    email: formData.trainerEmail,
+                  })}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Button
+                size="lg"
+                className="mt-4 sm:mt-0"
+                onClick={handleSendEmail}
+                disabled={sendingEmail}
+              >
+                {sendingEmail ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("results.sending")}
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    {t("results.sendCoachingEmail")}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
