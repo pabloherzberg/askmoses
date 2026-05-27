@@ -30,6 +30,12 @@ export interface DbScript {
   is_active: boolean
   created_at: string
   updated_at: string
+  // Three-part versioning (migrations 044, 063). Opcionais para back-compat
+  // com scripts criados antes do schema receber as colunas — backfill da
+  // 063 garante owner_edit_version=0 em scripts existentes.
+  rubric_version_snapshot?: number | null
+  minor_version?: number | null
+  owner_edit_version?: number | null
 }
 
 export interface CreateScriptInput {
@@ -83,18 +89,26 @@ export async function dbGetScripts(filters?: {
 }
 
 /**
- * Resolve o script ATIVO da org via tabela org_scripts (status='active',
- * ended_at IS NULL — partial unique uniq_org_scripts_open_active_per_org
- * garante no máx. 1 row). Funciona pra script template (org_id=NULL em
- * scripts) E pra script local da org — diferente de dbGetScripts({orgId,
- * active:true}) que filtra scripts.is_active e ignora a relação template.
+ * Resolve o script ATIVO da org. Mesma lógica usada por /api/scripts/active
+ * e pela lista /me/calls (CallsTable.activeScript): tenta primeiro
+ * `org_scripts` (mecanismo novo via send/accept do Admin), e se a org não
+ * tem essa linha cai pro fallback legado `scripts.is_active=true` filtrado
+ * por org_id.
  *
- * Single-query via embed PostgREST (FK org_scripts.script_id → scripts.id
- * declarada na migration 044).
+ * Ordem de preferência:
+ *   1. org_scripts.status='active' AND ended_at IS NULL  (partial unique →
+ *      no máx. 1 row, ver migration 059).
+ *   2. scripts.org_id=<orgId> AND is_active=true ORDER BY created_at DESC
+ *      LIMIT 1 — fallback pra orgs que ainda não passaram pelo fluxo
+ *      send/accept (legado / pré-migration 044).
+ *
+ * Retorna null só quando a org não tem script ativo em NENHUM dos dois
+ * mecanismos — nesse caso /api/analyze barra com 400 e direciona ao suporte.
  */
 export async function dbGetActiveOrgScript(orgId: string): Promise<DbScript | null> {
   const supabase = createAdminClient()
 
+  // ─── 1) Tenta org_scripts (fonte canônica desde migration 044) ──────────
   // Desambigua a FK: org_scripts tem DUAS refs pra scripts (script_id na 044
   // e previous_script_id na 051). PostgREST não sabe escolher sem o hint —
   // `scripts!script_id(*)` força a relação via coluna script_id.
@@ -106,16 +120,81 @@ export async function dbGetActiveOrgScript(orgId: string): Promise<DbScript | nu
     .is('ended_at', null)
     .maybeSingle()
 
-  if (error) {
-    if (error.code === 'PGRST116') return null
+  if (error && error.code !== 'PGRST116') {
     throw new Error(`dbGetActiveOrgScript: ${error.message}`)
   }
 
   // Em algumas versões do PostgREST o embed vem como objeto único, em outras
   // como array de 1 elemento — normalizamos defensivamente.
   const embedded = (data as unknown as { scripts: DbScript | DbScript[] | null } | null)?.scripts
-  if (!embedded) return null
-  return Array.isArray(embedded) ? (embedded[0] ?? null) : embedded
+  const fromOrgScripts = embedded
+    ? (Array.isArray(embedded) ? (embedded[0] ?? null) : embedded)
+    : null
+  if (fromOrgScripts) return fromOrgScripts
+
+  // ─── 2) Fallback legado: scripts.org_id=X AND is_active=true ────────────
+  // É o mesmo mecanismo que `/me/calls` usa pra marcar a pill de active
+  // (CallsTable.scriptIsActive vem de scripts.is_active). Sem esse fallback,
+  // orgs que nunca rodaram o fluxo send/accept ficam com /api/analyze
+  // bloqueada mesmo tendo um script local marcado como ativo.
+  const { data: legacy, error: legacyErr } = await supabase
+    .from('scripts')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (legacyErr && legacyErr.code !== 'PGRST116') {
+    throw new Error(`dbGetActiveOrgScript (legacy fallback): ${legacyErr.message}`)
+  }
+
+  return (legacy as DbScript | null) ?? null
+}
+
+/**
+ * Versão LEVE de `dbGetActiveOrgScript` que retorna SÓ o id. Pra páginas
+ * que precisam apenas comparar `call.scriptId === activeId` (marcar pill
+ * de ativo na CallsTable / CallDetail) — evita carregar full_script,
+ * sections e criteria do banco quando o consumer não usa esses campos.
+ *
+ * Mesma cadeia de prioridade do dbGetActiveOrgScript:
+ *   1. org_scripts.status='active' AND ended_at IS NULL.
+ *   2. scripts.org_id=X AND is_active=true (fallback legado).
+ */
+export async function dbGetActiveOrgScriptId(orgId: string): Promise<string | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('org_scripts')
+    .select('script_id')
+    .eq('org_id', orgId)
+    .eq('status', 'active')
+    .is('ended_at', null)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`dbGetActiveOrgScriptId: ${error.message}`)
+  }
+
+  const fromOrgScripts = (data?.script_id as string | undefined) ?? null
+  if (fromOrgScripts) return fromOrgScripts
+
+  const { data: legacy, error: legacyErr } = await supabase
+    .from('scripts')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (legacyErr && legacyErr.code !== 'PGRST116') {
+    throw new Error(`dbGetActiveOrgScriptId (legacy fallback): ${legacyErr.message}`)
+  }
+
+  return (legacy?.id as string | undefined) ?? null
 }
 
 /**

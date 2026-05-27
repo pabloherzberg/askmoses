@@ -98,6 +98,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body
         className={`${dmSans.variable} ${dmMono.variable} font-sans antialiased`}
         style={{ ['--impersonate-banner-h' as string]: bannerHeight }}
+        suppressHydrationWarning
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider

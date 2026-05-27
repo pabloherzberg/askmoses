@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
+import { getScripts, formatScriptVersion } from '@/lib/services/scripts'
+import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
 import { getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
 import type { Locale } from '@/i18n/routing'
@@ -29,8 +31,26 @@ export default async function CallDetailPage({ params }: Props) {
     scope = { orgId }
   }
 
-  const call = await getCallById(id, { locale, ...scope })
+  const detailOrgId = scope.orgId ?? (await getOrgId())
+  const [call, scripts, activeScriptId] = await Promise.all([
+    getCallById(id, { locale, ...scope }),
+    getScripts().catch(() => []),
+    // Helper leve (só id) — esta página não precisa do payload completo
+    // do script ativo, só do id pra comparar com call.scriptId.
+    detailOrgId ? dbGetActiveOrgScriptId(detailOrgId).catch(() => null) : Promise.resolve(null),
+  ])
   if (!call) notFound()
 
-  return <CallDetail call={call} viewerRole={role ?? 'owner'} backHref="/calls" />
+  // Enrich call with scriptName/scriptIsActive/scriptVersion. scriptIsActive
+  // vem do org_scripts (status='active' AND ended_at IS NULL), não do
+  // scripts.is_active legado.
+  const script = call.scriptId ? scripts.find((s) => s.id === call.scriptId) : undefined
+  const enrichedCall = {
+    ...call,
+    scriptName: script?.name ?? null,
+    scriptIsActive: !!(call.scriptId && activeScriptId && call.scriptId === activeScriptId),
+    scriptVersion: formatScriptVersion(script),
+  }
+
+  return <CallDetail call={enrichedCall} viewerRole={role ?? 'owner'} backHref="/calls" />
 }

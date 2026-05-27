@@ -1,9 +1,14 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, getSession, getOrgId } from '@/lib/auth'
 import { dbGetTrainers } from '@/lib/db/trainers'
+import { dbGetActiveOrgScript } from '@/lib/db/scripts'
 import { getCalls } from '@/lib/services/calls'
 import { getPerformanceTrends } from '@/lib/services/trainers'
-import { buildBehavioralProfile, buildBestWorstCalls } from '@/lib/services/coaching'
+import {
+  buildBehavioralProfile,
+  buildBestWorstCalls,
+  withLiveTrainerStats,
+} from '@/lib/services/coaching'
 import { translateStrings } from '@/lib/i18n/translate'
 import { routing, type Locale } from '@/i18n/routing'
 import type {
@@ -56,7 +61,14 @@ export async function GET(request: NextRequest) {
   // strings per trainer that actually render, in a tiny dedicated batch below.
   // Reaproveitamos o mesmo array `calls` em getPerformanceTrends pra evitar
   // duas queries idênticas pro Supabase em paralelo.
-  const calls = await getCalls({ orgId, limit: 200 })
+  //
+  // activeScript define as DIMENSIONS do Behavioral Profile pra TODOS os
+  // trainers da org (consistência horizontal). Sem ele, o builder cai pro
+  // fallback (call mais recente do trainer) — comportamento legado.
+  const [calls, activeScript] = await Promise.all([
+    getCalls({ orgId, limit: 200 }),
+    dbGetActiveOrgScript(orgId).catch(() => null),
+  ])
   const performanceTrends = await getPerformanceTrends(trainers, calls)
 
   // Calls agrupadas por trainer.
@@ -70,13 +82,15 @@ export async function GET(request: NextRequest) {
 
   const weekStart = startOfWeek(new Date())
 
-  // Enriquece todos os trainers PRIMEIRO (totalCalls = max(cache, real),
-  // lastActiveAt = data ISO da call mais recente real) e usa esse array
-  // enriquecido em buildBehavioralProfile — assim a comparação do trainer x
-  // média do time não bate com objetos que têm totalCalls stale (ex.: seeds
-  // onde syncTrainerStats não rodou).
+  // Enriquece todos os trainers PRIMEIRO (stats live + callsThisWeek +
+  // lastActiveAt) — usa esse array em buildBehavioralProfile, hero card e
+  // outBest/outWorst. Sem isso, qualquer trainer onde syncTrainerStats não
+  // rodou (seed, GHL pipeline, retry, sync silenciosamente quebrado)
+  // apareceria com close_rate/score/rubric=0 no Team Command Center mesmo
+  // com 2+ calls reais analisadas.
   const enrichedTrainers: Trainer[] = trainers.map((trainer) => {
     const tc = callsByTrainer.get(trainer.id) ?? []
+    const live = withLiveTrainerStats(trainer, tc)
     const callsThisWeek = tc.filter(
       (c) => new Date(c.date).getTime() >= weekStart,
     ).length
@@ -89,8 +103,7 @@ export async function GET(request: NextRequest) {
         }, 0)
       : 0
     return {
-      ...trainer,
-      totalCalls: Math.max(trainer.totalCalls ?? 0, tc.length),
+      ...live,
       callsThisWeek,
       lastActiveAt: lastAt > 0 ? new Date(lastAt).toISOString() : null,
     }
@@ -103,7 +116,10 @@ export async function GET(request: NextRequest) {
 
   for (const trainer of enrichedTrainers) {
     const tc = callsByTrainer.get(trainer.id) ?? []
-    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, enrichedTrainers)
+    // Behavioral usa as sections do script ATIVO como source of truth pra
+    // dimensions (mesmas linhas pra todos os trainers). Score e teamAvg
+    // são agregados das calls reais por nome (case-insensitive).
+    outBehavioral[trainer.id] = buildBehavioralProfile(trainer, tc, calls, activeScript)
     const { best, worst } = buildBestWorstCalls(tc)
     outBest[trainer.id] = best
     outWorst[trainer.id] = worst

@@ -163,6 +163,11 @@ export function AdminNavItems() {
       href: "/dashboard/script-builder",
       icon: Wand2,
     },
+    {
+      label: t("marketingIntelligence"),
+      href: "/marketing-intelligence",
+      icon: Megaphone,
+    },
     { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },

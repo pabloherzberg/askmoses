@@ -2,7 +2,7 @@ interface SparklineProps {
   data: number[]
   color?: string
   height?: number
-  /** Domínio Y. Default: min/max dos dados, com padding. */
+  /** Domínio Y. Default: min/max exatos dos dados. */
   domain?: [number, number]
   /** Mostra a área embaixo do trace. */
   fill?: boolean
