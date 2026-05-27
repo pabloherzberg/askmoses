@@ -648,7 +648,7 @@
     "scripts": {
       "searchPlaceholder": "Buscar por nombre, descripción, sección o versión…",
       "thName": "Nombre",
-      "thRubric": "Rubric",
+      "thRubric": "Org",
       "thVersion": "Versión",
       "thSections": "Secciones",
       "thCreated": "Creado",

@@ -127,11 +127,12 @@ export async function getRubric(): Promise<{
   sections: RubricSection[];
   trend: TrendPoint[];
   trainerSectionScores: TrainerSectionScore[];
+  calls: { improvements: string[] }[];
 }> {
   const orgId = await getOrgId();
   if (!orgId) {
     console.warn('[getRubric] getOrgId() returned null — user has no active org. Returning empty rubric.')
-    return { sections: [], trend: [], trainerSectionScores: [] };
+    return { sections: [], trend: [], trainerSectionScores: [], calls: [] };
   }
   const [defaultRubric, calls] = await Promise.all([
     dbGetDefaultRubricWithCriteria(orgId),
@@ -164,7 +165,7 @@ export async function getRubric(): Promise<{
   }
   if (!result) {
     console.warn(`[getRubric] No rubric resolvable for org=${orgId} (no local default, no active org_script with rubric). Returning trend-only.`);
-    return { sections: [], trend, trainerSectionScores: [] };
+    return { sections: [], trend, trainerSectionScores: [], calls };
   }
 
   // ── Team averages ─────────────────────────────────────────────────────────
@@ -209,7 +210,7 @@ export async function getRubric(): Promise<{
     };
   });
 
-  return { sections, trend, trainerSectionScores };
+  return { sections, trend, trainerSectionScores, calls };
 }
 
 // Deriva o "nível" exibido nas colunas Corr./Impact a partir do score médio
@@ -232,6 +233,32 @@ export function buildCoachingDrivers(sections: RubricSection[]): CorrelationFact
 export async function getCoachingDrivers(): Promise<CorrelationFactor[]> {
   const { sections } = await getRubric()
   return buildCoachingDrivers(sections)
+}
+
+// Agrega os improvements das calls para detectar padrões recorrentes que o
+// script atual não cobre. frequency = % de calls em que o item aparece.
+export function computeRubricGaps(
+  calls: { improvements: string[] }[],
+  topN = 5,
+): import('@/lib/types').RubricGap[] {
+  if (calls.length === 0) return []
+  const counts = new Map<string, number>()
+  for (const call of calls) {
+    const seen = new Set<string>()
+    for (const item of call.improvements) {
+      const key = item.trim()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topN)
+    .map(([description, count]) => ({
+      frequency: Math.round((count / calls.length) * 100),
+      description,
+    }))
 }
 
 export async function getRevenueEstimator(): Promise<{
