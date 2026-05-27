@@ -7,7 +7,7 @@ import {
   dbGetCriteriaByRubric,
 } from "@/lib/db/rubric";
 import { dbCreateCall } from "@/lib/db/calls";
-import { dbGetScriptById, dbGetActiveOrgScript } from "@/lib/db/scripts";
+import { dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
   forbidden,
@@ -36,12 +36,10 @@ import {
 
 interface AnalyzeRequestBody {
   transcript: string;
-  rubricId?: string;
   clientName?: string;
   trainerName?: string;
   trainerEmail?: string;
   trainerId?: string;
-  scriptId?: string;
   lead_name?: string | null;
   lead_source?: string | null;
 }
@@ -288,134 +286,91 @@ export async function POST(request: NextRequest) {
     const sessionTrainerId =
       body.trainerId ?? (await getTrainerDbId());
 
-    // ── 1. Resolve rubric + script (TL decision 2026-05-04, refined) ──────
+    // ── 1. Resolve script ATIVO + rubric ──────────────────────────────────
     //
-    // The rubric is the universal evaluation FRAMEWORK ("how to evaluate" —
-    // shared across the org, drives the LLM's mental model of good selling).
-    // The script is the call-specific PLAYBOOK ("what was the salesperson
-    // following" — the items that actually get scored on this call).
+    // INVARIANTE: toda call PRECISA ser ancorada num script aprovado pelo
+    // Owner (org_scripts.status='active' AND ended_at IS NULL). Sem isso,
+    // bloqueia ANTES de chamar LLM ou persistir — nenhuma call entra no
+    // banco com script_id null. Auditoria/tendência dependem desse vínculo.
     //
-    // When a script is provided:
-    //   - Rubric criteria → injected into the prompt as context (NOT scored).
-    //   - Script sections → the items the LLM scores. Output sections[] is
-    //     exactly these, with the script's own weight + critical (sums to
-    //     100 within the script — owner-validated).
-    //
-    // When no script is provided:
-    //   - Rubric criteria are BOTH the framework and the scored items.
-    let rubricData = null;
-    let script: Awaited<ReturnType<typeof dbGetScriptById>> | null = null;
-
-    if (body.scriptId) {
-      // 1ª tentativa: script local da org (org_id = X). Strict cross-tenant.
-      script = await dbGetScriptById(body.scriptId, orgId);
-
-      // 2ª tentativa: template (org_id=NULL) que a org tem linkado via
-      // org_scripts. Necessário porque o dropdown de upload (getScripts em
-      // lib/services/scripts.ts) une scripts owned + templates linkados —
-      // se o owner picou um template, o filtro estrito acima falhava.
-      if (!script) {
-        const admin = createAdminClient();
-        const { data: link } = await admin
-          .from("org_scripts")
-          .select("script_id")
-          .eq("org_id", orgId)
-          .eq("script_id", body.scriptId)
-          .is("ended_at", null)
-          .in("status", ["active", "pending"])
-          .maybeSingle();
-        if (link) {
-          const { data: tpl } = await admin
-            .from("scripts")
-            .select("*")
-            .eq("id", body.scriptId)
-            .maybeSingle();
-          if (tpl) script = tpl as typeof script;
-        }
-      }
-
-      if (!script) {
-        console.warn("[analyze] 403 — scriptId não pertence à org nem via org_scripts", {
-          orgId,
-          scriptId: body.scriptId,
-        });
-        return forbidden();
-      }
-      try {
-        // trusted=true: script.rubric_id vem de um link já validado (script
-        // foi carregado via dbGetScriptById com tenant check ou via lookup
-        // do org_scripts). Permite resolver rubric mesmo se for de outra org.
-        rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
-      } catch (e) {
-        console.warn(
-          "[analyze] script rubric fetch failed, using org default:",
-          e instanceof Error ? e.message : e,
-        );
-      }
+    // A rubric (avaliação framework) vem associada ao script.rubric_id —
+    // não há fallback pra rubric default da org, pra não mascarar orgs
+    // inconsistentes.
+    // Diferencia "não há script ativo" (400 — input/estado da org) de
+    // "falhou a query do script" (500 — operacional). Antes ambos caíam
+    // no 400 e mascaravam erros de banco/rede como input inválido.
+    let script: Awaited<ReturnType<typeof dbGetActiveOrgScript>> | null = null;
+    try {
+      script = await dbGetActiveOrgScript(orgId);
+    } catch (e) {
+      console.error(
+        "[analyze] 500 — falha ao buscar script ativo:",
+        e instanceof Error ? e.message : e,
+      );
+      return Response.json(
+        {
+          error: "Falha ao buscar o script ativo da organização",
+          details:
+            "Erro operacional ao consultar o banco. Tente novamente em instantes.",
+        },
+        { status: 500 },
+      );
     }
 
-    // Auto-fill: toda org nasce com 1 script linkado em org_scripts
-    // (status='active', garantido pelo fluxo de criação de org). Se o caller
-    // não mandou scriptId, herda esse — evita call órfã (script_id/rubric_id
-    // nulos faziam a tela de tendência ficar em branco). Lê de org_scripts
-    // porque o script linkado costuma ser um template (org_id=NULL em
-    // scripts), invisível pro filtro orgId+is_active de dbGetScripts.
     if (!script) {
-      try {
-        const activeOrgScript = await dbGetActiveOrgScript(orgId);
-        if (activeOrgScript) {
-          script = activeOrgScript;
-          if (!rubricData) {
-            // trusted=true: idem acima, link via org_scripts.status='active'.
-            rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
-          }
-        }
-      } catch (e) {
-        console.warn(
-          "[analyze] org active script lookup failed:",
-          e instanceof Error ? e.message : e,
-        );
-      }
+      // Query OK mas org realmente não tem row em org_scripts (status='active'
+      // AND ended_at IS NULL). Não é cenário que o Owner resolva sozinho —
+      // pode ser org criada via fluxo self-service antigo (sem template
+      // auto-linkado) ou backlog não-migrado. Direciona pro suporte.
+      console.error("[analyze] 400 — org sem script ativo aprovado", {
+        orgId,
+      });
+      return Response.json(
+        {
+          error: "Não foi possível analisar a call: nenhum script ativo encontrado para esta organização",
+          details:
+            "Entre em contato com o suporte para regularizar o script da sua organização antes de tentar novamente.",
+        },
+        { status: 400 },
+      );
     }
 
-    if (!rubricData) {
-      try {
-        // body.rubricId é input não-validado → trusted=false força filtro
-        // de tenant no fallback (impede leak cross-org).
-        rubricData = body.rubricId
-          ? await resolveRubricForOrg(orgId, body.rubricId, false)
-          : await dbGetDefaultRubricWithCriteria(orgId);
-      } catch (e) {
-        console.warn(
-          "[analyze] rubric fetch failed, using prompt defaults:",
-          e instanceof Error ? e.message : e,
-        );
-      }
+    let rubricData: Awaited<ReturnType<typeof resolveRubricForOrg>> | null = null;
+    try {
+      // trusted=true: link via org_scripts.status='active' já é validação
+      // de tenant — permite rubric template (org_id=NULL).
+      rubricData = await resolveRubricForOrg(orgId, script.rubric_id, true);
+    } catch (e) {
+      // Falha operacional na consulta da rubric → 500. Não mascara como 400.
+      console.error(
+        "[analyze] 500 — falha ao buscar rubric do script ativo:",
+        e instanceof Error ? e.message : e,
+      );
+      return Response.json(
+        {
+          error: "Falha ao buscar a rubric do script ativo",
+          details:
+            "Erro operacional ao consultar o banco. Tente novamente em instantes.",
+        },
+        { status: 500 },
+      );
     }
 
     const rubricId = rubricData?.rubric.id ?? null;
 
-    // Guard: org sem script ativo E sem rubric default não pode salvar call —
-    // toda call precisa ser ancorada em algo pra a tendência/score serem
-    // computáveis. Em vez de salvar com null silenciosamente (o que fazia o QA
-    // ver gráfico em branco), bloqueia com 400 pra Owner/Admin configurar a org.
     if (!rubricId) {
-      // Diagnóstico: log cada etapa que falhou pra o dev entender por que a
-      // cadeia chegou aqui (script template? rubric global? rubric inativa?).
-      console.error("[analyze] 400 — cadeia de resolução não encontrou rubric:", {
+      // Query OK mas script ativo aponta pra rubric inexistente/inativa.
+      // Em vez de cair em rubric default (que mascara o problema), bloqueia.
+      console.error("[analyze] 400 — script ativo sem rubric resolvível", {
         orgId,
-        bodyScriptId: body.scriptId ?? null,
-        bodyRubricId: body.rubricId ?? null,
-        scriptResolved: script
-          ? { id: script.id, rubric_id: script.rubric_id, is_active: script.is_active }
-          : null,
-        rubricResolved: rubricData?.rubric.id ?? null,
+        scriptId: script.id,
+        scriptRubricId: script.rubric_id,
       });
       return Response.json(
         {
-          error: "Org sem script ativo ou rubric default configurado",
+          error: "Rubric do script ativo não pôde ser resolvida",
           details:
-            "Vá em Settings → Scripts e ative um script, ou configure uma rubric default antes de subir calls.",
+            "Configuração inconsistente: o script ativo aponta para uma rubric inválida. Contate o suporte.",
         },
         { status: 400 },
       );
@@ -608,8 +563,10 @@ export async function POST(request: NextRequest) {
     try {
       savedCall = await dbCreateCall({
         orgId,
-        rubricId: rubricId ?? undefined,
-        scriptId: script?.id ?? undefined,
+        rubricId,
+        // script é garantido nesse ponto (guard acima retorna 400 se !script).
+        // Persistir sempre pra a call ficar auditável e rastreável.
+        scriptId: script.id,
         trainerId: sessionTrainerId ?? undefined,
         trainerName: trainerName ?? "Unknown",
         trainerEmail: trainerEmail ?? undefined,

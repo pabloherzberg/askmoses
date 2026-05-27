@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic'
 import { getTranslations } from 'next-intl/server'
 import { getCalls } from '@/lib/services/calls'
 import { getScripts } from '@/lib/services/scripts'
-import { getTrainerDbId } from '@/lib/auth'
+import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
+import { getOrgId, getTrainerDbId } from '@/lib/auth'
 import type { Call } from '@/lib/types'
 import { CallsTable } from '@/app/[locale]/calls/CallsTable'
 
@@ -34,21 +35,28 @@ export default async function TrainerCallsPage() {
         <CallsTable
           calls={[]}
           showTrainerColumn={false}
-          showAdvancedFilters={false}
-          sectionLabel={t('myCallsLabel')}
+            sectionLabel={t('myCallsLabel')}
           title={t('myCalls')}
         />
       </div>
     )
   }
 
-  const [calls, scripts] = await Promise.all([
+  const orgId = await getOrgId()
+  const [calls, scripts, activeScriptId] = await Promise.all([
     getCalls({ trainerId }),
     getScripts().catch(() => []),
+    // Mesma lógica da /calls do Owner — fonte da verdade é org_scripts
+    // (status='active' AND ended_at IS NULL), não scripts.is_active legado.
+    // Sem isso o trainer não via a pill verde, e podia ver scripts pending
+    // marcados como ativos. Helper leve (só id) — não precisa carregar
+    // sections/full_script/criteria pra renderizar a tabela.
+    orgId ? dbGetActiveOrgScriptId(orgId).catch(() => null) : Promise.resolve(null),
   ])
 
   const dbHasScripts = calls.some((c) => c.scriptId)
   const scriptMap = new Map(scripts.map((s) => [s.id, s]))
+  const activeId = activeScriptId
 
   const enrichedCalls: Call[] = calls.map((c) => {
     if (dbHasScripts) {
@@ -56,7 +64,7 @@ export default async function TrainerCallsPage() {
       return {
         ...c,
         scriptName: script?.name ?? null,
-        scriptIsActive: script?.is_active ?? false,
+        scriptIsActive: !!(c.scriptId && activeId && c.scriptId === activeId),
       }
     }
     return { ...c, ...demoScriptForCall(c) }
@@ -67,7 +75,6 @@ export default async function TrainerCallsPage() {
       <CallsTable
         calls={enrichedCalls}
         showTrainerColumn={false}
-        showAdvancedFilters={false}
         sectionLabel={t('myCallsLabel')}
         title={t('myCalls')}
       />

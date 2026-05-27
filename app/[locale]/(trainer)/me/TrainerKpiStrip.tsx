@@ -61,11 +61,10 @@ function aggregate(buckets: WeeklyBucket[], window: WindowSize): WindowAggregate
   const priorIdx = sliceStart - 1
   const priorBucket = priorIdx >= 0 ? buckets[priorIdx] : undefined
 
-  const nonEmpty = slice.filter((b) => !b.empty)
   const callsSum = slice.reduce((s, b) => s + b.calls, 0)
   const winsSum = slice.reduce((s, b) => s + b.wins, 0)
-  const scoreAvg = nonEmpty.length > 0
-    ? Math.round(nonEmpty.reduce((s, b) => s + b.score, 0) / nonEmpty.length)
+  const scoreAvg = callsSum > 0
+    ? Math.round(slice.reduce((s, b) => s + (b.score * b.calls), 0) / callsSum)
     : 0
   const closeAvg = callsSum > 0 ? Math.round((winsSum / callsSum) * 100) : 0
 

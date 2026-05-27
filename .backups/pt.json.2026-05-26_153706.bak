@@ -282,9 +282,7 @@
       "coachingNotesSubtitle": "Notas internas — não visíveis ao vendedor.",
       "coachingNotesPlaceholder": "Adicione suas notas de coaching aqui...",
       "coachingNotesFooter": "As notas não são persistidas nesta demo.",
-      "leadName": "Lead",
-      "scriptUsed": "Script utilizado",
-      "legacyScriptHint": "legado"
+      "leadName": "Lead"
     },
     "performanceTrend": {
       "title": "Tendência de performance",
@@ -371,8 +369,7 @@
       "team": "Time",
       "teamAvg": "Média do time",
       "closeRateLegend": "Taxa de fechamento",
-      "weekLabel": "Semana {n}",
-      "callLabel": "Call {n}"
+      "weekLabel": "Semana {n}"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps no script",
@@ -651,7 +648,7 @@
     "scripts": {
       "searchPlaceholder": "Buscar por nome, descrição, seção ou versão…",
       "thName": "Nome",
-      "thRubric": "Org",
+      "thRubric": "Rubric",
       "thVersion": "Versão",
       "thSections": "Seções",
       "thCreated": "Criado em",
@@ -685,10 +682,7 @@
       "deprecated": "Desatualizado",
       "rejected": "Recusado",
       "all": "Todos os status",
-      "pendingTooltip": "Esta org também tem um script pendente: {name}",
-      "analyzing": "Analisando...",
-      "queued": "Na fila",
-      "cancelSend": "Cancelar envio"
+      "pendingTooltip": "Esta org também tem um script pendente: {name}"
     },
     "cards": {
       "totalOrgs": "Total de organizações",
@@ -1695,7 +1689,6 @@
         "selectScriptPlaceholder": "Selecione um script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Obrigatório para analisar a chamada contra o seu processo de vendas",
-        "activeScriptHint": "As chamadas são analisadas com o script ativo da sua organização. Para alterá-lo, vá em Configurações → Scripts.",
         "noScriptsAvailable": "Nenhum script de vendas disponível. Crie um nas Configurações primeiro.",
         "callOutcomeLabel": "Resultado da chamada *",
         "callOutcomeHint": "Como esta chamada terminou?",

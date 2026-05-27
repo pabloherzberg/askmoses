@@ -2,6 +2,28 @@ import { getOrgId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { DbScript } from '@/lib/db/scripts'
 
+/**
+ * Formata o versionamento de 3 partes do script (migration 063).
+ * Formato: "v{rubric_version_snapshot}.{minor_version}.{owner_edit_version}".
+ * Retorna null quando o script não tem nenhuma das colunas populadas
+ * (scripts pré-versionamento, ou onde o backfill não rodou).
+ */
+export function formatScriptVersion(
+  s:
+    | Pick<DbScript, 'rubric_version_snapshot' | 'minor_version' | 'owner_edit_version'>
+    | null
+    | undefined,
+): string | null {
+  if (!s) return null
+  const rubric = s.rubric_version_snapshot
+  const minor = s.minor_version
+  const ownerEdit = s.owner_edit_version
+  // Todas null/undefined → sem versionamento. Pra robustez, exige pelo menos
+  // rubric_version_snapshot, que é o segmento "base" criado em 044.
+  if (rubric === null || rubric === undefined) return null
+  return `v${rubric}.${minor ?? 0}.${ownerEdit ?? 0}`
+}
+
 export async function getScripts(filters?: { active?: boolean; rubricId?: string; orgId?: string }) {
   const { dbGetScripts } = await import('@/lib/db/scripts')
   // Resolve orgId from the session if the caller didn't pass one — without

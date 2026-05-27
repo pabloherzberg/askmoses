@@ -288,14 +288,14 @@ export function AdminOrgRow({
               style={{ background: 'rgba(110,86,255,0.15)', color: 'var(--am-accent2)' }}
             >
               <Loader2 size={10} className="animate-spin" />
-              Analisando...
+              {tStatusScript('analyzing')}
             </span>
           ) : script?.analysisStatus === 'queued' ? (
             <span
               className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full font-mono uppercase tracking-wide whitespace-nowrap"
               style={{ background: 'var(--am-bg4)', color: 'var(--am-muted)' }}
             >
-              Na fila
+              {tStatusScript('queued')}
             </span>
           ) : scriptStatus === 'rejected' ? (
             <span
@@ -327,7 +327,7 @@ export function AdminOrgRow({
               disabled={cancelling}
               className="inline-flex items-center justify-center w-5 h-5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
               style={{ background: 'rgba(255,94,94,0.15)', color: 'var(--am-red)' }}
-              title="Cancelar envio"
+              title={tStatusScript('cancelSend')}
             >
               {cancelling ? <Loader2 size={9} className="animate-spin" /> : <X size={9} />}
             </button>

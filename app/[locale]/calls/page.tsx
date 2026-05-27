@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic'
 import { getTranslations } from 'next-intl/server'
 import { getCalls } from '@/lib/services/calls'
 import { getScripts } from '@/lib/services/scripts'
-import { getRole, getTrainerDbId } from '@/lib/auth'
+import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
+import { getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
 import type { Call } from '@/lib/types'
 import { CallsTable } from './CallsTable'
 
@@ -29,26 +30,37 @@ export default async function CallsPage() {
   const [role, t] = await Promise.all([getRole(), getTranslations('Owner.calls')])
   const isTrainer = role === 'trainer'
   const trainerId = isTrainer ? await getTrainerDbId() : undefined
+  const orgId = await getOrgId()
 
   // Scripts são resolvidos por org separadamente das calls. `.catch` degrada
   // de forma graciosa caso a query de scripts falhe.
-  const [calls, scripts] = await Promise.all([
+  // `activeScriptId` é a fonte da verdade do "script atual" — vem de
+  // org_scripts.status='active' AND ended_at IS NULL (não confunde com
+  // scripts.is_active, que é legado e pode estar dessincronizado, marcando
+  // como ativo um script que na verdade está pending pelo fluxo Admin).
+  // Usa o helper leve (só busca o id) — esta página não precisa do payload
+  // completo do script (sections, full_script, criteria).
+  const [calls, scripts, activeScriptId] = await Promise.all([
     getCalls(trainerId ? { trainerId } : undefined),
     getScripts().catch(() => []),
+    orgId ? dbGetActiveOrgScriptId(orgId).catch(() => null) : Promise.resolve(null),
   ])
 
   // Migration 056 aplicada? Sim se ao menos uma call traz script_id do banco.
   const dbHasScripts = calls.some((c) => c.scriptId)
   const scriptMap = new Map(scripts.map((s) => [s.id, s]))
+  const activeId = activeScriptId
 
   const enrichedCalls: Call[] = calls.map((c) => {
     if (dbHasScripts) {
-      // Dados reais: resolve nome/ativo a partir dos scripts da org.
+      // Dados reais: resolve nome a partir dos scripts da org. Ativo SÓ se
+      // for o script que está em org_scripts como active aberto — não
+      // confunde com scripts.is_active legado.
       const script = c.scriptId ? scriptMap.get(c.scriptId) : undefined
       return {
         ...c,
         scriptName: script?.name ?? null,
-        scriptIsActive: script?.is_active ?? false,
+        scriptIsActive: !!(c.scriptId && activeId && c.scriptId === activeId),
       }
     }
     // Fallback de demo enquanto a migration não roda.
