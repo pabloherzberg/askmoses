@@ -178,11 +178,47 @@ export async function POST(request: NextRequest) {
     return serverError('Não foi possível criar a organização', orgErr)
   }
 
+  // ─── Vincula template admin mais recente em org_scripts ─────────────────
+  // Toda org precisa nascer com 1 script ativo — /api/analyze bloqueia sem
+  // isso. Self-service onboarding não pede script (Owner ainda não escolheu),
+  // então auto-linkamos o template mais novo do catálogo admin (org_id IS
+  // NULL). Scripts editados por owner (org_id = <outraOrg>) NUNCA entram
+  // aqui: são privados da org que os criou.
+  const { data: defaultTemplate, error: tmplErr } = await admin
+    .from('scripts')
+    .select('id')
+    .is('org_id', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (tmplErr || !defaultTemplate) {
+    await admin.from('organizations').delete().eq('id', org.id)
+    await admin.from('users').delete().eq('id', callerId)
+    return serverError(
+      'Nenhum template de script disponível para vincular à nova org',
+      tmplErr,
+    )
+  }
+
+  const { error: orgScriptErr } = await admin.from('org_scripts').insert({
+    org_id: org.id,
+    script_id: defaultTemplate.id,
+    status: 'active',
+    started_at: new Date().toISOString(),
+    sent_by: callerId,
+  })
+  if (orgScriptErr) {
+    await admin.from('organizations').delete().eq('id', org.id)
+    await admin.from('users').delete().eq('id', callerId)
+    return serverError('Não foi possível vincular o script à organização', orgScriptErr)
+  }
+
   const { error: activeOrgErr } = await admin
     .from('users')
     .update({ active_org_id: org.id })
     .eq('id', callerId)
   if (activeOrgErr) {
+    // org_scripts tem FK ON DELETE CASCADE → deletar org já remove a linha.
     await admin.from('organizations').delete().eq('id', org.id)
     await admin.from('users').delete().eq('id', callerId)
     return serverError('Não foi possível vincular o usuário à organização', activeOrgErr)

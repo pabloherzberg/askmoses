@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
       "coachingNotesPlaceholder": "Add your coaching notes here...",
       "coachingNotesFooter": "Notes are not persisted in this demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script used",
+      "legacyScriptHint": "legacy"
     },
     "performanceTrend": {
       "title": "Overall Performance Trend",
@@ -369,7 +371,8 @@
       "team": "Team",
       "teamAvg": "Team avg",
       "closeRateLegend": "Close Rate",
-      "weekLabel": "Week {n}"
+      "weekLabel": "Week {n}",
+      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Script Gap Detection",
@@ -682,7 +685,10 @@
       "deprecated": "Deprecated",
       "rejected": "Rejected",
       "all": "All statuses",
-      "pendingTooltip": "This org also has a pending script: {name}"
+      "pendingTooltip": "This org also has a pending script: {name}",
+      "analyzing": "Analyzing...",
+      "queued": "Queued",
+      "cancelSend": "Cancel send"
     },
     "cards": {
       "totalOrgs": "Total Organizations",

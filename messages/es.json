@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notas internas — no visibles para el vendedor.",
       "coachingNotesPlaceholder": "Añade tus notas de coaching aquí...",
       "coachingNotesFooter": "Las notas no se persisten en esta demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilizado",
+      "legacyScriptHint": "legado"
     },
     "performanceTrend": {
       "title": "Tendencia de rendimiento",
@@ -369,7 +371,8 @@
       "team": "Equipo",
       "teamAvg": "Promedio del equipo",
       "closeRateLegend": "Tasa de cierre",
-      "weekLabel": "Semana {n}"
+      "weekLabel": "Semana {n}",
+      "callLabel": "Llamada {n}"
     },
     "rubricGapDetection": {
       "title": "Detección de gaps en el script",
@@ -682,7 +685,10 @@
       "deprecated": "Desactualizado",
       "rejected": "Rechazado",
       "all": "Todos los estados",
-      "pendingTooltip": "Esta org también tiene un script pendiente: {name}"
+      "pendingTooltip": "Esta org también tiene un script pendiente: {name}",
+      "analyzing": "Analizando...",
+      "queued": "En cola",
+      "cancelSend": "Cancelar envío"
     },
     "cards": {
       "totalOrgs": "Total de organizaciones",

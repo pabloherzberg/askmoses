@@ -95,6 +95,78 @@ export function buildWeeklyTrend(
   return trend;
 }
 
+// ─── Per-call trend (fallback p/ dados esparsos) ─────────────────────────────
+// Quando todas as calls do trainer caem na mesma semana, buildWeeklyTrend
+// gera 1 só ponto e o Recharts AreaChart fica com um dot solto (não tem como
+// desenhar linha com 1 ponto). Aqui cada call vira um ponto da X-axis com
+// closeRate/score CUMULATIVOS — assim 2 calls já mostram uma tendência real
+// (closed=2/2=100%, depois closed=2/3=67%, etc).
+//
+// O label é prefixado com "C" pra o tradutor de eixos (PerformanceTrend.tsx
+// labelWeek) tratar como label de call e não confundir com "W"/Week.
+export function buildPerCallTrend(
+  calls: { date: string; score: number; result: string }[],
+  teamCalls?: { date: string; score: number; result: string }[],
+): { trainer: TrendPoint[]; team: TrendPoint[] } {
+  if (calls.length === 0) return { trainer: [], team: [] };
+
+  // Preserve timestamps em vez de recriar Date repetidas vezes.
+  const sortedTrainer = [...calls]
+    .map((c) => ({ ...c, _ts: new Date(c.date).getTime() }))
+    .sort((a, b) => a._ts - b._ts);
+
+  // ─── Trainer: single-pass running totals ──────────────────────────────
+  const trainerTrend: TrendPoint[] = [];
+  let tClosed = 0;
+  let tScoreSum = 0;
+  for (let i = 0; i < sortedTrainer.length; i++) {
+    const c = sortedTrainer[i];
+    if (c.result === "closed") tClosed += 1;
+    tScoreSum += c.score;
+    const n = i + 1;
+    trainerTrend.push({
+      week: `C${n}`,
+      closeRate: Math.round((tClosed / n) * 100),
+      score: Math.round(tScoreSum / n),
+    });
+  }
+
+  // ─── Team: pointer-based cumulative ───────────────────────────────────
+  // Team avg em cada ponto do trainer = cumulativo do time até o timestamp
+  // dessa call (inclusive). Antes era O(N×M) — pra cada call do trainer,
+  // varríamos teamCalls inteiro. Agora ordenamos team uma vez (M log M) e
+  // usamos um ponteiro `p` que só avança (total amortizado O(N + M)).
+  let teamTrend: TrendPoint[] = [];
+  if (teamCalls && teamCalls.length > 0) {
+    const sortedTeam = [...teamCalls]
+      .map((tc) => ({ ...tc, _ts: new Date(tc.date).getTime() }))
+      .sort((a, b) => a._ts - b._ts);
+
+    let p = 0;
+    let teamClosed = 0;
+    let teamScoreSum = 0;
+
+    teamTrend = sortedTrainer.map((c, i) => {
+      while (p < sortedTeam.length && sortedTeam[p]._ts <= c._ts) {
+        if (sortedTeam[p].result === "closed") teamClosed += 1;
+        teamScoreSum += sortedTeam[p].score;
+        p += 1;
+      }
+      const n = i + 1;
+      if (p === 0) {
+        return { week: `C${n}`, closeRate: 0, score: 0 };
+      }
+      return {
+        week: `C${n}`,
+        closeRate: Math.round((teamClosed / p) * 100),
+        score: Math.round(teamScoreSum / p),
+      };
+    });
+  }
+
+  return { trainer: trainerTrend, team: teamTrend };
+}
+
 // Quantas semanas (1–maxWeeks) a janela do gráfico deve ter, com base no
 // período real coberto pelas calls — evita semanas vazias "fantasma" no início
 // do gráfico quando a org tem menos de maxWeeks semanas de dados.

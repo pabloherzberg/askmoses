@@ -16,12 +16,11 @@ interface SendCoachingBody {
 
 // POST /api/send-coaching
 //   Dispara email de coaching pro trainer após uma call ser analisada.
-//   Auth: logado + Owner (trainer não dispara coaching de outros trainers)
-//   + caller pertence à mesma org do trainer destinatário.
-//   trainerEmail deve corresponder a um user com trainers row em
-//   active_org_id do caller. Sem esse check, anyone-logged-in podia mandar
-//   email arbitrário pra qualquer email (spam / phishing vector).
-//   Admin impersonando é bloqueado (read-only).
+//   Auth: logado + Owner/Admin (Admin NÃO impersonando — admin operando
+//   o próprio painel global, raro). Trainer é bloqueado explicitamente:
+//   não dispara coaching nem pra si mesmo, nem pra colegas. Admin
+//   impersonando uma org é read-only (bloqueado em requireOwnerWrite).
+//   trainerEmail destinatário precisa pertencer à mesma org do caller.
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session) {
@@ -35,10 +34,16 @@ export async function POST(request: Request) {
     return writeErr
   }
 
-  // Trainer pode disparar o coaching email — mas SÓ se o destinatário for
-  // ele mesmo (ver checagem trainerEmail === session.user.email abaixo).
-  // Owner segue podendo mandar pra qualquer trainer da org.
+  // Coaching email é função do Owner. Trainer não dispara — nem pra si
+  // mesmo, nem pra outro trainer. Sem esse gate, salesperson conseguia
+  // gerar/enviar seu próprio feedback (fluxo que deve ser do gestor).
   const role = await getRole()
+  if (role === 'trainer') {
+    console.warn('[send-coaching] 403 — trainer não pode disparar coaching email', {
+      userId: session.user.id,
+    })
+    return forbidden()
+  }
 
   try {
     const body = (await request.json()) as SendCoachingBody
@@ -55,21 +60,6 @@ export async function POST(request: Request) {
 
     if (!trainerEmail) {
       return Response.json({ error: 'trainerEmail é obrigatório' }, { status: 400 })
-    }
-
-    // Trainer só pode enviar pra si mesmo. Owner/Admin não tem restrição
-    // (a checagem org-match abaixo garante que o destinatário pertence à
-    // mesma org). Sem isso, trainer logado podia disparar email de
-    // "coaching" pra qualquer colega — vetor de spam interno.
-    if (role === 'trainer') {
-      const sessionEmail = session.user.email?.toLowerCase() ?? ''
-      if (trainerEmail.toLowerCase() !== sessionEmail) {
-        console.warn('[send-coaching] 403 — trainer tentando enviar pra outro email', {
-          sessionEmail,
-          trainerEmail: trainerEmail.toLowerCase(),
-        })
-        return forbidden()
-      }
     }
 
     const ctx = await getActiveOrgContext()

@@ -28,11 +28,20 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
   const t = useTranslations('Shared.performanceTrend')
   const [selected, setSelected] = useState<string>('team')
 
-  // Week label localizado — número extraído da chave (`week3` → 3) e jogado
-  // no template `Semana {n}` do i18n. Sem n numérico fallback p/ string crua.
+  // Labels localizados:
+  //   - "W{n}" → "Week {n}" (modo semanal, weeklyTrend)
+  //   - "C{n}" → "Call {n}" (modo per-call esparso, buildPerCallTrend)
+  //   - Outras formas: usa string crua (defesa contra labels customizados).
   const labelWeek = (w: string) => {
-    const num = parseInt(w.replace(/\D/g, ''), 10)
-    return Number.isNaN(num) ? w : t('weekLabel', { n: num })
+    if (w.startsWith('W')) {
+      const num = parseInt(w.slice(1), 10)
+      return Number.isNaN(num) ? w : t('weekLabel', { n: num })
+    }
+    if (w.startsWith('C')) {
+      const num = parseInt(w.slice(1), 10)
+      return Number.isNaN(num) ? w : t('callLabel', { n: num })
+    }
+    return w
   }
 
   const activeId = fixedId ?? selected
@@ -47,8 +56,13 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
     ? null
     : salesPeople?.find((s) => s.id === selected)?.name ?? null
 
-  // Team avg data for overlay (only in fixedId mode — show trainer vs team)
-  const teamData = (trends['team'] ?? []).map((d) => ({
+  // Team avg pareado: quando o trainer está em modo per-call (sparse), há um
+  // `{trainerId}__team` específico pra alinhar índices. Senão usa o `team`
+  // global (weekly).
+  const teamKey = activeId !== 'team' && trends[`${activeId}__team`]
+    ? `${activeId}__team`
+    : 'team'
+  const teamData = (trends[teamKey] ?? []).map((d) => ({
     ...d,
     weekLabel: labelWeek(d.week),
   }))
