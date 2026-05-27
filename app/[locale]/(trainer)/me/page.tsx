@@ -118,32 +118,11 @@ export default async function TrainerDashboardPage() {
           wins: closedCalls,
           avgScore: totalAvgScore,
           closeRate: totalCloseRate,
+          partial: partialCalls,
+          notClosed: notClosedCalls,
+          noOutcome: noOutcomeCalls,
         }}
       />
-
-      {/* ── Quick Stats ───────────────────────────────────────── */}
-      <div className="rounded-2xl p-5 border mb-4" style={{ background: "var(--card)", borderColor: "var(--am-border)" }}>
-        <p className="text-[13px] font-medium mb-4" style={{ color: "var(--am-text)" }}>
-          Quick Stats
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "Closed",     value: closedCalls,    color: "var(--am-green)" },
-            { label: "Partial",    value: partialCalls,   color: "var(--am-amber)" },
-            { label: "Not Closed", value: notClosedCalls, color: "var(--am-red)"   },
-            { label: "No Outcome", value: noOutcomeCalls, color: "var(--am-muted)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <span className="text-3xl font-mono font-semibold" style={{ color }}>
-                {value}
-              </span>
-              <span className="text-[11px] font-medium" style={{ color: "var(--am-muted)" }}>
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ── Personal rubric vs team avg ───────────────────────── */}
       <div className="rounded-2xl p-5 border mb-4" style={{ background: "var(--card)", borderColor: "var(--am-border)" }}>

@@ -456,12 +456,13 @@
     "rubricLegendTeam": "Moyenne équipe",
     "deltaVsTeam": "{delta} vs équipe ({teamAvg})",
     "callsKpi": "Appels",
-    "winsKpi": "Conclues",
+    "closedKpi": "Conclus",
     "kpiWindow": "Fenêtre",
     "kpiWindowWeeks": "{n}sem",
     "kpiDeltaVsPrev": "vs préc.",
     "kpiTotalSuffix": "sur {count} au total",
     "kpiAvgSuffix": "{value} cumulé",
+    "closedBreakdown": "{partial} partiels · {notClosed} non conclus · {noOutcome} sans issue",
     "recentCalls": "Appels récents",
     "noCallsYet": "Aucun appel pour le moment.",
     "myCallsLabel": "Mes appels",
@@ -903,6 +904,15 @@
       "genericError": "Impossible de mettre à jour l'abonnement. Réessayez.",
       "back": "← Retour au panel",
       "goToGhl": "Intégration GHL →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Téléversement manuel des appels",
+      "cardSubtitle": "Autorise les Sales People et Admins de cette organisation à téléverser des appels manuellement via /dashboard/upload. Les Owners ne téléversent jamais d'appels. Par défaut, les appels sont ingérés automatiquement via GHL/Pepper.",
+      "statusOn": "Activé — les Sales People et Admins peuvent téléverser des appels depuis l'interface.",
+      "statusOff": "Désactivé — les appels n'arrivent que via l'intégration GHL/Pepper.",
+      "toggleAriaLabel": "Basculer le téléversement manuel",
+      "successDetail": "Paramètre enregistré.",
+      "genericError": "Impossible de mettre à jour le paramètre. Réessayez."
     },
     "ghlIntegration": {
       "eyebrow": "Intégration GHL / Pepper",

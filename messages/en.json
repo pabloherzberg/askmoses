@@ -456,12 +456,13 @@
     "rubricLegendTeam": "Team avg",
     "deltaVsTeam": "{delta} vs team ({teamAvg})",
     "callsKpi": "Calls",
-    "winsKpi": "Wins",
+    "closedKpi": "Closed",
     "kpiWindow": "Window",
     "kpiWindowWeeks": "{n}w",
     "kpiDeltaVsPrev": "vs prev",
     "kpiTotalSuffix": "of {count} total",
     "kpiAvgSuffix": "{value} all-time",
+    "closedBreakdown": "{partial} partial · {notClosed} not closed · {noOutcome} no outcome",
     "recentCalls": "Recent Calls",
     "noCallsYet": "No calls yet.",
     "myCallsLabel": "My Calls",
@@ -903,6 +904,15 @@
       "genericError": "Could not update subscription. Try again.",
       "back": "← Back to panel",
       "goToGhl": "GHL integration →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Manual call upload",
+      "cardSubtitle": "Allow Sales People and Admins in this organization to upload calls manually via /dashboard/upload. Owners never upload calls. By default, calls are ingested automatically through GHL/Pepper.",
+      "statusOn": "Enabled — Sales People and Admins can upload calls from the UI.",
+      "statusOff": "Disabled — calls are ingested only via GHL/Pepper integration.",
+      "toggleAriaLabel": "Toggle manual upload",
+      "successDetail": "Setting saved.",
+      "genericError": "Could not update the setting. Try again."
     },
     "ghlIntegration": {
       "eyebrow": "GHL / Pepper integration",

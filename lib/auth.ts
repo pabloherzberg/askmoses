@@ -166,6 +166,22 @@ export async function getActiveOrgContextFor(
   return loadOrgContext(userId, isSuperAdmin, impersonatingOrgId)
 }
 
+// Lê a flag de upload manual da org ativa pra decidir se o sidebar mostra
+// o item "Upload" e se /dashboard/upload abre. Memoizada por request — os
+// 9 layouts que renderizam sidebar chamam isso sem custo extra.
+// Admin sem org ativa (sem impersonate) retorna false — não mostra item.
+export const getManualUploadEnabledForActiveOrg = cache(async (): Promise<boolean> => {
+  const ctx = await getActiveOrgContext()
+  if (!ctx?.activeOrgId) return false
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('organizations')
+    .select('manual_upload_enabled')
+    .eq('id', ctx.activeOrgId)
+    .maybeSingle()
+  return Boolean(data?.manual_upload_enabled)
+})
+
 export async function getMembershipsForSwitcher(): Promise<MembershipOption[]> {
   const session = await getSession()
   if (!session) return []
