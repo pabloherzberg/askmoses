@@ -1695,6 +1695,7 @@
         "selectScriptPlaceholder": "Sélectionnez un script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Requis pour analyser l'appel par rapport à votre processus de vente",
+        "activeScriptHint": "Les appels sont analysés avec le script actif de votre organisation. Pour le modifier, allez dans Paramètres → Scripts.",
         "noScriptsAvailable": "Aucun script de vente disponible. Créez-en un dans Paramètres d'abord.",
         "callOutcomeLabel": "Résultat de l'appel *",
         "callOutcomeHint": "Comment cet appel s'est-il terminé ?",

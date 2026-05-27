@@ -38,7 +38,7 @@ import {
   Sparkles,
   ChevronDown,
 } from "lucide-react";
-import type { CallResult as CallOutcome, Trainer } from "@/lib/types";
+import type { Trainer } from "@/lib/types";
 import { toNumber5 } from "@/lib/score-display";
 import { UpsellCard } from "@/components/shared/UpsellCard";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
@@ -52,7 +52,12 @@ interface FormData {
   clientName: string;
   audioFile: File | null;
   transcript: string;
-  callOutcome: CallOutcome | "";
+}
+
+interface ActiveScript {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 interface SectionResult {
@@ -86,7 +91,6 @@ export default function UploadPage() {
     clientName: "",
     audioFile: null,
     transcript: "",
-    callOutcome: "",
   });
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null,
@@ -97,6 +101,7 @@ export default function UploadPage() {
   const [processingStatus, setProcessingStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [activeScript, setActiveScript] = useState<ActiveScript | null>(null);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTrainer, setIsTrainer] = useState(false);
@@ -108,9 +113,19 @@ export default function UploadPage() {
 
   useEffect(() => {
     async function init() {
-      // Script é resolvido server-side em /api/analyze via dbGetActiveOrgScript
-      // (org_scripts.status='active' AND ended_at IS NULL). Sem seleção manual.
-      const meRes = await fetch("/api/me");
+      // Sempre usa o script ativo da org — sem seletor. A própria /api/analyze
+      // resolve via dbGetActiveOrgScript quando scriptId não vem; o GET aqui é
+      // só pro display do nome do script no form.
+      const [activeRes, meRes] = await Promise.all([
+        fetch("/api/scripts/active"),
+        fetch("/api/me"),
+      ]);
+
+      const { data: activeData } = (await activeRes.json()) as {
+        data: { script: ActiveScript | null } | null;
+        error: unknown;
+      };
+      if (activeData?.script) setActiveScript(activeData.script);
 
       const { data: meData } = (await meRes.json()) as {
         data: {
@@ -191,11 +206,7 @@ export default function UploadPage() {
     const hasTrainerInfo = !!formData.trainerId && !!formData.trainerName;
     const hasContent =
       uploadType === "audio" ? formData.audioFile : formData.transcript.trim();
-    // Outcome é seleção obrigatória do usuário. `""` = ainda não escolhido;
-    // `"no_outcome"` é um outcome legítimo (call sem desfecho detectado),
-    // por isso precisamos distinguir os dois estados.
-    const hasOutcome = formData.callOutcome !== "";
-    return hasTrainerInfo && hasContent && hasOutcome;
+    return hasTrainerInfo && hasContent;
   };
 
   const handleSubmit = async () => {
@@ -300,7 +311,6 @@ export default function UploadPage() {
           trainerName: formData.trainerName,
           trainerEmail: formData.trainerEmail,
           clientName: formData.clientName,
-          callOutcome: formData.callOutcome,
         }),
       });
 
@@ -377,7 +387,6 @@ export default function UploadPage() {
           strengths: analysisResult.strengths,
           improvements: analysisResult.improvements,
           transcript: analysisResult.transcript,
-          callOutcome: formData.callOutcome,
           detectedOutcome: analysisResult.detectedOutcome,
           locale,
         }),
@@ -408,7 +417,6 @@ export default function UploadPage() {
       clientName: "",
       audioFile: null,
       transcript: "",
-      callOutcome: "",
     });
   };
 
@@ -506,44 +514,11 @@ export default function UploadPage() {
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>{t("results.scoreScaleHint")}</span>
-              {analysisResult.detectedOutcome &&
-                (() => {
-                  const outcomeMeta: Record<string, { cap: number }> = {
-                    closed: { cap: 5 },
-                    partial: { cap: 4 },
-                    not_closed: { cap: 3 },
-                    no_outcome: { cap: 2.5 },
-                  };
-                  const outcomeKey = analysisResult.detectedOutcome;
-                  const meta = outcomeMeta[outcomeKey] ?? { cap: 100 };
-                  const knownOutcomes = [
-                    "closed",
-                    "partial",
-                    "not_closed",
-                    "no_outcome",
-                  ] as const;
-                  const isKnown = (knownOutcomes as readonly string[]).includes(
-                    outcomeKey,
-                  );
-                  const label = isKnown
-                    ? t(
-                        `results.outcomes.${outcomeKey as (typeof knownOutcomes)[number]}.label`,
-                      )
-                    : outcomeKey;
-                  const note = isKnown
-                    ? t(
-                        `results.outcomes.${outcomeKey as (typeof knownOutcomes)[number]}.note`,
-                      )
-                    : "";
-                  return (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium"
-                      title={note}
-                    >
-                      {t("results.outcomeBadge", { label, cap: meta.cap })}
-                    </span>
-                  );
-                })()}
+              {analysisResult.detectedOutcome && (
+                <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium">
+                  {t(`form.outcomes.${analysisResult.detectedOutcome}`)}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -726,42 +701,39 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        {/* Send Email Action — owner/admin only. Trainer não dispara coaching
-            email (nem pra si mesmo) — função é do Owner. */}
-        {!isTrainer && (
-          <Card className="border-primary/50 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
-                <div>
-                  <h3 className="font-semibold">{t("results.readyToSend")}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t("results.readyToSendSubtitle", {
-                      email: formData.trainerEmail,
-                    })}
-                  </p>
-                </div>
-                <Button
-                  size="lg"
-                  className="mt-4 sm:mt-0"
-                  onClick={handleSendEmail}
-                  disabled={sendingEmail}
-                >
-                  {sendingEmail ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t("results.sending")}
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      {t("results.sendCoachingEmail")}
-                    </>
-                  )}
-                </Button>
+        {/* Send Email Action */}
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <h3 className="font-semibold">{t("results.readyToSend")}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t("results.readyToSendSubtitle", {
+                    email: formData.trainerEmail,
+                  })}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Button
+                size="lg"
+                className="mt-4 sm:mt-0"
+                onClick={handleSendEmail}
+                disabled={sendingEmail}
+              >
+                {sendingEmail ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("results.sending")}
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    {t("results.sendCoachingEmail")}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -877,58 +849,30 @@ export default function UploadPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("form.callOutcomeLabel")}</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {/* Cores alinhadas semanticamente com RESULT_STYLES (lib/constants):
-                    closed=green, partial=amber, not_closed=red, no_outcome=muted/gray.
-                    Mantém consistência visual entre form de seleção e badges de listagem. */}
-                {(
-                  [
-                    {
-                      value: "closed",
-                      color:
-                        "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300",
-                    },
-                    {
-                      value: "partial",
-                      color:
-                        "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-                    },
-                    {
-                      value: "not_closed",
-                      color:
-                        "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300",
-                    },
-                    {
-                      value: "no_outcome",
-                      color:
-                        "bg-gray-100 border-gray-400 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-                    },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        callOutcome: option.value as CallOutcome,
-                      }))
-                    }
-                    className={`px-3 py-2.5 rounded-md border-2 text-sm font-medium transition-all text-left ${
-                      formData.callOutcome === option.value
-                        ? option.color
-                        : "bg-muted/50 border-transparent text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {t(`form.outcomes.${option.value}`)}
-                  </button>
-                ))}
-              </div>
+              <Label>{t("form.salesScriptLabel")}</Label>
+              {activeScript ? (
+                <div className="rounded-md border border-input bg-muted/50 px-3 py-2">
+                  <p className="text-sm font-medium text-foreground">
+                    {activeScript.name}
+                  </p>
+                  {activeScript.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {activeScript.description}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {t("form.noScriptsAvailable")}
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                {t("form.callOutcomeHint")}
+                {t("form.activeScriptHint")}
               </p>
             </div>
+
           </CardContent>
         </Card>
 

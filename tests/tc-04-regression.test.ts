@@ -127,8 +127,10 @@ describe('TC-04 › CreateCallInput não exige campos ML', () => {
 // ─── 4. /api/analyze continua chamando dbCreateCall com campos existentes ─────
 
 describe('TC-04 › /api/analyze — regressão de campos existentes', () => {
-  it('chama dbCreateCall com callOutcome', () => {
-    expect(analyzeRoute).toMatch(/callOutcome:\s*reportedOutcome/)
+  it('chama dbCreateCall com callOutcome espelhando detectedOutcome', () => {
+    // Pós fix/call-overall-vs-section-scores: reportedOutcome saiu do fluxo;
+    // callOutcome persistido = detectedOutcome da IA.
+    expect(analyzeRoute).toMatch(/callOutcome:\s*detectedOutcome/)
   })
 
   it('chama dbCreateCall com sections', () => {

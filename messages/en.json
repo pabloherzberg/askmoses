@@ -1695,6 +1695,7 @@
         "selectScriptPlaceholder": "Select a script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Required to analyze the call against your sales process",
+        "activeScriptHint": "Calls are analyzed against your organization's active script. To change it, go to Settings → Scripts.",
         "noScriptsAvailable": "No sales scripts available. Create one in Settings first.",
         "callOutcomeLabel": "Call Outcome *",
         "callOutcomeHint": "How did this call end?",
