@@ -72,7 +72,11 @@ export function NavItem({
   );
 }
 
-export function TrainerNavItems() {
+export function TrainerNavItems({
+  manualUploadEnabled = false,
+}: {
+  manualUploadEnabled?: boolean;
+} = {}) {
   const t = useTranslations("Shared.sidebar");
   const trainerNav = [
     { label: t("myDashboard"), href: "/me", icon: LayoutDashboard },
@@ -82,7 +86,9 @@ export function TrainerNavItems() {
       href: "/me/recommendations",
       icon: Sparkles,
     },
-    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    ...(manualUploadEnabled
+      ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
+      : []),
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -143,7 +149,11 @@ export function OwnerNavItems() {
   );
 }
 
-export function AdminNavItems() {
+export function AdminNavItems({
+  manualUploadEnabled = false,
+}: {
+  manualUploadEnabled?: boolean;
+} = {}) {
   const t = useTranslations("Shared.sidebar");
   const nav = [
     { label: t("saasPanel"), href: "/admin", icon: Building2 },
@@ -163,7 +173,9 @@ export function AdminNavItems() {
       href: "/dashboard/script-builder",
       icon: Wand2,
     },
-    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    ...(manualUploadEnabled
+      ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
+      : []),
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
@@ -208,28 +220,36 @@ export function ImpersonateNavItems() {
 export function NavItemsForRole({
   role,
   isImpersonating = false,
+  manualUploadEnabled = false,
 }: {
   role?: Role | null;
   isImpersonating?: boolean;
+  manualUploadEnabled?: boolean;
 }) {
   if (role === "admin" && isImpersonating) return <ImpersonateNavItems />;
-  if (role === "admin") return <AdminNavItems />;
-  if (role === "trainer") return <TrainerNavItems />;
+  if (role === "admin") return <AdminNavItems manualUploadEnabled={manualUploadEnabled} />;
+  if (role === "trainer") return <TrainerNavItems manualUploadEnabled={manualUploadEnabled} />;
   return <OwnerNavItems />;
 }
 
 export function AppSidebar({
   role,
   isImpersonating = false,
+  manualUploadEnabled = false,
   children,
 }: {
   role?: Role | null;
   isImpersonating?: boolean;
+  manualUploadEnabled?: boolean;
   children?: React.ReactNode;
 }) {
   const t = useTranslations("Shared.sidebar");
   const nav = children ?? (
-    <NavItemsForRole role={role} isImpersonating={isImpersonating} />
+    <NavItemsForRole
+      role={role}
+      isImpersonating={isImpersonating}
+      manualUploadEnabled={manualUploadEnabled}
+    />
   );
 
   return (

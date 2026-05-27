@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { OwnerManagementCard } from './OwnerManagementCard'
 import { ScriptManagementCard, type PendingSnapshot, type ScriptSnapshot } from './ScriptManagementCard'
 import { SubscriptionOverrideCard } from './SubscriptionOverrideCard'
+import { ManualUploadToggleCard } from './ManualUploadToggleCard'
 
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
 type SubStatus = 'active' | 'inactive' | 'trial'
@@ -29,7 +30,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
 
   const { data: org } = await admin
     .from('organizations')
-    .select('id, name, subscription_status, trial_ends_at, mrr, plans(code)')
+    .select('id, name, subscription_status, trial_ends_at, mrr, manual_upload_enabled, plans(code)')
     .eq('id', orgId)
     .maybeSingle()
 
@@ -43,6 +44,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
     subscription_status: SubStatus
     trial_ends_at: string | null
     mrr: number | string | null
+    manual_upload_enabled: boolean | null
     plans: { code: PlanCode } | { code: PlanCode }[] | null
   }
   const planRaw = orgRow.plans
@@ -125,6 +127,11 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
         orgName={orgRow.name}
         activeScript={activeScript}
         pending={pending}
+      />
+
+      <ManualUploadToggleCard
+        orgId={orgRow.id}
+        initialEnabled={Boolean(orgRow.manual_upload_enabled)}
       />
 
       {/* GHL integration entry — sub-página separada por ser form complexo

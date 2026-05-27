@@ -6,6 +6,9 @@ interface KpiCardProps {
   valueColor?: string
   /** Linha pequena abaixo do valor — usada para contexto histórico ("of 47 total"). */
   sublabel?: string
+  /** Segunda linha pequena abaixo do sublabel — usada pra detalhar composição
+   *  (ex: breakdown de outcomes no card Closed). */
+  extraSublabel?: string
   /** Mudança vs período anterior (ex: +0.3, -2). Sem texto, só o número formatado. */
   delta?: number
   /** Sufixo do delta (ex: '%', 'pp'). */
@@ -23,6 +26,7 @@ export function KpiCard({
   value,
   valueColor,
   sublabel,
+  extraSublabel,
   delta,
   deltaSuffix = '',
   deltaLabel,
@@ -90,6 +94,13 @@ export function KpiCard({
         </div>
       ) : (
         <div style={{ height: 14 }} />
+      )}
+
+      {/* Extra sublabel — opcional, sem reservar espaço quando ausente. */}
+      {extraSublabel && (
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--am-muted)' }}>
+          {extraSublabel}
+        </div>
       )}
 
       {/* Sparkline */}

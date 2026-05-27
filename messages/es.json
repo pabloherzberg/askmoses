@@ -456,12 +456,13 @@
     "rubricLegendTeam": "Prom. equipo",
     "deltaVsTeam": "{delta} vs equipo ({teamAvg})",
     "callsKpi": "Llamadas",
-    "winsKpi": "Cerradas",
+    "closedKpi": "Cerradas",
     "kpiWindow": "Ventana",
     "kpiWindowWeeks": "{n}sem",
     "kpiDeltaVsPrev": "vs ant.",
     "kpiTotalSuffix": "de {count} en total",
     "kpiAvgSuffix": "{value} histórico",
+    "closedBreakdown": "{partial} parciales · {notClosed} no cerradas · {noOutcome} sin resultado",
     "recentCalls": "Llamadas recientes",
     "noCallsYet": "Aún no hay llamadas.",
     "myCallsLabel": "Mis llamadas",
@@ -903,6 +904,15 @@
       "genericError": "No se pudo actualizar la suscripción. Inténtalo de nuevo.",
       "back": "← Volver al panel",
       "goToGhl": "Integración GHL →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Subida manual de llamadas",
+      "cardSubtitle": "Permite que Sales People y Admins de esta organización suban llamadas manualmente por /dashboard/upload. Los Owners nunca suben llamadas. Por defecto, las llamadas se ingresan automáticamente vía GHL/Pepper.",
+      "statusOn": "Activado — Sales People y Admins pueden subir llamadas desde la interfaz.",
+      "statusOff": "Desactivado — las llamadas solo llegan vía integración GHL/Pepper.",
+      "toggleAriaLabel": "Alternar subida manual",
+      "successDetail": "Configuración guardada.",
+      "genericError": "No se pudo actualizar la configuración. Inténtalo de nuevo."
     },
     "ghlIntegration": {
       "eyebrow": "Integración GHL / Pepper",
