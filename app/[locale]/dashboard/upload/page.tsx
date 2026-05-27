@@ -38,7 +38,7 @@ import {
   Sparkles,
   ChevronDown,
 } from "lucide-react";
-import type { CallResult as CallOutcome, Trainer } from "@/lib/types";
+import type { Trainer } from "@/lib/types";
 import { toNumber5 } from "@/lib/score-display";
 import { UpsellCard } from "@/components/shared/UpsellCard";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
@@ -52,8 +52,12 @@ interface FormData {
   clientName: string;
   audioFile: File | null;
   transcript: string;
-  scriptId?: string;
-  callOutcome: CallOutcome | "";
+}
+
+interface ActiveScript {
+  id: string;
+  name: string;
+  description?: string;
 }
 
 interface SectionResult {
@@ -73,14 +77,6 @@ interface AnalysisResult {
   transcript: string;
 }
 
-interface Script {
-  id: string;
-  name: string;
-  description: string;
-}
-
-const analysisMode = "scripts"; // Declare the analysisMode variable
-
 export default function UploadPage() {
   const t = useTranslations("Dashboard.upload");
   const tUpsell = useTranslations("Shared.upsell.uploadTwilio");
@@ -95,8 +91,6 @@ export default function UploadPage() {
     clientName: "",
     audioFile: null,
     transcript: "",
-    scriptId: "",
-    callOutcome: "",
   });
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null,
@@ -107,7 +101,7 @@ export default function UploadPage() {
   const [processingStatus, setProcessingStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [scripts, setScripts] = useState<Script[]>([]);
+  const [activeScript, setActiveScript] = useState<ActiveScript | null>(null);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTrainer, setIsTrainer] = useState(false);
@@ -119,21 +113,19 @@ export default function UploadPage() {
 
   useEffect(() => {
     async function init() {
-      const [scriptsRes, meRes] = await Promise.all([
-        // O dropdown da upload page deixa o usuário escolher qual script
-        // usar pra essa call — então busca TODOS, não só `is_active=true`.
-        // Filtrar em `is_active` aqui zerava o select pra orgs que ainda não
-        // marcaram nenhum script como ativo, ou escondia scripts arquivados
-        // que continuam válidos pra reanálise.
-        fetch("/api/scripts"),
+      // Sempre usa o script ativo da org — sem seletor. A própria /api/analyze
+      // resolve via dbGetActiveOrgScript quando scriptId não vem; o GET aqui é
+      // só pro display do nome do script no form.
+      const [activeRes, meRes] = await Promise.all([
+        fetch("/api/scripts/active"),
         fetch("/api/me"),
       ]);
 
-      const { data: scriptsData } = (await scriptsRes.json()) as {
-        data: { id: string; name: string; description: string }[] | null;
+      const { data: activeData } = (await activeRes.json()) as {
+        data: { script: ActiveScript | null } | null;
         error: unknown;
       };
-      if (scriptsData) setScripts(scriptsData);
+      if (activeData?.script) setActiveScript(activeData.script);
 
       const { data: meData } = (await meRes.json()) as {
         data: {
@@ -214,11 +206,7 @@ export default function UploadPage() {
     const hasTrainerInfo = !!formData.trainerId && !!formData.trainerName;
     const hasContent =
       uploadType === "audio" ? formData.audioFile : formData.transcript.trim();
-    // Outcome é seleção obrigatória do usuário. `""` = ainda não escolhido;
-    // `"no_outcome"` é um outcome legítimo (call sem desfecho detectado),
-    // por isso precisamos distinguir os dois estados.
-    const hasOutcome = formData.callOutcome !== "";
-    return hasTrainerInfo && hasContent && hasOutcome;
+    return hasTrainerInfo && hasContent;
   };
 
   const handleSubmit = async () => {
@@ -323,8 +311,6 @@ export default function UploadPage() {
           trainerName: formData.trainerName,
           trainerEmail: formData.trainerEmail,
           clientName: formData.clientName,
-          scriptId: formData.scriptId,
-          callOutcome: formData.callOutcome,
         }),
       });
 
@@ -401,7 +387,6 @@ export default function UploadPage() {
           strengths: analysisResult.strengths,
           improvements: analysisResult.improvements,
           transcript: analysisResult.transcript,
-          callOutcome: formData.callOutcome,
           detectedOutcome: analysisResult.detectedOutcome,
           locale,
         }),
@@ -432,8 +417,6 @@ export default function UploadPage() {
       clientName: "",
       audioFile: null,
       transcript: "",
-      scriptId: "",
-      callOutcome: "",
     });
   };
 
@@ -531,44 +514,11 @@ export default function UploadPage() {
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>{t("results.scoreScaleHint")}</span>
-              {analysisResult.detectedOutcome &&
-                (() => {
-                  const outcomeMeta: Record<string, { cap: number }> = {
-                    closed: { cap: 5 },
-                    partial: { cap: 4 },
-                    not_closed: { cap: 3 },
-                    no_outcome: { cap: 2.5 },
-                  };
-                  const outcomeKey = analysisResult.detectedOutcome;
-                  const meta = outcomeMeta[outcomeKey] ?? { cap: 100 };
-                  const knownOutcomes = [
-                    "closed",
-                    "partial",
-                    "not_closed",
-                    "no_outcome",
-                  ] as const;
-                  const isKnown = (knownOutcomes as readonly string[]).includes(
-                    outcomeKey,
-                  );
-                  const label = isKnown
-                    ? t(
-                        `results.outcomes.${outcomeKey as (typeof knownOutcomes)[number]}.label`,
-                      )
-                    : outcomeKey;
-                  const note = isKnown
-                    ? t(
-                        `results.outcomes.${outcomeKey as (typeof knownOutcomes)[number]}.note`,
-                      )
-                    : "";
-                  return (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium"
-                      title={note}
-                    >
-                      {t("results.outcomeBadge", { label, cap: meta.cap })}
-                    </span>
-                  );
-                })()}
+              {analysisResult.detectedOutcome && (
+                <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium">
+                  {t(`form.outcomes.${analysisResult.detectedOutcome}`)}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -898,96 +848,31 @@ export default function UploadPage() {
                 {t("form.clientNameHint")}
               </p>
             </div>
-            {scripts.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="scriptId">{t("form.salesScriptLabel")}</Label>
-                <select
-                  id="scriptId"
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  value={formData.scriptId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      scriptId: e.target.value,
-                    }))
-                  }
-                >
-                  <option value="">{t("form.selectScriptPlaceholder")}</option>
-                  {scripts.map((script) => (
-                    <option key={script.id} value={script.id}>
-                      {t("form.scriptOptionFormat", {
-                        name: script.name,
-                        description: script.description,
-                      })}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground">
-                  {t("form.salesScriptHint")}
-                </p>
-              </div>
-            )}
-            {scripts.length === 0 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  {t("form.noScriptsAvailable")}
-                </p>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label>{t("form.callOutcomeLabel")}</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {/* Cores alinhadas semanticamente com RESULT_STYLES (lib/constants):
-                    closed=green, partial=amber, not_closed=red, no_outcome=muted/gray.
-                    Mantém consistência visual entre form de seleção e badges de listagem. */}
-                {(
-                  [
-                    {
-                      value: "closed",
-                      color:
-                        "bg-green-100 border-green-500 text-green-700 dark:bg-green-900 dark:text-green-300",
-                    },
-                    {
-                      value: "partial",
-                      color:
-                        "bg-amber-100 border-amber-500 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-                    },
-                    {
-                      value: "not_closed",
-                      color:
-                        "bg-red-100 border-red-500 text-red-700 dark:bg-red-900 dark:text-red-300",
-                    },
-                    {
-                      value: "no_outcome",
-                      color:
-                        "bg-gray-100 border-gray-400 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-                    },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        callOutcome: option.value as CallOutcome,
-                      }))
-                    }
-                    className={`px-3 py-2.5 rounded-md border-2 text-sm font-medium transition-all text-left ${
-                      formData.callOutcome === option.value
-                        ? option.color
-                        : "bg-muted/50 border-transparent text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {t(`form.outcomes.${option.value}`)}
-                  </button>
-                ))}
-              </div>
+              <Label>{t("form.salesScriptLabel")}</Label>
+              {activeScript ? (
+                <div className="rounded-md border border-input bg-muted/50 px-3 py-2">
+                  <p className="text-sm font-medium text-foreground">
+                    {activeScript.name}
+                  </p>
+                  {activeScript.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {activeScript.description}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {t("form.noScriptsAvailable")}
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                {t("form.callOutcomeHint")}
+                {t("form.activeScriptHint")}
               </p>
             </div>
+
           </CardContent>
         </Card>
 
