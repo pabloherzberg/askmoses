@@ -12,8 +12,8 @@ export interface FilterValues {
   planCode: PlanCode | 'all'
   planStatus: PlanStatusValue
   scriptVersion: string | 'all'
-  mrrMin: string  // string pra controlar input vazio facilmente; convertido no apply
-  mrrMax: string
+  minutesMin: string  // string pra controlar input vazio facilmente; convertido no apply
+  minutesMax: string
   lastActivityFrom: string  // YYYY-MM-DD ou ''
   lastActivityTo: string
 }
@@ -23,8 +23,8 @@ export const EMPTY_FILTERS: FilterValues = {
   planCode: 'all',
   planStatus: 'all',
   scriptVersion: 'all',
-  mrrMin: '',
-  mrrMax: '',
+  minutesMin: '',
+  minutesMax: '',
   lastActivityFrom: '',
   lastActivityTo: '',
 }
@@ -173,23 +173,23 @@ export function FiltersModal({ open, current, availableScriptVersions, onApply, 
             />
           </Field>
 
-          {/* MRR range */}
-          <Field label={t('filterMrr')} fullWidth>
+          {/* Minutes range (consumo por minuto) */}
+          <Field label={t('filterMinutes')} fullWidth>
             <div className="flex items-center gap-2">
               <Input
-                placeholder={t('mrrMin')}
+                placeholder={t('minutesMin')}
                 type="number"
                 min={0}
-                value={draft.mrrMin}
-                onChange={(v) => set('mrrMin', v)}
+                value={draft.minutesMin}
+                onChange={(v) => set('minutesMin', v)}
               />
               <span style={{ color: 'var(--am-muted)' }}>—</span>
               <Input
-                placeholder={t('mrrMax')}
+                placeholder={t('minutesMax')}
                 type="number"
                 min={0}
-                value={draft.mrrMax}
-                onChange={(v) => set('mrrMax', v)}
+                value={draft.minutesMax}
+                onChange={(v) => set('minutesMax', v)}
               />
             </div>
           </Field>
@@ -334,7 +334,7 @@ export function countActiveFilters(f: FilterValues): number {
   if (f.planCode !== 'all') n++
   if (f.planStatus !== 'all') n++
   if (f.scriptVersion !== 'all') n++
-  if (f.mrrMin !== '' || f.mrrMax !== '') n++
+  if (f.minutesMin !== '' || f.minutesMax !== '') n++
   if (f.lastActivityFrom !== '' || f.lastActivityTo !== '') n++
   return n
 }
@@ -345,7 +345,7 @@ export function applyFiltersToClient<
   C extends {
     plan: { code: PlanCode }
     subscriptionStatus: 'active' | 'inactive' | 'trial'
-    mrr: number
+    totalMinutesThisMonth: number
     currentScript: { status: OrgScriptStatus; version: string } | null
     lastCallAt: string | null
     createdAt: string
@@ -366,14 +366,14 @@ export function applyFiltersToClient<
   // Plan status
   if (f.planStatus !== 'all' && client.subscriptionStatus !== f.planStatus) return false
 
-  // MRR
-  if (f.mrrMin !== '') {
-    const min = Number(f.mrrMin)
-    if (isFinite(min) && client.mrr < min) return false
+  // Minutes (consumo por minuto)
+  if (f.minutesMin !== '') {
+    const min = Number(f.minutesMin)
+    if (isFinite(min) && client.totalMinutesThisMonth < min) return false
   }
-  if (f.mrrMax !== '') {
-    const max = Number(f.mrrMax)
-    if (isFinite(max) && client.mrr > max) return false
+  if (f.minutesMax !== '') {
+    const max = Number(f.minutesMax)
+    if (isFinite(max) && client.totalMinutesThisMonth > max) return false
   }
 
   // Last activity

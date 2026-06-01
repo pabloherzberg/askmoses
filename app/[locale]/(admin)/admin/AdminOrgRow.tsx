@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Settings, Webhook, Loader2, X, Info } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { minutesToCost } from '@/lib/utils'
 import type { Client, OrgScriptStatus, PlanCode } from '@/lib/types'
 
 interface Props {
@@ -379,10 +380,17 @@ export function AdminOrgRow({
         </span>
       </td>
 
-      {/* MRR */}
-      <td className="px-3 py-4">
+      {/* Minutos consumidos no mês (cobrança por minuto) */}
+      <td className="px-3 py-4 whitespace-nowrap">
         <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
-          ${client.mrr.toLocaleString()}
+          {tTools('minutesValue', { count: client.totalMinutesThisMonth })}
+        </span>
+      </td>
+
+      {/* Custo no mês (minutos × tarifa) — visível APENAS pro Admin */}
+      <td className="px-3 py-4 whitespace-nowrap">
+        <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
+          {minutesToCost(client.totalMinutesThisMonth)}
         </span>
       </td>
 

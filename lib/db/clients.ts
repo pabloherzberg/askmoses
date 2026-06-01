@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { minutesToCostValue } from "@/lib/utils";
 import type {
   Client,
   GlobalMetrics,
@@ -35,7 +36,6 @@ interface DbOrgRow {
   plan_id: string | null;
   calls_this_month: number | null;
   avg_score: number | null;
-  mrr: number | null;
   health: HealthStatus;
   trainers_count: number | null;
   subscription_status: "active" | "inactive" | "trial";
@@ -63,6 +63,7 @@ function toClient(
   ownerAccepted: boolean,
   currentScript: OrgScriptInfo | null,
   lastCallAt: string | null,
+  totalMinutesThisMonth: number,
 ): Client {
   if (!row.plans) {
     throw new Error(
@@ -77,7 +78,10 @@ function toClient(
     orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
     avgScore: row.avg_score ?? 0,
-    mrr: Number(row.mrr ?? 0),
+    // Minutos vêm agregados dinamicamente das calls do mês (calls.duration_seconds),
+    // não de coluna materializada. Custo derivado em TS (centraliza a tarifa).
+    totalMinutesThisMonth,
+    totalCostThisMonth: minutesToCostValue(totalMinutesThisMonth),
     health: row.health,
     trainersCount: row.trainers_count ?? 0,
     ownerAccepted,
@@ -96,8 +100,8 @@ export interface ClientsQuery {
   planStatus?: "active" | "inactive" | "trial";
   scriptStatus?: OrgScriptStatus; // inclui 'none'
   scriptVersion?: string; // "1.2"
-  mrrMin?: number;
-  mrrMax?: number;
+  minutesMin?: number;
+  minutesMax?: number;
   lastActivityFrom?: string; // ISO
   lastActivityTo?: string;
   page: number;
@@ -117,7 +121,7 @@ interface RpcRow {
   org_name: string;
   org_created_at: string;
   org_subscription_status: "active" | "inactive" | "trial";
-  org_mrr: number | string;
+  org_total_minutes_this_month: number | string;
   org_health: HealthStatus;
   org_trainers_count: number;
   org_calls_this_month: number;
@@ -192,7 +196,8 @@ function rpcRowToClient(row: RpcRow): Client {
     orgId: row.org_id,
     callsThisMonth: row.org_calls_this_month,
     avgScore: row.org_avg_score,
-    mrr: Number(row.org_mrr ?? 0),
+    totalMinutesThisMonth: Number(row.org_total_minutes_this_month ?? 0),
+    totalCostThisMonth: minutesToCostValue(Number(row.org_total_minutes_this_month ?? 0)),
     health: row.org_health,
     trainersCount: row.org_trainers_count,
     ownerAccepted: row.owner_accepted,
@@ -226,8 +231,8 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
     p_plan_status: query.planStatus ?? null,
     p_script_status: query.scriptStatus ?? null,
     p_script_version: query.scriptVersion ?? null,
-    p_mrr_min: query.mrrMin ?? null,
-    p_mrr_max: query.mrrMax ?? null,
+    p_minutes_min: query.minutesMin ?? null,
+    p_minutes_max: query.minutesMax ?? null,
     p_last_activity_from: query.lastActivityFrom ?? null,
     p_last_activity_to: query.lastActivityTo ?? null,
     p_page: query.page,
@@ -328,6 +333,40 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   };
 }
 
+// ── Minutos consumidos no mês (cobrança por minuto) ─────────────────────
+// Agregado dinâmico de calls.duration_seconds — NÃO há coluna materializada
+// (evita dessincronização e o reset mensal manual). Mesma semântica do
+// CEIL(SUM(duration_seconds)/60) usado na RPC list_admin_organizations
+// (migration 071): minuto iniciado conta como minuto cheio.
+
+type AdminSupabase = ReturnType<typeof createAdminClient>;
+
+/** Primeiro instante do mês corrente em ISO/UTC — equivale a date_trunc('month', now()). */
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
+}
+
+/** Minutos consumidos por uma org no mês corrente (soma de duration_seconds). */
+async function dbGetOrgMonthMinutes(
+  supabase: AdminSupabase,
+  orgId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("calls")
+    .select("duration_seconds")
+    .eq("org_id", orgId)
+    .gte("created_at", monthStartIso());
+  if (error) throw new Error(`dbGetOrgMonthMinutes: ${error.message}`);
+  const totalSeconds = (data ?? []).reduce(
+    (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
+    0,
+  );
+  return Math.ceil(totalSeconds / 60);
+}
+
 // ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
 
 /**
@@ -344,7 +383,7 @@ export async function dbGetClientByOrgId(
     supabase
       .from("organizations")
       .select(
-        "id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)",
+        "id, name, plan_id, calls_this_month, avg_score, health, trainers_count, subscription_status, created_at, plans(*)",
       )
       .eq("id", orgId)
       .maybeSingle(),
@@ -366,9 +405,9 @@ export async function dbGetClientByOrgId(
 
   const ownerAccepted = (ownerRes.count ?? 0) > 0;
 
-  // currentScript + lastCallAt: queries dedicadas pra esse único org
-  // (sem reuse da RPC que é otimizada pra batch).
-  const [scriptRes, lastCallRes] = await Promise.all([
+  // currentScript + lastCallAt + minutos do mês: queries dedicadas pra esse
+  // único org (sem reuse da RPC que é otimizada pra batch).
+  const [scriptRes, lastCallRes, monthMinutes] = await Promise.all([
     // Filtra explicitamente por effective_status IN ('active','deprecated')
     // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
     // com active (mig. 057): sem este filtro o order-by started_at pegaria a
@@ -391,6 +430,7 @@ export async function dbGetClientByOrgId(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    dbGetOrgMonthMinutes(supabase, orgId),
   ]);
 
   let currentScript: OrgScriptInfo | null = null;
@@ -421,17 +461,19 @@ export async function dbGetClientByOrgId(
     ownerAccepted,
     currentScript,
     lastCallAt,
+    monthMinutes,
   );
 }
 
 // ── Métricas globais (não paginadas — agregação direta) ──────────────────
 
 /**
- * Métricas globais (MRR, total calls, avg score) agregadas pelas
- * organizations com plano ativo. Orgs sem plano ficam de fora pra não
- * contaminar o avg_score / MRR com zeros do estado de onboarding.
+ * Métricas globais (minutos consumidos, custo, total calls, avg score)
+ * agregadas pelas organizations com plano ativo. Orgs sem plano ficam de fora
+ * pra não contaminar o avg_score / agregados com zeros do estado de onboarding.
  *
- * Continua agregando em JS — pra ~milhares de orgs ainda é OK, mas se
+ * Custo é derivado dos minutos em TS (minutesToCostValue) — única fonte da
+ * tarifa. Continua agregando em JS — pra ~milhares de orgs ainda é OK, mas se
  * passar de 10k vale migrar pra um SQL aggregation.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
@@ -439,23 +481,43 @@ export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("mrr, calls_this_month, avg_score")
+    .select("id, calls_this_month, avg_score")
     .not("plan_id", "is", null);
 
   if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`);
 
   const rows = (data ?? []) as Array<{
-    mrr: number;
+    id: string;
     calls_this_month: number;
     avg_score: number;
   }>;
+
+  // Minutos: agregado dinâmico das calls do mês das orgs com plano ativo
+  // (calls.duration_seconds) — sem coluna materializada. Custo derivado em TS.
+  let totalMinutesThisMonth = 0;
+  const orgIds = rows.map((r) => r.id);
+  if (orgIds.length > 0) {
+    const { data: callRows, error: callErr } = await supabase
+      .from("calls")
+      .select("duration_seconds")
+      .in("org_id", orgIds)
+      .gte("created_at", monthStartIso());
+    if (callErr) throw new Error(`dbGetGlobalMetrics(minutes): ${callErr.message}`);
+    const totalSeconds = (callRows ?? []).reduce(
+      (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
+      0,
+    );
+    totalMinutesThisMonth = Math.ceil(totalSeconds / 60);
+  }
+
   return {
     totalClients: rows.length,
     totalCallsThisMonth: rows.reduce(
       (s, r) => s + (r.calls_this_month ?? 0),
       0,
     ),
-    totalMRR: rows.reduce((s, r) => s + Number(r.mrr ?? 0), 0),
+    totalMinutesThisMonth,
+    totalCostThisMonth: minutesToCostValue(totalMinutesThisMonth),
     avgScore: rows.length
       ? Math.round(
           rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length,
