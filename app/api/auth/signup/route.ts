@@ -19,6 +19,8 @@ interface SignupBody {
   email?: string
   password?: string
   locale?: string
+  stripePlan?: string
+  stripeSessionId?: string
 }
 
 function badRequest(message: string, reason?: string) {
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
   const email = body.email?.trim().toLowerCase()
   const password = body.password
   const locale = body.locale
+  const stripePlan = body.stripePlan?.trim() || undefined
+  const stripeSessionId = body.stripeSessionId?.trim() || undefined
 
   if (!name || name.length < NAME_MIN || name.length > NAME_MAX) {
     return badRequest(`name deve ter entre ${NAME_MIN} e ${NAME_MAX} caracteres`, 'NAME_INVALID')
@@ -150,7 +154,13 @@ export async function POST(request: NextRequest) {
   // aqui não funciona porque isSafeNextPath (lib/auth/post-verify) só aceita
   // paths em SAFE_NEXT_PATHS — caminhos prefixados com locale são rejeitados
   // e caem no fallback genérico, fazendo o locale do email se perder.
-  const nextPath = '/onboarding'
+  // Se vier de checkout Stripe, aponta direto pra /onboarding/plan com os
+  // params do Stripe. Isso permite que o step-2 auto-ative o plano certo
+  // sem o user ter que escolher de novo.
+  const nextPath =
+    stripePlan && stripeSessionId
+      ? `/onboarding/plan?plan=${encodeURIComponent(stripePlan)}&session_id=${encodeURIComponent(stripeSessionId)}`
+      : '/onboarding'
   const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=signup&next=${encodeURIComponent(nextPath)}`
 
   const { subject, html } = buildSignupEmail({
