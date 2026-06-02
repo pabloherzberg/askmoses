@@ -14,7 +14,6 @@ import type {
   AiModuleConfig,
   AiModuleConfigLogEntry,
 } from '@/lib/types'
-import { secondsToCostValue } from '@/lib/billing'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
 
@@ -887,7 +886,9 @@ export const clients: Client[] = [
     callsThisMonth: 20,
     avgScore: 84,
     totalSecondsThisMonth: 620 * 60,
-    totalCostThisMonth: secondsToCostValue(620 * 60),
+    // minutos × US$2/min (mock; o cálculo real fica em lib/billing.ts, que NÃO
+    // é importado aqui pra não vazar billing em bundles não-admin).
+    totalCostThisMonth: 620 * 2,
     health: 'healthy',
     trainersCount: 4,
     ownerAccepted: true,
@@ -905,7 +906,7 @@ export const clients: Client[] = [
     callsThisMonth: 35,
     avgScore: 88,
     totalSecondsThisMonth: 1100 * 60,
-    totalCostThisMonth: secondsToCostValue(1100 * 60),
+    totalCostThisMonth: 1100 * 2,
     health: 'healthy',
     trainersCount: 4,
     ownerAccepted: true,
@@ -923,7 +924,7 @@ export const clients: Client[] = [
     callsThisMonth: 8,
     avgScore: 72,
     totalSecondsThisMonth: 240 * 60,
-    totalCostThisMonth: secondsToCostValue(240 * 60),
+    totalCostThisMonth: 240 * 2,
     health: 'at-risk',
     trainersCount: 4,
     ownerAccepted: true,

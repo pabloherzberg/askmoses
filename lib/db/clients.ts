@@ -10,6 +10,10 @@ import type {
   PlanCode,
 } from "@/lib/types";
 
+// Limite default de linhas do PostgREST — paginamos leituras que somam em JS
+// (duration_seconds) pra evitar truncamento silencioso da contagem.
+const PG_MAX_ROWS = 1000;
+
 // Após migration 038 a tabela `clients` foi mesclada em `organizations`.
 // O tipo TS `Client` continua existindo como shape lida pelas telas Admin
 // — só a fonte de dados mudou.
@@ -270,7 +274,7 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
 
   if (orgIds.length > 0) {
     const monthStart = monthStartIso();
-    const [memRes, trainerRes, scriptRes, callRes] = await Promise.all([
+    const [memRes, trainerRes, scriptRes] = await Promise.all([
       supabase
         .from("memberships")
         .select("org_id")
@@ -294,12 +298,6 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
         .in("status", ["active", "deprecated", "pending"])
         .is("ended_at", null)
         .order("started_at", { ascending: false }),
-      // Uma só leitura de calls alimenta lastCall (all-time) + minutos do mês.
-      supabase
-        .from("calls")
-        .select("org_id, created_at, duration_seconds")
-        .in("org_id", orgIds)
-        .order("created_at", { ascending: false }),
     ]);
 
     ownerAcceptedSet = new Set(
@@ -333,24 +331,39 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
       });
     }
 
-    // created_at desc → 1ª ocorrência por org = última call. Soma
-    // duration_seconds do mês corrente (compare lexicográfico de ISO/UTC).
+    // Calls paginado (created_at desc) — alimenta lastCall (1ª ocorrência por
+    // org) + minutos do mês (soma de duration_seconds, compare lexicográfico
+    // ISO/UTC). Paginação evita truncar no limite do PostgREST. Em escala
+    // grande, migrar pra um SUM no banco (ver nota no JSDoc).
     const seenCall = new Set<string>();
-    for (const row of (callRes.data ?? []) as {
-      org_id: string;
-      created_at: string;
-      duration_seconds: number | null;
-    }[]) {
-      if (!seenCall.has(row.org_id)) {
-        seenCall.add(row.org_id);
-        lastCallByOrg.set(row.org_id, row.created_at);
+    let callFrom = 0;
+    for (;;) {
+      const { data: callPage, error: callErr } = await supabase
+        .from("calls")
+        .select("org_id, created_at, duration_seconds")
+        .in("org_id", orgIds)
+        .order("created_at", { ascending: false })
+        .range(callFrom, callFrom + PG_MAX_ROWS - 1);
+      if (callErr) throw new Error(`dbListClients(calls): ${callErr.message}`);
+      const rows = (callPage ?? []) as {
+        org_id: string;
+        created_at: string;
+        duration_seconds: number | null;
+      }[];
+      for (const row of rows) {
+        if (!seenCall.has(row.org_id)) {
+          seenCall.add(row.org_id);
+          lastCallByOrg.set(row.org_id, row.created_at);
+        }
+        if (row.created_at >= monthStart) {
+          monthSecondsByOrg.set(
+            row.org_id,
+            (monthSecondsByOrg.get(row.org_id) ?? 0) + (row.duration_seconds ?? 0),
+          );
+        }
       }
-      if (row.created_at >= monthStart) {
-        monthSecondsByOrg.set(
-          row.org_id,
-          (monthSecondsByOrg.get(row.org_id) ?? 0) + (row.duration_seconds ?? 0),
-        );
-      }
+      if (rows.length < PG_MAX_ROWS) break;
+      callFrom += PG_MAX_ROWS;
     }
   }
 
@@ -490,21 +503,34 @@ function monthStartIso(): string {
   ).toISOString();
 }
 
-/** Segundos consumidos por uma org no mês corrente (soma de duration_seconds). */
+/**
+ * Segundos consumidos por uma org no mês corrente (soma de duration_seconds).
+ * Paginado pra não truncar no limite de linhas do PostgREST.
+ */
 async function dbGetOrgMonthSeconds(
   supabase: AdminSupabase,
   orgId: string,
 ): Promise<number> {
-  const { data, error } = await supabase
-    .from("calls")
-    .select("duration_seconds")
-    .eq("org_id", orgId)
-    .gte("created_at", monthStartIso());
-  if (error) throw new Error(`dbGetOrgMonthSeconds: ${error.message}`);
-  return (data ?? []).reduce(
-    (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
-    0,
-  );
+  const monthStart = monthStartIso();
+  let total = 0;
+  let from = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from("calls")
+      .select("duration_seconds")
+      .eq("org_id", orgId)
+      .gte("created_at", monthStart)
+      .range(from, from + PG_MAX_ROWS - 1);
+    if (error) throw new Error(`dbGetOrgMonthSeconds: ${error.message}`);
+    const rows = data ?? [];
+    total += rows.reduce(
+      (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
+      0,
+    );
+    if (rows.length < PG_MAX_ROWS) break;
+    from += PG_MAX_ROWS;
+  }
+  return total;
 }
 
 // ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
