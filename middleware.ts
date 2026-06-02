@@ -32,7 +32,7 @@ function redirectByRole(role: Role, locale: Locale, baseUrl: string) {
 // sessão. /forgot-password é público porque é onde o user pede recovery
 // quando ainda não conseguiu entrar. Logged-in users são redirecionados
 // via lógica no bloco isPublic.
-const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/presentation', '/demobiz', '/tech']
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/presentation', '/demobiz', '/tech', '/success']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -106,7 +106,14 @@ export async function middleware(request: NextRequest) {
 
     if (isStep2) {
       // /onboarding/plan: owner-only. Sem role = ainda no step-1.
-      if (!role) return NextResponse.redirect(localized('/onboarding', locale, request.url))
+      // Preserva query params (plan, session_id) via ?next= para que o
+      // step-1 avance pro destino correto após criar a organização.
+      if (!role) {
+        const step2Path = request.nextUrl.pathname + request.nextUrl.search
+        const step1 = localized('/onboarding', locale, request.url)
+        step1.searchParams.set('next', step2Path)
+        return NextResponse.redirect(step1)
+      }
       if (role !== 'owner') return NextResponse.redirect(redirectByRole(role, locale, request.url))
       // Owner com sub já ativa não precisa do step-2 — a página redireciona
       // server-side; deixamos passar aqui pra não duplicar a checagem.

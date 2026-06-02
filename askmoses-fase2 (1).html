@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskMoses · Fase 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #0e0e0e;
+  --ink2: #3a3a3a;
+  --ink3: #767676;
+  --paper: #f5f2ec;
+  --paper2: #ede9e1;
+  --paper3: #e4dfd5;
+  --rule: rgba(0,0,0,0.1);
+  --rule2: rgba(0,0,0,0.2);
+  --accent: #c84b1e;
+  --accent2: #1a5c3a;
+  --mono: 'DM Mono', monospace;
+  --serif: 'Instrument Serif', serif;
+  --sans: 'Geist', sans-serif;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.page-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  border-bottom: 2px solid var(--ink);
+  padding: 3rem 0 2rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2rem;
+}
+.masthead-left {}
+.masthead-kicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.masthead-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 1px;
+  background: var(--ink3);
+}
+.masthead h1 {
+  font-family: var(--serif);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 400;
+  line-height: 1.0;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.masthead h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+.masthead-lead {
+  font-size: 15px;
+  color: var(--ink2);
+  line-height: 1.7;
+  margin-top: 1rem;
+  max-width: 520px;
+}
+.masthead-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.masthead-meta .stat {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+.masthead-meta .stat strong {
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--ink);
+  display: block;
+  font-family: var(--serif);
+  line-height: 1;
+}
+
+/* ── NAVIGATION ── */
+.doc-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule2);
+  margin-bottom: 3rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.doc-nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1rem 1.25rem;
+  color: var(--ink3);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+  position: relative;
+  top: 1px;
+}
+.nav-btn:hover { color: var(--ink); }
+.nav-btn.on { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.on { display: block; }
+
+/* ── SECTION LABEL ── */
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ── OVERVIEW GRID ── */
+.overview-intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-bottom: 3rem;
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.intro-cell {
+  background: var(--paper2);
+  padding: 1.25rem 1.5rem;
+}
+.intro-cell:nth-child(1) { grid-column: 1 / -1; background: var(--ink); color: var(--paper); }
+.intro-cell:nth-child(1) .cell-label { color: rgba(255,255,255,0.4); }
+.intro-cell:nth-child(1) .cell-val { color: var(--paper); }
+.cell-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 0.4rem;
+}
+.cell-val {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+.cell-val strong { font-weight: 600; }
+
+/* ── TASK INDEX ── */
+.task-index {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin-bottom: 3rem;
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.task-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto auto;
+  align-items: center;
+  gap: 0;
+  background: var(--paper2);
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--rule);
+}
+.task-row:last-child { border-bottom: none; }
+.task-row:hover { background: var(--paper3); }
+.task-row .tr-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink3);
+  padding: 1rem 0 1rem 1.25rem;
+  border-right: 1px solid var(--rule);
+}
+.task-row .tr-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 1rem 1.25rem;
+}
+.task-row .tr-name small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.task-row .tr-size {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 0 1rem;
+  white-space: nowrap;
+}
+.sz-m { color: #1a5c3a; }
+.sz-g { color: #c84b1e; }
+.sz-d { color: var(--ink3); }
+.task-row .tr-arrow {
+  font-size: 14px;
+  color: var(--ink3);
+  padding: 1rem 1.25rem 1rem 0;
+}
+
+/* ── TIMELINE ── */
+.timeline-wrap {
+  position: relative;
+  padding-left: 2rem;
+}
+.tl-spine {
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--rule2);
+}
+.tl-item {
+  position: relative;
+  margin-bottom: 2rem;
+}
+.tl-dot {
+  position: absolute;
+  left: -1.75rem;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--ink2);
+}
+.tl-order {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
+}
+.tl-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.tl-desc {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.tl-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.tag-green { border-color: #1a5c3a; color: #1a5c3a; background: #f0f7f3; }
+.tag-orange { border-color: #c84b1e; color: #c84b1e; background: #fdf2ef; }
+.tag-gray { border-color: var(--rule2); color: var(--ink3); background: var(--paper2); }
+.tag-blue { border-color: #1a4a7a; color: #1a4a7a; background: #f0f4fa; }
+
+/* ── TASK DETAIL ── */
+.task-detail {}
+.task-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 1rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--rule2);
+  margin-bottom: 2.5rem;
+}
+.task-header-left {}
+.task-id-large {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 0.5rem;
+}
+.task-title-large {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.task-title-large em { font-style: italic; color: var(--accent); }
+.task-context {
+  font-size: 14px;
+  color: var(--ink2);
+  line-height: 1.75;
+  margin-top: 1rem;
+  max-width: 600px;
+}
+.task-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+/* ── DECISIONS ── */
+.decisions-bar {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 2px;
+  padding: 0;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+}
+.decisions-bar .dbar-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.decisions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0;
+}
+.dec-item {
+  padding: 1rem 1.25rem;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.dec-item:last-child { border-right: none; }
+.dec-q {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 0.35rem;
+}
+.dec-a {
+  font-size: 14px;
+  color: var(--paper);
+  font-weight: 500;
+}
+
+/* ── SUBTASKS ── */
+.subtask-block {
+  margin-bottom: 2rem;
+}
+.subtask-block-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 500;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--rule2);
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.subtask-block-title span.blk-id {
+  color: var(--ink3);
+  font-weight: 400;
+}
+.step-list { list-style: none; }
+.step-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.step-item:last-child { border-bottom: none; }
+.step-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink3);
+  padding: 0.85rem 0 0.85rem 0;
+  line-height: 1.6;
+}
+.step-text {
+  padding: 0.85rem 0 0.85rem 0.5rem;
+}
+.step-text code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--paper3);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--ink);
+}
+
+/* ── RULE BLOCK ── */
+.rule-blk {
+  border-left: 3px solid var(--ink);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--paper2);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink2);
+  border-radius: 0 2px 2px 0;
+}
+.rule-blk code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--paper3);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--ink);
+}
+.rule-blk.red { border-left-color: var(--accent); }
+.rule-blk.green { border-left-color: var(--accent2); }
+
+/* ── FILE LIST ── */
+.file-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fchip {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  color: var(--ink3);
+  background: var(--paper2);
+}
+.fchip.is-new {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  background: #f0f7f3;
+}
+
+/* ── SCORE TABLE ── */
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-bottom: 1rem;
+}
+.score-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 0.6rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rule2);
+  font-weight: 500;
+}
+.score-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink2);
+  vertical-align: top;
+  line-height: 1.6;
+}
+.score-table tr:last-child td { border-bottom: none; }
+.score-table .sc {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.score-table tr:nth-child(1) .sc { color: #1a5c3a; }
+.score-table tr:nth-child(2) .sc { color: #2e7d50; }
+.score-table tr:nth-child(3) .sc { color: #a07820; }
+.score-table tr:nth-child(4) .sc { color: #b04010; }
+.score-table tr:nth-child(5) .sc { color: var(--accent); }
+
+/* ── VERIFY TABLE ── */
+.verify-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.verify-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rule2);
+  background: var(--paper2);
+  font-weight: 500;
+}
+.verify-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  line-height: 1.6;
+  color: var(--ink2);
+}
+.verify-table tr:last-child td { border-bottom: none; }
+.verify-table .vtask {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.verify-table code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--paper3);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--ink);
+}
+
+/* ── SPACER ── */
+.gap-sm { height: 1.5rem; }
+.gap-md { height: 2.5rem; }
+.hr { height: 1px; background: var(--rule2); margin: 2.5rem 0; }
+
+/* ── DIFF EXAMPLE ── */
+.diff-box {
+  background: var(--paper2);
+  border: 1px solid var(--rule2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.diff-box .diff-head {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.diff-line {
+  padding: 0.25rem 1rem;
+  line-height: 1.8;
+}
+.diff-del { background: #fdf0ef; color: #9a2a10; text-decoration: line-through; }
+.diff-add { background: #f0f7f3; color: #1a5c3a; }
+.diff-ctx { color: var(--ink3); }
+
+/* ── TYPE BLOCK ── */
+.type-block {
+  background: var(--ink);
+  color: #a8c4a0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.8;
+  padding: 1.25rem 1.5rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+}
+.type-block .kw { color: #c792ea; }
+.type-block .ty { color: #82aaff; }
+.type-block .cm { color: #546e7a; font-style: italic; }
+.type-block .st { color: #c3e88d; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .masthead { grid-template-columns: 1fr; }
+  .masthead-meta { text-align: left; flex-direction: row; gap: 1.5rem; }
+  .overview-intro { grid-template-columns: 1fr; }
+  .task-row { grid-template-columns: 48px 1fr auto; }
+  .task-row .tr-size { display: none; }
+  .task-header { grid-template-columns: 1fr; }
+  .task-badges { flex-direction: row; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="masthead-kicker">AskMoses · Fase 2 Setup</div>
+      <h1>Novas <em>Features</em><br>— Plano Técnico</h1>
+      <p class="masthead-lead">5 blocos de implementação definidos em reunião. Fase 1 praticamente concluída; TASK-020 a TASK-023 ainda pendentes.</p>
+    </div>
+    <div class="masthead-meta">
+      <div class="stat"><strong>5</strong> tasks principais</div>
+      <div class="stat"><strong>2</strong> grandes</div>
+      <div class="stat"><strong>2</strong> médias</div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="doc-nav">
+    <button class="nav-btn on" onclick="go('overview',this)">Visão Geral</button>
+    <button class="nav-btn" onclick="go('ta',this)">A · Stripe</button>
+    <button class="nav-btn" onclick="go('tb',this)">B · Billing</button>
+    <button class="nav-btn" onclick="go('tc',this)">C · Intent</button>
+    <button class="nav-btn" onclick="go('td',this)">D · Script Gap</button>
+    <button class="nav-btn" onclick="go('te',this)">E · Centurion</button>
+    <button class="nav-btn" onclick="go('tf',this)">F · Script Builder</button>
+    <button class="nav-btn" onclick="go('verify',this)">Verificação</button>
+  </nav>
+
+  <!-- ═══════════════════════════ OVERVIEW ═══════════════════════════ -->
+  <section id="p-overview" class="panel on">
+
+    <div class="label">Contexto do projeto</div>
+    <div class="overview-intro">
+      <div class="intro-cell">
+        <div class="cell-label">Status atual</div>
+        <div class="cell-val">Fase 1 <strong>praticamente concluída</strong>. TASK-020 a TASK-023 ainda pendentes. As novas features (Fase 2) foram definidas em reunião e estão detalhadas neste documento.</div>
+      </div>
+      <div class="intro-cell">
+        <div class="cell-label">Blocos desta fase</div>
+        <div class="cell-val">Stripe na LP · Billing por minuto · Coluna intent · Script Gap Detection · Migração Centurion · Script Builder fixo</div>
+      </div>
+      <div class="intro-cell">
+        <div class="cell-label">Modelo de cobrança</div>
+        <div class="cell-val">Mudança de MRR fixo para <strong>consumo por minuto (US$2/min)</strong></div>
+      </div>
+    </div>
+
+    <div class="label">Índice de tasks</div>
+    <div class="task-index">
+      <div class="task-row" onclick="go('ta',null)">
+        <div class="tr-id">A</div>
+        <div class="tr-name">Stripe na Landing Page<small>Checkout real, webhook, persistência Supabase</small></div>
+        <div class="tr-size sz-g">Grande</div>
+        <div class="tr-arrow">→</div>
+      </div>
+      <div class="task-row" onclick="go('tb',null)">
+        <div class="tr-id">B</div>
+        <div class="tr-name">Billing por Minuto<small>US$2/min · visibilidade por role · Minutes + Cost no SaaS Panel</small></div>
+        <div class="tr-size sz-m">Médio</div>
+        <div class="tr-arrow">→</div>
+      </div>
+      <div class="task-row" onclick="go('tc',null)">
+        <div class="tr-id">C</div>
+        <div class="tr-name">Coluna Intent nas Calls<small>Score 1–5 · IntentBadge · feedback no coaching email</small></div>
+        <div class="tr-size sz-m">Médio</div>
+        <div class="tr-arrow">→</div>
+      </div>
+      <div class="task-row" onclick="go('td',null)">
+        <div class="tr-id">D</div>
+        <div class="tr-name">Script Gap Detection<small>IA detecta conflito script × prospects · sugestão cirúrgica</small></div>
+        <div class="tr-size sz-g">Grande</div>
+        <div class="tr-arrow">→</div>
+      </div>
+      <div class="task-row" onclick="go('te',null)">
+        <div class="tr-id">E</div>
+        <div class="tr-name">Migração Centurion<small>Módulo legado → padrão atual</small></div>
+        <div class="tr-size sz-d">A definir</div>
+        <div class="tr-arrow">→</div>
+      </div>
+      <div class="task-row" onclick="go('tf',null)">
+        <div class="tr-id">F</div>
+        <div class="tr-name">Script Builder — Seções Fixas<small>Remover add/delete/enable · fixar 5 seções · confirm step simplificado</small></div>
+        <div class="tr-size sz-m">Médio</div>
+        <div class="tr-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="gap-md"></div>
+    <div class="label">Ordem de implementação sugerida</div>
+    <div class="timeline-wrap">
+      <div class="tl-spine"></div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-order">Ordem 1</div>
+        <div class="tl-title">TASK-C — Intent nas calls</div>
+        <div class="tl-desc">Sem dependências. Estabelece o tipo <code style="font-family:'DM Mono',monospace;font-size:12px;background:#ede9e1;padding:1px 5px;border-radius:2px">intent</code> nos dados, usados como referência pelas demais tasks.</div>
+        <div class="tl-tags"><span class="tag tag-green">Sem dependências</span><span class="tag tag-gray">Médio</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-order">Ordem 2</div>
+        <div class="tl-title">TASK-B1/B2/B3 — Minutos nas calls e admin</div>
+        <div class="tl-desc">Cálculo de minutos, coluna Duration na tabela de calls, e substituição de MRR no painel admin.</div>
+        <div class="tl-tags"><span class="tag tag-green">Sem dependências</span><span class="tag tag-gray">Médio</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-order">Ordem 3</div>
+        <div class="tl-title">TASK-D — Script Gap Detection</div>
+        <div class="tl-desc">Feature owner-exclusiva. Maior escopo de UX — modal de diff, accept gap, atualização parcial de script.</div>
+        <div class="tl-tags"><span class="tag tag-green">Sem dependências</span><span class="tag tag-orange">Grande</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-order">Ordem 4</div>
+        <div class="tl-title">TASK-A — Stripe na Landing Page</div>
+        <div class="tl-desc">Bloqueada por credenciais. Integração real com Stripe Checkout e webhook.</div>
+        <div class="tl-tags"><span class="tag tag-orange">Requer credenciais Stripe</span><span class="tag tag-orange">Grande</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-order">Ordem 5</div>
+        <div class="tl-title">TASK-E — Centurion</div>
+        <div class="tl-desc">Escopo a definir após localizar e auditar o código fonte do módulo legado.</div>
+        <div class="tl-tags"><span class="tag tag-gray">Localizar código antigo</span><span class="tag tag-gray">A definir</span></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════ TASK-A ═══════════════════════════ -->
+  <section id="p-ta" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task A</div>
+        <div class="task-title-large">Stripe na<br><em>Landing Page</em></div>
+        <p class="task-context">A LP já tem 3 planos (Solo, Pro, Enterprise) que hoje apenas linkam para <code style="font-family:'DM Mono',monospace;font-size:12px;background:#e4dfd5;padding:1px 5px;border-radius:2px">#demo</code>. O objetivo é conectar esses planos ao Stripe real para iniciar o checkout.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-orange">Grande</span>
+        <span class="tag tag-orange">Requer credenciais Stripe</span>
+      </div>
+    </div>
+
+    <div class="label">Decisões tomadas</div>
+    <div class="decisions-bar">
+      <div class="dbar-head">Escopo definido em reunião</div>
+      <div class="decisions-list">
+        <div class="dec-item"><div class="dec-q">Planos na LP</div><div class="dec-a">Mantidos — Sim</div></div>
+        <div class="dec-item"><div class="dec-q">Valores</div><div class="dec-a">US$500 e US$1.250/mês</div></div>
+        <div class="dec-item"><div class="dec-q">Troca de cartão</div><div class="dec-a">Não implementar</div></div>
+        <div class="dec-item"><div class="dec-q">Alterar plano</div><div class="dec-a">Não implementar</div></div>
+      </div>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Sub-tarefas</div>
+    <div class="subtask-block">
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Instalar <code>stripe</code> e <code>@stripe/stripe-js</code> como dependências do projeto</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Criar produtos e preços no Stripe Dashboard — US$500/mês e US$1.250/mês</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Criar <code>POST /api/stripe/checkout</code> — recebe <code>planId</code>, cria Stripe Checkout Session e retorna <code>url</code></span></li>
+        <li class="step-item"><span class="step-num">4</span><span class="step-text">Criar <code>GET /api/stripe/webhook</code> — processa <code>checkout.session.completed</code> e persiste <code>subscriptionStatus</code> no Supabase</span></li>
+        <li class="step-item"><span class="step-num">5</span><span class="step-text">Atualizar <code>components/landing/pricing.tsx</code> — botões dos planos pagos disparam o checkout; plano gratuito mantém link para <code>#demo</code></span></li>
+        <li class="step-item"><span class="step-num">6</span><span class="step-text">Adicionar variáveis de ambiente: <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code></span></li>
+      </ul>
+    </div>
+
+    <div class="hr"></div>
+    <div class="label">Arquivos críticos</div>
+    <div class="file-grid">
+      <span class="fchip">app/[locale]/page.tsx</span>
+      <span class="fchip">components/landing/pricing.tsx</span>
+      <span class="fchip is-new">app/api/stripe/checkout/route.ts · novo</span>
+      <span class="fchip is-new">app/api/stripe/webhook/route.ts · novo</span>
+      <span class="fchip">lib/types.ts</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ TASK-B ═══════════════════════════ -->
+  <section id="p-tb" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task B</div>
+        <div class="task-title-large">Billing por<br><em>Minuto</em></div>
+        <p class="task-context">Modelo de cobrança muda de MRR fixo para consumo por minuto (US$2/min). Calls têm <code style="font-family:'DM Mono',monospace;font-size:12px;background:#e4dfd5;padding:1px 5px;border-radius:2px">duration: string</code> no mock — precisa virar <code style="font-family:'DM Mono',monospace;font-size:12px;background:#e4dfd5;padding:1px 5px;border-radius:2px">durationMinutes: number</code> para cálculos.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-gray">Médio</span>
+        <span class="tag tag-green">Sem dependências</span>
+      </div>
+    </div>
+
+    <div class="label">Regras de visibilidade por role</div>
+    <div class="rule-blk green"><strong>Owner</strong> — vê apenas a quantidade de minutos por call na tabela <code>/calls</code>. Nunca vê custo, em nenhuma tela.</div>
+    <div class="rule-blk red"><strong>Admin</strong> — vê quantidade de minutos + valor total (minutos × US$2) por organização diretamente no SaaS Panel (<code>/admin</code>), junto com as demais infos da org.</div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Sub-tarefas</div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">B1</span> Cálculo de minutos nas calls</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Atualizar <code>lib/types.ts</code> — adicionar <code>durationMinutes: number</code> no tipo <code>Call</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Atualizar <code>lib/mock-data.ts</code> — converter <code>duration: "38min"</code> para incluir <code>durationMinutes: 38</code> nas 21 calls</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Criar helper <code>lib/utils.ts</code> — <code>minutesToCost(minutes)</code> retornando valor USD formatado. Usado <strong>apenas</strong> nas views de admin.</span></li>
+      </ul>
+    </div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">B2</span> Coluna Duration na tabela /calls</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Adicionar coluna "Duration" em <code>CallsTable.tsx</code> exibindo apenas <code>Xmin</code> — posicionar entre "Score" e "Result"</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Não exibir custo nesta coluna. Owner vê somente duração em minutos.</span></li>
+      </ul>
+    </div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">B3</span> Substituir MRR no SaaS Panel</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Substituir coluna MRR por "Minutes" e "Cost" na tabela de orgs em <code>/admin</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Remover campo <code>mrr</code> do tipo <code>Client</code>; adicionar <code>totalMinutesThisMonth</code> e <code>totalCostThisMonth</code></span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Ajustar resposta de <code>GET /api/clients</code> no MSW handler</span></li>
+      </ul>
+    </div>
+
+    <div class="hr"></div>
+    <div class="label">Arquivos críticos</div>
+    <div class="file-grid">
+      <span class="fchip">lib/types.ts</span>
+      <span class="fchip">lib/mock-data.ts</span>
+      <span class="fchip">lib/mocks/handlers.ts</span>
+      <span class="fchip">app/[locale]/calls/CallsTable.tsx</span>
+      <span class="fchip">app/[locale]/(admin)/admin/page.tsx</span>
+      <span class="fchip">components/layout/AdminSidebar.tsx</span>
+      <span class="fchip is-new">lib/utils.ts · minutesToCost</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ TASK-C ═══════════════════════════ -->
+  <section id="p-tc" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task C</div>
+        <div class="task-title-large">Coluna <em>Intent</em><br>+ Coaching Email</div>
+        <p class="task-context">Score de 1 a 5 que representa o quanto o prospect demonstrou intenção de compra durante a call — calculado pela IA com base na transcrição. A IA não infere intent a partir do resultado: ela lê o que o prospect disse.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-gray">Médio</span>
+        <span class="tag tag-green">Sem dependências</span>
+      </div>
+    </div>
+
+    <div class="label">Regras de cálculo</div>
+    <div class="rule-blk green"><code>result === 'closed'</code> → <code>intent</code> é sempre <strong>5</strong>. Regra fixa, sem análise de transcrição.</div>
+    <div class="rule-blk"><code>result !== 'closed'</code> → <code>intent</code> calculado pela IA: tom do prospect, perguntas, objeções, engajamento, sinais de interesse. Não segue o resultado mecanicamente — um <code>partial</code> pode ter intent 2, um <code>no_outcome</code> pode ter intent 4.</div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Tipo de dados</div>
+    <div class="type-block">
+<span class="kw">type</span> <span class="ty">Call</span> = {<br>
+&nbsp;&nbsp;<span class="cm">// ... campos existentes</span><br>
+&nbsp;&nbsp;intent: <span class="ty">1 | 2 | 3 | 4 | 5</span><br>
+}<br><br>
+<span class="cm">// Regra: result === 'closed' → intent sempre 5</span><br>
+<span class="cm">// Outros → IA analisa transcrição (valores 1–4)</span>
+    </div>
+
+    <div class="label">Sub-tarefas</div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">C1</span> Dados</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Adicionar <code>intent: 1 | 2 | 3 | 4 | 5</code> no tipo <code>Call</code> em <code>lib/types.ts</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Popular <code>intent</code> nas 21 calls de <code>lib/mock-data.ts</code>: closed → 5 fixo; demais → valores variados sem seguir o resultado mecanicamente</span></li>
+      </ul>
+    </div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">C2</span> Coluna Intent na tabela /calls</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Adicionar coluna "Intent" em <code>CallsTable.tsx</code> — posicionar entre "Duration" e "Score"</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Célula exibe apenas o número do score (1–5). Nada mais — sem estrelas, sem badge colorido.</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Ao lado do número, exibir um ícone de tooltip. Ao hover, mostra a mensagem fixa correspondente ao score (ver tabela abaixo).</span></li>
+      </ul>
+    </div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">C3</span> Feedback no Coaching Email</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Atualizar <code>app/api/send-coaching/route.ts</code> — incluir seção <code>intentFeedback</code> no payload</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Criar <code>lib/utils/intentFeedback.ts</code> — retorna a mensagem fixa baseada no score 1–5 (as mesmas do tooltip)</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Atualizar template de email para renderizar essa seção</span></li>
+      </ul>
+    </div>
+
+    <div class="hr"></div>
+    <div class="label">Mensagens fixas por score — tooltip + email</div>
+    <table class="score-table">
+      <thead><tr><th>Score</th><th>Mensagem fixa (tooltip na tabela e seção no email)</th></tr></thead>
+      <tbody>
+        <tr><td class="sc">5</td><td>O prospect demonstrou intenção de compra muito clara — ótimo trabalho conduzindo o fechamento.</td></tr>
+        <tr><td class="sc">4</td><td>O prospect sinalizou forte interesse. Faltou pouco para o fechamento — revisite as objeções.</td></tr>
+        <tr><td class="sc">3</td><td>Intenção moderada. O prospect estava engajado mas inseguro. Aprofunde o problema na próxima call.</td></tr>
+        <tr><td class="sc">2</td><td>Baixa intenção detectada. O prospect pode não ser o decisor ou o fit pode ser fraco.</td></tr>
+        <tr><td class="sc">1</td><td>Nenhuma intenção de compra identificada. Avalie se vale reengajar ou desqualificar o lead.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hr"></div>
+    <div class="label">Arquivos críticos</div>
+    <div class="file-grid">
+      <span class="fchip">lib/types.ts</span>
+      <span class="fchip">lib/mock-data.ts</span>
+      <span class="fchip">app/[locale]/calls/CallsTable.tsx</span>
+      <span class="fchip">app/api/send-coaching/route.ts</span>
+      <span class="fchip is-new">lib/utils/intentFeedback.ts · novo</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ TASK-D ═══════════════════════════ -->
+  <section id="p-td" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task D</div>
+        <div class="task-title-large">Script Gap<br><em>Detection</em></div>
+        <p class="task-context">A IA analisa 3 calls da organização e cruza duas perspectivas: o que o script instrui o vendedor a fazer, e o que está acontecendo na conversa na prática — tanto do lado do vendedor quanto do prospect. O resultado é uma sugestão cirúrgica de reescrita apenas do trecho com atrito.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-orange">Grande</span>
+        <span class="tag tag-green">Sem dependências</span>
+        <span class="tag tag-blue">Somente Owner</span>
+      </div>
+    </div>
+
+    <div class="label">Diferença da feature existente</div>
+    <div class="rule-blk"><strong>Script Intelligence</strong> <code>/dashboard/insights</code> — analisa qualidade e cobertura do script do ponto de vista do vendedor. Ex.: "A seção de Objection Handling está fraca — o script não cobre a objeção de preço."</div>
+    <div class="rule-blk red"><strong>Script Gap Detection</strong> <code>/script-gap</code> — analisa a conversa como um todo (vendedor <em>e</em> prospect) e detecta onde o script gera atrito na prática. A sugestão é baseada tanto no comportamento do vendedor quanto nas reações, objeções e padrões de linguagem que o prospect está usando naquelas calls. Ex.: "O script instrui o vendedor a apresentar o programa completo logo após a descoberta, mas os prospects dessa org interrompem com objeções de agenda antes de ouvir a oferta — e o vendedor não tem no script uma resposta para isso. Sugestão: mover a apresentação para depois de tratar a objeção de tempo."</div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Estrutura de tipos</div>
+    <div class="type-block">
+<span class="kw">type</span> <span class="ty">ScriptGap</span> = {<br>
+&nbsp;&nbsp;id: <span class="ty">string</span><br>
+&nbsp;&nbsp;section: <span class="ty">string</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// ex: "Objection Handling"</span><br>
+&nbsp;&nbsp;scriptInstruction: <span class="ty">string</span>&nbsp;<span class="cm">// o que o script instrui o vendedor a fazer</span><br>
+&nbsp;&nbsp;observedPattern: <span class="ty">string</span>&nbsp;&nbsp;&nbsp;<span class="cm">// o que a IA detectou na conversa — vendedor e prospect</span><br>
+&nbsp;&nbsp;frequency: <span class="ty">number</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// % das calls analisadas onde o padrão aparece</span><br>
+&nbsp;&nbsp;severity: <span class="st">'high'</span> | <span class="st">'medium'</span> | <span class="st">'low'</span><br>
+&nbsp;&nbsp;suggestedFix: <span class="ty">string</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// nova redação apenas do trecho com atrito</span><br>
+}<br><br>
+<span class="kw">type</span> <span class="ty">ScriptGapAnalysis</span> = {<br>
+&nbsp;&nbsp;analyzedAt: <span class="ty">string</span><br>
+&nbsp;&nbsp;callsAnalyzed: <span class="ty">string[]</span>&nbsp;<span class="cm">// 3 call IDs</span><br>
+&nbsp;&nbsp;gaps: <span class="ty">ScriptGap[]</span><br>
+}
+    </div>
+
+    <div class="label">Sub-tarefas</div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">D1</span> Dados mock</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Criar <code>lib/mocks/data/script-gap-detection.ts</code> com mock de <code>ScriptGapAnalysis</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Adicionar tipos <code>ScriptGap</code> e <code>ScriptGapAnalysis</code> em <code>lib/types.ts</code></span></li>
+      </ul>
+    </div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">D2</span> API Route</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Criar <code>GET /api/script-gap-detection</code> — retorna análise mais recente para o owner logado</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Adicionar handler no MSW</span></li>
+      </ul>
+    </div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">D3</span> Página /script-gap</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Header com data da última análise + "3 calls analyzed"</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Lista de gaps em cards: seção afetada, instrução do script, padrão observado na conversa (vendedor + prospect), frequência, severidade</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Botão "Accept Gap" por card — abre modal com <code>suggestedFix</code> para revisar antes de aplicar</span></li>
+        <li class="step-item"><span class="step-num">4</span><span class="step-text">Ao confirmar: <code>PATCH /api/scripts/:id</code> atualizando apenas o trecho do gap (não o script inteiro)</span></li>
+        <li class="step-item"><span class="step-num">5</span><span class="step-text">Adicionar link "Script Gap" na <code>OwnerSidebar</code></span></li>
+      </ul>
+    </div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">D4</span> Lógica Accept Gap</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Substituir apenas o trecho correspondente — nunca o script inteiro</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Exibir diff visual antes de confirmar: texto antigo (riscado/vermelho) vs texto novo (verde)</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Persistir via <code>PATCH /api/scripts/:id</code> — já existe como passthrough no MSW</span></li>
+      </ul>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Exemplo de diff visual</div>
+    <div class="diff-box">
+      <div class="diff-head">Modal — Accept Gap · Seção: Presentation Flow</div>
+      <div class="diff-line diff-ctx">// instrução atual no script</div>
+      <div class="diff-line diff-del">Após a descoberta, apresente o programa completo antes de tratar objeções.</div>
+      <div class="diff-line diff-ctx">// sugestão da IA</div>
+      <div class="diff-line diff-add">Após a descoberta, pergunte sobre disponibilidade de agenda antes de apresentar o programa. Trate a objeção de tempo primeiro.</div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="label">Arquivos críticos</div>
+    <div class="file-grid">
+      <span class="fchip">lib/types.ts</span>
+      <span class="fchip is-new">lib/mocks/data/script-gap-detection.ts · novo</span>
+      <span class="fchip">lib/mocks/handlers.ts</span>
+      <span class="fchip is-new">app/[locale]/script-gap/page.tsx · novo</span>
+      <span class="fchip">components/layout/OwnerSidebar.tsx</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ TASK-E ═══════════════════════════ -->
+  <section id="p-te" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task E</div>
+        <div class="task-title-large">Migração<br><em>Centurion</em></div>
+        <p class="task-context">Módulo legado que precisa ser portado para o padrão atual do projeto. Escopo e sub-tarefas serão definidos após localizar e auditar o código fonte.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-gray">A definir</span>
+        <span class="tag tag-gray">Localizar código primeiro</span>
+      </div>
+    </div>
+    <div class="rule-blk"><strong>Pré-requisito:</strong> localizar o código fonte do Centurion, mapear o que precisa ser portado e definir o alinhamento com o padrão atual antes de criar sub-tarefas e estimar esforço.</div>
+  </section>
+
+  <!-- ═══════════════════════════ TASK-F ═══════════════════════════ -->
+  <section id="p-tf" class="panel">
+    <div class="task-header">
+      <div class="task-header-left">
+        <div class="task-id-large">Task F</div>
+        <div class="task-title-large">Script Builder<br><em>Seções Fixas</em></div>
+        <p class="task-context">O Script Builder atual é um wizard de 4 etapas que permite adicionar, remover e desativar seções livremente. A nova regra é que as seções do script são sempre fixas e imutáveis — as mesmas 5 seções em toda e qualquer criação de script, sem exceção. O usuário pode editar apenas o nome do script, a descrição, o peso de cada seção e se uma seção é crítica.</p>
+      </div>
+      <div class="task-badges">
+        <span class="tag tag-gray">Médio</span>
+        <span class="tag tag-green">Sem dependências</span>
+      </div>
+    </div>
+
+    <div class="label">As 5 seções fixas — sempre nesta ordem</div>
+    <div class="decisions-bar">
+      <div class="dbar-head">Imutáveis — não podem ser adicionadas, removidas ou desativadas</div>
+      <div class="decisions-list">
+        <div class="dec-item"><div class="dec-q">1</div><div class="dec-a">Discovery</div></div>
+        <div class="dec-item"><div class="dec-q">2</div><div class="dec-a">Problem Agitation</div></div>
+        <div class="dec-item"><div class="dec-q">3</div><div class="dec-a">Offer Presentation</div></div>
+        <div class="dec-item"><div class="dec-q">4</div><div class="dec-a">Objection Handling</div></div>
+        <div class="dec-item"><div class="dec-q">5</div><div class="dec-a">Close & Next Steps</div></div>
+      </div>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="label">O que é editável no confirm step</div>
+    <table class="score-table" style="margin-bottom:1.5rem">
+      <thead><tr><th>Campo</th><th>Editável</th></tr></thead>
+      <tbody>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Nome do script</td><td style="color:#1a5c3a;font-weight:500">✅ Sim</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Descrição do script</td><td style="color:#1a5c3a;font-weight:500">✅ Sim</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Weight da seção</td><td style="color:#1a5c3a;font-weight:500">✅ Sim</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Critical da seção</td><td style="color:#1a5c3a;font-weight:500">✅ Sim</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Nome da seção</td><td style="color:#9a2a10">❌ Fixo — só leitura</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Instructions da seção</td><td style="color:#1a5c3a;font-weight:500">✅ Sim (pré-preenchido pela IA)</td></tr>
+        <tr><td class="sc" style="color:var(--ink2);font-size:13px">Tips da seção</td><td style="color:#1a5c3a;font-weight:500">✅ Sim (pré-preenchido pela IA)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="label">Sub-tarefas</div>
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">F1</span> Remover botão "Add Section"</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Preview step (~linha 541): remover o botão "Add Section" e todo o formulário <code>showAddSection</code> / <code>newSection</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Confirm step (~linha 860): remover o botão "Add Section" que adiciona seção vazia</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Remover estados: <code>showAddSection</code>, <code>setShowAddSection</code>, <code>newSection</code>, <code>setNewSection</code></span></li>
+      </ul>
+    </div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">F2</span> Remover ícone de enable/disable seção</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Preview step (~linha 515): remover o <code>&lt;Button&gt;</code> com <code>Eye</code>/<code>EyeOff</code> de cada seção</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Remover o campo <code>enabled</code> do tipo de <code>previewSections</code></span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Remover a prop <code>opacity-40</code> que aparecia quando <code>!section.enabled</code></span></li>
+      </ul>
+    </div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">F3</span> Remover bloco de "Auto-Generated Evaluation Criteria"</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Preview step (~linhas 594–661): remover o bloco inteiro de criteria — heading, grid com eye toggle, botão "Add Criterion" e formulário <code>newCriterion</code></span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text">Confirm step (~linhas 871–918): remover o card inteiro "Auto-Generated Criteria" — lista editável e botão "Add Criterion"</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">Remover estados: <code>previewCriteria</code>, <code>setPreviewCriteria</code>, <code>showAddCriterion</code>, <code>setShowAddCriterion</code>, <code>newCriterion</code>, <code>setNewCriterion</code>, <code>confirmCriteria</code>, <code>setConfirmCriteria</code></span></li>
+        <li class="step-item"><span class="step-num">4</span><span class="step-text">Remover <code>criteria</code> do payload enviado para <code>POST /api/scripts</code> e da interface <code>GeneratedScript</code></span></li>
+      </ul>
+    </div>
+
+    <div class="subtask-block">
+      <div class="subtask-block-title"><span class="blk-id">F4</span> Fixar as 5 seções no confirm step</div>
+      <ul class="step-list">
+        <li class="step-item"><span class="step-num">1</span><span class="step-text">Em <code>handleGenerate</code>, ignorar as seções retornadas pela IA e sempre inicializar <code>previewSections</code> com as 5 seções fixas via <code>FIXED_SECTIONS</code> (ver bloco abaixo)</span></li>
+        <li class="step-item"><span class="step-num">2</span><span class="step-text"><code>instructions</code> e <code>tips</code> podem ser preenchidas pelo conteúdo gerado pela IA, mapeando por nome de seção — mas a estrutura de 5 seções nunca muda</span></li>
+        <li class="step-item"><span class="step-num">3</span><span class="step-text">No confirm step, o nome da seção não é editável: remover o <code>&lt;Input&gt;</code> de nome da seção e exibir apenas como texto fixo</span></li>
+        <li class="step-item"><span class="step-num">4</span><span class="step-text">Remover o botão de deletar seção (X) do confirm step — seções são fixas e não podem ser removidas</span></li>
+        <li class="step-item"><span class="step-num">5</span><span class="step-text">Manter editáveis: <code>instructions</code> (pré-preenchido pela IA, mas alterável), <code>tips</code> (idem), <code>weight</code> (number input) e <code>critical</code> (checkbox)</span></li>
+      </ul>
+    </div>
+
+    <div class="gap-sm"></div>
+    <div class="label">Constante FIXED_SECTIONS</div>
+    <div class="type-block">
+<span class="kw">const</span> <span class="ty">FIXED_SECTIONS</span> = [<br>
+&nbsp;&nbsp;{ name: <span class="st">'Discovery'</span>, instructions: <span class="st">''</span>, tips: <span class="st">''</span>, weight: <span class="ty">20</span>, critical: <span class="ty">false</span> },<br>
+&nbsp;&nbsp;{ name: <span class="st">'Problem Agitation'</span>, instructions: <span class="st">''</span>, tips: <span class="st">''</span>, weight: <span class="ty">20</span>, critical: <span class="ty">false</span> },<br>
+&nbsp;&nbsp;{ name: <span class="st">'Offer Presentation'</span>, instructions: <span class="st">''</span>, tips: <span class="st">''</span>, weight: <span class="ty">20</span>, critical: <span class="ty">false</span> },<br>
+&nbsp;&nbsp;{ name: <span class="st">'Objection Handling'</span>, instructions: <span class="st">''</span>, tips: <span class="st">''</span>, weight: <span class="ty">20</span>, critical: <span class="ty">false</span> },<br>
+&nbsp;&nbsp;{ name: <span class="st">'Close & Next Steps'</span>, instructions: <span class="st">''</span>, tips: <span class="st">''</span>, weight: <span class="ty">20</span>, critical: <span class="ty">false</span> },<br>
+]<br><br>
+<span class="cm">// Em handleGenerate, mapear o conteúdo da IA por nome de seção:</span><br>
+<span class="kw">const</span> aiMap = Object.fromEntries(<br>
+&nbsp;&nbsp;aiSections.map(<span class="ty">s</span> => [s.name, s])<br>
+)<br>
+<span class="kw">const</span> sections = FIXED_SECTIONS.map(<span class="ty">fixed</span> => ({<br>
+&nbsp;&nbsp;...fixed,<br>
+&nbsp;&nbsp;instructions: aiMap[fixed.name]?.instructions ?? <span class="st">''</span>,<br>
+&nbsp;&nbsp;tips: aiMap[fixed.name]?.tips ?? <span class="st">''</span>,<br>
+}))
+    </div>
+
+    <div class="hr"></div>
+    <div class="label">Arquivo crítico</div>
+    <div class="file-grid">
+      <span class="fchip">app/[locale]/dashboard/script-builder/page.tsx</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ VERIFICAÇÃO ═══════════════════════════ -->
+  <section id="p-verify" class="panel">
+    <div class="label">Como testar após implementação</div>
+    <table class="verify-table">
+      <thead>
+        <tr><th>Task</th><th>Cenário</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="vtask">TASK-A</td>
+          <td>Acessar <code>/</code> → clicar no botão de plano pago → deve redirecionar para Stripe Checkout real</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-B<br>owner</td>
+          <td>Acessar <code>/calls</code> como owner → ver coluna Duration com minutos (<code>Xmin</code>). Sem valor monetário visível em nenhuma parte da tela.</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-B<br>admin</td>
+          <td>Acessar <code>/admin</code> → tabela de orgs exibe colunas "Minutes" e "Cost" no lugar de MRR</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-C</td>
+          <td>Acessar <code>/calls</code> → coluna "Intent" visível entre "Duration" e "Score" exibindo apenas o número (1–5); hover no ícone de tooltip → mostra a mensagem fixa correspondente ao score</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-C<br>email</td>
+          <td>Enviar coaching email → receber seção de intent no corpo com a mensagem fixa correspondente ao score da call</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-D</td>
+          <td>Acessar <code>/script-gap</code> como owner → lista de gaps; clicar "Accept Gap" → ver diff visual; confirmar → script atualizado apenas no trecho correspondente ao gap</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-E</td>
+          <td>A definir após localizar o código fonte</td>
+        </tr>
+        <tr>
+          <td class="vtask">TASK-F</td>
+          <td>Abrir Script Builder → wizard sem botão "Add Section", sem ícone Eye/EyeOff por seção, sem bloco de Criteria; ao gerar → confirm step exibe sempre as 5 seções fixas com nome em texto simples (sem input); weight e critical editáveis; sem botão de deletar seção</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+<script>
+function go(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  if (btn) {
+    btn.classList.add('on');
+  } else {
+    const map = { overview:0, ta:1, tb:2, tc:3, td:4, te:5, tf:6, verify:7 };
+    document.querySelectorAll('.nav-btn')[map[id]].classList.add('on');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

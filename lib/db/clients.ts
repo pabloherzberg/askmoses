@@ -215,50 +215,188 @@ function rpcRowToClient(row: RpcRow): Client {
 }
 
 /**
- * Listagem paginada + filtrada via RPC list_admin_organizations
- * (migration 048). Substitui o dbGetClients() antigo que carregava tudo.
+ * Listagem paginada + filtrada de organizations para o painel /admin.
+ * Usa queries diretas nas tabelas (organizations + plans + memberships +
+ * org_scripts + calls) porque a RPC list_admin_organizations pode não existir
+ * no schema cache do banco. Interface pública inalterada.
  *
- * Filtros opcionais — qualquer combinação. Pagination obrigatória
- * (default page=1, limit=25 no SQL, mas caller deve passar explicitamente).
- *
- * Retorna { rows, total, page, limit }. total é o count pré-paginação
- * (mesmo valor em todas as linhas da RPC; só pegamos da primeira).
+ * Billing por minuto: `totalSecondsThisMonth` é agregado de
+ * calls.duration_seconds do mês corrente (UTC); "Sales People" conta
+ * memberships trainer aceitas. Como minutos/script-status/version não são
+ * colunas filtráveis, esses filtros + a paginação rodam em JS sobre o conjunto
+ * já filtrado por coluna — OK na escala atual (dezenas de orgs); se crescer
+ * muito, mover a agregação pra SQL.
  */
 export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase.rpc("list_admin_organizations", {
-    p_search: query.search ?? null,
-    p_plan_code: query.planCode ?? null,
-    p_plan_status: query.planStatus ?? null,
-    p_script_status: query.scriptStatus ?? null,
-    p_script_version: query.scriptVersion ?? null,
-    p_minutes_min: query.minutesMin ?? null,
-    p_minutes_max: query.minutesMax ?? null,
-    p_last_activity_from: query.lastActivityFrom ?? null,
-    p_last_activity_to: query.lastActivityTo ?? null,
-    p_page: query.page,
-    p_limit: query.limit,
-  });
+  // ── Query base: organizations com plano associado (queries diretas, sem a
+  //    RPC list_admin_organizations — ver nota no JSDoc). ───────────────────
+  let q = supabase
+    .from("organizations")
+    .select(
+      `id, name, plan_id, calls_this_month, avg_score, health,
+       subscription_status, created_at,
+       plans(id, code, name, price_cents, timeline_weeks, has_rag,
+             has_twilio, has_manual_upload, max_sales_people, features)`,
+    )
+    .not("plan_id", "is", null); // exclui orgs sem plano (onboarding incompleto)
 
+  // Filtros de COLUNA (no SQL). planCode, scriptStatus/version e minutos são
+  // derivados → aplicados em JS depois de enriquecer (ver abaixo).
+  if (query.search) q = q.ilike("name", `%${query.search}%`);
+  if (query.planStatus) q = q.eq("subscription_status", query.planStatus);
+  if (query.lastActivityFrom) q = q.gte("created_at", query.lastActivityFrom);
+  if (query.lastActivityTo) q = q.lte("created_at", query.lastActivityTo);
+
+  const { data, error } = await q.order("created_at", { ascending: false });
   if (error) throw new Error(`dbListClients: ${error.message}`);
 
-  const rows = (data ?? []) as RpcRow[];
-  const total = rows.length > 0 ? Number(rows[0].total) : 0;
+  // as unknown as: o supabase-js infere a relação aninhada `plans` como array,
+  // mas é to-one (retorna objeto único em runtime — bate com DbOrgRow.plans).
+  let orgRows = (data ?? []) as unknown as DbOrgRow[];
+  // planCode em JS (evita join complexo no PostgREST) + ignora org sem plano.
+  if (query.planCode) orgRows = orgRows.filter((r) => r.plans?.code === query.planCode);
+  orgRows = orgRows.filter((r) => r.plans !== null);
 
-  const clients = rows.map(rpcRowToClient);
+  const orgIds = orgRows.map((r) => r.id);
+
+  // ── Enriquecimentos em batch (owner / trainers / script / calls) ─────────
+  let ownerAcceptedSet = new Set<string>();
+  const trainerCountByOrg = new Map<string, number>();
+  const scriptByOrg = new Map<string, OrgScriptInfo>();
+  const lastCallByOrg = new Map<string, string>();
+  const monthSecondsByOrg = new Map<string, number>();
+
+  if (orgIds.length > 0) {
+    const monthStart = monthStartIso();
+    const [memRes, trainerRes, scriptRes, callRes] = await Promise.all([
+      supabase
+        .from("memberships")
+        .select("org_id")
+        .in("org_id", orgIds)
+        .eq("role", "owner")
+        .eq("invite_status", "accepted"),
+      // Sales people = trainers aceitos (dinâmico, não organizations.trainers_count).
+      supabase
+        .from("memberships")
+        .select("org_id")
+        .in("org_id", orgIds)
+        .eq("role", "trainer")
+        .eq("invite_status", "accepted"),
+      supabase
+        .from("org_scripts")
+        .select(
+          `org_id, script_id, status, started_at,
+           scripts!script_id(name, rubric_version_snapshot, minor_version)`,
+        )
+        .in("org_id", orgIds)
+        .in("status", ["active", "deprecated", "pending"])
+        .is("ended_at", null)
+        .order("started_at", { ascending: false }),
+      // Uma só leitura de calls alimenta lastCall (all-time) + minutos do mês.
+      supabase
+        .from("calls")
+        .select("org_id, created_at, duration_seconds")
+        .in("org_id", orgIds)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    ownerAcceptedSet = new Set(
+      (memRes.data ?? []).map((m: { org_id: string }) => m.org_id),
+    );
+
+    for (const m of (trainerRes.data ?? []) as { org_id: string }[]) {
+      trainerCountByOrg.set(m.org_id, (trainerCountByOrg.get(m.org_id) ?? 0) + 1);
+    }
+
+    type ScriptRow = {
+      org_id: string;
+      script_id: string;
+      status: OrgScriptStatus;
+      started_at: string | null;
+      scripts: { name: string; rubric_version_snapshot: number; minor_version: number } | null;
+    };
+    const seenScript = new Set<string>();
+    for (const row of (scriptRes.data ?? []) as unknown as ScriptRow[]) {
+      if (seenScript.has(row.org_id)) continue;
+      seenScript.add(row.org_id);
+      const s = row.scripts;
+      if (!s) continue;
+      scriptByOrg.set(row.org_id, {
+        scriptId: row.script_id,
+        scriptName: s.name,
+        version: `${s.rubric_version_snapshot ?? 1}.${s.minor_version ?? 0}`,
+        previousVersion: null,
+        status: row.status,
+        startedAt: row.started_at,
+      });
+    }
+
+    // created_at desc → 1ª ocorrência por org = última call. Soma
+    // duration_seconds do mês corrente (compare lexicográfico de ISO/UTC).
+    const seenCall = new Set<string>();
+    for (const row of (callRes.data ?? []) as {
+      org_id: string;
+      created_at: string;
+      duration_seconds: number | null;
+    }[]) {
+      if (!seenCall.has(row.org_id)) {
+        seenCall.add(row.org_id);
+        lastCallByOrg.set(row.org_id, row.created_at);
+      }
+      if (row.created_at >= monthStart) {
+        monthSecondsByOrg.set(
+          row.org_id,
+          (monthSecondsByOrg.get(row.org_id) ?? 0) + (row.duration_seconds ?? 0),
+        );
+      }
+    }
+  }
+
+  let clients = orgRows.map((r) =>
+    toClient(
+      r,
+      ownerAcceptedSet.has(r.id),
+      scriptByOrg.get(r.id) ?? null,
+      lastCallByOrg.get(r.id) ?? null,
+      monthSecondsByOrg.get(r.id) ?? 0,
+      trainerCountByOrg.get(r.id) ?? 0,
+    ),
+  );
+
+  // ── Filtros derivados (JS): script status/version + minutos ──────────────
+  if (query.scriptStatus) {
+    clients = clients.filter(
+      (c) => (c.currentScript?.status ?? "none") === query.scriptStatus,
+    );
+  }
+  if (query.scriptVersion) {
+    clients = clients.filter((c) => c.currentScript?.version === query.scriptVersion);
+  }
+  if (query.minutesMin !== undefined) {
+    clients = clients.filter((c) => c.totalSecondsThisMonth >= query.minutesMin! * 60);
+  }
+  if (query.minutesMax !== undefined) {
+    clients = clients.filter((c) => c.totalSecondsThisMonth <= query.minutesMax! * 60);
+  }
+
+  // ── Total + paginação (em JS — escala pequena nesta fase) ────────────────
+  const total = clients.length;
+  const fromIdx = (query.page - 1) * query.limit;
+  clients = clients.slice(fromIdx, fromIdx + query.limit);
 
   // ── Enriquecimento 1: nome do pending coexistindo com active (modelo 057) ──
   // Pra cada org com active/deprecated corrente, busca se há também um
   // pending aberto e qual o nome do script — alimenta o Info icon do row
   // do admin. Embed via scripts!script_id desambigua a FK (org_scripts tem
   // 2 refs pra scripts: script_id e previous_script_id).
-  const orgIds = clients.map((c) => c.id);
-  if (orgIds.length > 0) {
+  const clientOrgIds = clients.map((c) => c.id);
+  if (clientOrgIds.length > 0) {
     const { data: pendings, error: pendingErr } = await supabase
       .from("org_scripts")
       .select("org_id, scripts!script_id(name)")
-      .in("org_id", orgIds)
+      .in("org_id", clientOrgIds)
       .eq("status", "pending")
       .is("ended_at", null);
     if (pendingErr) {

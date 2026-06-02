@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
@@ -12,6 +13,12 @@ const NAME_MAX = 80
 export default function OnboardingPage() {
   const t = useTranslations('Onboarding')
   const locale = useLocale()
+  const params = useSearchParams()
+
+  // ?next pode vir do middleware quando o user chegou em /onboarding/plan
+  // sem ter role ainda (veio direto do email de verificação pós-Stripe).
+  // Guardamos para avançar pro destino correto depois de criar a org.
+  const next = params.get('next') ?? ''
 
   const [orgName, setOrgName] = useState('')
   const [error, setError] = useState('')
@@ -47,9 +54,13 @@ export default function OnboardingPage() {
         return
       }
 
-      // Org criada. Avança pra step-2 (escolha de plano). Full reload pra
-      // o middleware re-resolver app_metadata.role (que acabou de virar 'owner').
-      window.location.href = `/${locale}/onboarding/plan`
+      // Avança pra step-2. Se vier de um checkout Stripe, next aponta direto
+      // pra /onboarding/plan?plan=X&session_id=Y. Senão, vai pro /onboarding/plan
+      // padrão. Full reload pra middleware re-resolver app_metadata.role.
+      const destination = next.startsWith('/onboarding/plan')
+        ? `/${locale}${next}`
+        : `/${locale}/onboarding/plan`
+      window.location.href = destination
     } finally {
       setLoading(false)
     }

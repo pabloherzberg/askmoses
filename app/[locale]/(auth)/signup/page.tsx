@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LogoSVG } from '@/components/shared/LogoSVG'
@@ -11,9 +12,16 @@ import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/auth/password'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const PLAN_LABELS: Record<string, string> = { solo: 'Solo', pro: 'Pro' }
+
 export default function SignupPage() {
   const t = useTranslations('Signup')
   const locale = useLocale()
+  const params = useSearchParams()
+
+  const stripePlan = params.get('plan') ?? ''
+  const stripeSessionId = params.get('session_id') ?? ''
+  const comingFromStripe = Boolean(stripePlan && stripeSessionId)
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -28,7 +36,6 @@ export default function SignupPage() {
 
     if (!name.trim()) return setError(t('nameRequired'))
     if (!EMAIL_RE.test(email)) return setError(t('emailInvalid'))
-    // Mesmas regras do backend (lib/auth/password).
     const pw = validatePassword(password)
     if (!pw.valid) {
       if (pw.reason === 'PASSWORD_NO_UPPERCASE') return setError(t('passwordNeedsUppercase'))
@@ -38,12 +45,6 @@ export default function SignupPage() {
 
     setLoading(true)
     try {
-      // POST /api/auth/signup → cria user via admin.generateLink + dispara
-      // email branded via Resend. Cliente não chama supabase.auth.signUp()
-      // direto pra manter consistência com o pipeline de email do app
-      // (invite/magic-link também usam Resend, não o SMTP do Supabase).
-      // email lowercased/trimmed aqui pra bater com a normalização do server
-      // — evita casing mismatch entre signup e login.
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,6 +53,8 @@ export default function SignupPage() {
           email: email.trim().toLowerCase(),
           password,
           locale,
+          stripePlan: stripePlan || undefined,
+          stripeSessionId: stripeSessionId || undefined,
         }),
       })
       const json = (await res.json()) as {
@@ -64,8 +67,6 @@ export default function SignupPage() {
         if (reason === 'EMAIL_ALREADY_REGISTERED') setError(t('emailAlreadyRegistered'))
         else if (reason === 'EMAIL_INVALID') setError(t('emailInvalid'))
         else if (reason === 'PASSWORD_INVALID' || reason === 'PASSWORD_REJECTED') {
-          // Mensagem específica do server (qual regra falhou) — o reason é
-          // genérico, mas `message` detalha. Fallback pro texto de tamanho.
           setError(json.error?.message ?? t('passwordTooShort', { min: PASSWORD_MIN_LENGTH }))
         } else if (reason === 'RATE_LIMITED') {
           setError(json.error?.message ?? t('genericError'))
@@ -124,6 +125,15 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
+
+      {comingFromStripe && (
+        <div
+          className="mb-6 rounded-lg px-4 py-3 text-sm"
+          style={{ background: 'rgba(110,86,255,0.1)', border: '1px solid rgba(110,86,255,0.3)', color: 'var(--am-accent2)' }}
+        >
+          Plano <strong>{PLAN_LABELS[stripePlan] ?? stripePlan}</strong> adquirido ✓ — crie sua conta para acessar.
+        </div>
+      )}
 
       <h1 className="text-lg font-medium mb-1" style={{ color: 'var(--am-text)' }}>
         {t('title')}
