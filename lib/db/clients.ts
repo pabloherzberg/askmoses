@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { minutesToCostValue } from "@/lib/utils";
+import { secondsToCostValue } from "@/lib/billing";
 import type {
   Client,
   GlobalMetrics,
@@ -37,7 +37,6 @@ interface DbOrgRow {
   calls_this_month: number | null;
   avg_score: number | null;
   health: HealthStatus;
-  trainers_count: number | null;
   subscription_status: "active" | "inactive" | "trial";
   created_at: string | null;
   plans: DbPlanNested | null;
@@ -63,7 +62,8 @@ function toClient(
   ownerAccepted: boolean,
   currentScript: OrgScriptInfo | null,
   lastCallAt: string | null,
-  totalMinutesThisMonth: number,
+  totalSecondsThisMonth: number,
+  trainersCount: number,
 ): Client {
   if (!row.plans) {
     throw new Error(
@@ -78,12 +78,14 @@ function toClient(
     orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
     avgScore: row.avg_score ?? 0,
-    // Minutos vêm agregados dinamicamente das calls do mês (calls.duration_seconds),
-    // não de coluna materializada. Custo derivado em TS (centraliza a tarifa).
-    totalMinutesThisMonth,
-    totalCostThisMonth: minutesToCostValue(totalMinutesThisMonth),
+    // Segundos agregados dinamicamente das calls do mês (calls.duration_seconds),
+    // não de coluna materializada. Custo exato derivado em TS.
+    totalSecondsThisMonth,
+    totalCostThisMonth: secondsToCostValue(totalSecondsThisMonth),
     health: row.health,
-    trainersCount: row.trainers_count ?? 0,
+    // Contagem dinâmica de trainers aceitos (memberships), não a coluna
+    // materializada organizations.trainers_count.
+    trainersCount,
     ownerAccepted,
     subscriptionStatus: row.subscription_status,
     currentScript,
@@ -121,7 +123,7 @@ interface RpcRow {
   org_name: string;
   org_created_at: string;
   org_subscription_status: "active" | "inactive" | "trial";
-  org_total_minutes_this_month: number | string;
+  org_total_seconds_this_month: number | string;
   org_health: HealthStatus;
   org_trainers_count: number;
   org_calls_this_month: number;
@@ -196,8 +198,8 @@ function rpcRowToClient(row: RpcRow): Client {
     orgId: row.org_id,
     callsThisMonth: row.org_calls_this_month,
     avgScore: row.org_avg_score,
-    totalMinutesThisMonth: Number(row.org_total_minutes_this_month ?? 0),
-    totalCostThisMonth: minutesToCostValue(Number(row.org_total_minutes_this_month ?? 0)),
+    totalSecondsThisMonth: Number(row.org_total_seconds_this_month ?? 0),
+    totalCostThisMonth: secondsToCostValue(Number(row.org_total_seconds_this_month ?? 0)),
     health: row.org_health,
     trainersCount: row.org_trainers_count,
     ownerAccepted: row.owner_accepted,
@@ -333,15 +335,16 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   };
 }
 
-// ── Minutos consumidos no mês (cobrança por minuto) ─────────────────────
+// ── Segundos consumidos no mês (cobrança por minuto) ────────────────────
 // Agregado dinâmico de calls.duration_seconds — NÃO há coluna materializada
-// (evita dessincronização e o reset mensal manual). Mesma semântica do
-// CEIL(SUM(duration_seconds)/60) usado na RPC list_admin_organizations
-// (migration 071): minuto iniciado conta como minuto cheio.
+// (evita dessincronização e reset mensal manual). Retorna SEGUNDOS crus; a
+// conversão pra minutos/custo é feita pelo consumidor (sem arredondar minuto,
+// pra não divergir do que o /admin mostra via RPC). O recorte do mês usa UTC
+// pra casar com a RPC (date_trunc('month', now() AT TIME ZONE 'UTC')).
 
 type AdminSupabase = ReturnType<typeof createAdminClient>;
 
-/** Primeiro instante do mês corrente em ISO/UTC — equivale a date_trunc('month', now()). */
+/** Início do mês corrente em ISO/UTC — alinhado com o boundary da RPC. */
 function monthStartIso(): string {
   const now = new Date();
   return new Date(
@@ -349,8 +352,8 @@ function monthStartIso(): string {
   ).toISOString();
 }
 
-/** Minutos consumidos por uma org no mês corrente (soma de duration_seconds). */
-async function dbGetOrgMonthMinutes(
+/** Segundos consumidos por uma org no mês corrente (soma de duration_seconds). */
+async function dbGetOrgMonthSeconds(
   supabase: AdminSupabase,
   orgId: string,
 ): Promise<number> {
@@ -359,12 +362,11 @@ async function dbGetOrgMonthMinutes(
     .select("duration_seconds")
     .eq("org_id", orgId)
     .gte("created_at", monthStartIso());
-  if (error) throw new Error(`dbGetOrgMonthMinutes: ${error.message}`);
-  const totalSeconds = (data ?? []).reduce(
+  if (error) throw new Error(`dbGetOrgMonthSeconds: ${error.message}`);
+  return (data ?? []).reduce(
     (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
     0,
   );
-  return Math.ceil(totalSeconds / 60);
 }
 
 // ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
@@ -379,11 +381,11 @@ export async function dbGetClientByOrgId(
 ): Promise<Client | null> {
   const supabase = createAdminClient();
 
-  const [orgRes, ownerRes] = await Promise.all([
+  const [orgRes, ownerRes, trainersRes] = await Promise.all([
     supabase
       .from("organizations")
       .select(
-        "id, name, plan_id, calls_this_month, avg_score, health, trainers_count, subscription_status, created_at, plans(*)",
+        "id, name, plan_id, calls_this_month, avg_score, health, subscription_status, created_at, plans(*)",
       )
       .eq("id", orgId)
       .maybeSingle(),
@@ -392,6 +394,13 @@ export async function dbGetClientByOrgId(
       .select("user_id", { count: "exact", head: true })
       .eq("org_id", orgId)
       .eq("role", "owner")
+      .eq("invite_status", "accepted"),
+    // Sales people = trainers aceitos (dinâmico, não organizations.trainers_count).
+    supabase
+      .from("memberships")
+      .select("user_id", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("role", "trainer")
       .eq("invite_status", "accepted"),
   ]);
 
@@ -404,10 +413,11 @@ export async function dbGetClientByOrgId(
   if (!(orgRes.data as { plan_id: string | null }).plan_id) return null;
 
   const ownerAccepted = (ownerRes.count ?? 0) > 0;
+  const trainersCount = trainersRes.count ?? 0;
 
-  // currentScript + lastCallAt + minutos do mês: queries dedicadas pra esse
+  // currentScript + lastCallAt + segundos do mês: queries dedicadas pra esse
   // único org (sem reuse da RPC que é otimizada pra batch).
-  const [scriptRes, lastCallRes, monthMinutes] = await Promise.all([
+  const [scriptRes, lastCallRes, monthSeconds] = await Promise.all([
     // Filtra explicitamente por effective_status IN ('active','deprecated')
     // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
     // com active (mig. 057): sem este filtro o order-by started_at pegaria a
@@ -430,7 +440,7 @@ export async function dbGetClientByOrgId(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    dbGetOrgMonthMinutes(supabase, orgId),
+    dbGetOrgMonthSeconds(supabase, orgId),
   ]);
 
   let currentScript: OrgScriptInfo | null = null;
@@ -461,54 +471,36 @@ export async function dbGetClientByOrgId(
     ownerAccepted,
     currentScript,
     lastCallAt,
-    monthMinutes,
+    monthSeconds,
+    trainersCount,
   );
 }
 
 // ── Métricas globais (não paginadas — agregação direta) ──────────────────
 
 /**
- * Métricas globais (minutos consumidos, custo, total calls, avg score)
- * agregadas pelas organizations com plano ativo. Orgs sem plano ficam de fora
- * pra não contaminar o avg_score / agregados com zeros do estado de onboarding.
+ * Métricas globais (total clients, total calls, avg score) agregadas pelas
+ * organizations com plano ativo. Orgs sem plano ficam de fora pra não
+ * contaminar o avg_score com zeros do estado de onboarding.
  *
- * Custo é derivado dos minutos em TS (minutesToCostValue) — única fonte da
- * tarifa. Continua agregando em JS — pra ~milhares de orgs ainda é OK, mas se
- * passar de 10k vale migrar pra um SQL aggregation.
+ * Não inclui minutos/custo: os cards do /admin não exibem agregado global de
+ * consumo — minutos/custo são por-org (ver list_admin_organizations). Quando
+ * houver um card global de receita, agregar aqui via SQL SUM.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, calls_this_month, avg_score")
+    .select("calls_this_month, avg_score")
     .not("plan_id", "is", null);
 
   if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`);
 
   const rows = (data ?? []) as Array<{
-    id: string;
     calls_this_month: number;
     avg_score: number;
   }>;
-
-  // Minutos: agregado dinâmico das calls do mês das orgs com plano ativo
-  // (calls.duration_seconds) — sem coluna materializada. Custo derivado em TS.
-  let totalMinutesThisMonth = 0;
-  const orgIds = rows.map((r) => r.id);
-  if (orgIds.length > 0) {
-    const { data: callRows, error: callErr } = await supabase
-      .from("calls")
-      .select("duration_seconds")
-      .in("org_id", orgIds)
-      .gte("created_at", monthStartIso());
-    if (callErr) throw new Error(`dbGetGlobalMetrics(minutes): ${callErr.message}`);
-    const totalSeconds = (callRows ?? []).reduce(
-      (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
-      0,
-    );
-    totalMinutesThisMonth = Math.ceil(totalSeconds / 60);
-  }
 
   return {
     totalClients: rows.length,
@@ -516,8 +508,6 @@ export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
       (s, r) => s + (r.calls_this_month ?? 0),
       0,
     ),
-    totalMinutesThisMonth,
-    totalCostThisMonth: minutesToCostValue(totalMinutesThisMonth),
     avgScore: rows.length
       ? Math.round(
           rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length,

@@ -3,15 +3,15 @@
 --
 -- Migra o modelo de cobrança de MRR fixo para consumo por minuto (US$/min).
 --
--- Os minutos consumidos por org NÃO são materializados numa coluna: são
--- agregados dinamicamente de calls.duration_seconds (minuto iniciado conta
--- como minuto cheio → CEIL(SUM/60)). Isso evita dessincronização e o reset
--- mensal manual que uma coluna exigiria. O custo (US$/min) também não é
--- persistido — é derivado em TS (lib/utils.ts · COST_PER_MINUTE_USD).
+-- A duração consumida por org NÃO é materializada numa coluna: é agregada
+-- dinamicamente de calls.duration_seconds (em SEGUNDOS, sem arredondar pra
+-- minuto cheio — o custo acompanha a duração real). Isso evita
+-- dessincronização e o reset mensal manual que uma coluna exigiria. O custo
+-- (US$/min) também não é persistido — é derivado em TS (lib/billing.ts).
 --
 -- A coluna organizations.mrr é PRESERVADA — o override manual de assinatura
 -- (Admin) e a tela de detalhe da org ainda a leem. Apenas o painel /admin
--- (tabela + filtros) e as métricas globais passam a usar minutos/custo.
+-- (tabela + filtros) passa a usar duração/custo.
 --
 -- NOTE: uma versão anterior desta migration chegou a criar a coluna
 -- organizations.total_minutes_this_month. O DROP COLUMN abaixo a remove de
@@ -21,9 +21,6 @@
 -- ============================================================
 
 -- ─── 1. Remove a função e a coluna materializada (cleanup) ──────────────
--- DROP da função antes da coluna: a versão anterior da RPC referenciava
--- o.total_minutes_this_month. plpgsql é late-bound, mas dropamos a função
--- primeiro de qualquer forma pra recriá-la limpa logo abaixo.
 
 DROP FUNCTION IF EXISTS public.list_admin_organizations(
   TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TIMESTAMPTZ, TIMESTAMPTZ, INT, INT
@@ -32,11 +29,11 @@ DROP FUNCTION IF EXISTS public.list_admin_organizations(
 ALTER TABLE public.organizations
   DROP COLUMN IF EXISTS total_minutes_this_month;
 
--- ─── 2. Recria RPC list_admin_organizations com minutos dinâmicos ───────
--- Os minutos vêm da CTE month_minutes (agrega calls.duration_seconds do mês
--- corrente por org). Filtro de range usa p_minutes_min/p_minutes_max
--- (substitui o antigo p_mrr_min/p_mrr_max); o retorno expõe
--- org_total_minutes_this_month no lugar de org_mrr.
+-- ─── 2. Recria RPC list_admin_organizations com duração dinâmica ────────
+-- Retorna org_total_seconds_this_month = SUM(calls.duration_seconds) do mês
+-- corrente por org (segundos crus). Filtro p_minutes_min/max (em minutos) é
+-- comparado contra os segundos × 60. O recorte do mês usa UTC pra casar com
+-- a agregação feita em TS (lib/db/clients.ts · monthStartIso).
 
 CREATE OR REPLACE FUNCTION public.list_admin_organizations(
   p_search             TEXT          DEFAULT NULL,
@@ -56,7 +53,7 @@ RETURNS TABLE(
   org_name                     TEXT,
   org_created_at               TIMESTAMPTZ,
   org_subscription_status      TEXT,
-  org_total_minutes_this_month INT,
+  org_total_seconds_this_month INT,
   org_health                   TEXT,
   org_trainers_count           INT,
   org_calls_this_month         INT,
@@ -93,7 +90,8 @@ DECLARE
   v_script_minor INT := NULL;
   v_offset       INT := GREATEST((COALESCE(p_page, 1) - 1) * COALESCE(p_limit, 25), 0);
   v_limit        INT := LEAST(GREATEST(COALESCE(p_limit, 25), 1), 200);
-  v_month_start  TIMESTAMPTZ := date_trunc('month', now());
+  -- Início do mês corrente em UTC (casa com lib/db/clients.ts · monthStartIso).
+  v_month_start  TIMESTAMPTZ := date_trunc('month', timezone('UTC', now())) AT TIME ZONE 'UTC';
 BEGIN
   -- Split "1.2" or "1.2.3" → major=1, minor=2 (owner_edit not filtered).
   IF p_script_version IS NOT NULL AND p_script_version <> '' THEN
@@ -140,11 +138,10 @@ BEGIN
       WHERE c.org_id IS NOT NULL
       GROUP BY c.org_id
     ),
-    -- Minutos consumidos no mês corrente por org. CEIL(sum/60) → minuto
-    -- iniciado conta como cheio (semântica de billing).
-    month_minutes AS (
+    -- Segundos consumidos no mês corrente por org (sem arredondar).
+    month_seconds AS (
       SELECT c.org_id,
-             CEIL(COALESCE(SUM(c.duration_seconds), 0) / 60.0)::INT AS total_minutes
+             COALESCE(SUM(c.duration_seconds), 0)::INT AS total_seconds
       FROM public.calls c
       WHERE c.org_id IS NOT NULL
         AND c.created_at >= v_month_start
@@ -155,15 +152,24 @@ BEGIN
       FROM public.memberships m
       WHERE m.role = 'owner' AND m.invite_status = 'accepted'
     ),
+    -- Sales people = trainers aceitos (memberships), contados dinamicamente.
+    -- Substitui o organizations.trainers_count materializado, que ficava
+    -- dessincronizado com as memberships reais.
+    trainer_counts AS (
+      SELECT m.org_id, COUNT(*)::INT AS n
+      FROM public.memberships m
+      WHERE m.role = 'trainer' AND m.invite_status = 'accepted'
+      GROUP BY m.org_id
+    ),
     filtered AS (
       SELECT
         o.id,
         o.name,
         o.created_at,
         o.subscription_status,
-        COALESCE(mm.total_minutes, 0) AS total_minutes_this_month,
+        COALESCE(ms.total_seconds, 0) AS total_seconds_this_month,
         o.health,
-        o.trainers_count,
+        COALESCE(tc.n, 0) AS trainers_count,
         o.calls_this_month,
         o.avg_score,
         o.plan_id,
@@ -193,7 +199,8 @@ BEGIN
       LEFT JOIN current_scripts  cs ON cs.org_id = o.id
       LEFT JOIN prev_scripts     ps ON ps.org_id = o.id
       LEFT JOIN last_calls       lc ON lc.org_id = o.id
-      LEFT JOIN month_minutes    mm ON mm.org_id = o.id
+      LEFT JOIN month_seconds    ms ON ms.org_id = o.id
+      LEFT JOIN trainer_counts   tc ON tc.org_id = o.id
       LEFT JOIN accepted_owners  ao ON ao.org_id = o.id
       WHERE o.plan_id IS NOT NULL
         AND (p_search IS NULL OR p_search = '' OR o.name ILIKE '%' || p_search || '%')
@@ -206,8 +213,8 @@ BEGIN
         )
         AND (v_script_major IS NULL OR cs.rubric_version_snapshot = v_script_major)
         AND (v_script_minor IS NULL OR cs.minor_version = v_script_minor)
-        AND (p_minutes_min IS NULL OR COALESCE(mm.total_minutes, 0) >= p_minutes_min)
-        AND (p_minutes_max IS NULL OR COALESCE(mm.total_minutes, 0) <= p_minutes_max)
+        AND (p_minutes_min IS NULL OR COALESCE(ms.total_seconds, 0) >= p_minutes_min * 60)
+        AND (p_minutes_max IS NULL OR COALESCE(ms.total_seconds, 0) <= p_minutes_max * 60)
         AND (
           p_last_activity_from IS NULL
           OR COALESCE(lc.last_call_at, o.created_at) >= p_last_activity_from
@@ -225,7 +232,7 @@ BEGIN
     f.name,
     f.created_at,
     f.subscription_status,
-    f.total_minutes_this_month,
+    f.total_seconds_this_month,
     f.health,
     COALESCE(f.trainers_count, 0),
     COALESCE(f.calls_this_month, 0),
@@ -263,9 +270,9 @@ $$;
 
 COMMENT ON FUNCTION public.list_admin_organizations IS
   'Lista paginada e filtrada de orgs pro painel /admin. '
-  'Migration 071: cobrança por minuto — org_total_minutes_this_month agregado '
-  'dinamicamente de calls.duration_seconds (mês corrente) e filtro '
-  'p_minutes_min/p_minutes_max (substitui org_mrr / p_mrr_*).';
+  'Migration 071: cobrança por minuto — org_total_seconds_this_month agregado '
+  'dinamicamente de calls.duration_seconds (mês corrente, UTC) e filtro '
+  'p_minutes_min/p_minutes_max em minutos (substitui org_mrr / p_mrr_*).';
 
 GRANT EXECUTE ON FUNCTION public.list_admin_organizations(
   TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TIMESTAMPTZ, TIMESTAMPTZ, INT, INT

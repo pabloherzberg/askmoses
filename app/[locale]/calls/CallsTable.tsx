@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Phone, FileText } from 'lucide-react'
+import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
@@ -213,11 +214,11 @@ export function CallsTable({
                         </td>
                       )}
                       <td className="px-4 py-3"><ScorePill score={call.score} /></td>
-                      {/* Duração em minutos — Owner vê apenas a quantidade, nunca
-                          o custo (cobrança por minuto é visível só pro Admin). */}
+                      {/* Duração real da call (ex.: "1m30s") — Owner vê só a
+                          duração, nunca o custo (visível apenas pro Admin). */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-[13px] font-mono" style={{ color: 'var(--am-muted)' }}>
-                          {t('durationMinutes', { count: call.durationMinutes })}
+                          {formatDuration(call.durationSeconds)}
                         </span>
                       </td>
                       <td className="px-4 py-3">

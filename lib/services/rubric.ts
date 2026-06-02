@@ -242,46 +242,42 @@ export async function getRubric(): Promise<{
   // sem default local). Computa SEMPRE.
   const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
 
-  // Fallback da rubric: default local → rubric do script ativo via org_scripts
-  // → rubric global. Garante que sections/trainerSectionScores tenham
-  // conteúdo mesmo pra orgs criadas com script template.
-  // Resolve as DIMENSÕES pontuadas (linhas do card). Prioridade:
-  //   1) Rubrica default da org COM critérios (tabela `criteria`).
-  //   2) Senão, o SCRIPT ativo — no modelo atual os critérios/seções vivem no
-  //      JSONB do script (org_scripts → scripts.sections); a tabela `criteria`
-  //      fica vazia em orgs criadas via script-template. Era esse o furo: o
-  //      default-rubric vinha não-nulo mas com criteria=[], o script era
-  //      ignorado e o card ficava vazio.
-  let dimensions: { id: string; name: string; description: string }[] = (
-    defaultRubric?.criteria ?? []
-  ).map((c) => ({
-    id: (CRITERION_KEY_MAP[c.name.toLowerCase()] ?? c.id) as string,
-    name: c.name,
-    description: c.description ?? "",
-  }));
+  // Resolve as DIMENSÕES pontuadas (linhas do card), por prioridade:
+  //   1) SCRIPT ativo da org — é contra ele que as calls são pontuadas, então
+  //      seus `sections` casam com os nomes em call.sections. No modelo atual
+  //      os critérios/seções vivem no JSONB do script (org_scripts →
+  //      scripts.sections); usar a tabela `criteria` aqui era o furo (vinha
+  //      vazia em orgs script-template → card vazio).
+  //   2) Senão, a rubrica default da org COM critérios (modelo legado, orgs
+  //      sem script ativo).
+  const { dbGetActiveOrgScript } = await import("@/lib/db/scripts");
+  const activeScript = await dbGetActiveOrgScript(orgId);
+  // `sections` é a fonte canônica; `criteria` do script é fallback p/ scripts
+  // antigos sem sections.
+  const scriptDims = activeScript?.sections?.length
+    ? activeScript.sections.map((s) => ({ name: s.name, description: "" }))
+    : (activeScript?.criteria ?? []).map((c) => ({
+        name: c.name,
+        description: c.description ?? "",
+      }));
 
-  if (dimensions.length === 0) {
-    const { dbGetActiveOrgScript } = await import("@/lib/db/scripts");
-    const activeScript = await dbGetActiveOrgScript(orgId);
-    // `sections` é a fonte canônica das dimensões pontuadas (mesmos nomes que
-    // aparecem em call.sections). `criteria` do script é fallback p/ scripts
-    // antigos sem sections.
-    const scriptDims = activeScript?.sections?.length
-      ? activeScript.sections.map((s) => ({ name: s.name, description: "" }))
-      : (activeScript?.criteria ?? []).map((c) => ({
+  let dimensions: { id: string; name: string; description: string }[] =
+    scriptDims.length > 0
+      ? scriptDims.map((d) => ({
+          id: (CRITERION_KEY_MAP[d.name.toLowerCase()] ?? d.name) as string,
+          name: d.name,
+          description: d.description,
+        }))
+      : (defaultRubric?.criteria ?? []).map((c) => ({
+          id: (CRITERION_KEY_MAP[c.name.toLowerCase()] ?? c.id) as string,
           name: c.name,
           description: c.description ?? "",
         }));
-    dimensions = scriptDims.map((d) => ({
-      id: (CRITERION_KEY_MAP[d.name.toLowerCase()] ?? d.name) as string,
-      name: d.name,
-      description: d.description,
-    }));
-    if (dimensions.length === 0) {
-      console.warn(
-        `[getRubric] Nenhuma dimensão resolvível para org=${orgId} (sem rubrica default com critérios e sem script ativo).`,
-      );
-    }
+
+  if (dimensions.length === 0) {
+    console.warn(
+      `[getRubric] Nenhuma dimensão resolvível para org=${orgId} (sem script ativo e sem rubrica default com critérios).`,
+    );
   }
 
   // ── Per-trainer averages ──────────────────────────────────────────────────

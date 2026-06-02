@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle, FileText } from 'lucide-react'
 import { RubricBar } from '@/components/shared/RubricBar'
+import { formatDuration } from '@/lib/format'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
 import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
@@ -62,7 +63,7 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
             {new Date(call.date).toLocaleDateString(locale, {
               weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
             })}{' '}
-            · {call.duration} · {call.prospect}
+            · {formatDuration(call.durationSeconds)} · {call.prospect}
           </p>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--am-text)' }}>
             {call.trainerName}

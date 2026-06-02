@@ -102,12 +102,9 @@ function toCall(db: DbCall): Call {
     trainerId: db.trainer_id ?? "",
     trainerName: db.trainer_name,
     date: db.created_at,
-    duration: "—",
-    // Minutos inteiros derivados de duration_seconds (migration 036). 0 quando
-    // a call não tem duração registrada. Base da cobrança por minuto — o custo
-    // só é computado nas views de Admin (lib/utils.ts · minutesToCost).
-    durationMinutes:
-      db.duration_seconds != null ? Math.round(db.duration_seconds / 60) : 0,
+    // Segundos crus de duration_seconds (migration 036). NULL preservado —
+    // display via formatDuration; custo (admin) derivado disso.
+    durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",
