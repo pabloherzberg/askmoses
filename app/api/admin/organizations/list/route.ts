@@ -11,8 +11,8 @@ interface ListBody {
   planStatus?: 'active' | 'inactive' | 'trial'
   scriptStatus?: OrgScriptStatus
   scriptVersion?: string
-  mrrMin?: number
-  mrrMax?: number
+  minutesMin?: number
+  minutesMax?: number
   lastActivityFrom?: string
   lastActivityTo?: string
   page?: number
@@ -85,13 +85,13 @@ export async function POST(request: NextRequest) {
       ? body.scriptVersion
       : undefined
 
-  const mrrMin =
-    typeof body.mrrMin === 'number' && isFinite(body.mrrMin) && body.mrrMin >= 0
-      ? body.mrrMin
+  const minutesMin =
+    typeof body.minutesMin === 'number' && isFinite(body.minutesMin) && body.minutesMin >= 0
+      ? body.minutesMin
       : undefined
-  const mrrMax =
-    typeof body.mrrMax === 'number' && isFinite(body.mrrMax) && body.mrrMax >= 0
-      ? body.mrrMax
+  const minutesMax =
+    typeof body.minutesMax === 'number' && isFinite(body.minutesMax) && body.minutesMax >= 0
+      ? body.minutesMax
       : undefined
 
   // Datas devem ser ISO parseable. Inválidas → ignora silenciosamente.
@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
       planStatus,
       scriptStatus,
       scriptVersion,
-      mrrMin,
-      mrrMax,
+      minutesMin,
+      minutesMax,
       lastActivityFrom,
       lastActivityTo,
       page,

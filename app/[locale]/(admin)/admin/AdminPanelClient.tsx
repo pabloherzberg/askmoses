@@ -50,8 +50,8 @@ interface ListRequestBody {
   planStatus?: "active" | "inactive" | "trial";
   scriptStatus?: OrgScriptStatus;
   scriptVersion?: string;
-  mrrMin?: number;
-  mrrMax?: number;
+  minutesMin?: number;
+  minutesMax?: number;
   lastActivityFrom?: string;
   lastActivityTo?: string;
   page: number;
@@ -73,13 +73,13 @@ function filtersToBody(
   if (filters.planCode !== "all") body.planCode = filters.planCode;
   if (filters.planStatus !== "all") body.planStatus = filters.planStatus;
   if (filters.scriptVersion !== "all") body.scriptVersion = filters.scriptVersion;
-  if (filters.mrrMin !== "") {
-    const n = Number(filters.mrrMin);
-    if (isFinite(n) && n >= 0) body.mrrMin = n;
+  if (filters.minutesMin !== "") {
+    const n = Number(filters.minutesMin);
+    if (isFinite(n) && n >= 0) body.minutesMin = n;
   }
-  if (filters.mrrMax !== "") {
-    const n = Number(filters.mrrMax);
-    if (isFinite(n) && n >= 0) body.mrrMax = n;
+  if (filters.minutesMax !== "") {
+    const n = Number(filters.minutesMax);
+    if (isFinite(n) && n >= 0) body.minutesMax = n;
   }
   if (filters.lastActivityFrom !== "") body.lastActivityFrom = filters.lastActivityFrom;
   if (filters.lastActivityTo !== "") body.lastActivityTo = filters.lastActivityTo;
@@ -478,7 +478,8 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
                     "plan",
                     "planStatus",
                     "salesPeople",
-                    "mrr",
+                    "minutes",
+                    "cost",
                     "lastActivity",
                   ] as const
                 ).map((k) => (
@@ -496,7 +497,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
               {rows.length === 0 && !loading && (
                 <tr>
                   <td
-                    colSpan={selectionMode ? 10 : 9}
+                    colSpan={selectionMode ? 11 : 10}
                     className="text-center py-10 text-sm"
                     style={{ color: "var(--am-muted)" }}
                   >

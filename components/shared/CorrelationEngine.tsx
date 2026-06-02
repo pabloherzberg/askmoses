@@ -14,7 +14,7 @@ const barColor: Record<CorrelationLevel, string> = {
 // Volume mínimo para o título exibir linguagem estatística ("Correlation Engine —
 // What Drives Closes"). Abaixo disso o título fala em médias por dimensão e o
 // disclaimer abaixo explica que a correlação estatística virá com volume.
-const MIN_CALLS_FOR_STATS = 30
+const MIN_CALLS_FOR_STATS = 3
 
 interface Props {
   factors: CorrelationFactor[]

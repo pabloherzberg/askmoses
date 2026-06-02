@@ -102,7 +102,9 @@ function toCall(db: DbCall): Call {
     trainerId: db.trainer_id ?? "",
     trainerName: db.trainer_name,
     date: db.created_at,
-    duration: "—",
+    // Segundos crus de duration_seconds (migration 036). NULL preservado —
+    // display via formatDuration; custo (admin) derivado disso.
+    durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
     prospect: db.client_name ?? "—",

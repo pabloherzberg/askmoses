@@ -62,7 +62,11 @@ export interface Call {
   trainerId: string
   trainerName: string
   date: string
-  duration: string
+  // Duração da call em segundos (base da cobrança por minuto). NULL quando a
+  // duração não foi capturada — hoje só o webhook GHL a preenche; o fluxo de
+  // upload deixa NULL (decisão pendente Lucas/Victor). Display via
+  // lib/format.ts · formatDuration ("1m30s"); custo só nas views de Admin.
+  durationSeconds: number | null
   score: number
   result: CallResult
   prospect: string
@@ -160,7 +164,12 @@ export interface Client {
   orgId: string
   callsThisMonth: number
   avgScore: number
-  mrr: number
+  // Cobrança por minuto (substitui o MRR fixo). `totalSecondsThisMonth` é o
+  // consumo agregado da org no mês (soma de calls.duration_seconds, dinâmico);
+  // `totalCostThisMonth` é o valor exato em USD. Ambos só exibidos no painel
+  // Admin — Owner nunca vê custo.
+  totalSecondsThisMonth: number
+  totalCostThisMonth: number
   health: HealthStatus
   trainersCount: number
   // false = nenhuma membership com role='owner' e invite_status='accepted'
@@ -192,7 +201,6 @@ export interface TrendPoint {
 export interface GlobalMetrics {
   totalClients: number
   totalCallsThisMonth: number
-  totalMRR: number
   avgScore: number
 }
 

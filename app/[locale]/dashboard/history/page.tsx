@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import type { Call } from "@/lib/types"
+import { formatDuration } from "@/lib/format"
 import { scoreLevel, toDisplay5, toBarWidth } from "@/lib/score-display"
 import {
   Card,
@@ -279,7 +280,7 @@ export default function HistoryPage() {
                   </span>
                 </DialogTitle>
                 <DialogDescription>
-                  {new Date(selectedCall.date).toLocaleDateString(locale)} · {selectedCall.duration}
+                  {new Date(selectedCall.date).toLocaleDateString(locale)} · {formatDuration(selectedCall.durationSeconds)}
                 </DialogDescription>
               </DialogHeader>
 

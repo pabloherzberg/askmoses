@@ -1,9 +1,17 @@
 import { type NextRequest } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil',
-})
+// Lazy singleton — ver nota em app/api/checkout/route.ts (não instanciar Stripe
+// no topo do módulo pra não quebrar o `next build`).
+let stripeClient: Stripe | null = null
+function getStripe(): Stripe {
+  if (!stripeClient) {
+    const key = process.env.STRIPE_SECRET_KEY
+    if (!key) throw new Error('STRIPE_SECRET_KEY não configurada')
+    stripeClient = new Stripe(key, { apiVersion: '2025-05-28.basil' })
+  }
+  return stripeClient
+}
 
 // Mapeia price_id do Stripe → planCode do banco
 const PRICE_TO_PLAN: Record<string, string> = {
@@ -24,7 +32,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+  const session = await getStripe().checkout.sessions.retrieve(sessionId, {
     expand: ['line_items'],
   })
 

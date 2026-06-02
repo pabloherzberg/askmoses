@@ -16,7 +16,7 @@ import type {
   DbCriterion,
 } from "@/lib/db/rubric";
 import { getOrgId } from "@/lib/auth";
-import { getCalls, avgRubricScores } from "@/lib/services/calls";
+import { getCalls } from "@/lib/services/calls";
 import { toCorrelationLevel } from "@/lib/score-display";
 import type {
   RubricSection,
@@ -34,6 +34,31 @@ const CRITERION_KEY_MAP: Record<string, keyof RubricScores> = {
   "close & next steps": "closeAndNextSteps",
   "close and next steps": "closeAndNextSteps",
 };
+
+// Média de score por NOME de critério, lida direto das seções da call
+// (call.sections preserva name+score de TODAS as seções, não só as 5
+// canônicas). Robusto a rubricas/scripts custom: antes, critérios fora do
+// CRITERION_KEY_MAP caíam pra teamAvg 0 mesmo com calls pontuadas. Match é
+// case-insensitive e ignora espaços nas bordas — mesmo critério da rubrica
+// gera a seção na call com o mesmo nome.
+function avgSectionByName(
+  calls: { sections?: { name: string; score: number }[] }[],
+  criterionName: string,
+): number {
+  const target = criterionName.trim().toLowerCase();
+  let sum = 0;
+  let n = 0;
+  for (const call of calls) {
+    const sec = call.sections?.find(
+      (s) => s.name.trim().toLowerCase() === target,
+    );
+    if (sec && Number.isFinite(sec.score)) {
+      sum += sec.score;
+      n++;
+    }
+  }
+  return n > 0 ? Math.round((sum / n) * 10) / 10 : 0;
+}
 
 const SECTION_COLORS: RubricSection["color"][] = [
   "blue",
@@ -217,31 +242,43 @@ export async function getRubric(): Promise<{
   // sem default local). Computa SEMPRE.
   const trend = buildWeeklyTrend(calls, weeksSpanned(calls, 6));
 
-  // Fallback da rubric: default local → rubric do script ativo via org_scripts
-  // → rubric global. Garante que sections/trainerSectionScores tenham
-  // conteúdo mesmo pra orgs criadas com script template.
-  let result = defaultRubric;
-  if (!result) {
-    const { dbGetActiveOrgScript } = await import('@/lib/db/scripts');
-    const activeScript = await dbGetActiveOrgScript(orgId);
-    if (activeScript) {
-      const { dbGetRubricById, dbGetCriteriaByRubric } = await import('@/lib/db/rubric');
-      const rubric =
-        (await dbGetRubricById(orgId, activeScript.rubric_id)) ??
-        (await dbGetRubricById(null, activeScript.rubric_id));
-      if (rubric) {
-        const criteria = await dbGetCriteriaByRubric(rubric.id);
-        result = { rubric, criteria };
-      }
-    }
-  }
-  if (!result) {
-    console.warn(`[getRubric] No rubric resolvable for org=${orgId} (no local default, no active org_script with rubric). Returning trend-only.`);
-    return { sections: [], trend, trainerSectionScores: [], calls };
-  }
+  // Resolve as DIMENSÕES pontuadas (linhas do card), por prioridade:
+  //   1) SCRIPT ativo da org — é contra ele que as calls são pontuadas, então
+  //      seus `sections` casam com os nomes em call.sections. No modelo atual
+  //      os critérios/seções vivem no JSONB do script (org_scripts →
+  //      scripts.sections); usar a tabela `criteria` aqui era o furo (vinha
+  //      vazia em orgs script-template → card vazio).
+  //   2) Senão, a rubrica default da org COM critérios (modelo legado, orgs
+  //      sem script ativo).
+  const { dbGetActiveOrgScript } = await import("@/lib/db/scripts");
+  const activeScript = await dbGetActiveOrgScript(orgId);
+  // `sections` é a fonte canônica; `criteria` do script é fallback p/ scripts
+  // antigos sem sections.
+  const scriptDims = activeScript?.sections?.length
+    ? activeScript.sections.map((s) => ({ name: s.name, description: "" }))
+    : (activeScript?.criteria ?? []).map((c) => ({
+        name: c.name,
+        description: c.description ?? "",
+      }));
 
-  // ── Team averages ─────────────────────────────────────────────────────────
-  const teamAvg = avgRubricScores(calls); // 0–100 scale
+  let dimensions: { id: string; name: string; description: string }[] =
+    scriptDims.length > 0
+      ? scriptDims.map((d) => ({
+          id: (CRITERION_KEY_MAP[d.name.toLowerCase()] ?? d.name) as string,
+          name: d.name,
+          description: d.description,
+        }))
+      : (defaultRubric?.criteria ?? []).map((c) => ({
+          id: (CRITERION_KEY_MAP[c.name.toLowerCase()] ?? c.id) as string,
+          name: c.name,
+          description: c.description ?? "",
+        }));
+
+  if (dimensions.length === 0) {
+    console.warn(
+      `[getRubric] Nenhuma dimensão resolvível para org=${orgId} (sem script ativo e sem rubrica default com critérios).`,
+    );
+  }
 
   // ── Per-trainer averages ──────────────────────────────────────────────────
   const trainerCallsMap = new Map<string, typeof calls>();
@@ -254,11 +291,9 @@ export async function getRubric(): Promise<{
 
   const trainerSectionScores: TrainerSectionScore[] = [];
   for (const [trainerId, trainerCalls] of trainerCallsMap.entries()) {
-    const avg = avgRubricScores(trainerCalls);
     const scores: Record<string, number> = {};
-    for (const c of result.criteria) {
-      const key = CRITERION_KEY_MAP[c.name.toLowerCase()];
-      scores[c.name] = key ? Math.round(avg[key] * 10) / 10 : 0;
+    for (const d of dimensions) {
+      scores[d.name] = avgSectionByName(trainerCalls, d.name);
     }
     trainerSectionScores.push({
       trainerId,
@@ -268,19 +303,16 @@ export async function getRubric(): Promise<{
   }
 
   // ── Sections ──────────────────────────────────────────────────────────────
-  const sections: RubricSection[] = result.criteria.map((c, i) => {
-    const key = CRITERION_KEY_MAP[c.name.toLowerCase()];
-    return {
-      id: (key ?? c.id) as RubricSection["id"],
-      name: c.name,
-      weight: 1,
-      isCritical: false,
-      description: c.description ?? "",
-      teamAvg: key ? Math.round(teamAvg[key] * 10) / 10 : 0,
-      color: SECTION_COLORS[i % SECTION_COLORS.length],
-      trainerScores: { marcus: 0, jamie: 0, jordan: 0, taylor: 0 },
-    };
-  });
+  const sections: RubricSection[] = dimensions.map((d, i) => ({
+    id: d.id as RubricSection["id"],
+    name: d.name,
+    weight: 1,
+    isCritical: false,
+    description: d.description,
+    teamAvg: avgSectionByName(calls, d.name),
+    color: SECTION_COLORS[i % SECTION_COLORS.length],
+    trainerScores: { marcus: 0, jamie: 0, jordan: 0, taylor: 0 },
+  }));
 
   return { sections, trend, trainerSectionScores, calls };
 }
