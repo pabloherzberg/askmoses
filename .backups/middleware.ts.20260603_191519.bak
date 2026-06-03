@@ -175,12 +175,12 @@ export async function middleware(request: NextRequest) {
       rawPath === '/' ||
       rawPath.startsWith('/admin') ||
       IMPERSONATE_ALLOWED.some((p) => rawPath === p || rawPath.startsWith(p + '/'))
-    // Bloqueia drilldowns operacionais dentro das rotas permitidas.
-    // /dashboard/settings/invite é permitido (read-only: ver membros).
+    // Bloqueia drilldowns que são operacionais mesmo dentro das rotas
+    // permitidas (upload, script-builder, settings).
     const isOperational =
       rawPath.startsWith('/dashboard/upload') ||
       rawPath.startsWith('/dashboard/script-builder') ||
-      (rawPath.startsWith('/dashboard/settings') && !rawPath.startsWith('/dashboard/settings/invite'))
+      rawPath.startsWith('/dashboard/settings')
     if (!isAllowed || isOperational) {
       return NextResponse.redirect(localized('/admin', locale, request.url))
     }
