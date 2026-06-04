@@ -72,7 +72,11 @@ export function NavItem({
   );
 }
 
-export function TrainerNavItems() {
+export function TrainerNavItems({
+  manualUploadEnabled = false,
+}: {
+  manualUploadEnabled?: boolean;
+} = {}) {
   const t = useTranslations("Shared.sidebar");
   const trainerNav = [
     { label: t("myDashboard"), href: "/me", icon: LayoutDashboard },
@@ -82,7 +86,9 @@ export function TrainerNavItems() {
       href: "/me/recommendations",
       icon: Sparkles,
     },
-    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    ...(manualUploadEnabled
+      ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
+      : []),
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -143,7 +149,11 @@ export function OwnerNavItems() {
   );
 }
 
-export function AdminNavItems() {
+export function AdminNavItems({
+  manualUploadEnabled = false,
+}: {
+  manualUploadEnabled?: boolean;
+} = {}) {
   const t = useTranslations("Shared.sidebar");
   const nav = [
     { label: t("saasPanel"), href: "/admin", icon: Building2 },
@@ -163,12 +173,9 @@ export function AdminNavItems() {
       href: "/dashboard/script-builder",
       icon: Wand2,
     },
-    {
-      label: t("marketingIntelligence"),
-      href: "/marketing-intelligence",
-      icon: Megaphone,
-    },
-    { label: t("uploadCall"), href: "/dashboard/upload", icon: Upload },
+    ...(manualUploadEnabled
+      ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
+      : []),
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
@@ -183,11 +190,11 @@ export function AdminNavItems() {
 
 // Sidebar mostrado quando Admin está impersonando uma org. Whitelist
 // alinhada com middleware.ts (IMPERSONATE_ALLOWED): só read-only paths.
-// Operacionais (upload, script-builder, rubric-config, marketing-intel,
-// members) ficam fora — banner global de impersonate cuida do exit.
+// Operacionais (upload, script-builder, rubric-config) ficam fora —
+// banner global de impersonate cuida do exit.
 export function ImpersonateNavItems() {
   const t = useTranslations("Shared.sidebar");
-  const nav = [
+  const mainNav = [
     { label: t("dashboard"), href: "/dashboard", icon: Home },
     {
       label: t("teamCommandCenter"),
@@ -196,14 +203,38 @@ export function ImpersonateNavItems() {
     },
     { label: t("calls"), href: "/calls", icon: Phone },
     {
+      label: t("insights"),
+      href: "/dashboard/insights",
+      icon: Brain,
+    },
+    {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",
       icon: Megaphone,
     },
   ];
+  const toolsNav = [
+    { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
+  ];
   return (
     <nav className="flex flex-col gap-1">
-      {nav.map((item) => (
+      {mainNav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
+
+      <div
+        className="my-2 mx-3 h-px"
+        style={{ background: "var(--am-border)" }}
+      />
+
+      <p
+        className="px-3 mb-1 text-[10px] font-medium uppercase tracking-widest"
+        style={{ color: "var(--am-muted)" }}
+      >
+        {t("tools")}
+      </p>
+
+      {toolsNav.map((item) => (
         <NavItem key={item.href} {...item} />
       ))}
     </nav>
@@ -213,28 +244,36 @@ export function ImpersonateNavItems() {
 export function NavItemsForRole({
   role,
   isImpersonating = false,
+  manualUploadEnabled = false,
 }: {
   role?: Role | null;
   isImpersonating?: boolean;
+  manualUploadEnabled?: boolean;
 }) {
   if (role === "admin" && isImpersonating) return <ImpersonateNavItems />;
-  if (role === "admin") return <AdminNavItems />;
-  if (role === "trainer") return <TrainerNavItems />;
+  if (role === "admin") return <AdminNavItems manualUploadEnabled={manualUploadEnabled} />;
+  if (role === "trainer") return <TrainerNavItems manualUploadEnabled={manualUploadEnabled} />;
   return <OwnerNavItems />;
 }
 
 export function AppSidebar({
   role,
   isImpersonating = false,
+  manualUploadEnabled = false,
   children,
 }: {
   role?: Role | null;
   isImpersonating?: boolean;
+  manualUploadEnabled?: boolean;
   children?: React.ReactNode;
 }) {
   const t = useTranslations("Shared.sidebar");
   const nav = children ?? (
-    <NavItemsForRole role={role} isImpersonating={isImpersonating} />
+    <NavItemsForRole
+      role={role}
+      isImpersonating={isImpersonating}
+      manualUploadEnabled={manualUploadEnabled}
+    />
   );
 
   return (

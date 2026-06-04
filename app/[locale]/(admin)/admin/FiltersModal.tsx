@@ -12,8 +12,8 @@ export interface FilterValues {
   planCode: PlanCode | 'all'
   planStatus: PlanStatusValue
   scriptVersion: string | 'all'
-  mrrMin: string  // string pra controlar input vazio facilmente; convertido no apply
-  mrrMax: string
+  minutesMin: string  // string pra controlar input vazio facilmente; convertido no apply
+  minutesMax: string
   lastActivityFrom: string  // YYYY-MM-DD ou ''
   lastActivityTo: string
 }
@@ -23,8 +23,8 @@ export const EMPTY_FILTERS: FilterValues = {
   planCode: 'all',
   planStatus: 'all',
   scriptVersion: 'all',
-  mrrMin: '',
-  mrrMax: '',
+  minutesMin: '',
+  minutesMax: '',
   lastActivityFrom: '',
   lastActivityTo: '',
 }
@@ -173,23 +173,23 @@ export function FiltersModal({ open, current, availableScriptVersions, onApply, 
             />
           </Field>
 
-          {/* MRR range */}
-          <Field label={t('filterMrr')} fullWidth>
+          {/* Minutes range (consumo por minuto) */}
+          <Field label={t('filterMinutes')} fullWidth>
             <div className="flex items-center gap-2">
               <Input
-                placeholder={t('mrrMin')}
+                placeholder={t('minutesMin')}
                 type="number"
                 min={0}
-                value={draft.mrrMin}
-                onChange={(v) => set('mrrMin', v)}
+                value={draft.minutesMin}
+                onChange={(v) => set('minutesMin', v)}
               />
               <span style={{ color: 'var(--am-muted)' }}>—</span>
               <Input
-                placeholder={t('mrrMax')}
+                placeholder={t('minutesMax')}
                 type="number"
                 min={0}
-                value={draft.mrrMax}
-                onChange={(v) => set('mrrMax', v)}
+                value={draft.minutesMax}
+                onChange={(v) => set('minutesMax', v)}
               />
             </div>
           </Field>
@@ -334,59 +334,7 @@ export function countActiveFilters(f: FilterValues): number {
   if (f.planCode !== 'all') n++
   if (f.planStatus !== 'all') n++
   if (f.scriptVersion !== 'all') n++
-  if (f.mrrMin !== '' || f.mrrMax !== '') n++
+  if (f.minutesMin !== '' || f.minutesMax !== '') n++
   if (f.lastActivityFrom !== '' || f.lastActivityTo !== '') n++
   return n
-}
-
-// Aplica os filtros à lista — exposto pra AdminPanelClient usar em useMemo.
-// Mantém a lógica num lugar só pra evitar drift entre validação e aplicação.
-export function applyFiltersToClient<
-  C extends {
-    plan: { code: PlanCode }
-    subscriptionStatus: 'active' | 'inactive' | 'trial'
-    mrr: number
-    currentScript: { status: OrgScriptStatus; version: string } | null
-    lastCallAt: string | null
-    createdAt: string
-  }
->(client: C, f: FilterValues): boolean {
-  // Script status
-  const scriptStatus = client.currentScript?.status ?? 'none'
-  if (f.scriptStatus !== 'all' && scriptStatus !== f.scriptStatus) return false
-
-  // Script version
-  if (f.scriptVersion !== 'all') {
-    if (!client.currentScript || client.currentScript.version !== f.scriptVersion) return false
-  }
-
-  // Plan
-  if (f.planCode !== 'all' && client.plan.code !== f.planCode) return false
-
-  // Plan status
-  if (f.planStatus !== 'all' && client.subscriptionStatus !== f.planStatus) return false
-
-  // MRR
-  if (f.mrrMin !== '') {
-    const min = Number(f.mrrMin)
-    if (isFinite(min) && client.mrr < min) return false
-  }
-  if (f.mrrMax !== '') {
-    const max = Number(f.mrrMax)
-    if (isFinite(max) && client.mrr > max) return false
-  }
-
-  // Last activity
-  const activity = client.lastCallAt ?? client.createdAt
-  if (f.lastActivityFrom !== '') {
-    if (new Date(activity).getTime() < new Date(f.lastActivityFrom).getTime()) return false
-  }
-  if (f.lastActivityTo !== '') {
-    // Inclusivo até final do dia
-    const end = new Date(f.lastActivityTo)
-    end.setHours(23, 59, 59, 999)
-    if (new Date(activity).getTime() > end.getTime()) return false
-  }
-
-  return true
 }

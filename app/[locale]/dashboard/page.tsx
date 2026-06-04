@@ -8,13 +8,12 @@ import {
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import type { Locale } from "@/i18n/routing";
-import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
+import { getRubric, buildCoachingDrivers, computeRubricGaps } from "@/lib/services/rubric";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { scoreLevel, toDisplay5, toNumber5 } from "@/lib/score-display";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { rubricGaps } from "@/lib/mock-data";
 import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
 import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
@@ -25,7 +24,7 @@ export default async function DashboardPage() {
   const [
     trainers,
     insights,
-    { sections: rubric, trend: teamTrend, trainerSectionScores },
+    { sections: rubric, trend: teamTrend, trainerSectionScores, calls: allCalls },
     teamHealth,
     ctx,
     t,
@@ -47,6 +46,7 @@ export default async function DashboardPage() {
   const showPendingBanner = ctx?.role === "owner" && !ctx.isImpersonating;
 
   const coachingDrivers = buildCoachingDrivers(rubric);
+  const rubricGaps = computeRubricGaps(allCalls);
 
   const performanceTrends = await getPerformanceTrends(trainers);
 

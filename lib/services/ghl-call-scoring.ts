@@ -156,7 +156,6 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     llmModel,
     trainerName: call.trainer_name ?? undefined,
     clientName: call.client_name ?? undefined,
-    reportedOutcome: call.call_outcome ?? undefined,
   })
 
   await dbUpdateGhlCallPipeline(callId, {

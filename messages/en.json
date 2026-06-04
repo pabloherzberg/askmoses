@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
       "coachingNotesPlaceholder": "Add your coaching notes here...",
       "coachingNotesFooter": "Notes are not persisted in this demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script used",
+      "legacyScriptHint": "legacy"
     },
     "performanceTrend": {
       "title": "Overall Performance Trend",
@@ -369,7 +371,8 @@
       "team": "Team",
       "teamAvg": "Team avg",
       "closeRateLegend": "Close Rate",
-      "weekLabel": "Week {n}"
+      "weekLabel": "Week {n}",
+      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Script Gap Detection",
@@ -453,12 +456,13 @@
     "rubricLegendTeam": "Team avg",
     "deltaVsTeam": "{delta} vs team ({teamAvg})",
     "callsKpi": "Calls",
-    "winsKpi": "Wins",
+    "closedKpi": "Closed",
     "kpiWindow": "Window",
     "kpiWindowWeeks": "{n}w",
     "kpiDeltaVsPrev": "vs prev",
     "kpiTotalSuffix": "of {count} total",
     "kpiAvgSuffix": "{value} all-time",
+    "closedBreakdown": "{partial} partial · {notClosed} not closed · {noOutcome} no outcome",
     "recentCalls": "Recent Calls",
     "noCallsYet": "No calls yet.",
     "myCallsLabel": "My Calls",
@@ -618,6 +622,7 @@
       "thProspect": "Prospect",
       "thDate": "Date",
       "thScore": "Score",
+      "thDuration": "Duration",
       "thResult": "Result",
       "forbidden": "You don't have access to this call.",
       "thScript": "Script",
@@ -648,7 +653,7 @@
     "scripts": {
       "searchPlaceholder": "Search by name, description, section or version…",
       "thName": "Name",
-      "thRubric": "Rubric",
+      "thRubric": "Org",
       "thVersion": "Version",
       "thSections": "Sections",
       "thCreated": "Created",
@@ -666,7 +671,8 @@
       "salesPeople": "Sales People",
       "callsPerMonth": "Calls / mo",
       "avgScore": "Avg Score",
-      "mrr": "MRR",
+      "minutes": "Minutes",
+      "cost": "Cost",
       "health": "Health",
       "actions": "Actions"
     },
@@ -700,10 +706,10 @@
       "filterPlan": "Plan",
       "filterPlanStatus": "Plan status",
       "filterScriptVersion": "Script version",
-      "filterMrr": "MRR (USD/mo)",
+      "filterMinutes": "Minutes / mo",
       "filterLastActivity": "Last activity",
-      "mrrMin": "Min",
-      "mrrMax": "Max",
+      "minutesMin": "Min",
+      "minutesMax": "Max",
       "dateFrom": "From",
       "dateTo": "To",
       "anyOption": "Any",
@@ -900,6 +906,15 @@
       "genericError": "Could not update subscription. Try again.",
       "back": "← Back to panel",
       "goToGhl": "GHL integration →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Manual call upload",
+      "cardSubtitle": "Allow Sales People and Admins in this organization to upload calls manually via /dashboard/upload. Owners never upload calls. By default, calls are ingested automatically through GHL/Pepper.",
+      "statusOn": "Enabled — Sales People and Admins can upload calls from the UI.",
+      "statusOff": "Disabled — calls are ingested only via GHL/Pepper integration.",
+      "toggleAriaLabel": "Toggle manual upload",
+      "successDetail": "Setting saved.",
+      "genericError": "Could not update the setting. Try again."
     },
     "ghlIntegration": {
       "eyebrow": "GHL / Pepper integration",
@@ -1692,6 +1707,7 @@
         "selectScriptPlaceholder": "Select a script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Required to analyze the call against your sales process",
+        "activeScriptHint": "Calls are analyzed against your organization's active script. To change it, go to Settings → Scripts.",
         "noScriptsAvailable": "No sales scripts available. Create one in Settings first.",
         "callOutcomeLabel": "Call Outcome *",
         "callOutcomeHint": "How did this call end?",

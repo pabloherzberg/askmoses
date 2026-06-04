@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notes internes — non visibles par le commercial.",
       "coachingNotesPlaceholder": "Ajoutez vos notes de coaching ici...",
       "coachingNotesFooter": "Les notes ne sont pas persistées dans cette démo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilisé",
+      "legacyScriptHint": "ancien"
     },
     "performanceTrend": {
       "title": "Tendance de performance",
@@ -369,7 +371,8 @@
       "team": "Équipe",
       "teamAvg": "Moyenne de l'équipe",
       "closeRateLegend": "Taux de conversion",
-      "weekLabel": "Semaine {n}"
+      "weekLabel": "Semaine {n}",
+      "callLabel": "Appel {n}"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes du script",
@@ -453,12 +456,13 @@
     "rubricLegendTeam": "Moyenne équipe",
     "deltaVsTeam": "{delta} vs équipe ({teamAvg})",
     "callsKpi": "Appels",
-    "winsKpi": "Conclues",
+    "closedKpi": "Conclus",
     "kpiWindow": "Fenêtre",
     "kpiWindowWeeks": "{n}sem",
     "kpiDeltaVsPrev": "vs préc.",
     "kpiTotalSuffix": "sur {count} au total",
     "kpiAvgSuffix": "{value} cumulé",
+    "closedBreakdown": "{partial} partiels · {notClosed} non conclus · {noOutcome} sans issue",
     "recentCalls": "Appels récents",
     "noCallsYet": "Aucun appel pour le moment.",
     "myCallsLabel": "Mes appels",
@@ -618,6 +622,7 @@
       "thProspect": "Prospect",
       "thDate": "Date",
       "thScore": "Score",
+      "thDuration": "Durée",
       "thResult": "Résultat",
       "forbidden": "Vous n'avez pas accès à cet appel.",
       "thScript": "Script",
@@ -648,7 +653,7 @@
     "scripts": {
       "searchPlaceholder": "Rechercher par nom, description, section ou version…",
       "thName": "Nom",
-      "thRubric": "Rubric",
+      "thRubric": "Org",
       "thVersion": "Version",
       "thSections": "Sections",
       "thCreated": "Créé le",
@@ -666,7 +671,8 @@
       "salesPeople": "Commerciaux",
       "callsPerMonth": "Appels / mois",
       "avgScore": "Score moyen",
-      "mrr": "MRR",
+      "minutes": "Minutes",
+      "cost": "Coût",
       "health": "Santé",
       "actions": "Actions"
     },
@@ -700,10 +706,10 @@
       "filterPlan": "Plan",
       "filterPlanStatus": "Statut du plan",
       "filterScriptVersion": "Version du script",
-      "filterMrr": "MRR (USD/mois)",
+      "filterMinutes": "Minutes / mois",
       "filterLastActivity": "Dernière activité",
-      "mrrMin": "Min",
-      "mrrMax": "Max",
+      "minutesMin": "Min",
+      "minutesMax": "Max",
       "dateFrom": "De",
       "dateTo": "À",
       "anyOption": "Tous",
@@ -900,6 +906,15 @@
       "genericError": "Impossible de mettre à jour l'abonnement. Réessayez.",
       "back": "← Retour au panel",
       "goToGhl": "Intégration GHL →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Téléversement manuel des appels",
+      "cardSubtitle": "Autorise les Sales People et Admins de cette organisation à téléverser des appels manuellement via /dashboard/upload. Les Owners ne téléversent jamais d'appels. Par défaut, les appels sont ingérés automatiquement via GHL/Pepper.",
+      "statusOn": "Activé — les Sales People et Admins peuvent téléverser des appels depuis l'interface.",
+      "statusOff": "Désactivé — les appels n'arrivent que via l'intégration GHL/Pepper.",
+      "toggleAriaLabel": "Basculer le téléversement manuel",
+      "successDetail": "Paramètre enregistré.",
+      "genericError": "Impossible de mettre à jour le paramètre. Réessayez."
     },
     "ghlIntegration": {
       "eyebrow": "Intégration GHL / Pepper",
@@ -1692,6 +1707,7 @@
         "selectScriptPlaceholder": "Sélectionnez un script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Requis pour analyser l'appel par rapport à votre processus de vente",
+        "activeScriptHint": "Les appels sont analysés avec le script actif de votre organisation. Pour le modifier, allez dans Paramètres → Scripts.",
         "noScriptsAvailable": "Aucun script de vente disponible. Créez-en un dans Paramètres d'abord.",
         "callOutcomeLabel": "Résultat de l'appel *",
         "callOutcomeHint": "Comment cet appel s'est-il terminé ?",

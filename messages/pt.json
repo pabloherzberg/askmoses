@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notas internas — não visíveis ao vendedor.",
       "coachingNotesPlaceholder": "Adicione suas notas de coaching aqui...",
       "coachingNotesFooter": "As notas não são persistidas nesta demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilizado",
+      "legacyScriptHint": "legado"
     },
     "performanceTrend": {
       "title": "Tendência de performance",
@@ -369,7 +371,8 @@
       "team": "Time",
       "teamAvg": "Média do time",
       "closeRateLegend": "Taxa de fechamento",
-      "weekLabel": "Semana {n}"
+      "weekLabel": "Semana {n}",
+      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Detecção de gaps no script",
@@ -453,12 +456,13 @@
     "rubricLegendTeam": "Média do time",
     "deltaVsTeam": "{delta} vs time ({teamAvg})",
     "callsKpi": "Chamadas",
-    "winsKpi": "Fechadas",
+    "closedKpi": "Fechadas",
     "kpiWindow": "Janela",
     "kpiWindowWeeks": "{n}sem",
     "kpiDeltaVsPrev": "vs ant.",
     "kpiTotalSuffix": "de {count} no total",
     "kpiAvgSuffix": "{value} histórico",
+    "closedBreakdown": "{partial} parciais · {notClosed} não fechadas · {noOutcome} sem desfecho",
     "recentCalls": "Chamadas recentes",
     "noCallsYet": "Nenhuma chamada ainda.",
     "myCallsLabel": "Minhas chamadas",
@@ -618,6 +622,7 @@
       "thProspect": "Prospect",
       "thDate": "Data",
       "thScore": "Nota",
+      "thDuration": "Duração",
       "thResult": "Resultado",
       "forbidden": "Você não tem acesso a esta chamada.",
       "thScript": "Script",
@@ -648,7 +653,7 @@
     "scripts": {
       "searchPlaceholder": "Buscar por nome, descrição, seção ou versão…",
       "thName": "Nome",
-      "thRubric": "Rubric",
+      "thRubric": "Org",
       "thVersion": "Versão",
       "thSections": "Seções",
       "thCreated": "Criado em",
@@ -666,7 +671,8 @@
       "salesPeople": "Vendedores",
       "callsPerMonth": "Chamadas / mês",
       "avgScore": "Nota média",
-      "mrr": "MRR",
+      "minutes": "Minutos",
+      "cost": "Custo",
       "health": "Saúde",
       "actions": "Ações"
     },
@@ -700,10 +706,10 @@
       "filterPlan": "Plano",
       "filterPlanStatus": "Status do plano",
       "filterScriptVersion": "Versão do script",
-      "filterMrr": "MRR (USD/mês)",
+      "filterMinutes": "Minutos / mês",
       "filterLastActivity": "Última atividade",
-      "mrrMin": "Mín.",
-      "mrrMax": "Máx.",
+      "minutesMin": "Mín.",
+      "minutesMax": "Máx.",
       "dateFrom": "De",
       "dateTo": "Até",
       "anyOption": "Todos",
@@ -900,6 +906,15 @@
       "genericError": "Não foi possível atualizar a assinatura. Tente novamente.",
       "back": "← Voltar ao painel",
       "goToGhl": "Integração GHL →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Upload manual de chamadas",
+      "cardSubtitle": "Permite que Sales People e Admins desta organização enviem chamadas manualmente por /dashboard/upload. Owners nunca enviam chamadas. Por padrão, as chamadas são ingeridas automaticamente via GHL/Pepper.",
+      "statusOn": "Ativado — Sales People e Admins podem enviar chamadas pela interface.",
+      "statusOff": "Desativado — chamadas chegam apenas pela integração GHL/Pepper.",
+      "toggleAriaLabel": "Alternar upload manual",
+      "successDetail": "Configuração salva.",
+      "genericError": "Não foi possível atualizar a configuração. Tente novamente."
     },
     "ghlIntegration": {
       "eyebrow": "Integração GHL / Pepper",
@@ -1692,6 +1707,7 @@
         "selectScriptPlaceholder": "Selecione um script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Obrigatório para analisar a chamada contra o seu processo de vendas",
+        "activeScriptHint": "As chamadas são analisadas com o script ativo da sua organização. Para alterá-lo, vá em Configurações → Scripts.",
         "noScriptsAvailable": "Nenhum script de vendas disponível. Crie um nas Configurações primeiro.",
         "callOutcomeLabel": "Resultado da chamada *",
         "callOutcomeHint": "Como esta chamada terminou?",

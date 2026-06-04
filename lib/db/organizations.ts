@@ -121,6 +121,36 @@ export async function dbMarkOrgGhlAuthError(orgId: string): Promise<void> {
   }
 }
 
+/**
+ * Lê a flag de upload manual da org. Retorna false se a org não existir
+ * (defensivo — caller que precisa diferenciar deve consultar antes).
+ *
+ * Default no schema é false (GHL-only); Admin habilita manualmente quem
+ * ainda precisa do upload pela UI.
+ */
+export async function dbGetOrgManualUploadEnabled(orgId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('manual_upload_enabled')
+    .eq('id', orgId)
+    .maybeSingle()
+  if (error) throw new Error(`dbGetOrgManualUploadEnabled: ${error.message}`)
+  return Boolean(data?.manual_upload_enabled)
+}
+
+export async function dbSetOrgManualUploadEnabled(
+  orgId: string,
+  enabled: boolean,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('organizations')
+    .update({ manual_upload_enabled: enabled })
+    .eq('id', orgId)
+  if (error) throw new Error(`dbSetOrgManualUploadEnabled: ${error.message}`)
+}
+
 export interface UpdateOrgGhlConfigInput {
   locationId?: string | null
   accessToken?: string | null

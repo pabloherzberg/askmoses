@@ -4,17 +4,20 @@ import { useState, useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Phone, FileText } from 'lucide-react'
+import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { SectionLabel } from '@/components/shared/SectionLabel'
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCES, LEAD_SOURCE_LABELS } from '@/lib/constants'
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
 interface CallsTableProps {
   calls: Call[]
   showTrainerColumn?: boolean
   /**
-   * Quando false, esconde filtros de Sources/Scripts e a pill de "active script".
-   * As colunas permanecem visíveis. Default true (visão Owner/Admin).
+   * @deprecated não tem mais efeito. Filtro de Sources foi removido (sem
+   * funcionalidade real); filtro de Script e pill de "active script" agora
+   * dependem apenas dos dados (`hasScripts`). Mantido na assinatura pra
+   * compat com callers existentes — pode ser removido em refactor futuro.
    */
   showAdvancedFilters?: boolean
   sectionLabel: string
@@ -26,7 +29,6 @@ const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
 export function CallsTable({
   calls,
   showTrainerColumn = true,
-  showAdvancedFilters = true,
   sectionLabel,
   title,
 }: CallsTableProps) {
@@ -36,7 +38,8 @@ export function CallsTable({
   const tOutcomes = useTranslations('Shared.outcomes')
   const [resultFilter, setResultFilter] = useState<string>('all')
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
-  const [sourceFilter, setSourceFilter] = useState<string>('all')
+  // Source filter removido da UI (sem funcionalidade real ainda).
+  // const [sourceFilter, setSourceFilter] = useState<string>('all')
   const [scriptFilter, setScriptFilter] = useState<string>('all')
 
   const trainers = useMemo(() => {
@@ -66,11 +69,10 @@ export function CallsTable({
     () => calls.filter((c) => {
       if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
-      if (sourceFilter !== 'all' && (c.lead_source ?? null) !== sourceFilter) return false
       if (scriptFilter !== 'all' && (c.scriptId ?? null) !== scriptFilter) return false
       return true
     }),
-    [calls, resultFilter, trainerFilter, sourceFilter, scriptFilter]
+    [calls, resultFilter, trainerFilter, scriptFilter]
   )
 
   const selectClass = 'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
@@ -80,7 +82,7 @@ export function CallsTable({
     ...(showTrainerColumn ? [t('thTrainer')] : []),
     t('thProspect'), t('thDate'),
     ...(hasScripts ? [t('thScript')] : []),
-    t('thScore'), t('thResult'), '',
+    t('thScore'), t('thDuration'), t('thResult'), '',
   ]
 
   const countLabel = filtered.length === 1
@@ -112,15 +114,9 @@ export function CallsTable({
             {trainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
           </select>
         )}
-        {showAdvancedFilters && (
-          <select className={selectClass} style={selectStyle} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
-            <option value="all">{t('filterAllSources')}</option>
-            {LEAD_SOURCES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        )}
-        {showAdvancedFilters && hasScripts && (
+        {/* Filtro de Sources removido — sem funcionalidade real por trás.
+            Reabilitar quando lead_source for editável e tiver consumidores. */}
+        {hasScripts && (
           <select className={selectClass} style={selectStyle} value={scriptFilter} onChange={(e) => setScriptFilter(e.target.value)}>
             <option value="all">{t('filterAllScripts')}</option>
             {scriptsInCalls.map((s) => (
@@ -129,7 +125,7 @@ export function CallsTable({
           </select>
         )}
 
-        {showAdvancedFilters && activeScript && (
+        {activeScript && (
           <span
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg sm:ml-auto"
             style={{ background: GREEN_BG, color: 'var(--am-green)' }}
@@ -218,6 +214,13 @@ export function CallsTable({
                         </td>
                       )}
                       <td className="px-4 py-3"><ScorePill score={call.score} /></td>
+                      {/* Duração real da call (ex.: "1m30s") — Owner vê só a
+                          duração, nunca o custo (visível apenas pro Admin). */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-[13px] font-mono" style={{ color: 'var(--am-muted)' }}>
+                          {formatDuration(call.durationSeconds)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
                           {outcomeLabel}

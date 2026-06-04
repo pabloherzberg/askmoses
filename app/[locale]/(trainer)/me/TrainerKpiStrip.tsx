@@ -33,6 +33,10 @@ interface TrainerKpiStripProps {
     avgScore: number
     /** Close rate histórico, 0–100. */
     closeRate: number
+    /** Breakdown histórico de outcomes — exibido como detalhe do card Closed. */
+    partial: number
+    notClosed: number
+    noOutcome: number
   }
 }
 
@@ -172,10 +176,15 @@ export function TrainerKpiStrip({ buckets, totals }: TrainerKpiStripProps) {
           sparkColor="var(--am-blue)"
         />
         <KpiCard
-          label={t('winsKpi')}
+          label={t('closedKpi')}
           value={agg.wins}
           valueColor="var(--am-green)"
           sublabel={t('kpiTotalSuffix', { count: totals.wins })}
+          extraSublabel={t('closedBreakdown', {
+            partial: totals.partial,
+            notClosed: totals.notClosed,
+            noOutcome: totals.noOutcome,
+          })}
           delta={winsDelta}
           deltaLabel={deltaLabel}
           sparkData={agg.sparkWins}

@@ -1,0 +1,2646 @@
+{
+  "Common": {
+    "appName": "AskMoses.AI",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "Something went wrong"
+  },
+  "Navigation": {
+    "overview": "Overview",
+    "calls": "Calls",
+    "me": "My dashboard",
+    "admin": "Admin",
+    "logout": "Log out"
+  },
+  "Login": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Login",
+    "submitting": "Signing in...",
+    "invalidCredentials": "Email or password incorrect",
+    "profileNotFound": "User profile not found. Run the seed script in Supabase.",
+    "inviteExpired": "This invite link has expired. Please ask your admin to resend the invitation.",
+    "magicLinkSubmit": "Send link",
+    "magicLinkSubmitting": "Sending...",
+    "magicLinkSent": "If this email is registered, you'll receive a sign-in link. Check your inbox.",
+    "magicLinkHint": "We'll email you a sign-in link. No password needed.",
+    "emailRequiredForMagic": "Enter a valid email to receive the link",
+    "signInMode": "Sign-in method",
+    "modePassword": "Password",
+    "modeMagic": "Magic link",
+    "demoAccess": "Demo access",
+    "demoAccountSubtitle": "Pick the client and the user",
+    "roleSalesPerson": "Sales Person",
+    "roleSalesPersonN": "Sales Person {n}",
+    "roleManager": "Manager",
+    "roleOwner": "Owner",
+    "roleAdmin": "Admin",
+    "backToHome": "Back to home",
+    "noAccount": "Don't have an account yet?",
+    "signupLink": "Sign up",
+    "forgotPasswordLink": "Forgot your password?"
+  },
+  "ForgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we'll send you a link to choose a new password.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "emailInvalid": "Please enter a valid email.",
+    "submit": "Send recovery link",
+    "submitting": "Sending…",
+    "sent": "If this email is registered, you'll receive a recovery link. Check your inbox.",
+    "backToLogin": "Back to login"
+  },
+  "Signup": {
+    "title": "Create your account",
+    "subtitle": "Sign up and set up your organization in under a minute.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Your full name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "At least {min} characters, 1 uppercase and 1 special character",
+    "submit": "Create account",
+    "submitting": "Creating account...",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Sign in",
+    "backToHome": "Back to home",
+    "nameRequired": "Please enter your name",
+    "emailInvalid": "Please enter a valid email",
+    "passwordTooShort": "Password must be at least {min} characters",
+    "passwordNeedsUppercase": "Password must include at least 1 uppercase letter",
+    "passwordNeedsSpecial": "Password must include at least 1 special character",
+    "emailAlreadyRegistered": "This email is already registered. Please sign in.",
+    "genericError": "Could not create the account. Please try again.",
+    "verifyEmailTitle": "Confirm your email",
+    "verifyEmailBody": "We've sent a confirmation link to {email}. Click the link to activate your account and continue.",
+    "backToLogin": "Back to login"
+  },
+  "Onboarding": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Organization setup",
+    "title": "Name your organization",
+    "subtitle": "This is the name your team will see inside AskMoses.",
+    "orgNameLabel": "Organization name",
+    "orgNamePlaceholder": "e.g. Acme Sales",
+    "submit": "Continue",
+    "submitting": "Creating organization...",
+    "nameInvalid": "Name must be between {min} and {max} characters",
+    "alreadyHasOrg": "You're already linked to an organization. To create another one, please contact the Admin.",
+    "genericError": "Could not create the organization. Please try again."
+  },
+  "OnboardingPlan": {
+    "stepLabel": "Step {current} of {total}",
+    "stepSubtitle": "Choose your plan",
+    "title": "Pick the plan that fits",
+    "subtitle": "Select the plan that best matches your operation. You can switch any time later.",
+    "recommendedBadge": "Recommended",
+    "perMonth": "/month",
+    "seatsLimit": "Up to {count} sales people",
+    "seatsUnlimited": "Unlimited sales people",
+    "selectPlan": "Choose plan",
+    "subscribing": "Activating...",
+    "stubNotice": "Development mode — subscription activated without real charge. Stripe integration coming soon.",
+    "noPlansError": "Could not load plans. Please reload the page.",
+    "genericError": "Could not activate the plan. Please try again."
+  },
+  "LanguageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "pt": "Português",
+    "es": "Español",
+    "fr": "Français"
+  },
+  "Invite": {
+    "title": "Invitations",
+    "subtitle": "Invite new members to your organization. The invitee receives a magic link via email.",
+    "card": {
+      "title": "Add Member",
+      "descriptionOwner": "You can invite sales people to your organization.",
+      "descriptionAdmin": "As an admin, you can invite owners and sales people to any organization."
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Full name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@company.com",
+      "roleLabel": "Role",
+      "roleTrainer": "Sales Person",
+      "roleOwner": "Owner",
+      "orgLabel": "Organization",
+      "orgPlaceholder": "Select an organization",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Select an owner",
+      "ownerSelectOrgFirst": "Select an organization first",
+      "ownerNoneInOrg": "This organization has no owners",
+      "submit": "Send invitation",
+      "submitting": "Sending..."
+    },
+    "pendingTitle": "Pending Invitations",
+    "pendingBadge": "Pending",
+    "sentAt": "Sent on {date}",
+    "invitedByLabel": "Invited by",
+    "orgLabel": "Org",
+    "filterOrgLabel": "Organization",
+    "filterAllOrgs": "All organizations",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Search by name or email",
+    "searchClear": "Clear search",
+    "activeTitle": "Active Members",
+    "emptyActive": "No active members yet.",
+    "emptyActiveFiltered": "No active members in this organization.",
+    "emptyActiveSearch": "No active member matches \"{q}\".",
+    "emptyPendingFiltered": "No pending invitations in this organization.",
+    "emptyPendingSearch": "No pending invitation matches \"{q}\".",
+    "confirmRevoke": "Revoke this invitation? The recipient will no longer be able to use the link.",
+    "revokeDialog": {
+      "title": "Revoke invitation?",
+      "description": "The recipient will no longer be able to use the link sent to them.",
+      "cancel": "Cancel",
+      "confirm": "Revoke"
+    },
+    "pagination": {
+      "page": "Page {page} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "showing": "{from}–{to} of {total}"
+    },
+    "feedback": {
+      "invited": "Invitation sent. Awaiting acceptance.",
+      "revoked": "Invitation revoked.",
+      "resent": "New link sent. The previous link for this invitation no longer works.",
+      "inviteError": "Could not send the invitation",
+      "revokeError": "Could not revoke the invitation",
+      "resendError": "Could not resend the invitation",
+      "fillFields": "Fill in name and email",
+      "orgRequired": "Provide the organization ID",
+      "ownerRequired": "Provide the owner ID for the sales person"
+    },
+    "resendButton": "Resend invitation"
+  },
+  "Shared": {
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "teamCommandCenter": "Team Command Center",
+      "marketingIntelligence": "Marketing Intelligence",
+      "calls": "Calls",
+      "myDashboard": "My Dashboard",
+      "myCalls": "My Calls",
+      "recommendations": "Recommendations",
+      "uploadCall": "Upload Call",
+      "history": "History",
+      "analytics": "Analytics",
+      "insights": "Script Intelligence",
+      "scriptIntelligence": "Script Intelligence",
+      "scriptBuilder": "Script Builder",
+      "rubric": "Rubric",
+      "members": "Members",
+      "howToUse": "How to Use",
+      "saasPanel": "SaaS Panel",
+      "rubricConfig": "Rubric Config",
+      "coachingSettings": "Rubric Config",
+      "createOrganization": "New Organization",
+      "aiControls": "AI Controls",
+      "tools": "Tools",
+      "starterTier": "Starter Tier",
+      "starterTierSubtitle": "Manual Upload",
+      "navigation": "Navigation",
+      "menu": "Menu"
+    },
+    "header": {
+      "openMenu": "Open menu",
+      "signOut": "Sign out",
+      "clientName": "Unleashed Consulting",
+      "weekProgress": "Week 6 / 6",
+      "live": "Live",
+      "orgSwitcher": {
+        "label": "Switch organization",
+        "owner": "Owner",
+        "trainer": "Sales Person"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "No notifications yet",
+      "sentBy": "From {name}",
+      "coachingLine": "{name} sent you a coaching recommendation",
+      "viewAll": "View all recommendations"
+    },
+    "userMenu": {
+      "triggerAria": "User menu",
+      "loading": "Loading…",
+      "password": "Password",
+      "notificationPrefs": "Notification preferences",
+      "signOut": "Sign out"
+    },
+    "pageTitles": {
+      "dashboard": "Dashboard",
+      "upload": "Upload Call",
+      "history": "Call History",
+      "analytics": "Analytics",
+      "insights": "Script Intelligence",
+      "scriptBuilder": "Script Builder",
+      "settings": "Rubric Settings",
+      "guide": "How to Use"
+    },
+    "outcomes": {
+      "all": "All Results",
+      "unknown": "No Outcome",
+      "short": {
+        "closed": "Closed",
+        "partial": "Partial",
+        "not_closed": "Not Closed",
+        "no_outcome": "No Outcome"
+      },
+      "full": {
+        "closed": "Closed",
+        "partial": "Partial — follow-up pending",
+        "not_closed": "Not Closed",
+        "no_outcome": "No Outcome"
+      }
+    },
+    "rubric": {
+      "discovery": "Discovery",
+      "problemAgitation": "Problem Agitation",
+      "offerPresentation": "Offer Presentation",
+      "objectionHandling": "Objection Handling",
+      "closeAndNextSteps": "Close & Next Steps"
+    },
+    "callDetail": {
+      "back": "Back",
+      "rubricScores": "Rubric Scores",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to Improve",
+      "transcript": "Transcript",
+      "showMore": "Show more ↓",
+      "showLess": "Show less ↑",
+      "coachingNotes": "Coaching Notes",
+      "coachingNotesSubtitle": "Internal notes — not visible to the sales person.",
+      "coachingNotesPlaceholder": "Add your coaching notes here...",
+      "coachingNotesFooter": "Notes are not persisted in this demo.",
+      "leadName": "Lead"
+    },
+    "performanceTrend": {
+      "title": "Overall Performance Trend",
+      "myTrend": "My Trend",
+      "mockBadge": "mock data only",
+      "team": "Team",
+      "closeRate": "Close Rate %",
+      "avgScore": "Avg Score",
+      "tooltipCloseRate": "Close Rate",
+      "tooltipAvgScore": "Avg Score",
+      "mockFooter": "↑ values sourced from mock-data.ts · Recharts LineChart · no real calculation"
+    },
+    "upsell": {
+      "defaultCta": "Compare plans",
+      "upgradeTo": "Upgrade to {plan}",
+      "subscriptionInactive": {
+        "ownerTitle": "Activate your plan to unlock AskMoses",
+        "ownerBody": "Your organization doesn't have an active plan yet. Pick a plan to unlock the dashboard, call analysis, and everything else AskMoses offers.",
+        "ownerCta": "Activate plan now",
+        "trainerTitle": "Your organization's subscription is inactive",
+        "trainerBody": "Your organization's owner hasn't activated a plan yet. Get in touch with them to reactivate access. You don't need to do anything here."
+      },
+      "uploadTwilio": {
+        "title": "Skip the manual upload — go automatic",
+        "description": "Connect Twilio or GHL once and every sales call is ingested, transcribed and analyzed without anyone clicking 'Upload'."
+      },
+      "scriptBuilderAuto": {
+        "title": "Auto-build scripts from real calls",
+        "description": "Script Builder turns your top sales calls into a reusable script + rubric in minutes — Pro and Pro + RAG plans only. Starter includes the manual Script Manager."
+      },
+      "insightsRag": {
+        "title": "Coach with your own training material",
+        "description": "Pro + RAG indexes your scripts, methodology PDFs and best-call transcripts so insights cite the exact playbook your team should be following."
+      }
+    },
+    "correlationEngine": {
+      "title": "Correlation Engine — What Drives Closes",
+      "titleNoVolume": "Coaching Drivers — Team Averages by Dimension",
+      "mockBadge": "mock data only",
+      "legend": {
+        "highCorrelation": "High correlation",
+        "medCorrelation": "Med correlation",
+        "lowCorrelation": "Low correlation",
+        "rubric": "Rubric",
+        "behavioral": "Behavioral"
+      },
+      "th": {
+        "score": "Score",
+        "percent": "Score",
+        "correlation": "Corr.",
+        "impact": "Impact",
+        "source": "Source"
+      },
+      "levels": {
+        "High": "High",
+        "Med": "Med",
+        "Low": "Low"
+      },
+      "sources": {
+        "Rubric": "Rubric",
+        "Behavioral": "Behavioral"
+      },
+      "disclaimer": "After sufficient call volume, AskMoses will identify which dimensions correlate most with closes.",
+      "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "behavioralProfile": {
+      "title": "Behavioral Correlation Profile",
+      "teamAvg": "Team avg",
+      "empty": "No calls analyzed yet"
+    },
+    "behavioralTrends": {
+      "title": "Behavioral Trends — 6 Weeks",
+      "empty": "No calls analyzed yet"
+    },
+    "closeRateTrend": {
+      "title": "6-Week Close Rate Trend",
+      "summary": "{from}% → {to}% · {delta} pts",
+      "closeRate": "Close rate",
+      "teamPill": "Team"
+    },
+    "performanceTrend": {
+      "noCalls": "No calls",
+      "title": "Conversion Rate Trend",
+      "team": "Team",
+      "teamAvg": "Team avg",
+      "closeRateLegend": "Close Rate",
+      "weekLabel": "Week {n}"
+    },
+    "rubricGapDetection": {
+      "title": "Script Gap Detection",
+      "mockBadge": "mock data only",
+      "th": {
+        "frequency": "Freq.",
+        "gapDetected": "Gap detected"
+      },
+      "addToScript": "Add to script →",
+      "mockFooter": "† all values sourced from mock-data.ts — Add to script → is non-functional in demo"
+    },
+    "revenueEstimator": {
+      "title": "Revenue Impact Estimator",
+      "mockBadge": "mock data only",
+      "th": {
+        "section": "Skill / section",
+        "teamAvgTarget": "Team avg → target",
+        "monthlyImpact": "Monthly impact",
+        "confidence": "Confidence"
+      },
+      "totalOpportunity": "Total opportunity",
+      "mockFooter": "↑ all values sourced from mock-data.ts — no real calculation on the frontend"
+    },
+    "coachingRecommendations": {
+      "title": "AI Coaching Recommendations",
+      "mockBadge": "mock data only",
+      "mockFooter": "† all values from mock-data.ts — CTAs are non-functional in demo · no real AI logic"
+    },
+    "callCard": {
+      "best": {
+        "analysisLabel": "AI Analysis",
+        "ctaPrefix": "Listen at"
+      },
+      "worst": {
+        "analysisLabel": "Error Analysis",
+        "ctaPrefix": "Review at"
+      },
+      "ctaAria": "{prefix} {time} — non-functional in demo"
+    }
+  },
+  "Password": {
+    "eyebrow": "Security",
+    "title": "Password",
+    "subtitle": "Set or change your password. Magic link still works — password is an alternative.",
+    "recoveryTitle": "Choose a new password",
+    "recoverySubtitle": "You're verified. Set a new password to finish signing in.",
+    "welcome": {
+      "aria": "Welcome",
+      "close": "Close",
+      "title": "Welcome! Want to set a password now?",
+      "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
+      "skip": "Skip for now",
+      "forcedTitle": "Set a password to continue",
+      "forcedBody": "As the organization owner, a password is required before you can access the dashboard. Choose one below — it should take less than a minute."
+    },
+    "form": {
+      "newLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "placeholder": "••••••••",
+      "hint": "Minimum {min} characters, with 1 uppercase and 1 special character.",
+      "submit": "Save password",
+      "submitting": "Saving…",
+      "magicLinkNote": "You can still sign in via magic link.",
+      "successDetail": "Password updated successfully.",
+      "errorTooShort": "Password must be at least {min} characters.",
+      "errorNoUppercase": "Password must include at least one uppercase letter.",
+      "errorNoSpecial": "Password must include at least one special character.",
+      "errorMismatch": "Passwords do not match.",
+      "errorGeneric": "Could not save password. Try again."
+    }
+  },
+  "Trainer": {
+    "dashboardLabel": "My Dashboard",
+    "greeting": "Hello, {name}",
+    "callsAnalyzedOne": "{count} call analyzed",
+    "callsAnalyzedOther": "{count} calls analyzed",
+    "myScore": "My Score",
+    "closeRate": "Close Rate",
+    "myRubricTitle": "My Rubric vs Team Average",
+    "myRubricSubtitle": "Compared to your team average",
+    "rubricLegendTeam": "Team avg",
+    "deltaVsTeam": "{delta} vs team ({teamAvg})",
+    "callsKpi": "Calls",
+    "winsKpi": "Wins",
+    "kpiWindow": "Window",
+    "kpiWindowWeeks": "{n}w",
+    "kpiDeltaVsPrev": "vs prev",
+    "kpiTotalSuffix": "of {count} total",
+    "kpiAvgSuffix": "{value} all-time",
+    "recentCalls": "Recent Calls",
+    "noCallsYet": "No calls yet.",
+    "myCallsLabel": "My Calls",
+    "noCallsFound": "No calls found.",
+    "thProspect": "Prospect",
+    "thDate": "Date",
+    "thScore": "Score",
+    "thResult": "Result",
+    "forbidden": "You don't have access to this call.",
+    "settings": {
+      "label": "Settings",
+      "title": "Notification preferences",
+      "subtitle": "Choose how you want to receive coaching recommendations from your manager.",
+      "channelsTitle": "How do you want to receive recommendations?",
+      "channelsSubtitle": "Each recommendation is delivered through the channels you keep active.",
+      "inAppLabel": "In-app notification",
+      "inAppDesc": "Show new recommendations in the notification bell.",
+      "emailLabel": "Email",
+      "emailDesc": "Send recommendations to {email}.",
+      "save": "Save preferences",
+      "saving": "Saving…",
+      "saved": "Preferences saved",
+      "error": "Couldn't save your preferences. Please try again.",
+      "keepOneActive": "At least one channel must stay active so your manager can always reach you."
+    },
+    "recommendations": {
+      "label": "Coaching",
+      "title": "Recommendations",
+      "subtitle": "Every coaching recommendation your manager sent you.",
+      "empty": "No recommendations yet",
+      "emptyHint": "When your manager sends you a coaching recommendation, it shows up here.",
+      "markAllRead": "Mark all as read",
+      "unread": "New",
+      "listItemTitle": "{name} sent you a recommendation",
+      "back": "Recommendations",
+      "headerTitle": "Coaching Recommendation",
+      "greeting": "Hi {name},",
+      "intro": "{sender} sent you a coaching recommendation:",
+      "sentBy": "Sent by {name}"
+    },
+    "newCall": {
+      "backToDashboard": "Back to My Dashboard",
+      "title": "Log a New Call",
+      "subtitle": "Fill in the details below and submit for analysis.",
+      "callDetails": "Call Details",
+      "prospectName": "Prospect Name",
+      "prospectPlaceholder": "e.g. John Smith",
+      "callDate": "Call Date",
+      "duration": "Duration",
+      "outcome": "Outcome",
+      "outcomes": {
+        "closed": "Closed",
+        "followUp": "Follow-up",
+        "noClose": "No Close"
+      },
+      "uploadRecording": "Upload Recording",
+      "pasteTranscript": "Paste Transcript",
+      "dropHere": "Drop your recording here",
+      "orText": "or",
+      "browseFiles": "browse files",
+      "formatHint": "MP3 · MP4 · WAV · M4A · MOV · WebM · up to 500 MB",
+      "unsupportedFormat": "Unsupported format. Please upload an audio or video file.",
+      "fileTooBig": "File exceeds 500 MB limit.",
+      "transcriptPlaceholder": "Paste the call transcript here for AI analysis...",
+      "cancel": "Cancel",
+      "submit": "Submit Call",
+      "submitting": "Submitting…",
+      "success": "Call submitted!",
+      "successBody": "Your call with {prospect} has been logged and sent for AI analysis.",
+      "successNote": "(Phase 1 demo — no data is persisted)"
+    }
+  },
+  "Owner": {
+    "pendingScript": {
+      "bannerTitle": "A new script version is awaiting your approval",
+      "bannerCta": "Review changes",
+      "bannerVersionDelta": "v{previous} → v{incoming}",
+      "bannerVersionNew": "New: v{incoming}",
+      "modalTitle": "Review proposed script",
+      "modalSubtitle": "Sent by {sender} on {date}",
+      "modalSubtitleNoSender": "Sent on {date}",
+      "currentLabel": "Current",
+      "incomingLabel": "Proposed",
+      "noCurrent": "No active script",
+      "noDescription": "No description.",
+      "accept": "Accept & activate",
+      "reject": "Keep current",
+      "accepting": "Accepting…",
+      "rejecting": "Rejecting…",
+      "genericError": "Something went wrong. Try again.",
+      "rejectedRestored": "Reverted to v{version}",
+      "rejectedNoRestore": "No active script now",
+      "accepted": "v{version} is now active"
+    },
+    "teamOverview": "Team Overview",
+    "metrics": {
+      "monthlyRevenue": "Est. Monthly Revenue",
+      "vsBaseline": "% vs baseline",
+      "vsBaselineCurrency": "vs baseline",
+      "avgCloseRate": "Avg Close Rate",
+      "ptsSinceWeek1": "pts since week 1",
+      "avgScore": "Avg Score",
+      "teamAvgCallScore": "Team Avg Call Score",
+      "totalCalls": "Total Calls",
+      "activeSalesPeopleOne": "{count} active sales person",
+      "activeSalesPeopleOther": "{count} active sales people",
+      "bestCloseRate": "Best Close Rate",
+      "noTrainers": "No sales people",
+      "activeSalesPeople": "Active Sales People"
+    },
+    "teamHealth": {
+      "title": "Team Health",
+      "mockBadge": "mock data only",
+      "subtitle": "Who's improving · who needs attention this week",
+      "th": {
+        "trainer": "SALES PERSON",
+        "status": "STATUS",
+        "closeRate": "CLOSE %",
+        "delta": "DELTA"
+      },
+      "callsLabelOne": "{count} call",
+      "callsLabelOther": "{count} calls",
+      "ptsOne": "pt",
+      "ptsOther": "pts",
+      "mockFooter": "† green dot = improving · red dot = declining · all values from mock-data.ts · no real calculation",
+      "statusActiveToday": "Active today",
+      "statusYesterday": "Yesterday",
+      "statusDaysAgo": "{days} days ago",
+      "statusNoActivity": "No calls yet"
+    },
+    "activeAlerts": {
+      "title": "Active Alerts",
+      "mockBadge": "mock data only",
+      "itemsCountOne": "{count} item requiring attention",
+      "itemsCountOther": "{count} items requiring attention",
+      "mockFooter": "↑ red = critical · yellow = warning · green = positive · CTAs non-functional in demo · data from mock-data.ts"
+    },
+    "rubricBySection": "Rubric by Section — Team Average",
+    "detailedRubricLabel": "Score by Sales Person — Detailed Rubric",
+    "detailedRubricTh": {
+      "section": "Section",
+      "team": "Team",
+      "salesPerson": "Sales Person"
+    },
+    "aiInsights": "AI Insights",
+    "calls": {
+      "teamCallsLabel": "Team Calls",
+      "allCalls": "All Calls",
+      "myCalls": "My Calls",
+      "myCallsLabel": "My Calls",
+      "callsAnalyzedOne": "{count} call analyzed",
+      "callsAnalyzedOther": "{count} calls analyzed",
+      "noCallsFound": "No calls found.",
+      "filterAllSalesPeople": "All Sales People",
+      "filterAllSources": "All Sources",
+      "thTrainer": "Sales Person",
+      "thProspect": "Prospect",
+      "thDate": "Date",
+      "thScore": "Score",
+      "thResult": "Result",
+      "forbidden": "You don't have access to this call.",
+      "thScript": "Script",
+      "filterAllScripts": "All Scripts",
+      "activeScriptTag": "Active script: {name}"
+    }
+  },
+  "Admin": {
+    "saasPanel": "SaaS Panel",
+    "globalOverview": "Global Overview",
+    "allClientsDate": "All clients · March 2026",
+    "metrics": {
+      "totalClients": "Total Clients",
+      "activeAccounts": "active accounts",
+      "callsThisMonth": "Calls This Month",
+      "vsLastMonth": "vs last month",
+      "mrr": "MRR",
+      "avgScore": "Avg Score",
+      "ptsVsLastMonth": "pts vs last month"
+    },
+    "clientsLabel": "Clients",
+    "allOrganizationsLabel": "All Organizations",
+    "subtitleScriptIntel": "Script Intelligence Organization Management",
+    "tabs": {
+      "organizations": "Organizations",
+      "scripts": "Scripts"
+    },
+    "scripts": {
+      "searchPlaceholder": "Search by name, description, section or version…",
+      "thName": "Name",
+      "thRubric": "Rubric",
+      "thVersion": "Version",
+      "thSections": "Sections",
+      "thCreated": "Created",
+      "improve": "Improve",
+      "noResults": "No scripts found."
+    },
+    "th": {
+      "client": "Organization",
+      "plan": "Plan",
+      "status": "Status",
+      "scriptVersion": "Script Version",
+      "scriptStatus": "Script Status",
+      "planStatus": "Plan Status",
+      "lastActivity": "Last Activity",
+      "salesPeople": "Sales People",
+      "callsPerMonth": "Calls / mo",
+      "avgScore": "Avg Score",
+      "mrr": "MRR",
+      "health": "Health",
+      "actions": "Actions"
+    },
+    "statusBadge": {
+      "active": "Active",
+      "trial": "Trial",
+      "inactive": "Inactive"
+    },
+    "scriptStatus": {
+      "none": "No script",
+      "pending": "Pending approval",
+      "active": "Active",
+      "deprecated": "Deprecated",
+      "rejected": "Rejected",
+      "all": "All statuses",
+      "pendingTooltip": "This org also has a pending script: {name}"
+    },
+    "cards": {
+      "totalOrgs": "Total Organizations",
+      "pendingApprovals": "Pending Approvals",
+      "totalCalls": "Total Calls Analyzed",
+      "avgScore": "Avg. Score"
+    },
+    "tableTools": {
+      "searchPlaceholder": "Search organizations…",
+      "filter": "Filter",
+      "filterScriptStatus": "Script status",
+      "filterPlan": "Plan",
+      "filterPlanStatus": "Plan status",
+      "filterScriptVersion": "Script version",
+      "filterMrr": "MRR (USD/mo)",
+      "filterLastActivity": "Last activity",
+      "mrrMin": "Min",
+      "mrrMax": "Max",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "anyOption": "Any",
+      "clearFilters": "Clear filters",
+      "applyFilters": "Apply filters",
+      "cancel": "Cancel",
+      "activeFiltersCount": "{count} active",
+      "filtersTitle": "Filters",
+      "filtersSubtitle": "Refine by status, plan and activity.",
+      "enterSelectionMode": "Send scripts",
+      "selectionHint": "Click the organizations that will receive the script, then click the send button.",
+      "sendScriptBulk": "Send script to {count} org(s)",
+      "sendScript": "Send script",
+      "editOrg": "Edit org",
+      "selectAll": "Select all",
+      "selectRow": "Select {name}",
+      "loading": "Loading…",
+      "noResults": "No organizations found.",
+      "pageOf": "Page {page} of {total}",
+      "itemsTotal": "{count} result(s)",
+      "prevPage": "Previous",
+      "nextPage": "Next",
+      "fetchError": "Could not load. Try again."
+    },
+    "sendScriptModal": {
+      "title": "Send script",
+      "subtitleSingle": "To {name}",
+      "subtitleBulk": "To {count} organization(s)",
+      "modeScripts": "Script",
+      "modeRubrics": "Rubric",
+      "modeHint": "Rubric = major update (sends latest script). Script = specific version.",
+      "chooseScript": "Choose a script from the catalog",
+      "chooseRubric": "Choose a rubric from the catalog",
+      "noScripts": "No scripts available.",
+      "noRubrics": "No rubrics available.",
+      "version": "Version {version}",
+      "rubricVersion": "Rubric v{version}",
+      "scriptCount": "{count} script(s)",
+      "rubricLabel": "Rubric: {name}",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sending": "Sending…",
+      "successSingle": "Script sent to {name}.",
+      "successBulk": "Script sent to {count} organization(s).",
+      "genericError": "Could not send the script. Try again."
+    },
+    "scriptReview": {
+      "title": "Script Intelligence Review",
+      "pendingReview": "pending review",
+      "back": "Back",
+      "versionHistory": "Version History",
+      "save": "Save script",
+      "discard": "Discard",
+      "saved": "Script saved",
+      "aiGeneratedTitle": "AI-Generated Version",
+      "aiGeneratedNote": "This script was automatically generated by Script Intelligence based on analysis of {count} closed calls.",
+      "baseScript": "Base Script",
+      "newVersion": "New Version",
+      "expectedImpact": "Expected impact",
+      "modificationsCount": "{count} modifications",
+      "changesSummary": "Changes Summary",
+      "metadata": "Metadata",
+      "sectionsCount": "{count} sections",
+      "criteriaCount": "{count} criteria",
+      "tab_editor": "Editor",
+      "tab_diff": "Diff View",
+      "tab_preview": "Preview",
+      "change_modified": "AI Modified",
+      "change_new": "New",
+      "description": "Description",
+      "reasoningForChanges": "Reasoning for Changes",
+      "tipForTrainer": "Tip for Trainer",
+      "sectionWeight": "Section Weight",
+      "evaluationCriteria": "Evaluation Criteria",
+      "criteriaWeight": "{count} criteria · Weight: {weight}%",
+      "current": "Current",
+      "proposed": "Proposed",
+      "noChanges": "No changes to show."
+    },
+    "health": {
+      "healthy": "Healthy",
+      "atRisk": "At Risk",
+      "churning": "Critical"
+    },
+    "ownerPending": "Awaiting Owner",
+    "subTrial": "Trial",
+    "subInactive": "Inactive",
+    "subscriptionSettings": "Configure {name}'s plan",
+    "ghlSettings": "Configure {name}'s GHL integration",
+    "ownerSettings": "Manage {name}'s owner",
+    "orgConfigLabel": "Configure {name}",
+    "scriptManagement": {
+      "title": "Organization script",
+      "subtitle": "Review the active script and send a new version for AI analysis and owner approval.",
+      "activeLabel": "Active script",
+      "noActive": "No active script for this organization.",
+      "pendingLabel": "Awaiting owner approval",
+      "changeScript": "Change script",
+      "statusAnalyzing": "Analyzing…",
+      "statusReady": "Ready for approval",
+      "statusError": "Analysis error",
+      "statusNoAnalysis": "Pending approval",
+      "cancel": "Cancel send",
+      "cancelSuccess": "Script send cancelled",
+      "cancelError": "Could not cancel the send. Try again.",
+      "retry": "Re-run analysis",
+      "retrySuccess": "Analysis rescheduled",
+      "retryError": "Could not reschedule the analysis"
+    },
+    "ownerManagement": {
+      "eyebrow": "Owner management",
+      "noOwner": "This organization has no owner yet.",
+      "title": "Organization owner",
+      "subtitle": "Change the owner's email or send a password setup / recovery link.",
+      "pendingBadge": "Pending",
+      "emailLabel": "Email",
+      "edit": "Edit",
+      "saveAria": "Save",
+      "cancelAria": "Cancel",
+      "resendInvite": "Resend setup email",
+      "sendRecovery": "Send recovery link",
+      "confirmTitle": "Change owner's email?",
+      "confirmBody": "The owner's current password will be invalidated. They'll receive a setup link at {newEmail} to choose a new password before regaining access. {oldEmail} will no longer work.",
+      "confirmCancel": "Cancel",
+      "confirmAction": "Change email & send setup link",
+      "emailInvalidTitle": "Invalid email",
+      "emailInvalidBody": "Enter a valid email address.",
+      "emailChangedTitle": "Email changed",
+      "emailChangedSentBody": "Setup link sent to {email}.",
+      "emailChangedMockedBody": "Email saved. (Email delivery is mocked — owner will not receive {email}.)",
+      "resendSentTitle": "Email sent",
+      "resendSentBody": "Setup link resent to {email}.",
+      "resendMockedBody": "Resend recorded. (Email delivery is mocked — owner will not receive {email}.)",
+      "recoverySentTitle": "Recovery sent",
+      "recoverySentBody": "If {email} is registered, a recovery link was sent.",
+      "errorTitle": "Could not complete",
+      "errorBody": "Something went wrong. Try again."
+    },
+    "impersonateTooltip": "Enter {name} (read-only view)",
+    "impersonateError": "Could not enter this organization. Try again.",
+    "impersonateBanner": {
+      "label": "Viewing as",
+      "readOnly": "Read only",
+      "exit": "Back to admin panel",
+      "exiting": "Exiting…"
+    },
+    "orgConfig": {
+      "eyebrow": "Organization configuration",
+      "noOwner": "This organization does not have an owner yet.",
+      "ghlLinkTitle": "GHL / Pepper integration",
+      "ghlLinkSubtitle": "Connect the GoHighLevel workflow for automatic call transcription."
+    },
+    "subscriptionOverride": {
+      "cardTitle": "Subscription",
+      "cardSubtitle": "Override plan, status and MRR. Used for customers on special terms.",
+      "eyebrow": "Subscription override",
+      "statusLabel": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "status_trial": "Trial (comp)",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "trialDurationLabel": "Trial duration",
+      "preset_24h": "24 hours",
+      "preset_7d": "7 days",
+      "preset_14d": "14 days",
+      "preset_30d": "30 days",
+      "preset_60d": "60 days",
+      "preset_90d": "90 days",
+      "preset_custom": "Custom",
+      "customDateLabel": "Expiration date and time",
+      "errorCustomDateRequired": "Enter the trial expiration date.",
+      "errorDateInFuture": "Date must be in the future.",
+      "orgNameLabel": "Organization name",
+      "mrrLabel": "MRR (USD/month)",
+      "mrrPlaceholder": "e.g. 1500",
+      "errorOrgNameRequired": "Organization name cannot be empty.",
+      "errorMrrInvalid": "MRR must be a positive number.",
+      "scriptLabel": "Active script",
+      "scriptPlaceholder": "Select a script",
+      "scriptCurrentSuffix": "(current)",
+      "scriptHint": "Force-changing the script bypasses pending review and notifies the Owner by email.",
+      "confirmScriptChange": "Change script from \"{from}\" to \"{to}\"? The Owner will be notified by email and this bypasses pending review.",
+      "confirmScriptChangeTitle": "Confirm script change",
+      "confirmScriptSetTitle": "Confirm script assignment",
+      "confirmScriptSet": "Set \"{to}\" as the active script for this organization? The Owner will be notified by email and this bypasses pending review.",
+      "confirmScriptChangeCancel": "Cancel",
+      "confirmScriptChangeConfirm": "Yes, change and notify",
+      "submit": "Save override",
+      "submitting": "Saving…",
+      "successDetail": "Subscription updated. Admin override active.",
+      "genericError": "Could not update subscription. Try again.",
+      "back": "← Back to panel",
+      "goToGhl": "GHL integration →"
+    },
+    "ghlIntegration": {
+      "eyebrow": "GHL / Pepper integration",
+      "title": "GoHighLevel webhook setup",
+      "subtitle": "Connect this organization's Pepper workflow so completed calls are auto-transcribed.",
+      "locationIdLabel": "GHL Location ID",
+      "accessTokenLabel": "GHL access token (PIT)",
+      "accessTokenPlaceholder": "pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "accessTokenPlaceholderKeep": "leave blank to keep",
+      "accessTokenHint": "A token is already stored. Leave the field blank to keep it.",
+      "enableLabel": "Enable GHL integration for this org",
+      "saveButton": "Save configuration",
+      "submitting": "Saving…",
+      "rotateButton": "Rotate secret",
+      "rotateConfirm": "Rotating will invalidate the current secret. The client must update their Pepper workflow. Continue?",
+      "webhookSecretCurrent": "Current webhook secret",
+      "errorRequiredLocation": "Location ID is required to enable the integration.",
+      "errorRequiredToken": "Access token is required to enable the integration.",
+      "errorGeneric": "Could not save the configuration. Try again.",
+      "successSaved": "Configuration saved.",
+      "setupModalTitle": "Configure Pepper webhook",
+      "setupModalIntro": "Paste these values into the Pepper \"Send to Ask Moses\" workflow action.",
+      "setupModalSecretWarning": "This secret is shown ONLY ONCE. Copy it before closing — it cannot be retrieved later, only rotated.",
+      "setupModalUrlLabel": "Webhook URL",
+      "setupModalCopiedConfirm": "I've copied the secret and saved it somewhere safe.",
+      "setupModalClose": "Close",
+      "copy": "Copy",
+      "copied": "Copied",
+      "back": "← Back to panel",
+      "goToSubscription": "Subscription override →",
+      "goToOrgConfig": "← Back to organization configuration",
+      "authErrorBannerTitle": "GHL authentication failed",
+      "authErrorBannerBody": "The Private Integration Token (PIT) was likely rotated in Pepper. Paste the new token in the \"GHL access token (PIT)\" field below and click Save — the warning will clear automatically.",
+      "authErrorBannerLastSeen": "Last failure"
+    },
+    "createOrg": {
+      "eyebrow": "Provisioning",
+      "title": "New organization",
+      "subtitle": "Create a new tenant, assign its plan and invite the Owner.",
+      "nameLabel": "Organization name",
+      "namePlaceholder": "Acme Inc.",
+      "ownerNameLabel": "Owner name",
+      "ownerNamePlaceholder": "e.g. Maria Silva",
+      "ownerEmailLabel": "Owner email",
+      "ownerEmailPlaceholder": "maria@acme.com",
+      "planLabel": "Plan",
+      "plan_starter": "Starter",
+      "plan_pro": "Pro",
+      "plan_pro_rag": "Pro + RAG",
+      "mrrLabel": "MRR (USD/month) — optional",
+      "mrrPlaceholder": "e.g. 1500",
+      "errorMrrInvalid": "MRR must be a positive number.",
+      "scriptLabel": "Active script",
+      "scriptPlaceholder": "Select a script",
+      "scriptLoading": "Loading scripts…",
+      "errorScriptRequired": "Select an active script.",
+      "submit": "Create organization and send invite",
+      "submitting": "Creating…",
+      "successDetail": "{name} provisioned on the {plan} plan.",
+      "successInviteSent": "Invite sent to {email}.",
+      "successInviteMocked": "Invite mocked (RESEND_API_KEY missing) for {email}.",
+      "errorOwnerNameRequired": "Owner name is required.",
+      "errorOwnerEmailInvalid": "Invalid Owner email.",
+      "genericError": "Could not create the organization. Try again."
+    },
+    "rubric": {
+      "label": "Rubric Config",
+      "title": "Rubric Configuration",
+      "subtitle": "Manage evaluation criteria sent to the AI on every call analysis.",
+      "critical": "Critical",
+      "optional": "Optional",
+      "toggleAria": "Toggle {name} critical",
+      "systemPromptTitle": "AI System Prompt Preview",
+      "systemPromptSubtitle": "This prompt is sent to the AI on every call analysis. Read-only in this demo.",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "toastSavedTitle": "Saved",
+      "toastSavedBody": "Rubric criteria updated successfully.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Failed to save rubric changes. Try again."
+    },
+    "aiControls": {
+      "label": "AI Controls",
+      "title": "AI Controls",
+      "subtitle": "Configure temperature and token limits per AI module. Visible to admins only.",
+      "save": "Save",
+      "saving": "Saving...",
+      "updatedBy": "Updated by",
+      "logLabel": "Change Log",
+      "logEmpty": "No changes recorded yet.",
+      "modules": {
+        "scoring_engine": "Scoring Engine",
+        "correlation_engine": "Correlation Engine",
+        "marketing_intelligence": "Marketing Intelligence"
+      },
+      "moduleDesc": {
+        "scoring_engine": "Evaluates calls based on the rubric",
+        "correlation_engine": "Generates correlation insights on the owner dashboard",
+        "marketing_intelligence": "Generates ad headlines and primary text"
+      },
+      "fields": {
+        "temperature": "Temperature",
+        "maxTokens": "Max Tokens"
+      },
+      "hints": {
+        "temperatureRange": "Recommended range:",
+        "maxTokensRange": "Valid range:"
+      },
+      "th": {
+        "logModule": "Module",
+        "logField": "Field",
+        "logPrev": "Previous Value",
+        "logNew": "New Value",
+        "logUser": "User",
+        "logDate": "Date"
+      },
+      "toastSavedTitle": "Saved",
+      "toastSavedBody": "{module} configuration updated.",
+      "toastErrorTitle": "Error",
+      "toastErrorBody": "Failed to save. Try again."
+    }
+  },
+  "Coaching": {
+    "label": "Team Command Center",
+    "subtitle": "Best calls of the week — use these as reference material in team training sessions.",
+    "callsLabelOne": "{count} call",
+    "callsLabelOther": "{count} calls",
+    "lastActive": "last active {when}",
+    "closeRateSuffix": "{value}% close rate",
+    "stats": {
+      "avgScore": "Avg Score",
+      "thisWeek": "this week",
+      "closeRate": "Close Rate",
+      "delta": "delta",
+      "totalCalls": "Total Calls",
+      "allTime": "all time",
+      "thisWeekCard": "This Week",
+      "callsProcessed": "calls processed"
+    },
+    "conversionRate": "Conversion rate",
+    "sinceWeek1": "since week 1",
+    "avgScore": "Avg score",
+    "totalCallsWeek": "Total calls this week",
+    "submissionRate": "Submission rate",
+    "bestCall": "Best Calls This Week",
+    "worstCall": "Needs Improvement",
+    "mockBadge": "mock data only",
+    "mockFooterBest": "† all values sourced from mock-data.ts — Listen at X:XX → is non-functional in demo",
+    "mockFooterWorst": "† all values sourced from mock-data.ts — Review at X:XX → is non-functional in demo",
+    "recsTitle": "AI Coaching Recommendations",
+    "recsHint": "AI combined the analysis of {name}'s recent calls into one recommendation. Edit it freely before sending.",
+    "recsPlaceholder": "Write the coaching recommendation…",
+    "recsReset": "Reset to AI draft",
+    "recsSend": "Send to {name}",
+    "recsSending": "Sending…",
+    "recsSentTitle": "Recommendation sent",
+    "recsDeliveredVia": "Delivered to {name} via:",
+    "recsChannelInApp": "In-app notification",
+    "recsChannelEmail": "Email",
+    "recsNoChannels": "{name} turned off all channels — they won't receive this recommendation.",
+    "recsEmailFailed": "The email couldn't be delivered.",
+    "recsSendAnother": "Write another recommendation",
+    "recsEmptyError": "Write a recommendation before sending.",
+    "recsError": "Couldn't send the recommendation. Please try again.",
+    "recsNotificationTitle": "Coaching recommendation",
+    "draftIntro": "{name}, here are your coaching priorities based on your recent calls:",
+    "noCallsYet": "No calls analyzed for {name} yet.",
+    "recsLoading": "Generating AI recommendations…",
+    "recsGenerateError": "Couldn't generate recommendations right now.",
+    "worstCallEmpty": "Not enough calls to compare yet."
+  },
+  "Dashboard": {
+    "home": {
+      "welcomeBack": "Welcome back",
+      "subtitle": "Upload a call to get AI coaching feedback",
+      "uploadCall": "Upload Call",
+      "totalCalls": "Total Calls",
+      "callsAnalyzed": "Calls analyzed",
+      "passRate": "Pass Rate",
+      "passRateHint": "Score ≥ 75",
+      "avgScore": "Avg. Score",
+      "perCall": "Per call",
+      "thisWeek": "This Week",
+      "callsProcessed": "Calls processed",
+      "quickLinks": "Quick Links",
+      "uploadNewCall": "Upload New Call",
+      "viewFullHistory": "View Full History",
+      "configureRubric": "Configure Rubric",
+      "customizeSystemPrompt": "Customize System Prompt"
+    },
+    "trendChart": {
+      "title": "Score Trend",
+      "subtitle": "Average score over time",
+      "noData": "No data yet",
+      "scoreLabel": "Score"
+    },
+    "history": {
+      "title": "Call History",
+      "subtitle": "Review all processed sales calls and coaching feedback",
+      "searchCalls": "Search Calls",
+      "searchPlaceholder": "Search by sales person name or prospect...",
+      "allCalls": "All Calls",
+      "callsFoundOne": "{count} call found",
+      "callsFoundOther": "{count} calls found",
+      "noCallsFound": "No calls found",
+      "th": {
+        "salesPerson": "Sales Person",
+        "prospect": "Prospect",
+        "date": "Date",
+        "outcome": "Outcome",
+        "score": "Score",
+        "actions": "Actions"
+      },
+      "view": "View",
+      "showingRange": "Showing {from} to {to} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "with": "with {prospect}",
+      "overallScore": "Overall Score",
+      "outcome": "Outcome",
+      "summary": "Summary",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to Improve",
+      "sectionBreakdown": "Section Breakdown"
+    },
+    "analytics": {
+      "title": "Analytics & Insights",
+      "subtitle": "Aggregate performance trends and improvement recommendations",
+      "insightLabel": "Insight",
+      "overallPerformance": "Overall performance: {avg} avg score across {count} calls",
+      "topImprovementArea": "Top improvement area: \"{name}\" with avg score {score}",
+      "teamAverage": "Team average: {avg} — Focus on consistency",
+      "closedDeals": "Closed Deals",
+      "notClosed": "Not Closed",
+      "partial": "Partial",
+      "noOutcome": "No Outcome",
+      "closeRate": "Close Rate",
+      "conversionLeaderboard": "Conversion Leaderboard",
+      "conversionSubtitle": "Close rate per sales person",
+      "performanceTrend": "Performance Trend",
+      "performanceTrendSubtitle": "Average score over time",
+      "avgScoreLine": "Avg Score %",
+      "topImprovementAreas": "Top Improvement Areas",
+      "topImprovementSubtitle": "Rubric sections with lowest average score",
+      "avgScoreBar": "Avg Score",
+      "noDataYet": "No data available yet",
+      "teamAchievements": "Team Achievements",
+      "badges": {
+        "masterCoach": "Master Coach",
+        "masterCoachReason": "Highest average score: {score}",
+        "perfectCalls": "Perfect Calls",
+        "perfectCallsReason": "{count} call(s) with score ≥ 95",
+        "risingStar": "Rising Star",
+        "risingStarReason": "Recent improvement trend"
+      },
+      "emptyTitle": "No data yet",
+      "emptyBody": "Process some calls to see analytics and insights"
+    },
+    "guide": {
+      "title": "How to Use",
+      "subtitle": "Complete guide to analyzing sales calls and coaching your team",
+      "quickStart": "Quick Start",
+      "quickStartSubtitle": "Get up and running in 3 simple steps",
+      "quickStep1Title": "Create a Script",
+      "quickStep1Desc": "Define your sales process",
+      "quickStep2Title": "Upload a Call",
+      "quickStep2Desc": "Audio or transcript",
+      "quickStep3Title": "Send Feedback",
+      "quickStep3Desc": "Email coaching to sales person",
+      "stepByStep": "Step-by-Step Guide",
+      "stepLabel": "Step {n}",
+      "howToDoIt": "How to do it:",
+      "proTips": "Pro Tips",
+      "faqTitle": "Frequently Asked Questions",
+      "needMoreHelp": "Need More Help?",
+      "needMoreHelpBody1": "Check the ",
+      "needMoreHelpLink": "Technical Documentation",
+      "needMoreHelpBody2": " for API details, database schema, and integration guides. For feature requests or issues, contact your administrator.",
+      "steps": {
+        "script": {
+          "title": "Configure Your Sales Script",
+          "description": "Set up your ideal sales process that your sales team should follow",
+          "location": "Rubric page",
+          "details": [
+            "Go to the Rubric page in the sidebar",
+            "Click 'Create Script' to add a new sales script",
+            "Add a name and description for your script",
+            "Define sections (e.g., Greeting, Discovery, Demo, Closing)",
+            "For each section, add instructions and tips",
+            "The system will automatically generate evaluation criteria"
+          ],
+          "tips": [
+            "Be specific in your section instructions for better AI analysis",
+            "Include tips that help your sales team understand what good looks like",
+            "You can create multiple scripts for different call types"
+          ]
+        },
+        "upload": {
+          "title": "Upload a Sales Call",
+          "description": "Submit call recordings or transcripts for AI analysis",
+          "location": "Upload Call page",
+          "details": [
+            "Navigate to Upload Call in the sidebar",
+            "Enter the sales person's name and email",
+            "Select which sales script to evaluate against",
+            "Choose upload method: Audio file or paste transcript",
+            "For audio: Upload MP3, WAV, or M4A files (max 25MB)",
+            "For transcript: Paste the call transcript directly",
+            "Click 'Analyze Call' to start the AI evaluation"
+          ],
+          "tips": [
+            "Audio files are automatically transcribed using AI",
+            "Clear audio quality produces better transcriptions",
+            "Include speaker labels in transcripts when pasting manually"
+          ]
+        },
+        "review": {
+          "title": "Review AI Analysis",
+          "description": "See detailed feedback on how well the sales person followed the script",
+          "location": "After upload",
+          "details": [
+            "View the overall score (sections covered vs total)",
+            "See pass/fail status for each evaluation criterion",
+            "Read specific feedback for each section",
+            "Review strengths highlighted by the AI",
+            "Check suggested areas for improvement",
+            "Access the full call transcript for reference"
+          ],
+          "tips": [
+            "The AI evaluates based on your script sections",
+            "Feedback is constructive and actionable",
+            "Use the transcript to verify AI observations"
+          ]
+        },
+        "email": {
+          "title": "Send Coaching Email",
+          "description": "Deliver personalized feedback directly to the sales person",
+          "location": "Results page",
+          "details": [
+            "After analysis, click 'Send Coaching Email'",
+            "The email is sent to the sales person's email address",
+            "Email includes score, summary, and detailed feedback",
+            "Sales people receive actionable tips for improvement",
+            "Call is automatically saved to history"
+          ],
+          "tips": [
+            "Emails are branded and professional",
+            "Sales people can review feedback at their own pace",
+            "Consider following up on areas needing improvement"
+          ]
+        },
+        "track": {
+          "title": "Track Performance",
+          "description": "Monitor trends and identify coaching opportunities",
+          "location": "Calls page",
+          "details": [
+            "Calls: View all analyzed calls with search and filters",
+            "Filter by sales person name, date range, or score",
+            "Click any call to see full details and transcript",
+            "Track pass rates by criteria across all calls",
+            "Identify which script sections need more training"
+          ],
+          "tips": [
+            "Regular review helps identify training patterns",
+            "Low-performing criteria indicate coaching opportunities",
+            "Use filters to focus on specific sales people or periods"
+          ]
+        },
+        "insights": {
+          "title": "Generate Team Insights",
+          "description": "Use pattern recognition to optimize your sales script based on real performance data",
+          "location": "Script Intelligence page",
+          "details": [
+            "Navigate to Script Intelligence in the sidebar",
+            "Select a sales script from the dropdown",
+            "Click 'Generate Insights' to analyze all calls using that script",
+            "The system groups calls by outcome: Closed, Not Closed, and Partial",
+            "AI analyzes patterns across all groups and generates insights",
+            "Review the DO's - best practices from successful closers",
+            "Review the DON'Ts - behaviors that lose deals",
+            "Study common objections and how closers handle them",
+            "Review the pre-call checklist and suggested optimized script",
+            "Click 'Save as New Script' to create an improved script based on insights",
+            "Send insights as a Weekly Bulletin email to your entire team"
+          ],
+          "tips": [
+            "You need at least 5-10 calls per script for meaningful insights",
+            "Insights are based on REAL performance data, not theory",
+            "This is pattern recognition, not full reinforcement learning - it identifies what works in your specific context",
+            "Save successful patterns as new scripts to test in the field",
+            "Share weekly bulletins with your team to align on best practices"
+          ]
+        }
+      },
+      "faqs": [
+        {
+          "q": "What audio formats are supported?",
+          "a": "We support MP3, WAV, M4A, and most common audio formats. Files must be under 25MB. For larger files, consider compressing or splitting the recording."
+        },
+        {
+          "q": "How accurate is the AI transcription?",
+          "a": "Our AI transcription uses OpenAI Whisper, which is highly accurate for clear audio. For best results, ensure good audio quality with minimal background noise."
+        },
+        {
+          "q": "Can I edit the generated criteria?",
+          "a": "Currently, criteria are auto-generated based on your script sections. You can modify the script and sections to adjust what gets evaluated."
+        },
+        {
+          "q": "How does the AI scoring work?",
+          "a": "The AI reads the transcript and compares it against your defined script sections. Each section is marked as 'covered' or 'not covered' based on whether the sales person addressed the key points."
+        },
+        {
+          "q": "Can I use different AI models?",
+          "a": "Yes! In the Rubric settings, you can choose between OpenAI GPT-4o Mini (fast and economical) or Google Gemini 2.5 (more powerful analysis)."
+        },
+        {
+          "q": "Why can't I send emails to other addresses?",
+          "a": "For MVP/testing, emails are restricted to the registered account. To send to any email, a custom domain needs to be verified in Resend settings."
+        },
+        {
+          "q": "How do I create multiple scripts?",
+          "a": "Go to Rubric, click 'Create Script', and define a new script with its own sections. When uploading calls, select which script to evaluate against."
+        },
+        {
+          "q": "What is the Insights feature?",
+          "a": "Insights uses pattern recognition to analyze all your calls grouped by outcome (Closed, Not Closed, Partial). It identifies what successful closers have in common, what non-closers do wrong, common objections, and generates a suggested optimized script. This is different from reinforcement learning - it's data-driven pattern matching based on your actual call data."
+        },
+        {
+          "q": "How is Insights different from Reinforcement Learning?",
+          "a": "True reinforcement learning would automatically iterate on scripts based on continuous feedback loops with reward signals. Insights is one level simpler: it's pattern recognition + script generation. You upload calls, we analyze patterns and suggest improvements. You then decide whether to test the new script. Future versions could automate the iteration loop."
+        },
+        {
+          "q": "How many calls do I need to generate insights?",
+          "a": "While you can generate insights with fewer calls, 5-10 calls per script provides meaningful patterns. With more calls, especially diverse sales team outcomes, patterns become more statistically significant."
+        },
+        {
+          "q": "Can I customize the insights analysis?",
+          "a": "Currently, the AI analyzes based on call outcomes and transcripts against your script. The analysis includes DO's, DON'Ts, common objections, and a suggested script. Future versions could allow custom analysis parameters."
+        }
+      ]
+    },
+    "settings": {
+      "title": "Coaching Configuration",
+      "subtitle": "Manage your sales scripts and coaching system",
+      "systemPromptTitle": "System Prompt",
+      "systemPromptDescription": "Customize the AI coaching instructions",
+      "llmModelLabel": "LLM Model for Analysis",
+      "llmModelHint": "Choose the AI model to use for analyzing sales calls",
+      "llmOptionGemini25Flash": "Gemini 2.5 Flash (Fast & Balanced)",
+      "llmOptionGemini25Pro": "Gemini 2.5 Pro (Most Powerful)",
+      "llmOptionGemini20Flash": "Gemini 2.0 Flash (Lightweight)",
+      "llmOptionGemini20FlashLite": "Gemini 2.0 Flash Lite (Fastest)",
+      "systemPromptLabel": "System Prompt",
+      "systemPromptPlaceholder": "Enter the system prompt for AI analysis...",
+      "systemPromptFieldHint": "Customize the AI coaching instructions",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "scriptsTitle": "Sales Scripts",
+      "newScript": "New Script",
+      "createScriptTitle": "Create New Sales Script",
+      "scriptNameLabel": "Script Name",
+      "scriptNamePlaceholder": "e.g., Dog Training Consultation",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe the sales process and key objectives...",
+      "scriptSectionsLabel": "Script Sections",
+      "sectionNamePlaceholder": "Section name (e.g., Greeting)",
+      "sectionInstructionsPlaceholder": "Instructions for this section",
+      "sectionTipsPlaceholder": "Tips (optional)",
+      "addSection": "Add Section",
+      "createAndGenerate": "Create & Generate Criteria",
+      "cancel": "Cancel",
+      "activeBadge": "Active",
+      "createdOn": "Created {date}",
+      "completeScript": "Complete Script",
+      "editScriptPlaceholder": "Edit script content...",
+      "save": "Save",
+      "scriptSectionsHeading": "Script Sections",
+      "tipEmoji": "💡 {tip}",
+      "autoGeneratedCriteria": "Auto-Generated Criteria",
+      "deleteScript": "Delete Script",
+      "emptyScripts": "No scripts created yet. Create your first sales script to get started."
+    },
+    "insights": {
+      "title": "Script Intelligence",
+      "subtitle": "AI-powered script health analysis based on {count} calls · Dog training vertical",
+      "pageSubtitle": "View and edit your active script or review pending admin suggestions",
+      "selectScriptLabel": "Select Script",
+      "chooseScriptPlaceholder": "Choose a script to analyze...",
+      "analyzing": "Analyzing calls... This may take a moment",
+      "generateButton": "Analyze Script",
+      "errors": {
+        "generateFailed": "Failed to analyze script",
+        "unknown": "Unknown error"
+      },
+      "tabs": {
+        "myScript": "My Script",
+        "suggestion": "Pending Suggestion",
+        "noSuggestion": "No pending suggestion at the moment"
+      },
+      "myScript": {
+        "noScript": "No active script found for this organization.",
+        "activeLabel": "Active",
+        "editScript": "Edit script",
+        "editingMode": "Editing mode",
+        "sections": "Sections",
+        "sectionsCount": "{count} sections",
+        "sectionNamesFixed": "Section names are fixed and cannot be changed",
+        "sectionNameLocked": "locked name",
+        "scriptName": "Script name",
+        "description": "Description",
+        "edit": "Edit",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveAll": "Save changes",
+        "saving": "Saving...",
+        "saveSuccess": "Script saved successfully",
+        "saveError": "Failed to save script",
+        "unsavedChanges": "Unsaved changes",
+        "instructions": "Instructions",
+        "tips": "Tips",
+        "weight": "Weight",
+        "critical": "Critical"
+      },
+      "firstApproval": {
+        "title": "First script suggestion",
+        "body": "This is the first script suggestion for your organization. There is no prior baseline to compare against — use the panel above to review the content and approve or reject it."
+      },
+      "suggestion": {
+        "noPending": "No pending script suggestion. When the admin sends a new version, it will appear here.",
+        "bannerTitle": "Admin Script Suggestion",
+        "pendingApproval": "Pending approval",
+        "analyzing": "Analyzing…",
+        "analyzingHint": "The AI analysis is still running. Approval becomes available once it finishes.",
+        "sentBy": "Sent by",
+        "currentV": "Current version",
+        "rejectAll": "Reject all",
+        "approveAll": "Approve all",
+        "actionError": "Something went wrong. Please try again.",
+        "accepted": "Script v{version} activated successfully.",
+        "rejected": "Suggestion rejected. Current script kept.",
+        "compareSections": "Section-by-section comparison",
+        "modified": "Modified",
+        "sectionApproved": "Approved",
+        "sectionRejected": "Rejected",
+        "rejectSection": "Reject",
+        "approveSection": "Approve",
+        "editPrompt": "Edit suggested prompt",
+        "currentVersion": "Current (v{version})",
+        "proposedVersion": "Suggested (v{version})",
+        "unchanged": "No changes",
+        "undoApprove": "Undo approval",
+        "undoReject": "Undo rejection",
+        "decisionProgress": "{decided} of {total} sections decided",
+        "resolutionAcceptedTitle": "Suggestion approved successfully",
+        "resolutionAcceptedBody": "The script \"{name}\" has been activated for your team.",
+        "resolutionRejectedTitle": "Suggestion rejected",
+        "resolutionRejectedBody": "The suggestion \"{name}\" was declined. Your current script remains active.",
+        "resolutionWaitNext": "Wait for the next admin analysis to receive a new suggestion.",
+        "resolutionDismiss": "Dismiss",
+        "itemRejectedMsg": "This suggestion was rejected. Wait for the next suggestion.",
+        "itemAcceptedMsg": "This suggestion was approved. Wait for the next analysis.",
+        "currentScript": "Current script",
+        "suggestedScript": "Suggested script",
+        "previewScript": "Preview suggested script",
+        "previewTitle": "Suggested script preview",
+        "previewSubtitle": "How it would look if approved — identical to the My Script view",
+        "previewBadge": "Suggested"
+      },
+      "playbook": {
+        "title": "Playbook",
+        "dogTrainingVertical": "Dog training vertical",
+        "basedOnCalls": "Based on {count} calls",
+        "healthScore": "Script health score",
+        "effectiveness": {
+          "good": "Overall effectiveness — strong script",
+          "roomToImprove": "Overall effectiveness — room to improve",
+          "poor": "Overall effectiveness — needs significant work"
+        },
+        "revenueLeak": "{sections} are your biggest revenue leak. Fixing these two sections could add +${revenue}/mo."
+      },
+      "sectionAnalysis": {
+        "title": "Current Script — Section Analysis",
+        "strong": "Strong",
+        "weak": "Weak",
+        "missing": "Missing",
+        "usageCorrelation": "Used in {pct}% of calls · correlates with +{pts}pts close rate",
+        "usageTopClosers": "Used in {pct}% of calls · top closers ask {n}+ questions here",
+        "priceEarly": "Price mentioned too early in {pct}% of calls · leads to objections",
+        "inconsistent": "{issue1} · {issue2} unaddressed in {pct}% of calls"
+      },
+      "aiSuggestions": {
+        "title": "AI Improvement Suggestions",
+        "rewrite": "Rewrite",
+        "addToScript": "Add to script",
+        "suggestedRewrite": "→ Suggested rewrite",
+        "callsClose": "Calls using this pattern close at {high}% vs {low}%.",
+        "objectionFrequency": "This objection comes up in {pct}% of calls and is currently unhandled. Adding this line estimated to recover {min}–{max} bookings/month.",
+        "lostCallsClose": "{pct}% of lost calls have no direct booking ask. Adding an explicit close could be the single highest impact change in the entire script.",
+        "anchorValue": "Anchor value before price. Top closers who use this phrasing convert at {high}% vs {low}% on price-first approaches."
+      },
+      "topClosers": {
+        "title": "What top closers say differently — phrases that predict closes",
+        "closeRate": "close rate",
+        "showRate": "show rate",
+        "addToScript": "Add to script →"
+      }
+    },
+    "scriptBuilder": {
+      "title": "Script Builder",
+      "subtitle": "Generate a structured sales script from audio recordings or text",
+      "createCardTitle": "Create Your Script",
+      "createCardDescription": "Upload up to 3 audio recordings of successful calls, paste existing script text, or combine both",
+      "tabs": {
+        "audio": "Audio Files",
+        "text": "Text Input"
+      },
+      "dropzone": {
+        "maxReached": "Maximum 3 files reached",
+        "dropHere": "Drop your audio files here",
+        "dragAndDrop": "Drag & drop audio files here",
+        "orClickOne": "or click to browse (up to {count} more)",
+        "orClickOther": "or click to browse (up to {count} more)"
+      },
+      "selectedFiles": "Selected Files ({count}/3)",
+      "fileSizeMb": "{size} MB",
+      "textTab": {
+        "label": "Paste your script or call transcript",
+        "placeholder": "Paste your existing sales script, call transcript, or notes about your sales process here...",
+        "charsCount": "{count} characters (minimum 50 recommended)"
+      },
+      "combinedIndicatorOne": "Combining {count} audio file with text input for better results",
+      "combinedIndicatorOther": "Combining {count} audio files with text input for better results",
+      "generateButton": "Generate Script",
+      "processing": {
+        "mayTake": "This may take a minute...",
+        "uploadingAudio": "Uploading audio {current} of {total}...",
+        "transcribingAudio": "Transcribing audio {current} of {total}...",
+        "analyzing": "Analyzing content and generating script...",
+        "errorPrefix": "Error: {message}",
+        "unknownError": "Unknown error",
+        "transcriptionFailed": "Transcription failed",
+        "generateFailed": "Failed to generate script"
+      },
+      "status": {
+        "pending": "pending",
+        "uploading": "uploading",
+        "transcribing": "transcribing",
+        "done": "done",
+        "error": "error"
+      },
+      "preview": {
+        "whyItWorks": "Why This Script Works",
+        "generatedScript": "Generated Script",
+        "reviewBeforeSaving": "Review and edit before saving as a rubric",
+        "scriptName": "Script Name",
+        "description": "Description",
+        "sections": "Sections ({count})",
+        "tipPrefix": "Tip: {tip}",
+        "fullScript": "Full Script",
+        "evaluationCriteria": "Auto-Generated Evaluation Criteria ({count})",
+        "createRubric": "Create Script",
+        "startOver": "Start Over"
+      },
+      "confirm": {
+        "backToPreview": "← Back to Preview",
+        "finalizeRubric": "Finalize Rubric",
+        "reviewAllSettings": "Review all settings before saving",
+        "scriptInfo": "Script Info",
+        "scriptName": "Script Name",
+        "description": "Description",
+        "aiConfiguration": "AI Configuration",
+        "aiConfigurationSubtitle": "LLM model and system prompt inherited from your active rubric",
+        "llmModelLabel": "LLM Model for Analysis",
+        "systemPromptLabel": "System Prompt",
+        "scriptSections": "Script Sections",
+        "scriptSectionsSubtitle": "Edit instructions and tips per section",
+        "sectionNamePlaceholder": "Section name",
+        "sectionInstructionsPlaceholder": "Instructions for this section",
+        "sectionTipsPlaceholder": "Tips (optional)",
+        "addSection": "+ Add Section",
+        "autoGeneratedCriteria": "Auto-Generated Criteria",
+        "autoGeneratedCriteriaSubtitle": "Edit or remove evaluation criteria",
+        "criterionNamePlaceholder": "Criterion name",
+        "criterionDescriptionPlaceholder": "Description",
+        "addCriterion": "+ Add Criterion",
+        "rubricLabel": "Rubric",
+        "rubricSubtitle": "Choose which rubric this script belongs to",
+        "rubricNone": "No rubrics found. Create a rubric first in Settings.",
+        "saving": "Saving...",
+        "saveRubric": "Save Rubric",
+        "back": "Back",
+        "saveFailed": "Failed to save script"
+      },
+      "llmModels": {
+        "gpt4oMini": "OpenAI GPT-4o Mini (Fast & Cheap)",
+        "gemini25Flash": "Google Gemini 2.5 Flash (Balanced)",
+        "gemini25Pro": "Google Gemini 2.5 Pro (Powerful)"
+      }
+    },
+    "upload": {
+      "title": "Upload Call",
+      "subtitle": "Upload an audio or video file, or paste a transcript for AI coaching analysis",
+      "analyzeCall": "Analyze Call",
+      "processing": {
+        "heading": "Processing Call",
+        "starting": "Starting...",
+        "percentComplete": "{progress}% complete",
+        "uploadingAudio": "Uploading audio...",
+        "transcribingAudio": "Transcribing audio...",
+        "analyzingRubric": "Analyzing against rubric..."
+      },
+      "errors": {
+        "fileTooLarge": "File size must be less than 50MB.",
+        "uploadFailed": "Failed to upload audio",
+        "transcribeFailed": "Failed to transcribe audio",
+        "analyzeFailed": "Failed to analyze call",
+        "sendEmailFailed": "Failed to send coaching email",
+        "apiUnavailable": "API not available — ensure the mock service worker is running (MSW)",
+        "httpStatus": "HTTP {status}",
+        "generic": "An error occurred"
+      },
+      "results": {
+        "title": "Analysis Results",
+        "subtitle": "Review the AI coaching feedback for {name}",
+        "startOver": "Start Over",
+        "overallScore": "Overall Score",
+        "scoreSuffix": "/5",
+        "scoreScaleHint": "Average of section scores, scale 0–5",
+        "badges": {
+          "strong": "Strong",
+          "adequate": "Adequate",
+          "needsWork": "Needs Work",
+          "critical": "Critical"
+        },
+        "outcomeBadge": "Outcome: {label} · Max {cap}/5",
+        "outcomes": {
+          "closed": {
+            "label": "Closed",
+            "note": "Deal was closed — full score range available."
+          },
+          "partial": {
+            "label": "Partial",
+            "note": "Proposal made, follow-up pending — score capped at 80."
+          },
+          "not_closed": {
+            "label": "Not Closed",
+            "note": "Call complete, did not close — score capped at 60."
+          },
+          "no_outcome": {
+            "label": "No Outcome",
+            "note": "Call incomplete or no clear resolution — score capped at 50."
+          }
+        },
+        "sectionBreakdown": "Section Breakdown",
+        "sectionBreakdownHint": "Score 1–5 per section: 1 = Not attempted, 3 = Adequate, 5 = Excellent",
+        "sectionLabels": {
+          "excellent": "Excellent",
+          "strong": "Strong",
+          "adequate": "Adequate",
+          "needsWork": "Needs Work",
+          "notAttempted": "Not Attempted"
+        },
+        "sectionScore": "{score}/5 — {label}",
+        "criticalSectionAlert": "Critical section — needs immediate attention",
+        "strengths": "Strengths",
+        "areasForImprovement": "Areas for Improvement",
+        "summary": "Summary",
+        "callTranscript": "Call Transcript",
+        "transcriptSubtitle": "Full transcription for reference and audit",
+        "readyToSend": "Ready to send coaching feedback?",
+        "readyToSendSubtitle": "This will send a motivational coaching email to {email}",
+        "sending": "Sending...",
+        "sendCoachingEmail": "Send Coaching Email"
+      },
+      "complete": {
+        "heading": "Email Sent Successfully!",
+        "subtitle": "Coaching feedback has been sent to {email}",
+        "uploadAnother": "Upload Another",
+        "viewHistory": "View History"
+      },
+      "form": {
+        "salesPersonInfoTitle": "Sales Person Information",
+        "salesPersonInfoSubtitle": "Who should receive the coaching email?",
+        "salesPersonLabel": "Sales Person",
+        "selectTrainerPlaceholder": "Select a sales person...",
+        "clientNameLabel": "Client Name",
+        "clientNamePlaceholder": "e.g., Jane Doe",
+        "clientNameHint": "Name of the prospect or customer on the call",
+        "salesScriptLabel": "Sales Script *",
+        "selectScriptPlaceholder": "Select a script...",
+        "scriptOptionFormat": "{name} - {description}",
+        "salesScriptHint": "Required to analyze the call against your sales process",
+        "noScriptsAvailable": "No sales scripts available. Create one in Settings first.",
+        "callOutcomeLabel": "Call Outcome *",
+        "callOutcomeHint": "How did this call end?",
+        "outcomes": {
+          "closed": "Closed",
+          "partial": "Partial — follow-up pending",
+          "not_closed": "Not Closed",
+          "no_outcome": "No Outcome"
+        },
+        "callContentTitle": "Call Content",
+        "callContentSubtitle": "Upload audio or video, or paste the transcript directly",
+        "tabs": {
+          "audio": "Audio / Video",
+          "transcript": "Transcript"
+        },
+        "fileSizeMb": "{size} MB",
+        "dropFileHere": "Drop the file here",
+        "dragAndDrop": "Drag & drop audio file",
+        "supportedFormats": "Audio: MP3, WAV, M4A, OGG, WEBM · Video: MP4, MOV, AVI",
+        "browseFiles": "Browse Files",
+        "transcriptPlaceholder": "Paste the call transcript here...",
+        "charactersCount": "{count} characters"
+      }
+    }
+  },
+  "Landing": {
+    "Nav": {
+      "overview": "Overview",
+      "workflow": "Workflow",
+      "features": "Features",
+      "metrics": "Metrics",
+      "roadmap": "Roadmap",
+      "pricing": "Pricing",
+      "appendix": "Appendix",
+      "presentation": "Presentation",
+      "dashboard": "Dashboard",
+      "toggleMenu": "Toggle menu"
+    },
+    "Hero": {
+      "poweredBy": "Powered by",
+      "badge": "Rapid MVP Proposal",
+      "title": "AI Post-Call Sales Coaching for Your Sales Team",
+      "subtitle": "Automate coaching feedback after every sales call. Turn your best sales methodology into an AI coach that scales with your team.",
+      "timelineLabel": "Timeline",
+      "timelineValue": "2 Weeks",
+      "teamLabel": "Team",
+      "teamValue": "AI Builder",
+      "approachLabel": "Approach",
+      "approachValue": "Manual Upload"
+    },
+    "Problem": {
+      "badge": "The Problem",
+      "title": "Manual coaching doesn't scale",
+      "items": [
+        "Ariel reviews calls manually — this doesn't scale",
+        "Feedback is delayed, inconsistent, or never delivered",
+        "No structured way to enforce sales methodology",
+        "Sales people miss coaching moments that affect close rates"
+      ]
+    },
+    "Workflow": {
+      "badge": "Core Workflow",
+      "title": "How Ask Moses Works",
+      "steps": {
+        "upload": {
+          "title": "Upload Call",
+          "description": "Admin uploads audio file or pastes transcript directly"
+        },
+        "transcription": {
+          "title": "Transcription",
+          "description": "If audio, Whisper AI transcribes automatically"
+        },
+        "analysis": {
+          "title": "AI Analysis",
+          "description": "LLM evaluates transcript against the sales rubric"
+        },
+        "email": {
+          "title": "Coaching Email",
+          "description": "Personalized feedback sent to the sales person"
+        },
+        "summary": {
+          "title": "Aggregate Summary",
+          "description": "Ariel receives daily/weekly coaching digest"
+        },
+        "history": {
+          "title": "History Log",
+          "description": "All analyses stored and searchable"
+        }
+      }
+    },
+    "Features": {
+      "badge": "MVP Scope",
+      "title": "What We're Building",
+      "items": {
+        "rubricManager": {
+          "title": "Script / Rubric Manager",
+          "description": "Admin interface for Ariel to create, edit, and version sales scripts and evaluation rubrics.",
+          "details": [
+            "Multi-script support",
+            "Version history",
+            "Markdown editor",
+            "Rubric sections with weights"
+          ]
+        },
+        "manualUpload": {
+          "title": "Manual Call Upload",
+          "description": "Simple interface to upload call recordings or paste transcripts for analysis.",
+          "details": [
+            "Audio upload (.mp3, .wav, .m4a)",
+            "Direct transcript paste",
+            "Whisper AI transcription",
+            "Sales person selection"
+          ]
+        },
+        "aiAnalysis": {
+          "title": "AI Call Analysis",
+          "description": "LLM-powered evaluation of each call against the active rubric.",
+          "details": [
+            "Per-section scoring",
+            "Specific quote citations",
+            "Improvement suggestions",
+            "Overall rating"
+          ]
+        },
+        "coachingEmail": {
+          "title": "Post-Call Coaching Email",
+          "description": "Automated email delivery of personalized coaching feedback to the sales person.",
+          "details": [
+            "Branded HTML template",
+            "Score breakdown",
+            "Actionable tips",
+            "Encouragement tone"
+          ]
+        },
+        "aggregateSummary": {
+          "title": "Aggregate Summary",
+          "description": "Daily or weekly digest for Ariel with team-wide coaching insights.",
+          "details": [
+            "Average scores",
+            "Top performers",
+            "Common gaps",
+            "Trend indicators"
+          ]
+        },
+        "history": {
+          "title": "Simple History Page",
+          "description": "Searchable log of all past call analyses for reference and debugging.",
+          "details": [
+            "Filter by sales person",
+            "Filter by date",
+            "View full analysis",
+            "Basic search"
+          ]
+        }
+      }
+    },
+    "OutOfScope": {
+      "badge": "Exclusions",
+      "title": "Out of All Tiers",
+      "subtitle": "These features are not included in any of the three tiers. They represent future phases after MVP validation.",
+      "groups": {
+        "crm": {
+          "category": "CRM Integration",
+          "items": [
+            "GoHighLevel (Pepper) sync",
+            "Auto-pull sales team contacts",
+            "Sync results to CRM",
+            "CRM workflow triggers"
+          ]
+        },
+        "realtime": {
+          "category": "Real-Time Features",
+          "items": [
+            "Live call coaching",
+            "Real-time voice analysis",
+            "Instant feedback during calls",
+            "Tone detection"
+          ]
+        },
+        "platform": {
+          "category": "Platform Scale",
+          "items": [
+            "Multi-tenant architecture",
+            "White-label solution",
+            "Mobile app",
+            "SSO / SAML authentication"
+          ]
+        },
+        "analytics": {
+          "category": "Advanced Analytics",
+          "items": [
+            "Predictive close-rate modeling",
+            "A/B testing of scripts",
+            "Performance correlation dashboards",
+            "Team leaderboards"
+          ]
+        }
+      }
+    },
+    "Metrics": {
+      "badge": "Success Criteria",
+      "title": "How We Measure Success",
+      "items": {
+        "usage": {
+          "category": "Usage",
+          "title": "Does the sales team engage?",
+          "items": [
+            "Email open rate > 60%",
+            "Sales people reference feedback in calls",
+            "Ariel uses aggregate summaries weekly"
+          ]
+        },
+        "value": {
+          "category": "Value",
+          "title": "Is feedback helpful?",
+          "items": [
+            "Qualitative survey: 4+ out of 5",
+            "Sales people request more detail (good sign)",
+            "Ariel saves 5+ hrs/week on manual review"
+          ]
+        },
+        "quality": {
+          "category": "Quality",
+          "title": "Is AI accurate?",
+          "items": [
+            "Rubric scores align with Ariel's judgment 80%+",
+            "No hallucinated quotes",
+            "Actionable suggestions (not generic)"
+          ]
+        },
+        "business": {
+          "category": "Business",
+          "title": "Does it impact outcomes?",
+          "items": [
+            "Close rate improvement tracked",
+            "Time-to-close reduction",
+            "Sales team confidence increases"
+          ]
+        }
+      }
+    },
+    "Roadmap": {
+      "badge": "What's Next",
+      "title": "Post-MVP Roadmap",
+      "subtitle": "After the MVP (Starter → Pro → Pro + RAG), here's how Ask Moses can continue to evolve.",
+      "mvpTimelineTitle": "MVP Build Timeline",
+      "week12": "Week 1-2",
+      "week12Name": "Starter",
+      "week12Desc": "Manual Upload + AI Core",
+      "week3": "Week 3",
+      "week3Name": "Pro",
+      "week3Desc": "+ Twilio Integration",
+      "week4": "Week 4",
+      "week4Name": "Pro + RAG",
+      "week4Desc": "+ Knowledge Base",
+      "phases": {
+        "crm": {
+          "phase": "Phase 2",
+          "title": "CRM Integration",
+          "timeline": "Post-MVP",
+          "items": [
+            "GoHighLevel (Pepper) sync",
+            "Auto-pull sales team contacts",
+            "Sync coaching results to CRM",
+            "Workflow triggers"
+          ]
+        },
+        "coaching": {
+          "phase": "Phase 3",
+          "title": "Enhanced Coaching",
+          "timeline": "Future",
+          "items": [
+            "Interactive coach dashboard",
+            "Sales person response tracking",
+            "Script A/B testing",
+            "Detailed analytics"
+          ]
+        },
+        "realtime": {
+          "phase": "Phase 4",
+          "title": "Real-Time Features",
+          "timeline": "Long-term",
+          "items": [
+            "Live call guidance",
+            "Voice tone analysis",
+            "Real-time objection handling",
+            "Instant coaching nudges"
+          ]
+        },
+        "platform": {
+          "phase": "Phase 5",
+          "title": "Platform Scale",
+          "timeline": "Long-term",
+          "items": [
+            "Multi-tenant SaaS",
+            "White-label offering",
+            "Enterprise SSO",
+            "Public API"
+          ]
+        }
+      }
+    },
+    "Reusability": {
+      "title": "Built to Evolve",
+      "subtitle": "Every component we build in the MVP is designed to scale with your product. This is production-ready code, not a throwaway prototype.",
+      "th": {
+        "component": "MVP Component",
+        "whatWeBuild": "What We Build",
+        "phase15": "Phase 1.5: Twilio",
+        "phase2": "Phase 2: GHL",
+        "phase3": "Phase 3: Enhanced",
+        "reuse": "Reuse"
+      },
+      "components": {
+        "rubric": {
+          "component": "Script/Rubric Manager",
+          "mvp": "Create & edit sales scripts",
+          "phase15": "Same, no change needed",
+          "phase2": "Per-team scripts via GHL",
+          "phase3": "A/B testing scripts",
+          "reusabilityReason": "Core CRUD logic, database schema, and UI components remain unchanged. Only minor additions for team-based filtering."
+        },
+        "upload": {
+          "component": "Manual Call Upload",
+          "mvp": "Audio upload + paste transcript",
+          "phase15": "Replaced by Twilio webhook",
+          "phase2": "Auto-pull from GHL",
+          "phase3": "Multi-source ingestion",
+          "reusabilityReason": "File processing and transcription pipeline reused. Upload UI becomes secondary input method alongside webhooks."
+        },
+        "analysis": {
+          "component": "AI Call Analysis",
+          "mvp": "Per-section scoring & citations",
+          "phase15": "Real-time processing",
+          "phase2": "Sync results to CRM",
+          "phase3": "Detailed analytics",
+          "reusabilityReason": "AI prompts, scoring logic, and analysis pipeline are fully reusable. Only adds output destinations (CRM, real-time)."
+        },
+        "email": {
+          "component": "Post-Call Coaching Email",
+          "mvp": "Branded HTML + tips",
+          "phase15": "Auto-triggered on call end",
+          "phase2": "GHL workflow triggers",
+          "phase3": "Sales person response tracking",
+          "reusabilityReason": "Email templates, sending logic, and formatting are 100% reusable. Future phases only change when/how it's triggered."
+        },
+        "summary": {
+          "component": "Aggregate Summary",
+          "mvp": "Daily/weekly digest",
+          "phase15": "Same, no change needed",
+          "phase2": "Team comparisons",
+          "phase3": "Advanced analytics dashboard",
+          "reusabilityReason": "Data aggregation queries and summary generation reused. Phase 3 adds new visualizations on top of same data layer."
+        },
+        "history": {
+          "component": "Simple History Page",
+          "mvp": "Search & filter calls",
+          "phase15": "Real-time updates",
+          "phase2": "CRM-linked records",
+          "phase3": "Interactive coach dashboard",
+          "reusabilityReason": "Database queries, filtering logic, and table components fully reused. Future phases extend with additional columns and views."
+        }
+      },
+      "stats": {
+        "avgReusability": "Average Code Reusability",
+        "stack": "Industry Standard Stack",
+        "vendorLockIn": "Vendor Lock-in"
+      },
+      "codeVsNoCode": {
+        "title": "Code vs No-Code Platforms",
+        "noCodeTitle": "No-Code (Bubble, Glide)",
+        "noCodeItems": [
+          "Platform lock-in",
+          "Limited AI customization",
+          "Needs specialized \"no-code dev\"",
+          "Rewrite needed to scale",
+          "Monthly platform fees forever"
+        ],
+        "codeTitle": "This MVP (Next.js + Vercel)",
+        "codeItems": [
+          "You own the code 100%",
+          "Full AI SDK access",
+          "Any React/Next.js dev can maintain",
+          "Scale without rewriting",
+          "Deploy anywhere (Vercel, AWS, etc.)"
+        ]
+      }
+    },
+    "Pricing": {
+      "badge": "Investment",
+      "title": "Choose Your Starting Point",
+      "subtitle": "All tiers include production-ready code you own. ~90% reusable as you scale.",
+      "recommended": "Recommended",
+      "notIncluded": "Not included:",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "price": "$4,050",
+          "timeline": "2 weeks",
+          "description": "Week 1-2: Validate the core AI coaching value with manual workflow",
+          "features": [
+            "Script/Rubric Manager",
+            "Manual Call Upload (audio or transcript)",
+            "AI Call Analysis (Whisper + GPT-4o)",
+            "Post-Call Coaching Email",
+            "Aggregate Summary",
+            "Simple History Page"
+          ],
+          "notIncluded": [
+            "Twilio Integration",
+            "RAG System"
+          ]
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$8,100",
+          "timeline": "3 weeks",
+          "description": "Week 3: Automated call ingestion for hands-off operation",
+          "features": [
+            "Everything in Starter",
+            "Twilio/GHL Webhook Integration",
+            "Automatic call ingestion",
+            "Contact metadata sync",
+            "Zero manual upload needed"
+          ],
+          "notIncluded": [
+            "RAG System"
+          ]
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "price": "$11,407",
+          "timeline": "4 weeks",
+          "description": "Week 4: Context-aware coaching powered by your training materials",
+          "features": [
+            "Everything in Pro",
+            "RAG System (vector search)",
+            "Multi-document knowledge base",
+            "Context-aware AI coaching",
+            "Training materials integration",
+            "Dynamic reference lookup"
+          ],
+          "notIncluded": []
+        }
+      },
+      "upgrade": {
+        "title": "Upgrade Path",
+        "starter": "Starter",
+        "proPlus": "Pro (+$4,050)",
+        "ragPlus": "Pro + RAG (+$3,307)",
+        "note": "Start with Starter to validate fast. Upgrade anytime — your codebase is built to evolve."
+      },
+      "ongoing": {
+        "title": "Ongoing Costs (Post-MVP)",
+        "perCallTitle": "Per Call Analysis Cost",
+        "perCallNote": "Based on average call duration: 12.5 minutes (range: 5-20 min)",
+        "th": {
+          "stack": "Stack",
+          "transcription": "Transcription",
+          "analysis": "Analysis",
+          "costCall": "Cost/Call"
+        },
+        "rows": {
+          "premium": {
+            "stack": "Premium",
+            "transcription": "Whisper ($0.075)",
+            "analysis": "GPT-4o ($0.10)",
+            "cost": "~$0.18"
+          },
+          "recommended": {
+            "stack": "Recommended",
+            "transcription": "Whisper ($0.075)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.09"
+          },
+          "budget": {
+            "stack": "Budget",
+            "transcription": "Deepgram ($0.054)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.07"
+          },
+          "ultraBudget": {
+            "stack": "Ultra Budget",
+            "transcription": "Groq Whisper ($0.023)",
+            "analysis": "Gemini 1.5 Flash ($0.01)",
+            "cost": "~$0.03"
+          }
+        },
+        "perCallFootnote": "*Based on 12.5-minute average call. Includes email delivery (~$0.001).",
+        "ragTitle": "RAG Knowledge Base Costs (Pro + RAG tier)",
+        "ragNote": "Audio files require transcription before indexing",
+        "ragTh": {
+          "operation": "Operation",
+          "model": "Model",
+          "cost": "Cost"
+        },
+        "ragRows": {
+          "audio": {
+            "operation": "Audio transcription (12.5 min)",
+            "model": "Whisper",
+            "cost": "~$0.075"
+          },
+          "embedding": {
+            "operation": "Text embedding",
+            "model": "OpenAI ada-002",
+            "cost": "~$0.0001"
+          },
+          "total": {
+            "operation": "Total per audio file indexed",
+            "model": "",
+            "cost": "~$0.08"
+          }
+        },
+        "index50": "Index 50 calls",
+        "index50Value": "~$4.00",
+        "index100": "Index 100 calls",
+        "index100Value": "~$8.00",
+        "ragFootnote": "*One-time cost per document. Text documents (PDFs, docs) only require embedding (~$0.0001 each).",
+        "perCall": "Per Call",
+        "perCallValue": "$0.03 - $0.18",
+        "perCallSubtitle": "Depends on stack choice",
+        "hosting": "Hosting",
+        "hostingValue": "~$20/mo",
+        "hostingSubtitle": "Vercel + Supabase",
+        "perDay": "100 calls/day",
+        "perDayValue": "$90 - $540/mo",
+        "perDaySubtitle": "Estimated API costs"
+      }
+    },
+    "Team": {
+      "badge": "Execution",
+      "title": "Team & Timeline",
+      "evolutionTitle": "Team Evolution",
+      "mvpPhase": "MVP Phase",
+      "aiBuilder": "AI Builder",
+      "aiBuilderSubtitle": "Solo execution with v0",
+      "aiBuilderDesc": "Rapid prototyping and validation using AI-assisted development tools (v0, Vercel, AI SDK)",
+      "postMvpScale": "Post-MVP Scale",
+      "fullStack": "Full Stack Developer",
+      "fullStackSubtitle": "Integration & scaling",
+      "seniorAiPm": "Senior AI PM",
+      "seniorAiPmSubtitle": "Product & strategy",
+      "stats": {
+        "weeks": "2-4 Weeks",
+        "weeksSubtitle": "Depending on tier",
+        "growth": "1 → 3",
+        "growthSubtitle": "Team growth",
+        "aiFirst": "AI-First",
+        "aiFirstSubtitle": "Modern stack"
+      },
+      "stackTitle": "MVP Tech Stack"
+    },
+    "Appendix": {
+      "label": "Appendix",
+      "title": "Detailed Deliverables",
+      "subtitle": "Comprehensive breakdown of what is included in each tier. This serves as the scope contract for the engagement.",
+      "tierLabel": "Tier {n}",
+      "deliveredStatus": "DELIVERED ✓",
+      "disclaimer": "Note:",
+      "disclaimerBody": "Any features, integrations, or modifications not explicitly listed above are considered out of scope and will require a separate agreement. Changes to scope during development may affect timeline and pricing.",
+      "tiers": {
+        "starter": {
+          "name": "Starter",
+          "timeline": "Week 1-2",
+          "deliverables": {
+            "rubric": {
+              "category": "Script & Rubric Manager",
+              "items": [
+                {
+                  "text": "Create/edit scoring rubric with criteria",
+                  "note": "Persisted in Supabase"
+                },
+                {
+                  "text": "Define pass/fail thresholds per criterion"
+                },
+                {
+                  "text": "Single active script at a time"
+                },
+                {
+                  "text": "Customize system prompt for AI analysis"
+                }
+              ]
+            },
+            "upload": {
+              "category": "Manual Call Upload",
+              "items": [
+                {
+                  "text": "Upload audio files (.mp3, .wav, .m4a)"
+                },
+                {
+                  "text": "Paste transcript text directly"
+                },
+                {
+                  "text": "Input sales person name and email manually"
+                },
+                {
+                  "text": "Upload progress indicator"
+                }
+              ]
+            },
+            "analysis": {
+              "category": "AI Call Analysis",
+              "items": [
+                {
+                  "text": "Whisper transcription (if audio)"
+                },
+                {
+                  "text": "GPT-4o analysis against rubric"
+                },
+                {
+                  "text": "Fetches criteria + system prompt from Supabase"
+                },
+                {
+                  "text": "Score per criterion (pass/fail)"
+                },
+                {
+                  "text": "Overall call score"
+                },
+                {
+                  "text": "Specific feedback per criterion"
+                },
+                {
+                  "text": "Full transcript display for admin review"
+                }
+              ]
+            },
+            "email": {
+              "category": "Post-Call Coaching Email",
+              "items": [
+                {
+                  "text": "Manual send coaching email via Resend"
+                },
+                {
+                  "text": "Personalized coaching feedback"
+                },
+                {
+                  "text": "Actionable improvement tips"
+                },
+                {
+                  "text": "Score summary included"
+                },
+                {
+                  "text": "Auto-save call to database after email send"
+                }
+              ]
+            },
+            "history": {
+              "category": "Simple History Page",
+              "items": [
+                {
+                  "text": "List of all processed calls"
+                },
+                {
+                  "text": "Search by sales person name or email"
+                },
+                {
+                  "text": "View individual call details with full analysis"
+                },
+                {
+                  "text": "Display transcript and scores"
+                }
+              ]
+            },
+            "summary": {
+              "category": "Aggregate Summary",
+              "items": [
+                {
+                  "text": "Total calls processed dashboard"
+                },
+                {
+                  "text": "Average score trend visualization (line chart)"
+                },
+                {
+                  "text": "Top improvement areas aggregated (bar chart)"
+                },
+                {
+                  "text": "Smart insights & performance summaries"
+                },
+                {
+                  "text": "Achievement badges & sales person recognition"
+                },
+                {
+                  "text": "Real-time analytics dashboard"
+                }
+              ]
+            }
+          }
+        },
+        "pro": {
+          "name": "Pro",
+          "timeline": "Week 3",
+          "includes": "Everything in Starter, plus:",
+          "deliverables": {
+            "twilio": {
+              "category": "Twilio Webhook Integration",
+              "items": [
+                "Webhook endpoint for call events",
+                "Automatic call ingestion when call ends",
+                "Twilio signature validation (security)",
+                "Recording URL extraction",
+                "Contact metadata parsing"
+              ]
+            },
+            "db": {
+              "category": "Database Enhancements",
+              "items": [
+                "Call queue for processing",
+                "Retry logic for failed processing",
+                "Webhook event logging",
+                "Idempotency handling (no duplicates)"
+              ]
+            },
+            "admin": {
+              "category": "Admin Notifications",
+              "items": [
+                "Error alerts for failed processing",
+                "Daily summary email (optional)",
+                "Processing status dashboard"
+              ]
+            }
+          }
+        },
+        "proRag": {
+          "name": "Pro + RAG",
+          "timeline": "Week 4",
+          "includes": "Everything in Pro, plus:",
+          "deliverables": {
+            "rag": {
+              "category": "RAG Knowledge Base",
+              "items": [
+                "Vector database setup (pgvector)",
+                "Document upload interface",
+                "Automatic chunking & embedding",
+                "Support for PDFs, docs, text files"
+              ]
+            },
+            "contextual": {
+              "category": "Contextual AI Analysis",
+              "items": [
+                "Semantic search across knowledge base",
+                "Context-aware coaching feedback",
+                "Reference specific training materials",
+                "Quote relevant best practices"
+              ]
+            },
+            "management": {
+              "category": "Knowledge Management",
+              "items": [
+                "View/delete uploaded documents",
+                "Re-index documents on demand",
+                "Document usage analytics",
+                "Version tracking for updates"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "Footer": {
+      "text": "Ask Moses MVP Proposal — January 2026"
+    }
+  },
+  "LP": {
+    "Nav": {
+      "homeAriaLabel": "AskMoses.AI home",
+      "logoAlt": "AskMoses.AI",
+      "primaryAriaLabel": "Primary",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "industries": "Industries",
+      "pricing": "Pricing",
+      "dashboard": "Dashboard",
+      "bookDemo": "Book My Free Demo",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu",
+      "menuTitle": "Menu",
+      "toggleTheme": "Toggle theme"
+    },
+    "Hero": {
+      "badge": "AI sales coaching, powered by data science",
+      "titlePart1": "Most businesses don't have a lead problem. They have a",
+      "titleHighlight": "conversion problem.",
+      "subtitle": "Your best sales rep has a secret. AskMoses finds it, analyzes it, and replicates it across your entire team automatically.",
+      "ctaPrimary": "Book My Free Demo",
+      "ctaSecondary": "See how it works",
+      "dashboardAlt": "AskMoses.AI dashboard showing team conversion metrics, close rate, monthly revenue, and conversion rate trend chart",
+      "statCloseRateLabel": "Avg Close Rate",
+      "statCloseRateValue": "+30%",
+      "statRevenueLabel": "Revenue Lift",
+      "statRevenueValue": "+12%"
+    },
+    "Problem": {
+      "eyebrow": "The Problem",
+      "title": "You're paying for leads. You're losing them on the phone.",
+      "body": "Your top closer wins deals your average rep blows. Same leads. Same script. Different outcomes. Without data, you're guessing why, and your marketing spend is paying the price.",
+      "cta": "See how AskMoses fixes this"
+    },
+    "HowItWorks": {
+      "eyebrow": "How it works",
+      "title": "From conversation to conversion in 4 steps.",
+      "subtitle": "No new tools to learn. No workflow disruption. Just better outcomes.",
+      "steps": {
+        "listen": {
+          "title": "Listen",
+          "description": "AskMoses ingests every inbound and outbound call across your entire team, automatically."
+        },
+        "identify": {
+          "title": "Identify",
+          "description": "Pinpoints the exact behaviors, phrases, and patterns that separate closers from coasters."
+        },
+        "evaluate": {
+          "title": "Evaluate",
+          "description": "Scores every call against your custom rubric with statistical correlation to real outcomes."
+        },
+        "scale": {
+          "title": "Scale",
+          "description": "Replicates what works across the team with targeted coaching, scripts, and rep dashboards."
+        }
+      }
+    },
+    "Benefits": {
+      "eyebrow": "Why AskMoses",
+      "title": "Built to turn conversations into closed deals.",
+      "differentiator": {
+        "badge": "Key differentiator",
+        "titlePart1": "Powered by",
+        "titleHighlight": "data science",
+        "body": "AskMoses doesn't just record calls, it applies data science to identify which specific behaviors statistically drive conversions in your business.",
+        "bullets": [
+          "No gut feelings.",
+          "No generic best practices.",
+          "Just math."
+        ],
+        "cta": "See it in your data"
+      },
+      "items": {
+        "data": {
+          "title": "Real data, not guesswork",
+          "description": "Every coaching decision backed by statistical analysis of hundreds of real calls."
+        },
+        "rubric": {
+          "title": "Custom rubric",
+          "description": "Not generic advice. Your sales methodology, optimized with AI."
+        },
+        "sellMore": {
+          "title": "Sell more without spending more",
+          "description": "Same marketing budget, same lead volume, better conversion rate."
+        }
+      }
+    },
+    "Industries": {
+      "eyebrow": "Industries",
+      "title": "Built for businesses that close on the phone.",
+      "subtitle": "If your customers call before they buy, AskMoses turns those calls into revenue.",
+      "items": {
+        "dogTrainers": "Dog Trainers",
+        "callCenters": "Call Centers",
+        "vet": "Veterinary Clinics",
+        "beauty": "Beauty Clinics & Medspas",
+        "homeServices": "Home Services",
+        "lawFirms": "Law Firms"
+      },
+      "cta": "Book My Free Demo"
+    },
+    "Pricing": {
+      "eyebrow": "Pricing",
+      "title": "Pick the plan that fits how you grow.",
+      "popularBadge": "Most popular",
+      "footnote": "* $2/call usage fee applies to all plans. Billed monthly based on actual call volume. No minimum commitment on calls.",
+      "plans": {
+        "solo": {
+          "name": "Solo",
+          "description": "AI sales coaching for independent operators ready to close more of the leads they already have.",
+          "price": "$500",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "AI call scoring on every inbound call",
+            "Custom rubric based on your training method",
+            "Rep performance dashboard",
+            "Objection tracking & pattern detection",
+            "Weekly coaching insights report",
+            "CRM integration"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "AskMoses plus full-service marketing. The complete revenue loop for service businesses ready to scale.",
+          "price": "$1,250",
+          "priceSuffix": "/month",
+          "priceNote": "+ $2 per call scored",
+          "features": [
+            "Everything in Solo",
+            "AI-generated ad copy from your call data",
+            "Google & Meta lead generation campaigns",
+            "Landing page design & optimization",
+            "Content creation & social media",
+            "Full CRM setup & automation",
+            "Closed-loop reporting: calls to revenue",
+            "Dedicated account strategist"
+          ],
+          "cta": "Book a discovery call"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "description": "For franchise groups, multi-location operators, and training networks that need portfolio-level intelligence.",
+          "price": "Custom pricing",
+          "customNote": "Volume call rates · Custom SLA",
+          "features": [
+            "Everything in Pro",
+            "Unlimited locations & users",
+            "Portfolio-level call analytics",
+            "Custom rubrics per location",
+            "Franchise performance benchmarking",
+            "Dedicated success manager",
+            "Priority support & onboarding"
+          ],
+          "cta": "Contact us →"
+        }
+      }
+    },
+    "Demo": {
+      "eyebrow": "Demo",
+      "titlePart1": "See AskMoses in",
+      "titleHighlight": "Action.",
+      "subtitle": "Book a free 20-minute demo. No commitment.",
+      "bullets": [
+        "Walkthrough on your real call data",
+        "See a sample rubric scored live",
+        "Custom ROI estimate for your team"
+      ],
+      "formTitle": "AskMoses Form"
+    },
+    "CtaBand": {
+      "title": "Ready to turn more calls into customers?",
+      "cta": "Book My Free Demo"
+    },
+    "Footer": {
+      "logoAlt": "AskMoses.AI",
+      "navAriaLabel": "Footer",
+      "howItWorks": "How it works",
+      "benefits": "Benefits",
+      "pricing": "Pricing",
+      "demo": "Demo",
+      "contact": "Contact",
+      "copyright": "© {year} AskMoses.AI. All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "MobileCta": {
+      "label": "Book My Free Demo"
+    }
+  }
+}

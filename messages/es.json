@@ -282,7 +282,9 @@
       "coachingNotesSubtitle": "Notas internas — no visibles para el vendedor.",
       "coachingNotesPlaceholder": "Añade tus notas de coaching aquí...",
       "coachingNotesFooter": "Las notas no se persisten en esta demo.",
-      "leadName": "Lead"
+      "leadName": "Lead",
+      "scriptUsed": "Script utilizado",
+      "legacyScriptHint": "legado"
     },
     "performanceTrend": {
       "title": "Tendencia de rendimiento",
@@ -369,7 +371,8 @@
       "team": "Equipo",
       "teamAvg": "Promedio del equipo",
       "closeRateLegend": "Tasa de cierre",
-      "weekLabel": "Semana {n}"
+      "weekLabel": "Semana {n}",
+      "callLabel": "Llamada {n}"
     },
     "rubricGapDetection": {
       "title": "Detección de gaps en el script",
@@ -453,12 +456,13 @@
     "rubricLegendTeam": "Prom. equipo",
     "deltaVsTeam": "{delta} vs equipo ({teamAvg})",
     "callsKpi": "Llamadas",
-    "winsKpi": "Cerradas",
+    "closedKpi": "Cerradas",
     "kpiWindow": "Ventana",
     "kpiWindowWeeks": "{n}sem",
     "kpiDeltaVsPrev": "vs ant.",
     "kpiTotalSuffix": "de {count} en total",
     "kpiAvgSuffix": "{value} histórico",
+    "closedBreakdown": "{partial} parciales · {notClosed} no cerradas · {noOutcome} sin resultado",
     "recentCalls": "Llamadas recientes",
     "noCallsYet": "Aún no hay llamadas.",
     "myCallsLabel": "Mis llamadas",
@@ -618,6 +622,7 @@
       "thProspect": "Prospecto",
       "thDate": "Fecha",
       "thScore": "Puntuación",
+      "thDuration": "Duración",
       "thResult": "Resultado",
       "forbidden": "No tienes acceso a esta llamada.",
       "thScript": "Script",
@@ -648,7 +653,7 @@
     "scripts": {
       "searchPlaceholder": "Buscar por nombre, descripción, sección o versión…",
       "thName": "Nombre",
-      "thRubric": "Rubric",
+      "thRubric": "Org",
       "thVersion": "Versión",
       "thSections": "Secciones",
       "thCreated": "Creado",
@@ -666,7 +671,8 @@
       "salesPeople": "Vendedores",
       "callsPerMonth": "Llamadas / mes",
       "avgScore": "Puntuación media",
-      "mrr": "MRR",
+      "minutes": "Minutos",
+      "cost": "Costo",
       "health": "Salud",
       "actions": "Acciones"
     },
@@ -700,10 +706,10 @@
       "filterPlan": "Plan",
       "filterPlanStatus": "Estado del plan",
       "filterScriptVersion": "Versión del script",
-      "filterMrr": "MRR (USD/mes)",
+      "filterMinutes": "Minutos / mes",
       "filterLastActivity": "Última actividad",
-      "mrrMin": "Mín.",
-      "mrrMax": "Máx.",
+      "minutesMin": "Mín.",
+      "minutesMax": "Máx.",
       "dateFrom": "De",
       "dateTo": "Hasta",
       "anyOption": "Todos",
@@ -900,6 +906,15 @@
       "genericError": "No se pudo actualizar la suscripción. Inténtalo de nuevo.",
       "back": "← Volver al panel",
       "goToGhl": "Integración GHL →"
+    },
+    "manualUploadToggle": {
+      "cardTitle": "Subida manual de llamadas",
+      "cardSubtitle": "Permite que Sales People y Admins de esta organización suban llamadas manualmente por /dashboard/upload. Los Owners nunca suben llamadas. Por defecto, las llamadas se ingresan automáticamente vía GHL/Pepper.",
+      "statusOn": "Activado — Sales People y Admins pueden subir llamadas desde la interfaz.",
+      "statusOff": "Desactivado — las llamadas solo llegan vía integración GHL/Pepper.",
+      "toggleAriaLabel": "Alternar subida manual",
+      "successDetail": "Configuración guardada.",
+      "genericError": "No se pudo actualizar la configuración. Inténtalo de nuevo."
     },
     "ghlIntegration": {
       "eyebrow": "Integración GHL / Pepper",
@@ -1692,6 +1707,7 @@
         "selectScriptPlaceholder": "Selecciona un script...",
         "scriptOptionFormat": "{name} - {description}",
         "salesScriptHint": "Requerido para analizar la llamada frente a tu proceso de ventas",
+        "activeScriptHint": "Las llamadas se analizan con el script activo de tu organización. Para cambiarlo, ve a Configuración → Scripts.",
         "noScriptsAvailable": "No hay scripts de ventas disponibles. Crea uno en Configuración primero.",
         "callOutcomeLabel": "Resultado de la llamada *",
         "callOutcomeHint": "¿Cómo terminó esta llamada?",

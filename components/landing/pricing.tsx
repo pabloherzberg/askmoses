@@ -1,15 +1,36 @@
-import { User, Rocket, Building2, Check, Sparkles } from "lucide-react"
+'use client'
+
+import { useState } from 'react'
+import { User, Rocket, Building2, Check, Sparkles, Loader2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 
 const planConfigs = [
-  { id: "solo", icon: User, popular: false, highlightFirst: false, hasCustomNote: false },
-  { id: "pro", icon: Rocket, popular: true, highlightFirst: true, hasCustomNote: false },
-  { id: "enterprise", icon: Building2, popular: false, highlightFirst: false, hasCustomNote: true },
+  { id: "solo", icon: User, popular: false, highlightFirst: false, hasCustomNote: false, checkoutPlan: "solo" },
+  { id: "pro", icon: Rocket, popular: true, highlightFirst: true, hasCustomNote: false, checkoutPlan: "pro" },
+  { id: "enterprise", icon: Building2, popular: false, highlightFirst: false, hasCustomNote: true, checkoutPlan: null },
 ] as const
 
 export function Pricing() {
   const t = useTranslations("LP.Pricing")
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleCheckout(plan: string) {
+    setLoading(plan)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const json = await res.json()
+      if (json.data?.url) {
+        window.location.href = json.data.url
+      }
+    } finally {
+      setLoading(null)
+    }
+  }
 
   return (
     <section id="pricing" className="border-y border-border bg-muted/40">
@@ -26,6 +47,7 @@ export function Pricing() {
             const Icon = plan.icon
             const isPopular = plan.popular
             const features = t.raw(`plans.${plan.id}.features`) as string[]
+            const isLoading = loading === plan.checkoutPlan
             return (
               <div
                 key={plan.id}
@@ -100,17 +122,32 @@ export function Pricing() {
                     })}
                   </ul>
 
-                  <a
-                    href="#demo"
-                    className={cn(
-                      "mt-8 inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-all",
-                      isPopular
-                        ? "btn-brand text-white"
-                        : "border border-border bg-card text-foreground hover:border-foreground/40",
-                    )}
-                  >
-                    {t(`plans.${plan.id}.cta`)}
-                  </a>
+                  {plan.checkoutPlan ? (
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => handleCheckout(plan.checkoutPlan!)}
+                      className={cn(
+                        "mt-8 inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-all disabled:opacity-70",
+                        isPopular
+                          ? "btn-brand text-white"
+                          : "border border-border bg-card text-foreground hover:border-foreground/40",
+                      )}
+                    >
+                      {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isLoading ? "Redirecionando..." : t(`plans.${plan.id}.cta`)}
+                    </button>
+                  ) : (
+                    <a
+                      href="#demo"
+                      className={cn(
+                        "mt-8 inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-all",
+                        "border border-border bg-card text-foreground hover:border-foreground/40",
+                      )}
+                    >
+                      {t(`plans.${plan.id}.cta`)}
+                    </a>
+                  )}
                 </div>
               </div>
             )

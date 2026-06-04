@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { secondsToCostValue } from "@/lib/billing";
 import type {
   Client,
   GlobalMetrics,
@@ -8,6 +9,10 @@ import type {
   Plan,
   PlanCode,
 } from "@/lib/types";
+
+// Limite default de linhas do PostgREST — paginamos leituras que somam em JS
+// (duration_seconds) pra evitar truncamento silencioso da contagem.
+const PG_MAX_ROWS = 1000;
 
 // Após migration 038 a tabela `clients` foi mesclada em `organizations`.
 // O tipo TS `Client` continua existindo como shape lida pelas telas Admin
@@ -35,9 +40,7 @@ interface DbOrgRow {
   plan_id: string | null;
   calls_this_month: number | null;
   avg_score: number | null;
-  mrr: number | null;
   health: HealthStatus;
-  trainers_count: number | null;
   subscription_status: "active" | "inactive" | "trial";
   created_at: string | null;
   plans: DbPlanNested | null;
@@ -63,6 +66,8 @@ function toClient(
   ownerAccepted: boolean,
   currentScript: OrgScriptInfo | null,
   lastCallAt: string | null,
+  totalSecondsThisMonth: number,
+  trainersCount: number,
 ): Client {
   if (!row.plans) {
     throw new Error(
@@ -77,9 +82,14 @@ function toClient(
     orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
     avgScore: row.avg_score ?? 0,
-    mrr: Number(row.mrr ?? 0),
+    // Segundos agregados dinamicamente das calls do mês (calls.duration_seconds),
+    // não de coluna materializada. Custo exato derivado em TS.
+    totalSecondsThisMonth,
+    totalCostThisMonth: secondsToCostValue(totalSecondsThisMonth),
     health: row.health,
-    trainersCount: row.trainers_count ?? 0,
+    // Contagem dinâmica de trainers aceitos (memberships), não a coluna
+    // materializada organizations.trainers_count.
+    trainersCount,
     ownerAccepted,
     subscriptionStatus: row.subscription_status,
     currentScript,
@@ -96,8 +106,8 @@ export interface ClientsQuery {
   planStatus?: "active" | "inactive" | "trial";
   scriptStatus?: OrgScriptStatus; // inclui 'none'
   scriptVersion?: string; // "1.2"
-  mrrMin?: number;
-  mrrMax?: number;
+  minutesMin?: number;
+  minutesMax?: number;
   lastActivityFrom?: string; // ISO
   lastActivityTo?: string;
   page: number;
@@ -117,7 +127,7 @@ interface RpcRow {
   org_name: string;
   org_created_at: string;
   org_subscription_status: "active" | "inactive" | "trial";
-  org_mrr: number | string;
+  org_total_seconds_this_month: number | string;
   org_health: HealthStatus;
   org_trainers_count: number;
   org_calls_this_month: number;
@@ -192,7 +202,8 @@ function rpcRowToClient(row: RpcRow): Client {
     orgId: row.org_id,
     callsThisMonth: row.org_calls_this_month,
     avgScore: row.org_avg_score,
-    mrr: Number(row.org_mrr ?? 0),
+    totalSecondsThisMonth: Number(row.org_total_seconds_this_month ?? 0),
+    totalCostThisMonth: secondsToCostValue(Number(row.org_total_seconds_this_month ?? 0)),
     health: row.org_health,
     trainersCount: row.org_trainers_count,
     ownerAccepted: row.owner_accepted,
@@ -208,50 +219,197 @@ function rpcRowToClient(row: RpcRow): Client {
 }
 
 /**
- * Listagem paginada + filtrada via RPC list_admin_organizations
- * (migration 048). Substitui o dbGetClients() antigo que carregava tudo.
+ * Listagem paginada + filtrada de organizations para o painel /admin.
+ * Usa queries diretas nas tabelas (organizations + plans + memberships +
+ * org_scripts + calls) porque a RPC list_admin_organizations pode não existir
+ * no schema cache do banco. Interface pública inalterada.
  *
- * Filtros opcionais — qualquer combinação. Pagination obrigatória
- * (default page=1, limit=25 no SQL, mas caller deve passar explicitamente).
- *
- * Retorna { rows, total, page, limit }. total é o count pré-paginação
- * (mesmo valor em todas as linhas da RPC; só pegamos da primeira).
+ * Billing por minuto: `totalSecondsThisMonth` é agregado de
+ * calls.duration_seconds do mês corrente (UTC); "Sales People" conta
+ * memberships trainer aceitas. Como minutos/script-status/version não são
+ * colunas filtráveis, esses filtros + a paginação rodam em JS sobre o conjunto
+ * já filtrado por coluna — OK na escala atual (dezenas de orgs); se crescer
+ * muito, mover a agregação pra SQL.
  */
 export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase.rpc("list_admin_organizations", {
-    p_search: query.search ?? null,
-    p_plan_code: query.planCode ?? null,
-    p_plan_status: query.planStatus ?? null,
-    p_script_status: query.scriptStatus ?? null,
-    p_script_version: query.scriptVersion ?? null,
-    p_mrr_min: query.mrrMin ?? null,
-    p_mrr_max: query.mrrMax ?? null,
-    p_last_activity_from: query.lastActivityFrom ?? null,
-    p_last_activity_to: query.lastActivityTo ?? null,
-    p_page: query.page,
-    p_limit: query.limit,
-  });
+  // ── Query base: organizations com plano associado (queries diretas, sem a
+  //    RPC list_admin_organizations — ver nota no JSDoc). ───────────────────
+  let q = supabase
+    .from("organizations")
+    .select(
+      `id, name, plan_id, calls_this_month, avg_score, health,
+       subscription_status, created_at,
+       plans(id, code, name, price_cents, timeline_weeks, has_rag,
+             has_twilio, has_manual_upload, max_sales_people, features)`,
+    )
+    .not("plan_id", "is", null); // exclui orgs sem plano (onboarding incompleto)
 
+  // Filtros de COLUNA (no SQL). planCode, scriptStatus/version e minutos são
+  // derivados → aplicados em JS depois de enriquecer (ver abaixo).
+  if (query.search) q = q.ilike("name", `%${query.search}%`);
+  if (query.planStatus) q = q.eq("subscription_status", query.planStatus);
+  if (query.lastActivityFrom) q = q.gte("created_at", query.lastActivityFrom);
+  if (query.lastActivityTo) q = q.lte("created_at", query.lastActivityTo);
+
+  const { data, error } = await q.order("created_at", { ascending: false });
   if (error) throw new Error(`dbListClients: ${error.message}`);
 
-  const rows = (data ?? []) as RpcRow[];
-  const total = rows.length > 0 ? Number(rows[0].total) : 0;
+  // as unknown as: o supabase-js infere a relação aninhada `plans` como array,
+  // mas é to-one (retorna objeto único em runtime — bate com DbOrgRow.plans).
+  let orgRows = (data ?? []) as unknown as DbOrgRow[];
+  // planCode em JS (evita join complexo no PostgREST) + ignora org sem plano.
+  if (query.planCode) orgRows = orgRows.filter((r) => r.plans?.code === query.planCode);
+  orgRows = orgRows.filter((r) => r.plans !== null);
 
-  const clients = rows.map(rpcRowToClient);
+  const orgIds = orgRows.map((r) => r.id);
+
+  // ── Enriquecimentos em batch (owner / trainers / script / calls) ─────────
+  let ownerAcceptedSet = new Set<string>();
+  const trainerCountByOrg = new Map<string, number>();
+  const scriptByOrg = new Map<string, OrgScriptInfo>();
+  const lastCallByOrg = new Map<string, string>();
+  const monthSecondsByOrg = new Map<string, number>();
+
+  if (orgIds.length > 0) {
+    const monthStart = monthStartIso();
+    const [memRes, trainerRes, scriptRes] = await Promise.all([
+      supabase
+        .from("memberships")
+        .select("org_id")
+        .in("org_id", orgIds)
+        .eq("role", "owner")
+        .eq("invite_status", "accepted"),
+      // Sales people = trainers aceitos (dinâmico, não organizations.trainers_count).
+      supabase
+        .from("memberships")
+        .select("org_id")
+        .in("org_id", orgIds)
+        .eq("role", "trainer")
+        .eq("invite_status", "accepted"),
+      supabase
+        .from("org_scripts")
+        .select(
+          `org_id, script_id, status, started_at,
+           scripts!script_id(name, rubric_version_snapshot, minor_version)`,
+        )
+        .in("org_id", orgIds)
+        .in("status", ["active", "deprecated", "pending"])
+        .is("ended_at", null)
+        .order("started_at", { ascending: false }),
+    ]);
+
+    ownerAcceptedSet = new Set(
+      (memRes.data ?? []).map((m: { org_id: string }) => m.org_id),
+    );
+
+    for (const m of (trainerRes.data ?? []) as { org_id: string }[]) {
+      trainerCountByOrg.set(m.org_id, (trainerCountByOrg.get(m.org_id) ?? 0) + 1);
+    }
+
+    type ScriptRow = {
+      org_id: string;
+      script_id: string;
+      status: OrgScriptStatus;
+      started_at: string | null;
+      scripts: { name: string; rubric_version_snapshot: number; minor_version: number } | null;
+    };
+    const seenScript = new Set<string>();
+    for (const row of (scriptRes.data ?? []) as unknown as ScriptRow[]) {
+      if (seenScript.has(row.org_id)) continue;
+      seenScript.add(row.org_id);
+      const s = row.scripts;
+      if (!s) continue;
+      scriptByOrg.set(row.org_id, {
+        scriptId: row.script_id,
+        scriptName: s.name,
+        version: `${s.rubric_version_snapshot ?? 1}.${s.minor_version ?? 0}`,
+        previousVersion: null,
+        status: row.status,
+        startedAt: row.started_at,
+      });
+    }
+
+    // Calls paginado (created_at desc) — alimenta lastCall (1ª ocorrência por
+    // org) + minutos do mês (soma de duration_seconds, compare lexicográfico
+    // ISO/UTC). Paginação evita truncar no limite do PostgREST. Em escala
+    // grande, migrar pra um SUM no banco (ver nota no JSDoc).
+    const seenCall = new Set<string>();
+    let callFrom = 0;
+    for (;;) {
+      const { data: callPage, error: callErr } = await supabase
+        .from("calls")
+        .select("org_id, created_at, duration_seconds")
+        .in("org_id", orgIds)
+        .order("created_at", { ascending: false })
+        .range(callFrom, callFrom + PG_MAX_ROWS - 1);
+      if (callErr) throw new Error(`dbListClients(calls): ${callErr.message}`);
+      const rows = (callPage ?? []) as {
+        org_id: string;
+        created_at: string;
+        duration_seconds: number | null;
+      }[];
+      for (const row of rows) {
+        if (!seenCall.has(row.org_id)) {
+          seenCall.add(row.org_id);
+          lastCallByOrg.set(row.org_id, row.created_at);
+        }
+        if (row.created_at >= monthStart) {
+          monthSecondsByOrg.set(
+            row.org_id,
+            (monthSecondsByOrg.get(row.org_id) ?? 0) + (row.duration_seconds ?? 0),
+          );
+        }
+      }
+      if (rows.length < PG_MAX_ROWS) break;
+      callFrom += PG_MAX_ROWS;
+    }
+  }
+
+  let clients = orgRows.map((r) =>
+    toClient(
+      r,
+      ownerAcceptedSet.has(r.id),
+      scriptByOrg.get(r.id) ?? null,
+      lastCallByOrg.get(r.id) ?? null,
+      monthSecondsByOrg.get(r.id) ?? 0,
+      trainerCountByOrg.get(r.id) ?? 0,
+    ),
+  );
+
+  // ── Filtros derivados (JS): script status/version + minutos ──────────────
+  if (query.scriptStatus) {
+    clients = clients.filter(
+      (c) => (c.currentScript?.status ?? "none") === query.scriptStatus,
+    );
+  }
+  if (query.scriptVersion) {
+    clients = clients.filter((c) => c.currentScript?.version === query.scriptVersion);
+  }
+  if (query.minutesMin !== undefined) {
+    clients = clients.filter((c) => c.totalSecondsThisMonth >= query.minutesMin! * 60);
+  }
+  if (query.minutesMax !== undefined) {
+    clients = clients.filter((c) => c.totalSecondsThisMonth <= query.minutesMax! * 60);
+  }
+
+  // ── Total + paginação (em JS — escala pequena nesta fase) ────────────────
+  const total = clients.length;
+  const fromIdx = (query.page - 1) * query.limit;
+  clients = clients.slice(fromIdx, fromIdx + query.limit);
 
   // ── Enriquecimento 1: nome do pending coexistindo com active (modelo 057) ──
   // Pra cada org com active/deprecated corrente, busca se há também um
   // pending aberto e qual o nome do script — alimenta o Info icon do row
   // do admin. Embed via scripts!script_id desambigua a FK (org_scripts tem
   // 2 refs pra scripts: script_id e previous_script_id).
-  const orgIds = clients.map((c) => c.id);
-  if (orgIds.length > 0) {
+  const clientOrgIds = clients.map((c) => c.id);
+  if (clientOrgIds.length > 0) {
     const { data: pendings, error: pendingErr } = await supabase
       .from("org_scripts")
       .select("org_id, scripts!script_id(name)")
-      .in("org_id", orgIds)
+      .in("org_id", clientOrgIds)
       .eq("status", "pending")
       .is("ended_at", null);
     if (pendingErr) {
@@ -328,6 +486,53 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   };
 }
 
+// ── Segundos consumidos no mês (cobrança por minuto) ────────────────────
+// Agregado dinâmico de calls.duration_seconds — NÃO há coluna materializada
+// (evita dessincronização e reset mensal manual). Retorna SEGUNDOS crus; a
+// conversão pra minutos/custo é feita pelo consumidor (sem arredondar minuto,
+// pra não divergir do que o /admin mostra via RPC). O recorte do mês usa UTC
+// pra casar com a RPC (date_trunc('month', now() AT TIME ZONE 'UTC')).
+
+type AdminSupabase = ReturnType<typeof createAdminClient>;
+
+/** Início do mês corrente em ISO/UTC — alinhado com o boundary da RPC. */
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
+}
+
+/**
+ * Segundos consumidos por uma org no mês corrente (soma de duration_seconds).
+ * Paginado pra não truncar no limite de linhas do PostgREST.
+ */
+async function dbGetOrgMonthSeconds(
+  supabase: AdminSupabase,
+  orgId: string,
+): Promise<number> {
+  const monthStart = monthStartIso();
+  let total = 0;
+  let from = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from("calls")
+      .select("duration_seconds")
+      .eq("org_id", orgId)
+      .gte("created_at", monthStart)
+      .range(from, from + PG_MAX_ROWS - 1);
+    if (error) throw new Error(`dbGetOrgMonthSeconds: ${error.message}`);
+    const rows = data ?? [];
+    total += rows.reduce(
+      (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
+      0,
+    );
+    if (rows.length < PG_MAX_ROWS) break;
+    from += PG_MAX_ROWS;
+  }
+  return total;
+}
+
 // ── Single-org fetch (mantido sem mudança no shape) ─────────────────────
 
 /**
@@ -340,11 +545,11 @@ export async function dbGetClientByOrgId(
 ): Promise<Client | null> {
   const supabase = createAdminClient();
 
-  const [orgRes, ownerRes] = await Promise.all([
+  const [orgRes, ownerRes, trainersRes] = await Promise.all([
     supabase
       .from("organizations")
       .select(
-        "id, name, plan_id, calls_this_month, avg_score, mrr, health, trainers_count, subscription_status, created_at, plans(*)",
+        "id, name, plan_id, calls_this_month, avg_score, health, subscription_status, created_at, plans(*)",
       )
       .eq("id", orgId)
       .maybeSingle(),
@@ -353,6 +558,13 @@ export async function dbGetClientByOrgId(
       .select("user_id", { count: "exact", head: true })
       .eq("org_id", orgId)
       .eq("role", "owner")
+      .eq("invite_status", "accepted"),
+    // Sales people = trainers aceitos (dinâmico, não organizations.trainers_count).
+    supabase
+      .from("memberships")
+      .select("user_id", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("role", "trainer")
       .eq("invite_status", "accepted"),
   ]);
 
@@ -365,10 +577,11 @@ export async function dbGetClientByOrgId(
   if (!(orgRes.data as { plan_id: string | null }).plan_id) return null;
 
   const ownerAccepted = (ownerRes.count ?? 0) > 0;
+  const trainersCount = trainersRes.count ?? 0;
 
-  // currentScript + lastCallAt: queries dedicadas pra esse único org
-  // (sem reuse da RPC que é otimizada pra batch).
-  const [scriptRes, lastCallRes] = await Promise.all([
+  // currentScript + lastCallAt + segundos do mês: queries dedicadas pra esse
+  // único org (sem reuse da RPC que é otimizada pra batch).
+  const [scriptRes, lastCallRes, monthSeconds] = await Promise.all([
     // Filtra explicitamente por effective_status IN ('active','deprecated')
     // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
     // com active (mig. 057): sem este filtro o order-by started_at pegaria a
@@ -391,6 +604,7 @@ export async function dbGetClientByOrgId(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    dbGetOrgMonthSeconds(supabase, orgId),
   ]);
 
   let currentScript: OrgScriptInfo | null = null;
@@ -421,41 +635,43 @@ export async function dbGetClientByOrgId(
     ownerAccepted,
     currentScript,
     lastCallAt,
+    monthSeconds,
+    trainersCount,
   );
 }
 
 // ── Métricas globais (não paginadas — agregação direta) ──────────────────
 
 /**
- * Métricas globais (MRR, total calls, avg score) agregadas pelas
+ * Métricas globais (total clients, total calls, avg score) agregadas pelas
  * organizations com plano ativo. Orgs sem plano ficam de fora pra não
- * contaminar o avg_score / MRR com zeros do estado de onboarding.
+ * contaminar o avg_score com zeros do estado de onboarding.
  *
- * Continua agregando em JS — pra ~milhares de orgs ainda é OK, mas se
- * passar de 10k vale migrar pra um SQL aggregation.
+ * Não inclui minutos/custo: os cards do /admin não exibem agregado global de
+ * consumo — minutos/custo são por-org (ver list_admin_organizations). Quando
+ * houver um card global de receita, agregar aqui via SQL SUM.
  */
 export async function dbGetGlobalMetrics(): Promise<GlobalMetrics> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("mrr, calls_this_month, avg_score")
+    .select("calls_this_month, avg_score")
     .not("plan_id", "is", null);
 
   if (error) throw new Error(`dbGetGlobalMetrics: ${error.message}`);
 
   const rows = (data ?? []) as Array<{
-    mrr: number;
     calls_this_month: number;
     avg_score: number;
   }>;
+
   return {
     totalClients: rows.length,
     totalCallsThisMonth: rows.reduce(
       (s, r) => s + (r.calls_this_month ?? 0),
       0,
     ),
-    totalMRR: rows.reduce((s, r) => s + Number(r.mrr ?? 0), 0),
     avgScore: rows.length
       ? Math.round(
           rows.reduce((s, r) => s + (r.avg_score ?? 0), 0) / rows.length,

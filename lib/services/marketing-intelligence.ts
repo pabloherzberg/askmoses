@@ -247,7 +247,11 @@ async function selectSample(orgId: string): Promise<SampleCall[]> {
   const closed = await dbGetCalls({ orgId, callOutcome: 'closed', limit: 200 })
   if (closed.length === 0) throw new NoClosedCallsError()
 
-  const picked = pickRandomSample(closed, MIN_SAMPLE, MAX_SAMPLE)
+  // Prioriza calls com maior overall_score — copy gerado a partir das melhores
+  // execuções tende a capturar os argumentos mais eficazes.
+  const sorted = [...closed].sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0))
+  const topPool = sorted.slice(0, MAX_SAMPLE * 2) // top 10 como pool
+  const picked = pickRandomSample(topPool, MIN_SAMPLE, MAX_SAMPLE)
 
   return picked.map((c) => {
     const sectionsRaw = Array.isArray(c.sections) ? c.sections : []

@@ -62,7 +62,11 @@ export interface Call {
   trainerId: string
   trainerName: string
   date: string
-  duration: string
+  // Duração da call em segundos (base da cobrança por minuto). NULL quando a
+  // duração não foi capturada — hoje só o webhook GHL a preenche; o fluxo de
+  // upload deixa NULL (decisão pendente Lucas/Victor). Display via
+  // lib/format.ts · formatDuration ("1m30s"); custo só nas views de Admin.
+  durationSeconds: number | null
   score: number
   result: CallResult
   prospect: string
@@ -76,12 +80,15 @@ export interface Call {
   transcript: string
   orgId?: string
   // Script usado na análise da call (migration 056). `scriptId` vem do DB;
-  // `scriptName`/`scriptIsActive` são resolvidos pela página /calls a partir
-  // da lista de scripts da org. Todos opcionais — calls sem script (rubric)
-  // ou consumidores que não enriquecem deixam undefined.
+  // `scriptName`/`scriptIsActive`/`scriptVersion` são resolvidos pela página
+  // /calls a partir da lista de scripts da org. Todos opcionais — calls sem
+  // script (rubric) ou consumidores que não enriquecem deixam undefined.
   scriptId?: string | null
   scriptName?: string | null
   scriptIsActive?: boolean
+  // Formato "v{rubric}.{minor}.{owner_edit}" (migration 063). Null quando o
+  // script é anterior ao versionamento ou não tem as 3 colunas populadas.
+  scriptVersion?: string | null
 }
 
 export interface TrainerScore {
@@ -157,7 +164,12 @@ export interface Client {
   orgId: string
   callsThisMonth: number
   avgScore: number
-  mrr: number
+  // Cobrança por minuto (substitui o MRR fixo). `totalSecondsThisMonth` é o
+  // consumo agregado da org no mês (soma de calls.duration_seconds, dinâmico);
+  // `totalCostThisMonth` é o valor exato em USD. Ambos só exibidos no painel
+  // Admin — Owner nunca vê custo.
+  totalSecondsThisMonth: number
+  totalCostThisMonth: number
   health: HealthStatus
   trainersCount: number
   // false = nenhuma membership com role='owner' e invite_status='accepted'
@@ -189,7 +201,6 @@ export interface TrendPoint {
 export interface GlobalMetrics {
   totalClients: number
   totalCallsThisMonth: number
-  totalMRR: number
   avgScore: number
 }
 

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { LogoSVG } from '@/components/shared/LogoSVG'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
@@ -11,6 +11,8 @@ import type { PlanOption } from './page'
 
 interface PlanPickerProps {
   plans: PlanOption[]
+  stripePlan?: string
+  stripeSessionId?: string
 }
 
 function formatPrice(cents: number, locale: string): string {
@@ -22,26 +24,27 @@ function formatPrice(cents: number, locale: string): string {
   }).format(cents / 100)
 }
 
-// Plano destaque visual — Pro é o "popular" no UX padrão SaaS.
 const RECOMMENDED: PlanCode = 'pro'
 
-export function PlanPicker({ plans }: PlanPickerProps) {
+export function PlanPicker({ plans, stripePlan, stripeSessionId }: PlanPickerProps) {
   const t = useTranslations('OnboardingPlan')
   const locale = useLocale()
 
   const [selected, setSelected] = useState<PlanCode | null>(null)
   const [submitting, setSubmitting] = useState<PlanCode | null>(null)
   const [error, setError] = useState('')
+  // Quando vem do Stripe, auto-ativa assim que o componente monta.
+  const [autoActivating, setAutoActivating] = useState(Boolean(stripePlan && stripeSessionId))
 
-  const handleSelect = async (code: PlanCode) => {
-    setSelected(code)
-    setSubmitting(code)
+  const activatePlan = async (planCode: PlanCode) => {
+    setSelected(planCode)
+    setSubmitting(planCode)
     setError('')
     try {
       const res = await fetch('/api/onboarding/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planCode: code }),
+        body: JSON.stringify({ planCode }),
       })
       const json = (await res.json()) as {
         data: { success: boolean; checkoutUrl: string | null } | null
@@ -54,30 +57,79 @@ export function PlanPicker({ plans }: PlanPickerProps) {
           return
         }
         setError(json.error?.message ?? t('genericError'))
+        setAutoActivating(false)
         return
       }
 
-      // Contrato forward-compatible com Stripe: se vier checkoutUrl, redirect
-      // pra checkout externo. Stub atual sempre retorna null e ativa direto.
       if (json.data.checkoutUrl) {
         window.location.href = json.data.checkoutUrl
         return
       }
 
-      // Full reload pra middleware re-resolver subscriptionStatus='active'.
       window.location.href = `/${locale}/dashboard`
     } catch {
       setError(t('genericError'))
+      setAutoActivating(false)
     } finally {
       setSubmitting(null)
     }
   }
+
+  // Auto-ativa quando vier de checkout Stripe:
+  // 1. Verifica a session_id na API do Stripe pra confirmar pagamento e obter planCode
+  // 2. Ativa o planCode no banco via /api/onboarding/subscribe
+  useEffect(() => {
+    if (!stripePlan || !stripeSessionId) return
+
+    async function autoActivate() {
+      try {
+        const res = await fetch(
+          `/api/checkout/verify?session_id=${encodeURIComponent(stripeSessionId!)}`,
+        )
+        const json = (await res.json()) as {
+          data: { planCode: string } | null
+          error: { message: string } | null
+        }
+
+        if (!res.ok || !json.data?.planCode) {
+          // Verificação falhou — exibe o seletor normal
+          setError(json.error?.message ?? 'Não foi possível verificar o pagamento.')
+          setAutoActivating(false)
+          return
+        }
+
+        await activatePlan(json.data.planCode as PlanCode)
+      } catch {
+        setError('Não foi possível verificar o pagamento. Selecione seu plano abaixo.')
+        setAutoActivating(false)
+      }
+    }
+
+    autoActivate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (plans.length === 0) {
     return (
       <div className="w-full max-w-md px-6 text-center">
         <LogoSVG className="h-14 w-auto mx-auto mb-8" />
         <p className="text-sm" style={{ color: 'var(--am-red)' }}>{t('noPlansError')}</p>
+      </div>
+    )
+  }
+
+  // Tela de ativação automática (vindo do Stripe)
+  if (autoActivating) {
+    return (
+      <div className="w-full max-w-md px-6 text-center">
+        <LogoSVG className="h-14 w-auto mx-auto mb-8" />
+        <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" style={{ color: 'var(--am-accent)' }} />
+        <p className="text-sm font-medium" style={{ color: 'var(--am-text)' }}>
+          Ativando seu plano...
+        </p>
+        <p className="text-xs mt-2" style={{ color: 'var(--am-muted)' }}>
+          Confirmando pagamento com o Stripe
+        </p>
       </div>
     )
   }
@@ -173,7 +225,7 @@ export function PlanPicker({ plans }: PlanPickerProps) {
               <button
                 type="button"
                 disabled={isLoading || submitting !== null}
-                onClick={() => handleSelect(plan.code)}
+                onClick={() => activatePlan(plan.code)}
                 className="w-full py-2.5 rounded-lg text-sm font-medium transition-opacity cursor-pointer hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
                 style={{
                   background: isRecommended ? 'var(--accent)' : 'var(--am-bg3)',

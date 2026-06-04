@@ -27,19 +27,19 @@ interface PlanRow {
 
 export default async function OnboardingPlanPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { locale } = await params
+  const sp = await searchParams
 
   const ctx = await getActiveOrgContext()
   if (!ctx) redirect(`/${locale}/login`)
 
-  // Middleware já garante role='owner'. Defesa-em-profundidade caso algo passe.
   if (ctx.role !== 'owner') redirect(`/${locale}/login`)
 
-  // Owner com sub já ativa: não cabe re-passar pelo onboarding de plano.
-  // Página seria visível se ele digitasse a URL direto — redirect pro home.
   if (ctx.subscriptionStatus === 'active') redirect(`/${locale}/dashboard`)
 
   const admin = createAdminClient()
@@ -49,8 +49,6 @@ export default async function OnboardingPlanPage({
     .order('price_cents', { ascending: true })
 
   if (error || !data) {
-    // Sem plans no DB = setup incompleto. Não temos UI pra exibir nada — deixa
-    // a página em estado vazio com mensagem; PlanPicker lida com lista vazia.
     console.error('[onboarding/plan] Não foi possível carregar os planos', error)
   }
 
@@ -65,5 +63,15 @@ export default async function OnboardingPlanPage({
     features: Array.isArray(p.features) ? (p.features as string[]) : [],
   }))
 
-  return <PlanPicker plans={plans} />
+  // Params do Stripe vindos do fluxo: checkout → /success → /signup → email → aqui
+  const stripePlan = typeof sp.plan === 'string' ? sp.plan : undefined
+  const stripeSessionId = typeof sp.session_id === 'string' ? sp.session_id : undefined
+
+  return (
+    <PlanPicker
+      plans={plans}
+      stripePlan={stripePlan}
+      stripeSessionId={stripeSessionId}
+    />
+  )
 }
