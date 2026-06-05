@@ -26,7 +26,8 @@ import {
   LEAD_SOURCES,
   type CallOutcome,
 } from "@/lib/constants";
-import type { LeadSource } from "@/lib/types";
+import type { IntentScore, LeadSource } from "@/lib/types";
+import { resolveIntent } from "@/lib/utils/intent";
 import {
   LLM_TEMPERATURE_PRIMARY,
   LLM_TEMPERATURE_RETRY,
@@ -79,6 +80,7 @@ export interface CallCostBreakdown {
 export interface AnalyzeResult {
   overallScore: number;
   detectedOutcome: CallOutcome;
+  intent: IntentScore;
   summary: string;
   strengths: string[];
   improvements: string[];
@@ -91,10 +93,16 @@ export interface AnalyzeResult {
 // ── Parsed-shape validator (TC-02, TC-03, TC-04) ────────────────────────────
 interface ParsedAnalysis {
   detectedOutcome: string;
+  intent?: number;
   summary: string;
   strengths: string[];
   improvements: string[];
-  sections: Array<{ name: string; score: number; feedback: string; reasoning?: string }>;
+  sections: Array<{
+    name: string;
+    score: number;
+    feedback: string;
+    reasoning?: string;
+  }>;
 }
 
 function tryParseJson(raw: string): unknown | null {
@@ -187,10 +195,20 @@ function validateAnalysis(
   return {
     ok: true,
     data: {
-      detectedOutcome: typeof obj.detectedOutcome === "string" ? obj.detectedOutcome : "no_outcome",
+      detectedOutcome:
+        typeof obj.detectedOutcome === "string"
+          ? obj.detectedOutcome
+          : "no_outcome",
+      intent: Number.isFinite(Number(obj.intent))
+        ? Number(obj.intent)
+        : undefined,
       summary: typeof obj.summary === "string" ? obj.summary : "",
-      strengths: Array.isArray(obj.strengths) ? (obj.strengths as string[]).map(stringifyItem) : [],
-      improvements: Array.isArray(obj.improvements) ? (obj.improvements as string[]).map(stringifyItem) : [],
+      strengths: Array.isArray(obj.strengths)
+        ? (obj.strengths as string[]).map(stringifyItem)
+        : [],
+      improvements: Array.isArray(obj.improvements)
+        ? (obj.improvements as string[]).map(stringifyItem)
+        : [],
       sections,
     },
   };
@@ -272,7 +290,10 @@ export async function POST(request: NextRequest) {
     const { transcript, clientName, trainerName, trainerEmail } = body;
 
     if (!transcript) {
-      return Response.json({ error: "transcript is required" }, { status: 400 });
+      return Response.json(
+        { error: "transcript is required" },
+        { status: 400 },
+      );
     }
 
     // Validate body.trainerId belongs to the caller's org. Without this,
@@ -283,8 +304,7 @@ export async function POST(request: NextRequest) {
       if (!trainer || trainer.orgId !== orgId) return forbidden();
     }
 
-    const sessionTrainerId =
-      body.trainerId ?? (await getTrainerDbId());
+    const sessionTrainerId = body.trainerId ?? (await getTrainerDbId());
 
     // ── 1. Resolve script ATIVO + rubric ──────────────────────────────────
     //
@@ -327,7 +347,8 @@ export async function POST(request: NextRequest) {
       });
       return Response.json(
         {
-          error: "Não foi possível analisar a call: nenhum script ativo encontrado para esta organização",
+          error:
+            "Não foi possível analisar a call: nenhum script ativo encontrado para esta organização",
           details:
             "Entre em contato com o suporte para regularizar o script da sua organização antes de tentar novamente.",
         },
@@ -335,7 +356,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let rubricData: Awaited<ReturnType<typeof resolveRubricForOrg>> | null = null;
+    let rubricData: Awaited<ReturnType<typeof resolveRubricForOrg>> | null =
+      null;
     try {
       // trusted=true: link via org_scripts.status='active' já é validação
       // de tenant — permite rubric template (org_id=NULL).
@@ -401,7 +423,8 @@ export async function POST(request: NextRequest) {
           name: c.name,
           description: c.description ?? "",
           weight:
-            typeof (c as unknown as Record<string, unknown>)["weight"] === "number"
+            typeof (c as unknown as Record<string, unknown>)["weight"] ===
+            "number"
               ? ((c as unknown as Record<string, unknown>)["weight"] as number)
               : undefined,
           critical: Boolean(
@@ -494,7 +517,11 @@ export async function POST(request: NextRequest) {
     }
 
     const modelUsed = resolveOpenAIModelId(llmModel);
-    const costUsd = computeCostUsd(modelUsed, totalInputTokens, totalOutputTokens);
+    const costUsd = computeCostUsd(
+      modelUsed,
+      totalInputTokens,
+      totalOutputTokens,
+    );
 
     if (!validation.ok || !validation.data) {
       // Log full context server-side (raw LLM output, validation reason),
@@ -519,9 +546,12 @@ export async function POST(request: NextRequest) {
     //       outcome (badge) é metadado independente.
     const scores = parsed.sections.map((s) => s.score);
     const avg =
-      scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
+      scores.length > 0
+        ? scores.reduce((sum, s) => sum + s, 0) / scores.length
+        : 0;
     const overallScore = Math.round(avg);
     const detectedOutcome = coerceOutcome(parsed.detectedOutcome);
+    const intent = resolveIntent(parsed.intent, detectedOutcome);
 
     // ── 5. Assemble sections + criteriaScores (back-compat) ──────────────
     // criteriaScores keys back to the original scored item's id when
@@ -552,12 +582,14 @@ export async function POST(request: NextRequest) {
     });
 
     // ── 6. Persist call ──────────────────────────────────────────────────
-    const validSourceValues = new Set<string>(LEAD_SOURCES.map((s) => s.value))
-    const rawLeadName = body.lead_name?.trim() || null
-    const rawLeadSource = body.lead_source?.trim().toLowerCase() || null
+    const validSourceValues = new Set<string>(LEAD_SOURCES.map((s) => s.value));
+    const rawLeadName = body.lead_name?.trim() || null;
+    const rawLeadSource = body.lead_source?.trim().toLowerCase() || null;
     const normalisedLeadSource: LeadSource | null = rawLeadSource
-      ? (validSourceValues.has(rawLeadSource) ? (rawLeadSource as LeadSource) : 'other')
-      : null
+      ? validSourceValues.has(rawLeadSource)
+        ? (rawLeadSource as LeadSource)
+        : "other"
+      : null;
 
     let savedCall: { id?: string } = {};
     try {
@@ -579,6 +611,7 @@ export async function POST(request: NextRequest) {
         callOutcome: detectedOutcome,
         clientName: clientName ?? undefined,
         detectedOutcome,
+        intent,
         modelUsed,
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
@@ -613,6 +646,7 @@ export async function POST(request: NextRequest) {
       id: savedCall.id,
       overallScore,
       detectedOutcome,
+      intent,
       summary: parsed.summary,
       strengths: parsed.strengths,
       improvements: parsed.improvements,
@@ -688,11 +722,31 @@ const DEFAULT_SECTIONS: Array<{
   description: string;
   critical: boolean;
 }> = [
-  { name: "Discovery",          description: "Identifying the prospect's needs and problems",     critical: true  },
-  { name: "Problem Agitation",  description: "Deepening urgency around identified problems",      critical: true  },
-  { name: "Offer Presentation", description: "Clarity and fit of the service presentation",       critical: false },
-  { name: "Objection Handling", description: "Quality of objection responses",                    critical: false },
-  { name: "Close & Next Steps", description: "Effectiveness of closing or defining next steps",   critical: false },
+  {
+    name: "Discovery",
+    description: "Identifying the prospect's needs and problems",
+    critical: true,
+  },
+  {
+    name: "Problem Agitation",
+    description: "Deepening urgency around identified problems",
+    critical: true,
+  },
+  {
+    name: "Offer Presentation",
+    description: "Clarity and fit of the service presentation",
+    critical: false,
+  },
+  {
+    name: "Objection Handling",
+    description: "Quality of objection responses",
+    critical: false,
+  },
+  {
+    name: "Close & Next Steps",
+    description: "Effectiveness of closing or defining next steps",
+    critical: false,
+  },
 ];
 
 /** Item that the LLM scores in the analyze output. Comes from script.sections
@@ -721,11 +775,17 @@ interface CotPromptInput {
 
 function buildCotPrompt(input: CotPromptInput): string {
   const scoredList = input.scoredItems
-    .map((s, i) => `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`)
+    .map(
+      (s, i) =>
+        `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`,
+    )
     .join("\n");
 
   const frameworkList = input.framework
-    .map((s, i) => `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`)
+    .map(
+      (s, i) =>
+        `${i + 1}. **${s.name}**${s.description ? ` — ${s.description}` : ""}`,
+    )
     .join("\n");
 
   const allowedJson = JSON.stringify(input.scoredItems.map((s) => s.name));
@@ -737,15 +797,16 @@ function buildCotPrompt(input: CotPromptInput): string {
   //
   // Transcript is wrapped in delimiters and marked as data — standard
   // mitigation against prompt injection from inside the call content.
-  const frameworkBlock = input.framework.length > 0
-    ? `## Evaluation Framework (rubric — DO NOT score these directly)
+  const frameworkBlock =
+    input.framework.length > 0
+      ? `## Evaluation Framework (rubric — DO NOT score these directly)
 These are the universal sales-skill criteria of the org. Use them as your
 mental model for what "excellent execution" looks like, but do NOT include
 them in the JSON output.
 ${frameworkList}
 
 `
-    : "";
+      : "";
 
   return `${input.systemPrompt}
 
@@ -766,6 +827,16 @@ You MUST evaluate every section listed above. You MUST NOT invent, rename, merge
 - 0–39 — Poor or absent. Barely attempted.
 
 Default a reasonable attempt to ~60 and adjust based on transcript evidence. Score each section on its own merits — do not let the call's outcome (closed/not closed) bias individual section scores.
+
+## Buying intent (1–5, integer)
+Separately from the section scores, rate the PROSPECT's buying intent — how
+ready they were to move forward — based on what they said and did in the call:
+- 5 — Explicit buying intent: agreed to buy / next concrete step locked in.
+- 4 — Strong interest; the close was within reach.
+- 3 — Moderate: engaged but unsure or non-committal.
+- 2 — Low: weak fit, stalling, or likely not the decision-maker.
+- 1 — No buying intent at all.
+If the deal closed, intent is 5.
 
 ## Chain-of-thought (do this internally for each section, then write the final JSON)
 For each section in "Sections to Score", in order:

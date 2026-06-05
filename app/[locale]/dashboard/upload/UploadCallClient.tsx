@@ -71,6 +71,9 @@ interface AnalysisResult {
   overallScore: number;
   sections: SectionResult[];
   detectedOutcome?: CallOutcome;
+  // Buying intent 1–5 calculado pela IA no /api/analyze. Encaminhado pro
+  // /api/send-coaching, que aplica a regra final (closed → 5).
+  intent?: number;
   summary: string;
   strengths: string[];
   improvements: string[];
@@ -388,6 +391,7 @@ export default function UploadCallClient() {
           improvements: analysisResult.improvements,
           transcript: analysisResult.transcript,
           detectedOutcome: analysisResult.detectedOutcome,
+          intent: analysisResult.intent,
           locale,
         }),
       });
@@ -410,14 +414,17 @@ export default function UploadCallClient() {
     setAnalysisResult(null);
     setExpandedSections(new Set());
     setError(null);
-    setFormData({
-      trainerId: "",
-      trainerName: "",
-      trainerEmail: "",
+    // Preserva a identidade do trainer selecionado e limpa só o que é específico
+    // da call (cliente, áudio, transcript). Pro trainer-role o trainerId/Name/
+    // Email só carrega no mount via init() (não re-roda) — zerá-los deixava o
+    // form sem trainer e travava o isFormValid; pro owner/admin evita ter que
+    // re-selecionar o mesmo trainer a cada "Recomeçar"/"Enviar outra".
+    setFormData((prev) => ({
+      ...prev,
       clientName: "",
       audioFile: null,
       transcript: "",
-    });
+    }));
   };
 
   if (step === "processing") {
@@ -701,39 +708,44 @@ export default function UploadCallClient() {
           </CardContent>
         </Card>
 
-        {/* Send Email Action */}
-        <Card className="border-primary/50 bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
-              <div>
-                <h3 className="font-semibold">{t("results.readyToSend")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("results.readyToSendSubtitle", {
-                    email: formData.trainerEmail,
-                  })}
-                </p>
+        {/* Send Email Action — coaching é ação do owner. O trainer analisa a
+            própria call mas não envia recomendação pra si mesmo, então o CTA
+            fica oculto pra ele (o /api/send-coaching já bloqueia no backend via
+            requireOwnerWrite — aqui é só pra não confundir a UI). */}
+        {!isTrainer && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left">
+                <div>
+                  <h3 className="font-semibold">{t("results.readyToSend")}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t("results.readyToSendSubtitle", {
+                      email: formData.trainerEmail,
+                    })}
+                  </p>
+                </div>
+                <Button
+                  size="lg"
+                  className="mt-4 sm:mt-0"
+                  onClick={handleSendEmail}
+                  disabled={sendingEmail}
+                >
+                  {sendingEmail ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("results.sending")}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      {t("results.sendCoachingEmail")}
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                size="lg"
-                className="mt-4 sm:mt-0"
-                onClick={handleSendEmail}
-                disabled={sendingEmail}
-              >
-                {sendingEmail ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("results.sending")}
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    {t("results.sendCoachingEmail")}
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
