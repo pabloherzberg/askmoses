@@ -623,6 +623,7 @@
       "thDate": "Fecha",
       "thScore": "Puntuación",
       "thDuration": "Duración",
+      "thIntent": "Intención",
       "thResult": "Resultado",
       "forbidden": "No tienes acceso a esta llamada.",
       "thScript": "Script",
