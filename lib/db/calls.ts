@@ -36,6 +36,10 @@ export interface DbCall {
   // porque `select('*')` em bancos sem a migration aplicada não retorna a
   // coluna; o mapper trata `undefined` como `null`.
   script_id?: string | null
+  // Buying intent 1–5 detectado pela IA — added in migration 073. Opcional
+  // pelo mesmo motivo de script_id (bancos sem a migration não retornam a
+  // coluna); o mapper deriva um fallback por resultado quando ausente/null.
+  intent?: number | null
 }
 
 export interface CreateCallInput {
@@ -61,6 +65,9 @@ export interface CreateCallInput {
   sections?: Record<string, unknown> | unknown[]
   leadName?: string | null
   leadSource?: string | null
+  // Buying intent 1–5 (analyze). Quando omitido, persiste null e o mapper
+  // deriva o fallback por resultado na leitura.
+  intent?: number | null
 }
 
 export interface UpdateCallInput {
@@ -169,6 +176,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       email_sent: false,
       lead_name: input.leadName ?? null,
       lead_source: input.leadSource ?? null,
+      intent: input.intent ?? null,
     })
     .select()
     .single()

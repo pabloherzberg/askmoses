@@ -203,6 +203,7 @@ export function buildMockAnalysis(): AnalyzeResult {
   return {
     overallScore: 3.9,
     detectedOutcome: 'partial',
+    intent: 3,
     summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The sales person showed solid product knowledge but needs to deepen problem agitation.',
     strengths: [
       'Discovery correctly identified the real pain of the prospect',
