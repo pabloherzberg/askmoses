@@ -1363,10 +1363,13 @@ ALTER TABLE public.calls
   ALTER COLUMN rubric_id DROP NOT NULL;
 
 
-CREATE TABLE IF NOT EXISTS public.owners (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID, company TEXT, plan TEXT, created_at TIMESTAMPTZ DEFAULT now()
-);
+-- NOTA: aqui existia uma definição duplicada e QUEBRADA de public.owners
+-- (user_id UUID sem REFERENCES users). Por rodar antes da definição correta
+-- (bloco 021_fix_schema_gaps, com a FK) e por ambas serem CREATE TABLE IF NOT
+-- EXISTS, ela fazia a tabela nascer sem a FK owners.user_id -> users.id,
+-- quebrando o embed users!inner em GET /api/organizations (500). Removida.
+-- Ver scripts/072_fix_owners_user_id_fk.sql para o conserto em bancos já
+-- provisionados. A definição canônica de owners está mais abaixo (bloco 021).
 
 
 -- BEGIN: 020_users_invite_fields.sql
