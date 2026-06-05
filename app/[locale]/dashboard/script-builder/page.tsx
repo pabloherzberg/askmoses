@@ -29,10 +29,16 @@ import {
   CheckCircle,
   Save,
   Lightbulb,
-  EyeOff,
-  Eye,
-  Plus,
 } from "lucide-react"
+
+// F4 — as 5 seções fixas, sempre nesta ordem, imutáveis
+const FIXED_SECTIONS = [
+  { name: "Discovery" },
+  { name: "Problem Agitation" },
+  { name: "Offer Presentation" },
+  { name: "Objection Handling" },
+  { name: "Close & Next Steps" },
+]
 
 interface AudioFile {
   file: File
@@ -53,14 +59,19 @@ interface GeneratedScript {
     critical: boolean
   }>
   full_script: string
-  criteria: Array<{
-    name: string
-    description: string
-  }>
   explanation: string
 }
 
 type BuilderStep = "input" | "processing" | "preview" | "confirm"
+
+// F4 — seções do preview/confirm: nome fixo + conteúdo preenchido pela IA
+type FixedSection = {
+  name: string
+  instructions: string
+  tips: string
+  weight: number
+  critical: boolean
+}
 
 export default function ScriptBuilderPage() {
   const router = useRouter()
@@ -84,17 +95,11 @@ export default function ScriptBuilderPage() {
   const [editedDescription, setEditedDescription] = useState("")
   const [saving, setSaving] = useState(false)
 
-  // Preview step — editable sections/criteria with enabled toggle
-  const [previewSections, setPreviewSections] = useState<Array<{ name: string; instructions: string; tips: string; weight: number; critical: boolean; enabled: boolean }>>([])
-  const [previewCriteria, setPreviewCriteria] = useState<Array<{ name: string; description: string; enabled: boolean }>>([])
-  const [newSection, setNewSection] = useState({ name: "", instructions: "", tips: "", weight: 0, critical: false })
-  const [newCriterion, setNewCriterion] = useState({ name: "", description: "" })
-  const [showAddSection, setShowAddSection] = useState(false)
-  const [showAddCriterion, setShowAddCriterion] = useState(false)
+  // F2/F3 — preview: só seções fixas, sem criteria, sem enabled
+  const [previewSections, setPreviewSections] = useState<FixedSection[]>([])
 
   // Confirm step state
-  const [confirmSections, setConfirmSections] = useState<Array<{ name: string; instructions: string; tips: string; weight: number; critical: boolean }>>([])
-  const [confirmCriteria, setConfirmCriteria] = useState<Array<{ name: string; description: string }>>([])
+  const [confirmSections, setConfirmSections] = useState<FixedSection[]>([])
   const [confirmLlmModel, setConfirmLlmModel] = useState("openai/gpt-4o-mini")
   const [confirmSystemPrompt, setConfirmSystemPrompt] = useState("")
   const [rubrics, setRubrics] = useState<Array<{ id: string; name: string }>>([])
@@ -132,7 +137,6 @@ export default function ScriptBuilderPage() {
     for (let i = 0; i < audioFiles.length; i++) {
       const audioFile = audioFiles[i]
 
-      // Update status to uploading
       setAudioFiles((prev) =>
         prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
       )
@@ -140,14 +144,12 @@ export default function ScriptBuilderPage() {
       setProgress(((i * 2) / (audioFiles.length * 3)) * 100)
 
       try {
-        // Sanitize filename (same pattern as upload call)
         const sanitizedName = audioFile.file.name
           .replace(/[^a-zA-Z0-9.-]/g, "_")
           .replace(/\.\.+/g, ".")
         const timestamp = Date.now()
         const blobName = `${timestamp}_${sanitizedName}`
 
-        // Upload directly from client to Vercel Blob (no 4MB limit)
         const blob = await upload(blobName, audioFile.file, {
           access: "public",
           handleUploadUrl: "/api/blob-token",
@@ -155,14 +157,12 @@ export default function ScriptBuilderPage() {
 
         const blobUrl = blob.url
 
-        // Update status to transcribing
         setAudioFiles((prev) =>
           prev.map((f, idx) => (idx === i ? { ...f, status: "transcribing" } : f))
         )
         setProcessingStatus(t("processing.transcribingAudio", { current: i + 1, total: audioFiles.length }))
         setProgress(((i * 2 + 1) / (audioFiles.length * 3)) * 100)
 
-        // Transcribe using same pattern as upload call
         const transcribeRes = await fetch("/api/transcribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,7 +176,6 @@ export default function ScriptBuilderPage() {
         const { transcript } = await transcribeRes.json()
         transcripts.push(transcript)
 
-        // Update status to done
         setAudioFiles((prev) =>
           prev.map((f, idx) =>
             idx === i ? { ...f, status: "done", transcript } : f
@@ -204,12 +203,10 @@ export default function ScriptBuilderPage() {
     try {
       let transcripts: string[] = []
 
-      // Process audio files if any
       if (audioFiles.length > 0) {
         transcripts = await processAudioFiles()
       }
 
-      // Generate script
       setProcessingStatus(t("processing.analyzing"))
       setProgress(80)
 
@@ -231,12 +228,27 @@ export default function ScriptBuilderPage() {
       setGeneratedScript(script)
       setEditedName(script.name)
       setEditedDescription(script.description)
-      setPreviewSections(script.sections.map((s: GeneratedScript["sections"][number]) => ({ ...s, enabled: true })))
-      setPreviewCriteria(script.criteria.map((c: GeneratedScript["criteria"][number]) => ({ ...c, enabled: true })))
-      setShowAddSection(false)
-      setShowAddCriterion(false)
-      setNewSection({ name: "", instructions: "", tips: "", weight: 0, critical: false })
-      setNewCriterion({ name: "", description: "" })
+
+      // F4 — ignorar seções da IA, sempre usar FIXED_SECTIONS.
+      // Mapear instructions/tips da IA por nome de seção quando disponível.
+      const aiByName = new Map<string, GeneratedScript["sections"][number]>(
+        (script.sections ?? []).map((s: GeneratedScript["sections"][number]) => [
+          s.name.toLowerCase(),
+          s,
+        ])
+      )
+      const fixed: FixedSection[] = FIXED_SECTIONS.map((fs) => {
+        const ai = aiByName.get(fs.name.toLowerCase())
+        return {
+          name: fs.name,
+          instructions: ai?.instructions ?? "",
+          tips: ai?.tips ?? "",
+          weight: ai?.weight ?? 20,
+          critical: ai?.critical ?? false,
+        }
+      })
+      setPreviewSections(fixed)
+
       setProgress(100)
       setStep("preview")
     } catch (error) {
@@ -266,7 +278,6 @@ export default function ScriptBuilderPage() {
           description: editedDescription,
           sections: generatedScript.sections,
           full_script: generatedScript.full_script,
-          criteria: generatedScript.criteria,
           is_active: true,
         }),
       })
@@ -391,7 +402,6 @@ export default function ScriptBuilderPage() {
               </TabsContent>
             </Tabs>
 
-            {/* Combined inputs indicator */}
             {audioFiles.length > 0 && textInput.trim().length > 0 && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <Sparkles className="h-4 w-4 text-primary" />
@@ -429,7 +439,6 @@ export default function ScriptBuilderPage() {
               </div>
               <Progress value={progress} className="w-full max-w-md" />
 
-              {/* Show file statuses */}
               {audioFiles.length > 0 && (
                 <div className="w-full max-w-md space-y-2 mt-4">
                   {audioFiles.map((audioFile, index) => (
@@ -501,29 +510,17 @@ export default function ScriptBuilderPage() {
                 </div>
               </div>
 
-              {/* Sections */}
+              {/* F1/F2 — Seções fixas: sem Eye toggle, sem Add Section */}
               <div className="space-y-4">
-                <Label>{t("preview.sections", { count: previewSections.filter(s => s.enabled).length })}</Label>
+                <Label>{t("preview.sections", { count: previewSections.length })}</Label>
                 {previewSections.map((section, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-lg border bg-card space-y-2 transition-opacity ${!section.enabled ? "opacity-40" : ""}`}
+                    className="p-4 rounded-lg border bg-card space-y-2"
                   >
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{index + 1}</Badge>
                       <h4 className="font-semibold flex-1">{section.name}</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const updated = [...previewSections]
-                          updated[index].enabled = !updated[index].enabled
-                          setPreviewSections(updated)
-                        }}
-                        title={section.enabled ? "Disable section" : "Enable section"}
-                      >
-                        {section.enabled ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
                     </div>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {section.instructions}
@@ -535,49 +532,6 @@ export default function ScriptBuilderPage() {
                     )}
                   </div>
                 ))}
-
-                {/* Add new section */}
-                {!showAddSection ? (
-                  <Button variant="outline" size="sm" onClick={() => setShowAddSection(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Add Section
-                  </Button>
-                ) : (
-                  <div className="p-4 rounded-lg border border-dashed space-y-3">
-                    <p className="text-sm font-medium">New Section</p>
-                    <Input
-                      placeholder="Section name"
-                      value={newSection.name}
-                      onChange={(e) => setNewSection({ ...newSection, name: e.target.value })}
-                    />
-                    <Textarea
-                      placeholder="Instructions"
-                      className="min-h-20 text-sm"
-                      value={newSection.instructions}
-                      onChange={(e) => setNewSection({ ...newSection, instructions: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Tips (optional)"
-                      value={newSection.tips}
-                      onChange={(e) => setNewSection({ ...newSection, tips: e.target.value })}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        disabled={!newSection.name.trim()}
-                        onClick={() => {
-                          setPreviewSections([...previewSections, { ...newSection, enabled: true }])
-                          setNewSection({ name: "", instructions: "", tips: "", weight: 0, critical: false })
-                          setShowAddSection(false)
-                        }}
-                      >
-                        Add
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setShowAddSection(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Full Script */}
@@ -590,81 +544,10 @@ export default function ScriptBuilderPage() {
                 </div>
               </div>
 
-              {/* Criteria */}
-              <div className="space-y-2">
-                <Label>{t("preview.evaluationCriteria", { count: previewCriteria.filter(c => c.enabled).length })}</Label>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {previewCriteria.map((criterion, index) => (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg border bg-card transition-opacity ${!criterion.enabled ? "opacity-40" : ""}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{criterion.name}</p>
-                          <p className="text-xs text-muted-foreground">{criterion.description}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 shrink-0"
-                          onClick={() => {
-                            const updated = [...previewCriteria]
-                            updated[index].enabled = !updated[index].enabled
-                            setPreviewCriteria(updated)
-                          }}
-                          title={criterion.enabled ? "Disable criterion" : "Enable criterion"}
-                        >
-                          {criterion.enabled ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add new criterion */}
-                {!showAddCriterion ? (
-                  <Button variant="outline" size="sm" onClick={() => setShowAddCriterion(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Add Criterion
-                  </Button>
-                ) : (
-                  <div className="p-4 rounded-lg border border-dashed space-y-3">
-                    <p className="text-sm font-medium">New Criterion</p>
-                    <Input
-                      placeholder="Criterion name"
-                      value={newCriterion.name}
-                      onChange={(e) => setNewCriterion({ ...newCriterion, name: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Description"
-                      value={newCriterion.description}
-                      onChange={(e) => setNewCriterion({ ...newCriterion, description: e.target.value })}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        disabled={!newCriterion.name.trim()}
-                        onClick={() => {
-                          setPreviewCriteria([...previewCriteria, { ...newCriterion, enabled: true }])
-                          setNewCriterion({ name: "", description: "" })
-                          setShowAddCriterion(false)
-                        }}
-                      >
-                        Add
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setShowAddCriterion(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t">
                 <Button
                   onClick={async () => {
-                    // Load rubric system prompt, llm model, and rubric list in parallel
                     const [rubricRes, rubricListRes] = await Promise.all([
                       fetch("/api/rubric?config=true"),
                       fetch("/api/rubric?list=true"),
@@ -673,8 +556,8 @@ export default function ScriptBuilderPage() {
                     const { data: rubricList } = (await rubricListRes.json()) as { data: Array<{ id: string; name: string }> | null; error: unknown }
                     setConfirmSystemPrompt(rubricData?.system_prompt || "")
                     setConfirmLlmModel(rubricData?.llm_model || "openai/gpt-4o-mini")
-                    setConfirmSections(previewSections.filter(s => s.enabled).map(s => ({ name: s.name, instructions: s.instructions, tips: s.tips, weight: s.weight, critical: s.critical })))
-                    setConfirmCriteria(previewCriteria.filter(c => c.enabled).map(c => ({ name: c.name, description: c.description })))
+                    // F4 — passar as seções fixas para o confirm step
+                    setConfirmSections([...previewSections])
                     const list = rubricList ?? []
                     setRubrics(list)
                     setSelectedRubricId(rubricData?.id ?? list[0]?.id ?? "")
@@ -693,9 +576,6 @@ export default function ScriptBuilderPage() {
                     setAudioFiles([])
                     setTextInput("")
                     setPreviewSections([])
-                    setPreviewCriteria([])
-                    setShowAddSection(false)
-                    setShowAddCriterion(false)
                   }}
                 >
                   {t("preview.startOver")}
@@ -765,7 +645,7 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* Sections */}
+          {/* F1/F4 — Seções fixas: nome somente leitura, sem botão X, sem Add Section */}
           <Card>
             <CardHeader>
               <CardTitle>{t("confirm.scriptSections")}</CardTitle>
@@ -776,23 +656,8 @@ export default function ScriptBuilderPage() {
                 <div key={idx} className="p-3 border rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{idx + 1}</Badge>
-                    <Input
-                      value={section.name}
-                      onChange={(e) => {
-                        const updated = [...confirmSections]
-                        updated[idx].name = e.target.value
-                        setConfirmSections(updated)
-                      }}
-                      className="font-semibold"
-                      placeholder={t("confirm.sectionNamePlaceholder")}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmSections(confirmSections.filter((_, i) => i !== idx))}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {/* F4 — nome fixo, só leitura */}
+                    <span className="font-semibold flex-1">{section.name}</span>
                   </div>
                   <Textarea
                     value={section.instructions}
@@ -849,71 +714,14 @@ export default function ScriptBuilderPage() {
               ))}
               {(() => {
                 const total = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
-                return total !== 100 && confirmSections.length > 0 ? (
+                return total !== 100 ? (
                   <p className="text-xs text-destructive font-medium">
                     ⚠ Weights sum to {total}% — must equal 100% before saving.
                   </p>
-                ) : total === 100 ? (
+                ) : (
                   <p className="text-xs text-green-500 font-medium">✓ Weights sum to 100%</p>
-                ) : null
+                )
               })()}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmSections([...confirmSections, { name: "", instructions: "", tips: "", weight: 0, critical: false }])}
-              >
-                {t("confirm.addSection")}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Criteria */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("confirm.autoGeneratedCriteria")}</CardTitle>
-              <CardDescription>{t("confirm.autoGeneratedCriteriaSubtitle")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {confirmCriteria.map((criterion, idx) => (
-                <div key={idx} className="flex gap-2 items-start p-3 border rounded-lg">
-                  <div className="flex-1 space-y-1">
-                    <Input
-                      value={criterion.name}
-                      onChange={(e) => {
-                        const updated = [...confirmCriteria]
-                        updated[idx].name = e.target.value
-                        setConfirmCriteria(updated)
-                      }}
-                      className="font-medium text-sm"
-                      placeholder={t("confirm.criterionNamePlaceholder")}
-                    />
-                    <Input
-                      value={criterion.description}
-                      onChange={(e) => {
-                        const updated = [...confirmCriteria]
-                        updated[idx].description = e.target.value
-                        setConfirmCriteria(updated)
-                      }}
-                      className="text-xs text-muted-foreground"
-                      placeholder={t("confirm.criterionDescriptionPlaceholder")}
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setConfirmCriteria(confirmCriteria.filter((_, i) => i !== idx))}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmCriteria([...confirmCriteria, { name: "", description: "" }])}
-              >
-                {t("confirm.addCriterion")}
-              </Button>
             </CardContent>
           </Card>
 
@@ -924,7 +732,7 @@ export default function ScriptBuilderPage() {
                 if (!editedName) return
                 if (!selectedRubricId) return
                 const weightTotal = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
-                if (confirmSections.length > 0 && weightTotal !== 100) return
+                if (weightTotal !== 100) return
                 setSaving(true)
                 try {
                   const rubricId = selectedRubricId
@@ -942,7 +750,6 @@ export default function ScriptBuilderPage() {
                       description: editedDescription,
                       sections: confirmSections,
                       full_script: fullScriptText,
-                      criteria: confirmCriteria,
                       is_active: true,
                     }),
                   })
@@ -953,7 +760,7 @@ export default function ScriptBuilderPage() {
                 }
                 setSaving(false)
               }}
-              disabled={saving || !editedName || !selectedRubricId || (confirmSections.length > 0 && confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0) !== 100)}
+              disabled={saving || !editedName || !selectedRubricId || confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0) !== 100}
               className="flex-1"
               size="lg"
             >

@@ -181,8 +181,14 @@ describe('TC-04 › /api/send-coaching — campos existentes intactos', () => {
     expect(sendCoachingRoute).toMatch(/improvements/)
   })
 
-  it('não referencia closed, call_date ou duration_seconds', () => {
-    expect(sendCoachingRoute).not.toMatch(/\bclosed\b/)
+  it('não referencia os campos ML do DB (closed/call_date/duration_seconds)', () => {
+    // `closed` aqui é o CAMPO do DB (migration 036). O literal 'closed' usado
+    // como valor de CallResult (ex.: detectedOutcome === 'closed') é legítimo e
+    // NÃO deve disparar este guard — por isso checamos uso como campo
+    // (`.closed` / `closed:`) em vez do `\bclosed\b` cru, que dava falso
+    // positivo após a regra de intent.
+    expect(sendCoachingRoute).not.toMatch(/\.closed\b/)
+    expect(sendCoachingRoute).not.toMatch(/\bclosed\s*:/)
     expect(sendCoachingRoute).not.toMatch(/\bcall_date\b/)
     expect(sendCoachingRoute).not.toMatch(/\bduration_seconds\b/)
   })

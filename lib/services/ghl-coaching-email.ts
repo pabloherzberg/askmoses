@@ -1,7 +1,6 @@
 import { Resend } from "resend"
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { buildCoachingEmail } from "@/lib/email/coaching-template"
-import { toNumber5 } from "@/lib/score-display"
 
 interface DbSectionRow {
   name?: string
@@ -48,13 +47,14 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     return
   }
 
-  // sections vem do DB como jsonb com score 0-100. Template espera 0-5.
+  // sections vem do DB como jsonb com score 0-100. Template espera 0-100 também
+  // (faz a conversão para display internamente via toDisplay5).
   const rawSections = Array.isArray(call.sections)
     ? (call.sections as DbSectionRow[])
     : []
   const sections = rawSections.map((s) => ({
     name: s.name ?? "",
-    score: toNumber5(typeof s.score === "number" ? s.score : 0),
+    score: typeof s.score === "number" ? s.score : 0,
     critical: Boolean(s.critical),
     feedback: s.feedback ?? "",
   }))
@@ -63,7 +63,7 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     trainerName: call.trainer_name ?? "Trainer",
     trainerEmail: call.trainer_email,
     clientName: call.client_name ?? undefined,
-    overallScore: toNumber5(call.overall_score),
+    overallScore: call.overall_score,
     sections,
     strengths: call.strengths ?? [],
     improvements: call.improvements ?? [],

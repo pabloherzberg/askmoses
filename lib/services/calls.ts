@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
+import { resolveIntent } from "@/lib/utils/intent";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
 import type { Call, CallSection, RubricScores, LeadSource } from "@/lib/types";
@@ -113,7 +114,9 @@ function toCall(db: DbCall): Call {
     durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result,
-    intent: result === "closed" ? 5 : 3,
+    // Prefere o intent (1–5) calculado pela IA (db.intent); cai num default
+    // por resultado quando ausente/null/inválido. closed é sempre 5.
+    intent: resolveIntent(db.intent, result),
     prospect: db.client_name ?? "—",
     lead_name: db.lead_name?.trim() || null,
     lead_source: parseLeadSource(db.lead_source),

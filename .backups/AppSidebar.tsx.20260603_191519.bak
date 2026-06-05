@@ -190,11 +190,11 @@ export function AdminNavItems({
 
 // Sidebar mostrado quando Admin está impersonando uma org. Whitelist
 // alinhada com middleware.ts (IMPERSONATE_ALLOWED): só read-only paths.
-// Operacionais (upload, script-builder, rubric-config) ficam fora —
-// banner global de impersonate cuida do exit.
+// Operacionais (upload, script-builder, rubric-config, marketing-intel,
+// members) ficam fora — banner global de impersonate cuida do exit.
 export function ImpersonateNavItems() {
   const t = useTranslations("Shared.sidebar");
-  const mainNav = [
+  const nav = [
     { label: t("dashboard"), href: "/dashboard", icon: Home },
     {
       label: t("teamCommandCenter"),
@@ -203,38 +203,14 @@ export function ImpersonateNavItems() {
     },
     { label: t("calls"), href: "/calls", icon: Phone },
     {
-      label: t("insights"),
-      href: "/dashboard/insights",
-      icon: Brain,
-    },
-    {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",
       icon: Megaphone,
     },
   ];
-  const toolsNav = [
-    { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
-  ];
   return (
     <nav className="flex flex-col gap-1">
-      {mainNav.map((item) => (
-        <NavItem key={item.href} {...item} />
-      ))}
-
-      <div
-        className="my-2 mx-3 h-px"
-        style={{ background: "var(--am-border)" }}
-      />
-
-      <p
-        className="px-3 mb-1 text-[10px] font-medium uppercase tracking-widest"
-        style={{ color: "var(--am-muted)" }}
-      >
-        {t("tools")}
-      </p>
-
-      {toolsNav.map((item) => (
+      {nav.map((item) => (
         <NavItem key={item.href} {...item} />
       ))}
     </nav>
