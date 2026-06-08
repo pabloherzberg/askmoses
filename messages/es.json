@@ -398,6 +398,8 @@
       "observed": "Observado en la conversación",
       "acceptGap": "Aceptar ajuste",
       "accepted": "Aceptado",
+      "neverRun": "Análisis pendiente — las fricciones aparecerán tras la próxima ejecución.",
+      "empty": "No se detectaron fricciones de script.",
       "severity": {
         "high": "Alta",
         "medium": "Media",

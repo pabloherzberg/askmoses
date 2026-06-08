@@ -398,6 +398,8 @@
       "observed": "Observado na conversa",
       "acceptGap": "Aceitar Ajuste",
       "accepted": "Aceito",
+      "neverRun": "Análise pendente — os atritos aparecem após a próxima execução.",
+      "empty": "Nenhum atrito de script detectado.",
       "severity": {
         "high": "Alta",
         "medium": "Média",

@@ -398,6 +398,8 @@
       "observed": "Observé dans la conversation",
       "acceptGap": "Accepter l'ajustement",
       "accepted": "Accepté",
+      "neverRun": "Analyse en attente — les écarts apparaîtront après la prochaine exécution.",
+      "empty": "Aucun écart de script détecté.",
       "severity": {
         "high": "Élevée",
         "medium": "Moyenne",

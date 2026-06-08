@@ -1,0 +1,188 @@
+import { generateText } from 'ai'
+import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { dbGetActiveOrgScript } from '@/lib/db/scripts'
+import type { ScriptSection } from '@/lib/db/scripts'
+import type { NewScriptGap } from '@/lib/db/script-gaps'
+
+// Script Gap Detection — distinto do Script Intelligence. Aqui a IA cruza DUAS
+// perspectivas: o que o SCRIPT instrui o vendedor a fazer vs. o que ACONTECE NA
+// CONVERSA na prática (vendedor E prospect). O foco é o ATRITO: onde o script
+// empurra numa direção que colide com o comportamento, as objeções e os padrões
+// de linguagem dos prospects daquelas calls — e a sugestão cirúrgica de
+// reescrita apenas do trecho com fricção.
+const SYSTEM_PROMPT = `You are a senior sales coach specialising in dog training businesses.
+
+You will receive:
+1. The ACTIVE script (sections with name, instructions, tips)
+2. Up to 3 recent call transcripts with scores and outcomes
+
+Your task: detect SCRIPT GAPS — points where the script instructs the rep to do
+something that creates FRICTION in the actual conversations. A gap is NOT about
+script coverage or quality in isolation; it is about a CLASH between what the
+script tells the rep to do and what the prospects actually do (their objections,
+reactions, language patterns) across these calls.
+
+Respond ONLY with a valid JSON object — no markdown, no explanation outside JSON:
+{
+  "gaps": [
+    {
+      "section": "string — EXACT section name from the active script",
+      "scriptInstruction": "string — what the script currently instructs the rep to do in that section (paraphrase the instruction faithfully)",
+      "observedPattern": "string — what actually happens in the conversations, citing both rep behaviour AND prospect reactions/objections/language grounded in the transcripts",
+      "frequency": number (0–100 — % of analysed calls where this friction appears),
+      "severity": "high" | "medium" | "low",
+      "suggestedFix": "string — a surgical rewrite of ONLY the friction segment; concrete language the rep should use instead, not generic advice"
+    }
+  ]
+}
+
+Rules:
+- Only report REAL friction grounded in the transcripts — do not invent gaps.
+- "section" MUST match one of the active script section names exactly.
+- frequency reflects how many of the analysed calls show the pattern.
+- severity: high if it blocks the close or recurs in most calls; medium if it
+  weakens the conversation; low if it is a missed opportunity.
+- suggestedFix must be a drop-in replacement for the friction segment only —
+  never a rewrite of the whole script.
+- Return between 1 and 5 gaps, ordered by severity (high first).
+- If you find no genuine friction, return { "gaps": [] }.`
+
+function buildPrompt(
+  script: { name: string; sections: ScriptSection[] },
+  calls: Array<{ transcript: string; overall_score: number | null; call_outcome: string | null }>,
+): string {
+  const parts: string[] = []
+
+  parts.push(`## Active Script: "${script.name}"`)
+  script.sections.forEach((s, i) => {
+    parts.push(`**${i + 1}. ${s.name}**\nInstructions: ${s.instructions}\nTips: ${s.tips}`)
+  })
+
+  parts.push(`\n## Call Transcripts (${calls.length} calls)`)
+  calls.forEach((call, i) => {
+    const outcome = call.call_outcome ?? 'unknown'
+    const score = call.overall_score != null ? `${call.overall_score}/100` : 'unscored'
+    parts.push(`### Call ${i + 1} — Outcome: ${outcome} | Score: ${score}\n${call.transcript}`)
+  })
+
+  parts.push(`\n## Task
+For each section of the active script, check whether the instruction clashes with
+what the prospects actually do in these calls. Where it does, produce a gap with a
+surgical rewrite of only the friction segment.`)
+
+  return parts.join('\n\n')
+}
+
+export type AnalyzeGapsResult =
+  | { ok: true; gaps: NewScriptGap[]; callIds: string[]; modelUsed: string }
+  | { ok: false; error: string }
+
+const MODEL = 'gpt-4o-mini'
+const VALID_SEVERITY = new Set(['high', 'medium', 'low'])
+
+/**
+ * Gera os Script Gaps da org ativa a partir do script ativo + calls recentes.
+ * Não persiste — devolve os gaps para o service decidir como gravar.
+ */
+export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsResult> {
+  const script = await dbGetActiveOrgScript(orgId)
+  if (!script) return { ok: false, error: 'No active script for this organization' }
+  if (!Array.isArray(script.sections) || script.sections.length === 0) {
+    return { ok: false, error: 'Active script has no sections' }
+  }
+
+  const admin = createAdminClient()
+  const { data: callsRaw } = await admin
+    .from('calls')
+    .select('id, transcript, overall_score, call_outcome')
+    .eq('org_id', orgId)
+    .not('transcript', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  const eligible = (callsRaw ?? []).filter(
+    (c: { transcript: string | null }) => c.transcript && c.transcript.length > 100,
+  )
+  // A feature é definida como "analisa 3 calls da organização".
+  const selected = eligible.slice(0, 3)
+
+  if (selected.length === 0) {
+    return { ok: false, error: 'No calls with transcripts found' }
+  }
+
+  const callIds = selected.map((c) => c.id as string)
+  const calls = selected.map((c) => ({
+    transcript: (c.transcript as string).slice(0, 1500),
+    overall_score: c.overall_score as number | null,
+    call_outcome: c.call_outcome as string | null,
+  }))
+
+  const prompt = buildPrompt({ name: script.name, sections: script.sections }, calls)
+
+  let text: string
+  try {
+    const aiResult = await generateText({
+      model: getOpenAIModel(MODEL),
+      system: SYSTEM_PROMPT,
+      prompt,
+      temperature: 0.3,
+    })
+    text = aiResult.text
+  } catch (err) {
+    return { ok: false, error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}` }
+  }
+
+  let parsed: {
+    gaps: Array<{
+      section: string
+      scriptInstruction: string
+      observedPattern: string
+      frequency: number
+      severity: string
+      suggestedFix: string
+    }>
+  }
+
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    parsed = JSON.parse(cleaned)
+    if (!Array.isArray(parsed.gaps)) throw new Error('Invalid structure')
+  } catch {
+    return { ok: false, error: 'AI returned invalid JSON' }
+  }
+
+  const sectionNames = script.sections.map((s) => s.name)
+
+  const gaps: NewScriptGap[] = parsed.gaps
+    .filter(
+      (g) =>
+        g &&
+        typeof g.section === 'string' &&
+        typeof g.scriptInstruction === 'string' &&
+        typeof g.observedPattern === 'string' &&
+        typeof g.suggestedFix === 'string',
+    )
+    .map((g) => {
+      // Casa o nome devolvido pela IA com o nome canônico da section (case-insensitive),
+      // para o Accept Gap encontrar a section certa ao reescrever o script.
+      const canonical =
+        sectionNames.find((n) => n.toLowerCase().trim() === g.section.toLowerCase().trim()) ??
+        g.section
+      const severity = VALID_SEVERITY.has(g.severity) ? (g.severity as NewScriptGap['severity']) : 'medium'
+      const frequency = Number.isFinite(g.frequency)
+        ? Math.max(0, Math.min(100, Math.round(g.frequency)))
+        : 0
+      return {
+        section: canonical,
+        script_instruction: g.scriptInstruction,
+        observed_pattern: g.observedPattern,
+        frequency,
+        severity,
+        suggested_fix: g.suggestedFix,
+        calls_analyzed: callIds,
+      }
+    })
+
+  return { ok: true, gaps, callIds, modelUsed: resolveOpenAIModelId(MODEL) }
+}

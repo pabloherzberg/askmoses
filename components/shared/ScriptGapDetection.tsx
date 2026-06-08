@@ -50,7 +50,7 @@ function SeverityBadge({
 
 interface Props {
   gaps: ScriptGap[]
-  analyzedAt: string
+  analyzedAt: string | null
   callsAnalyzed: string[]
 }
 
@@ -63,11 +63,15 @@ export function ScriptGapDetection({ gaps, analyzedAt, callsAnalyzed }: Props) {
     setAcceptedIds((prev) => new Set(prev).add(gapId))
   }, [])
 
-  const lastAnalysis = new Date(analyzedAt).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
+  const lastAnalysis = analyzedAt
+    ? new Date(analyzedAt).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null
+
+  const hasGaps = gaps.length > 0
 
   return (
     <div
@@ -81,18 +85,27 @@ export function ScriptGapDetection({ gaps, analyzedAt, callsAnalyzed }: Props) {
             {t("title")}
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: "var(--am-muted)" }}>
-            {t("lastAnalysis", { date: lastAnalysis })}
+            {lastAnalysis ? t("lastAnalysis", { date: lastAnalysis }) : t("neverRun")}
           </p>
         </div>
-        <span
-          className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full"
-          style={{ background: "var(--am-bg4)", color: "var(--am-muted)" }}
-        >
-          {t("callsAnalyzed", { count: callsAnalyzed.length })}
-        </span>
+        {hasGaps && (
+          <span
+            className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full"
+            style={{ background: "var(--am-bg4)", color: "var(--am-muted)" }}
+          >
+            {t("callsAnalyzed", { count: callsAnalyzed.length })}
+          </span>
+        )}
       </div>
 
+      {!hasGaps && (
+        <p className="text-[12px] py-6 text-center" style={{ color: "var(--am-muted)" }}>
+          {t("empty")}
+        </p>
+      )}
+
       {/* Grid — headers + rows share the same column template */}
+      {hasGaps && (
       <div
         className="grid gap-x-3 px-1"
         style={{ gridTemplateColumns: "10rem 3.5rem 6rem 1fr" }}
@@ -189,6 +202,7 @@ export function ScriptGapDetection({ gaps, analyzedAt, callsAnalyzed }: Props) {
           )
         })}
       </div>
+      )}
 
       {activeGap && (
         <AcceptGapModal

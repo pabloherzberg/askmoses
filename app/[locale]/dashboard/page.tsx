@@ -347,15 +347,13 @@ export default async function DashboardPage() {
       />
 
       {/* ── Script Gap Detection ──────────────────────────────── */}
-      {gapAnalysis && gapAnalysis.gaps.length > 0 && (
-        <div className="mb-4">
-          <ScriptGapDetection
-            gaps={gapAnalysis.gaps}
-            analyzedAt={gapAnalysis.analyzedAt}
-            callsAnalyzed={gapAnalysis.callsAnalyzed}
-          />
-        </div>
-      )}
+      <div className="mb-4">
+        <ScriptGapDetection
+          gaps={gapAnalysis?.gaps ?? []}
+          analyzedAt={gapAnalysis?.analyzedAt ?? null}
+          callsAnalyzed={gapAnalysis?.callsAnalyzed ?? []}
+        />
+      </div>
 
       {/* ── Score by Sales Person ─────────────────────────────── */}
       <div

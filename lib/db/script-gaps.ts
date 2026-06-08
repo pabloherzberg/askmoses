@@ -49,6 +49,61 @@ export async function dbGetScriptGaps(
   })
 }
 
+export interface NewScriptGap {
+  section: string
+  script_instruction: string
+  observed_pattern: string
+  frequency: number
+  severity: 'high' | 'medium' | 'low'
+  suggested_fix: string
+  calls_analyzed: string[]
+}
+
+/**
+ * Substitui os gaps PENDENTES da org pelos recém-gerados, preservando os já
+ * aceitos (accepted_at preenchido = histórico de reescritas que o owner aplicou).
+ * Uma nova análise é uma nova "foto" do atrito atual, então os pendentes antigos
+ * são descartados; os aceitos ficam como registro do que já foi tratado.
+ */
+export async function dbReplacePendingScriptGaps(
+  orgId: string,
+  gaps: NewScriptGap[],
+): Promise<DbScriptGap[]> {
+  const supabase = createAdminClient()
+  const analyzedAt = new Date().toISOString()
+
+  const { error: delErr } = await supabase
+    .from('script_gaps')
+    .delete()
+    .eq('org_id', orgId)
+    .is('accepted_at', null)
+
+  if (delErr) throw new Error(`dbReplacePendingScriptGaps (delete): ${delErr.message}`)
+
+  if (gaps.length === 0) return []
+
+  const rows = gaps.map((g) => ({
+    org_id: orgId,
+    section: g.section,
+    script_instruction: g.script_instruction,
+    observed_pattern: g.observed_pattern,
+    frequency: g.frequency,
+    severity: g.severity,
+    suggested_fix: g.suggested_fix,
+    calls_analyzed: g.calls_analyzed,
+    analyzed_at: analyzedAt,
+  }))
+
+  const { data, error } = await supabase
+    .from('script_gaps')
+    .insert(rows)
+    .select()
+
+  if (error) throw new Error(`dbReplacePendingScriptGaps (insert): ${error.message}`)
+
+  return (data ?? []) as DbScriptGap[]
+}
+
 /**
  * Marca um gap como aceito (accepted_at = now). O `orgId` é defense-in-depth —
  * createAdminClient() bypassa RLS, então filtramos por org_id no UPDATE para

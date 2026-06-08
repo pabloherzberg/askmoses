@@ -398,6 +398,8 @@
       "observed": "Observed in conversation",
       "acceptGap": "Accept Gap",
       "accepted": "Accepted",
+      "neverRun": "Analysis pending — gaps will appear after the next run.",
+      "empty": "No script gaps detected.",
       "severity": {
         "high": "High",
         "medium": "Medium",
