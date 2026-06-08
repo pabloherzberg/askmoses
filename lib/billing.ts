@@ -17,9 +17,14 @@ export function secondsToCostValue(
   return (totalSeconds / 60) * COST_PER_MINUTE_USD;
 }
 
-/** Custo formatado como moeda USD no locale ativo. Admin-only. */
-export function formatCost(valueUsd: number, locale = "en-US"): string {
-  return new Intl.NumberFormat(locale, {
+/**
+ * Custo formatado como moeda USD. Admin-only. Sempre formatado em "en-US"
+ * (ex.: "$1,240.00") independente do locale ativo da UI — o SaaS Panel usa
+ * USD como moeda base de cobrança, então a apresentação não deve variar com a
+ * internacionalização da interface.
+ */
+export function formatCost(valueUsd: number): string {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 2,
