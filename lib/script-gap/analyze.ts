@@ -112,8 +112,11 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
   }
 
   const callIds = selected.map((c) => c.id as string)
+  // Transcript COMPLETO — truncar perde o contexto da conversa e inviabiliza a
+  // detecção de atrito (objeções, reações do prospect podem estar em qualquer
+  // ponto da call). São só 3 calls; cabem com folga na janela do gpt-4o-mini.
   const calls = selected.map((c) => ({
-    transcript: (c.transcript as string).slice(0, 1500),
+    transcript: c.transcript as string,
     overall_score: c.overall_score as number | null,
     call_outcome: c.call_outcome as string | null,
   }))
