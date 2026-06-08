@@ -384,6 +384,33 @@
       "addToScript": "Añadir al script →",
       "mockFooter": "† todos los valores vienen de mock-data.ts — Añadir al script → no funciona en esta demo"
     },
+    "scriptGapDetection": {
+      "title": "Detección de Fricción en el Script",
+      "lastAnalysis": "Último análisis: {date}",
+      "callsAnalyzed": "{count} llamadas analizadas",
+      "th": {
+        "section": "Sección",
+        "frequency": "Frec.",
+        "severity": "Severidad",
+        "gap": "Fricción detectada"
+      },
+      "scriptInstructs": "El script indica",
+      "observed": "Observado en la conversación",
+      "acceptGap": "Aceptar ajuste",
+      "accepted": "Aceptado",
+      "severity": {
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja"
+      },
+      "modal": {
+        "title": "Aceptar ajuste",
+        "current": "Instrucción actual del script",
+        "suggested": "Sugerencia de la IA",
+        "cancel": "Cancelar",
+        "confirm": "Aplicar cambio"
+      }
+    },
     "revenueEstimator": {
       "title": "Estimador de impacto en ingresos",
       "mockBadge": "solo datos mock",

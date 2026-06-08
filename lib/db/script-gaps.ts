@@ -1,0 +1,74 @@
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export interface DbScriptGap {
+  id: string
+  org_id: string
+  section: string
+  script_instruction: string
+  observed_pattern: string
+  frequency: number
+  severity: 'high' | 'medium' | 'low'
+  suggested_fix: string
+  calls_analyzed: string[]
+  analyzed_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+// Ordena por severity (high → low) e depois por frequência desc, para que os
+// atritos mais graves e recorrentes apareçam primeiro no dashboard.
+const SEVERITY_RANK: Record<DbScriptGap['severity'], number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+}
+
+export async function dbGetScriptGaps(
+  orgId: string,
+  opts?: { includeAccepted?: boolean },
+): Promise<DbScriptGap[]> {
+  const supabase = createAdminClient()
+
+  let query = supabase
+    .from('script_gaps')
+    .select('*')
+    .eq('org_id', orgId)
+
+  // Por padrão só os pendentes — gaps já aceitos saem da lista do dashboard.
+  if (!opts?.includeAccepted) query = query.is('accepted_at', null)
+
+  const { data, error } = await query
+
+  if (error) throw new Error(`dbGetScriptGaps: ${error.message}`)
+
+  const rows = (data ?? []) as DbScriptGap[]
+  return rows.sort((a, b) => {
+    const sev = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+    if (sev !== 0) return sev
+    return b.frequency - a.frequency
+  })
+}
+
+/**
+ * Marca um gap como aceito (accepted_at = now). O `orgId` é defense-in-depth —
+ * createAdminClient() bypassa RLS, então filtramos por org_id no UPDATE para
+ * impedir que um owner aceite gap de outra org. Retorna null se nada casar.
+ */
+export async function dbAcceptScriptGap(
+  id: string,
+  orgId: string,
+): Promise<DbScriptGap | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('script_gaps')
+    .update({ accepted_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select()
+    .maybeSingle()
+
+  if (error) throw new Error(`dbAcceptScriptGap: ${error.message}`)
+
+  return (data ?? null) as DbScriptGap | null
+}
