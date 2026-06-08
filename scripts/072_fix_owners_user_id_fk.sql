@@ -41,9 +41,21 @@ END $$;
 
 -- Valida as linhas existentes. Se houver órfão legado, apenas avisa e segue —
 -- a FK (mesmo NOT VALID) já basta para destravar o embed users!inner.
+-- Só toleramos foreign_key_violation (órfãos); qualquer outra falha
+-- (lock_timeout, permissão, constraint inexistente) propaga para não mascarar
+-- uma validação que nem chegou a rodar.
 DO $$
 BEGIN
-  ALTER TABLE public.owners VALIDATE CONSTRAINT owners_user_id_fkey;
-EXCEPTION WHEN others THEN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.owners'::regclass
+      AND contype  = 'f'
+      AND conname  = 'owners_user_id_fkey'
+      AND NOT convalidated
+  ) THEN
+    ALTER TABLE public.owners VALIDATE CONSTRAINT owners_user_id_fkey;
+  END IF;
+EXCEPTION WHEN foreign_key_violation THEN
   RAISE NOTICE 'owners_user_id_fkey não validada (órfãos em owners.user_id?): %', SQLERRM;
 END $$;
