@@ -151,11 +151,14 @@ export function AdminPanelClient({
     );
   }, []);
 
-  // Inicia polling se ainda não estiver rodando. Reutilizado no mount e no
-  // handleSent para garantir que qualquer pending existente seja monitorado.
+  // (Re)inicia o polling da análise da IA. Reutilizado no mount, no doFetch e
+  // no handleSent. Se já houver um interval rodando, reinicia com o body novo:
+  // assim, se o admin trocar filtro/página enquanto uma análise está ativa, o
+  // poll passa a buscar com o filtro atual em vez de continuar com o body
+  // antigo e sobrescrever a tabela com resultados de outro filtro.
   const startAnalysisPoll = useCallback(
     (body: ListRequestBody) => {
-      if (analysisPollRef.current) return; // já rodando
+      if (analysisPollRef.current) clearInterval(analysisPollRef.current);
       analysisPollRef.current = setInterval(async () => {
         const seq = ++pollSeqRef.current;
         try {
