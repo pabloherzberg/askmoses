@@ -72,7 +72,8 @@ function filtersToBody(
   if (filters.scriptStatus !== "all") body.scriptStatus = filters.scriptStatus;
   if (filters.planCode !== "all") body.planCode = filters.planCode;
   if (filters.planStatus !== "all") body.planStatus = filters.planStatus;
-  if (filters.scriptVersion !== "all") body.scriptVersion = filters.scriptVersion;
+  if (filters.scriptVersion !== "all")
+    body.scriptVersion = filters.scriptVersion;
   if (filters.minutesMin !== "") {
     const n = Number(filters.minutesMin);
     if (isFinite(n) && n >= 0) body.minutesMin = n;
@@ -81,12 +82,18 @@ function filtersToBody(
     const n = Number(filters.minutesMax);
     if (isFinite(n) && n >= 0) body.minutesMax = n;
   }
-  if (filters.lastActivityFrom !== "") body.lastActivityFrom = filters.lastActivityFrom;
-  if (filters.lastActivityTo !== "") body.lastActivityTo = filters.lastActivityTo;
+  if (filters.lastActivityFrom !== "")
+    body.lastActivityFrom = filters.lastActivityFrom;
+  if (filters.lastActivityTo !== "")
+    body.lastActivityTo = filters.lastActivityTo;
   return body;
 }
 
-export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }: Props) {
+export function AdminPanelClient({
+  initialRows,
+  initialTotal,
+  initialPageSize,
+}: Props) {
   const t = useTranslations("Admin.tableTools");
   const tSend = useTranslations("Admin.sendScriptModal");
   const router = useRouter();
@@ -128,39 +135,49 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
     }
   }, []);
 
-  // Verifica se há orgs em análise ou aguardando decisão do owner na página atual
+  // Verifica se há orgs com análise da IA em andamento na página atual. Só
+  // considera estados TRANSITÓRIOS que resolvem server-side sozinhos
+  // ('queued'/'processing') — esses fazem o poll parar quando terminam.
+  //
+  // 'status === pending' (script aguardando decisão do owner) NÃO entra aqui de
+  // propósito: é uma ação humana que acontece em outra sessão e nunca resolve
+  // pelo polling do admin. Incluí-lo fazia o painel refetchar a cada 3s
+  // indefinidamente enquanto existisse qualquer script pendente.
   const hasActiveAnalysis = useCallback((currentRows: Client[]) => {
     return currentRows.some(
-      (c) => c.currentScript?.analysisStatus === 'processing' ||
-             c.currentScript?.analysisStatus === 'queued' ||
-             c.currentScript?.status === 'pending',
+      (c) =>
+        c.currentScript?.analysisStatus === "processing" ||
+        c.currentScript?.analysisStatus === "queued",
     );
   }, []);
 
   // Inicia polling se ainda não estiver rodando. Reutilizado no mount e no
   // handleSent para garantir que qualquer pending existente seja monitorado.
-  const startAnalysisPoll = useCallback((body: ListRequestBody) => {
-    if (analysisPollRef.current) return; // já rodando
-    analysisPollRef.current = setInterval(async () => {
-      const seq = ++pollSeqRef.current;
-      try {
-        const res = await fetch("/api/admin/organizations/list", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const json = await res.json();
-        if (seq !== pollSeqRef.current) return;
-        if (!res.ok || !json?.data) return;
-        const newRows = json.data.rows as Client[];
-        setRows(newRows);
-        setTotal(json.data.total as number);
-        if (!hasActiveAnalysis(newRows)) stopAnalysisPoll();
-      } catch {
-        // silencioso
-      }
-    }, 3000);
-  }, [hasActiveAnalysis, stopAnalysisPoll]);
+  const startAnalysisPoll = useCallback(
+    (body: ListRequestBody) => {
+      if (analysisPollRef.current) return; // já rodando
+      analysisPollRef.current = setInterval(async () => {
+        const seq = ++pollSeqRef.current;
+        try {
+          const res = await fetch("/api/admin/organizations/list", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const json = await res.json();
+          if (seq !== pollSeqRef.current) return;
+          if (!res.ok || !json?.data) return;
+          const newRows = json.data.rows as Client[];
+          setRows(newRows);
+          setTotal(json.data.total as number);
+          if (!hasActiveAnalysis(newRows)) stopAnalysisPoll();
+        } catch {
+          // silencioso
+        }
+      }, 3000);
+    },
+    [hasActiveAnalysis, stopAnalysisPoll],
+  );
 
   const doFetch = useCallback(
     async (body: ListRequestBody) => {
@@ -183,8 +200,8 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         const newRows = json.data.rows as Client[];
         setRows(newRows);
         setTotal(json.data.total as number);
-        // Inicia polling se houver pendentes (ex: admin abre a página e já
-        // existem orgs aguardando aprovação do owner).
+        // Inicia polling só se houver análise da IA em andamento
+        // (queued/processing) — esses estados resolvem sozinhos e param o poll.
         if (hasActiveAnalysis(newRows)) startAnalysisPoll(body);
         else stopAnalysisPoll();
       } catch {
@@ -203,7 +220,7 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
       startAnalysisPoll(filtersToBody(EMPTY_FILTERS, "", 1, initialPageSize));
     }
     return () => stopAnalysisPoll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced fetch — dispara 250ms após o último change de filtro/search/page.
@@ -444,7 +461,11 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         >
           <Info
             size={14}
-            style={{ color: "var(--am-accent2)", marginTop: "1px", flexShrink: 0 }}
+            style={{
+              color: "var(--am-accent2)",
+              marginTop: "1px",
+              flexShrink: 0,
+            }}
           />
           <span>{t("selectionHint")}</span>
         </div>
@@ -514,7 +535,9 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
                   isSelected={selected.has(client.id)}
                   onToggleSelected={() => toggleOne(client.id)}
                   onSendScript={() => setModalOrgIds([client.id])}
-                  onCancelScript={() => void doFetch(filtersToBody(filters, search, page, limit))}
+                  onCancelScript={() =>
+                    void doFetch(filtersToBody(filters, search, page, limit))
+                  }
                   lastActivityDate={formatDate(
                     client.lastCallAt ?? client.createdAt,
                     locale,
@@ -529,7 +552,10 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
         {loading && (
           <div
             className="px-5 py-2 text-[11px] font-mono"
-            style={{ borderTop: "1px solid var(--am-border)", color: "var(--am-muted)" }}
+            style={{
+              borderTop: "1px solid var(--am-border)",
+              color: "var(--am-muted)",
+            }}
           >
             {t("loading")}
           </div>
@@ -537,10 +563,11 @@ export function AdminPanelClient({ initialRows, initialTotal, initialPageSize }:
       </div>
 
       {/* ── Pagination footer ──────────────────────────────────── */}
-      <div className="flex items-center justify-between mt-3 text-xs" style={{ color: "var(--am-muted)" }}>
-        <span className="font-mono">
-          {t("itemsTotal", { count: total })}
-        </span>
+      <div
+        className="flex items-center justify-between mt-3 text-xs"
+        style={{ color: "var(--am-muted)" }}
+      >
+        <span className="font-mono">{t("itemsTotal", { count: total })}</span>
         <div className="flex items-center gap-2">
           <span className="font-mono">
             {t("pageOf", { page, total: totalPages })}
