@@ -8,13 +8,14 @@ import {
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
 import type { Locale } from "@/i18n/routing";
-import { getRubric, buildCoachingDrivers, computeRubricGaps } from "@/lib/services/rubric";
+import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
+import { getScriptGaps } from "@/lib/services/script-gaps";
 import { ScoreCard } from "@/components/shared/ScoreCard";
 import { scoreLevel, toDisplay5, toNumber5 } from "@/lib/score-display";
 import { InsightCard } from "@/components/shared/InsightCard";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
-import { RubricGapDetection } from "@/components/shared/RubricGapDetection";
+import { ScriptGapDetection } from "@/components/shared/ScriptGapDetection";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
 import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
 import { getActiveOrgContext } from "@/lib/auth";
@@ -24,9 +25,10 @@ export default async function DashboardPage() {
   const [
     trainers,
     insights,
-    { sections: rubric, trend: teamTrend, trainerSectionScores, calls: allCalls },
+    { sections: rubric, trend: teamTrend, trainerSectionScores },
     teamHealth,
     ctx,
+    gapAnalysis,
     t,
     tMetrics,
     tHealth,
@@ -36,6 +38,7 @@ export default async function DashboardPage() {
     getRubric(),
     getTeamHealth(),
     getActiveOrgContext(),
+    getScriptGaps(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
@@ -46,7 +49,6 @@ export default async function DashboardPage() {
   const showPendingBanner = ctx?.role === "owner" && !ctx.isImpersonating;
 
   const coachingDrivers = buildCoachingDrivers(rubric);
-  const rubricGaps = computeRubricGaps(allCalls);
 
   const performanceTrends = await getPerformanceTrends(trainers);
 
@@ -346,7 +348,11 @@ export default async function DashboardPage() {
 
       {/* ── Script Gap Detection ──────────────────────────────── */}
       <div className="mb-4">
-        <RubricGapDetection gaps={rubricGaps} />
+        <ScriptGapDetection
+          gaps={gapAnalysis?.gaps ?? []}
+          analyzedAt={gapAnalysis?.analyzedAt ?? null}
+          callsAnalyzed={gapAnalysis?.callsAnalyzed ?? []}
+        />
       </div>
 
       {/* ── Score by Sales Person ─────────────────────────────── */}

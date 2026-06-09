@@ -384,6 +384,35 @@
       "addToScript": "Adicionar ao script →",
       "mockFooter": "† todos os valores vêm de mock-data.ts — Adicionar ao script → não funciona nesta demo"
     },
+    "scriptGapDetection": {
+      "title": "Detecção de Atrito no Script",
+      "lastAnalysis": "Última análise: {date}",
+      "callsAnalyzed": "{count} calls analisadas",
+      "th": {
+        "section": "Seção",
+        "frequency": "Freq.",
+        "severity": "Severidade",
+        "gap": "Atrito detectado"
+      },
+      "scriptInstructs": "O script instrui",
+      "observed": "Observado na conversa",
+      "acceptGap": "Aceitar Ajuste",
+      "accepted": "Aceito",
+      "neverRun": "Análise pendente — os atritos aparecem após a próxima execução.",
+      "empty": "Nenhum atrito de script detectado.",
+      "severity": {
+        "high": "Alta",
+        "medium": "Média",
+        "low": "Baixa"
+      },
+      "modal": {
+        "title": "Aceitar Ajuste",
+        "current": "Instrução atual no script",
+        "suggested": "Sugestão da IA",
+        "cancel": "Cancelar",
+        "confirm": "Aplicar alteração"
+      }
+    },
     "revenueEstimator": {
       "title": "Estimador de impacto em receita",
       "mockBadge": "apenas dados mock",

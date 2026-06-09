@@ -186,8 +186,12 @@ A feature de script intelligence já existe em `app/[locale]/dashboard/insights/
 - `lib/types.ts`
 - `lib/mocks/data/script-gap-detection.ts` *(novo)*
 - `lib/mocks/handlers.ts`
-- `app/[locale]/script-gap/page.tsx` *(novo)*
-- `components/layout/OwnerSidebar.tsx`
+- `app/[locale]/script-gap/page.tsx` *(novo)* + `app/[locale]/script-gap/layout.tsx` *(novo)*
+- `components/layout/AppSidebar.tsx` *(OwnerNavItems — `OwnerSidebar` foi consolidada em `AppSidebar`)*
+- `middleware.ts` *(trainer bloqueado de `/script-gap`)*
+- `messages/{en,pt,fr,es}.json` *(i18n: `Shared.sidebar.scriptGap` + namespace `Owner.scriptGap`)*
+
+> **STATUS: ✅ CONCLUÍDA** — Implementada conforme o spec refinado da task: o campo é `observedPattern` (vendedor + prospect), não apenas `prospectPattern`. Decisões: o **GET** usa handler MSW (só dev); o **Accept Gap** chama o **PATCH /api/scripts/:id real**, substituindo apenas a `instructions` da section com atrito (fallback: trecho literal dentro de `full_script`) — nunca o script inteiro. Na demo (sem sessão Supabase real) o PATCH retorna 401/404 e é tratado de forma graciosa (aceite otimista no estado local). Link "Script Gap" só na `OwnerNavItems` (removido da `ImpersonateNavItems` por ser ação de escrita, fora da whitelist read-only de impersonate).
 
 ---
 

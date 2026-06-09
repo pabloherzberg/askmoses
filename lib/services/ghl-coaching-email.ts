@@ -67,7 +67,11 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     sections,
     strengths: call.strengths ?? [],
     improvements: call.improvements ?? [],
-    locale: "pt",
+    // O scoring gera sections.feedback/strengths/improvements SEMPRE em inglês
+    // (ver lib/services/scoring.ts — "Section feedback and summary should be in
+    // English for the coach UI"). Forçar o template em 'pt' deixava o chrome em
+    // português com o conteúdo em inglês. 'en' alinha os dois.
+    locale: "en",
   })
 
   const resend = new Resend(apiKey)
