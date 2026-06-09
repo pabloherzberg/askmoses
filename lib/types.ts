@@ -129,6 +129,22 @@ export interface Insight {
   action: string;
 }
 
+export interface ScriptGap {
+  id: string;
+  section: string; // ex: "Objection Handling"
+  scriptInstruction: string; // o que o script instrui o vendedor a fazer
+  observedPattern: string; // o que a IA detectou na conversa — vendedor + prospect
+  frequency: number; // % das calls analisadas onde o padrão aparece
+  severity: "high" | "medium" | "low";
+  suggestedFix: string; // nova redação apenas do trecho com atrito
+}
+
+export interface ScriptGapAnalysis {
+  analyzedAt: string;
+  callsAnalyzed: string[]; // 3 call IDs
+  gaps: ScriptGap[];
+}
+
 export type PlanCode = "starter" | "pro" | "pro_rag";
 
 export interface Plan {
