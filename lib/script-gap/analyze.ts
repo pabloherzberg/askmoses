@@ -30,7 +30,7 @@ Respond ONLY with a valid JSON object — no markdown, no explanation outside JS
       "section": "string — EXACT section name from the active script",
       "scriptInstruction": "string — what the script currently instructs the rep to do in that section (paraphrase the instruction faithfully)",
       "observedPattern": "string — what actually happens in the conversations, citing both rep behaviour AND prospect reactions/objections/language grounded in the transcripts",
-      "frequency": number (0–100 — % of analysed calls where this friction appears),
+      "callNumbers": [number] — the Call numbers (1-based, as labelled below) where THIS friction actually appears. List ONLY calls where you can point to the friction in the transcript,
       "severity": "high" | "medium" | "low",
       "suggestedFix": "string — a surgical rewrite of ONLY the friction segment; concrete language the rep should use instead, not generic advice"
     }
@@ -38,9 +38,15 @@ Respond ONLY with a valid JSON object — no markdown, no explanation outside JS
 }
 
 Rules:
+- ALWAYS write "scriptInstruction", "observedPattern" and "suggestedFix" in
+  English, regardless of the language of the active script or the call
+  transcripts. Even when the calls are in another language, your output text
+  must be English.
 - Only report REAL friction grounded in the transcripts — do not invent gaps.
 - "section" MUST match one of the active script section names exactly.
-- frequency reflects how many of the analysed calls show the pattern.
+- callNumbers: list every Call number where the friction is observable, and ONLY
+  those. Do not include a call unless the transcript shows the friction. Never
+  invent call numbers outside the range provided.
 - severity: high if it blocks the close or recurs in most calls; medium if it
   weakens the conversation; low if it is a missed opportunity.
 - suggestedFix must be a drop-in replacement for the friction segment only —
@@ -141,7 +147,7 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
       section: string
       scriptInstruction: string
       observedPattern: string
-      frequency: number
+      callNumbers: unknown
       severity: string
       suggestedFix: string
     }>
@@ -156,6 +162,7 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
   }
 
   const sectionNames = script.sections.map((s) => s.name)
+  const totalCalls = callIds.length
 
   const gaps: NewScriptGap[] = parsed.gaps
     .filter(
@@ -166,17 +173,31 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
         typeof g.observedPattern === 'string' &&
         typeof g.suggestedFix === 'string',
     )
-    .map((g) => {
+    .flatMap((g) => {
+      // Mapeia os índices 1-based devolvidos pela IA para os call IDs reais
+      // (pela ordem em que as calls entraram no prompt). frequency é DERIVADO
+      // dessa contagem, não do que a IA "achou". Gaps sem nenhuma call válida
+      // são descartados — todo gap exibido é rastreável a calls reais.
+      const matchingCallIds = [
+        ...new Set(
+          (Array.isArray(g.callNumbers) ? g.callNumbers : [])
+            .map((n) => (typeof n === 'number' ? n : Number(n)))
+            .filter((n) => Number.isInteger(n) && n >= 1 && n <= totalCalls)
+            .map((n) => callIds[n - 1]),
+        ),
+      ]
+
+      if (matchingCallIds.length === 0) return []
+
       // Casa o nome devolvido pela IA com o nome canônico da section (case-insensitive),
       // para o Accept Gap encontrar a section certa ao reescrever o script.
       const canonical =
         sectionNames.find((n) => n.toLowerCase().trim() === g.section.toLowerCase().trim()) ??
         g.section
       const severity = VALID_SEVERITY.has(g.severity) ? (g.severity as NewScriptGap['severity']) : 'medium'
-      const frequency = Number.isFinite(g.frequency)
-        ? Math.max(0, Math.min(100, Math.round(g.frequency)))
-        : 0
-      return {
+      const frequency = Math.round((matchingCallIds.length / totalCalls) * 100)
+
+      return [{
         section: canonical,
         script_instruction: g.scriptInstruction,
         observed_pattern: g.observedPattern,
@@ -184,7 +205,8 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
         severity,
         suggested_fix: g.suggestedFix,
         calls_analyzed: callIds,
-      }
+        matching_call_ids: matchingCallIds,
+      }]
     })
 
   return { ok: true, gaps, callIds, modelUsed: resolveOpenAIModelId(MODEL) }

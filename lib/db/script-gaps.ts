@@ -10,6 +10,7 @@ export interface DbScriptGap {
   severity: 'high' | 'medium' | 'low'
   suggested_fix: string
   calls_analyzed: string[]
+  matching_call_ids: string[]
   analyzed_at: string
   accepted_at: string | null
   created_at: string
@@ -57,6 +58,7 @@ export interface NewScriptGap {
   severity: 'high' | 'medium' | 'low'
   suggested_fix: string
   calls_analyzed: string[]
+  matching_call_ids: string[]
 }
 
 /**
@@ -91,6 +93,7 @@ export async function dbReplacePendingScriptGaps(
     severity: g.severity,
     suggested_fix: g.suggested_fix,
     calls_analyzed: g.calls_analyzed,
+    matching_call_ids: g.matching_call_ids,
     analyzed_at: analyzedAt,
   }))
 
