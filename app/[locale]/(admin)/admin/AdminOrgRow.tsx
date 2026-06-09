@@ -391,7 +391,7 @@ export function AdminOrgRow({
       {/* Custo no mês (duração × tarifa) — visível APENAS pro Admin */}
       <td className="px-3 py-4 whitespace-nowrap">
         <span className="text-sm font-mono" style={{ color: 'var(--am-text)' }}>
-          {formatCost(client.totalCostThisMonth, locale)}
+          {formatCost(client.totalCostThisMonth)}
         </span>
       </td>
 

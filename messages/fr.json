@@ -384,6 +384,35 @@
       "addToScript": "Ajouter au script →",
       "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — Ajouter au script → ne fonctionne pas dans cette démo"
     },
+    "scriptGapDetection": {
+      "title": "Détection d'Écarts de Script",
+      "lastAnalysis": "Dernière analyse : {date}",
+      "callsAnalyzed": "{count} appels analysés",
+      "th": {
+        "section": "Section",
+        "frequency": "Fréq.",
+        "severity": "Gravité",
+        "gap": "Écart détecté"
+      },
+      "scriptInstructs": "Le script indique",
+      "observed": "Observé dans la conversation",
+      "acceptGap": "Accepter l'ajustement",
+      "accepted": "Accepté",
+      "neverRun": "Analyse en attente — les écarts apparaîtront après la prochaine exécution.",
+      "empty": "Aucun écart de script détecté.",
+      "severity": {
+        "high": "Élevée",
+        "medium": "Moyenne",
+        "low": "Faible"
+      },
+      "modal": {
+        "title": "Accepter l'ajustement",
+        "current": "Instruction actuelle du script",
+        "suggested": "Suggestion de l'IA",
+        "cancel": "Annuler",
+        "confirm": "Appliquer la modification"
+      }
+    },
     "revenueEstimator": {
       "title": "Estimateur d'impact sur les revenus",
       "mockBadge": "données mock uniquement",
@@ -623,6 +652,7 @@
       "thDate": "Date",
       "thScore": "Score",
       "thDuration": "Durée",
+      "thIntent": "Intention",
       "thResult": "Résultat",
       "forbidden": "Vous n'avez pas accès à cet appel.",
       "thScript": "Script",

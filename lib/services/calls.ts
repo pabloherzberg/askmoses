@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
+import { resolveIntent } from "@/lib/utils/intent";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
 import type { Call, CallSection, RubricScores, LeadSource } from "@/lib/types";
@@ -88,25 +89,34 @@ function parseSections(raw: unknown): CallSection[] | undefined {
   return parsed;
 }
 
-const VALID_LEAD_SOURCES = new Set<LeadSource>(['facebook', 'google', 'organic', 'referral', 'other'])
+const VALID_LEAD_SOURCES = new Set<LeadSource>([
+  "facebook",
+  "google",
+  "organic",
+  "referral",
+  "other",
+]);
 
 function parseLeadSource(raw: string | null | undefined): LeadSource | null {
-  if (!raw || raw.trim() === '') return null
-  const v = raw.trim().toLowerCase()
-  return VALID_LEAD_SOURCES.has(v as LeadSource) ? (v as LeadSource) : 'other'
+  if (!raw || raw.trim() === "") return null;
+  const v = raw.trim().toLowerCase();
+  return VALID_LEAD_SOURCES.has(v as LeadSource) ? (v as LeadSource) : "other";
 }
 
 function toCall(db: DbCall): Call {
+  const result =
+    normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome";
   return {
     id: db.id,
     trainerId: db.trainer_id ?? "",
     trainerName: db.trainer_name,
     date: db.created_at,
-    // Segundos crus de duration_seconds (migration 036). NULL preservado —
-    // display via formatDuration; custo (admin) derivado disso.
     durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
-    result: normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome",
+    result,
+    // Prefere o intent (1–5) calculado pela IA (db.intent); cai num default
+    // por resultado quando ausente/null/inválido. closed é sempre 5.
+    intent: resolveIntent(db.intent, result),
     prospect: db.client_name ?? "—",
     lead_name: db.lead_name?.trim() || null,
     lead_source: parseLeadSource(db.lead_source),
@@ -140,9 +150,11 @@ export function avgRubricScores(calls: Call[]): RubricScores {
   if (calls.length === 0) return defaults;
   const result = { ...defaults };
   for (const key of keys) {
-    result[key] = Math.round(
-      (calls.reduce((s, c) => s + c.rubricScores[key], 0) / calls.length) * 10,
-    ) / 10;
+    result[key] =
+      Math.round(
+        (calls.reduce((s, c) => s + c.rubricScores[key], 0) / calls.length) *
+          10,
+      ) / 10;
   }
   return result;
 }
@@ -154,7 +166,9 @@ export async function getCalls(
 ): Promise<Call[]> {
   const orgId = filters?.orgId ?? (await getOrgId());
   if (!orgId) {
-    console.warn('[getCalls] getOrgId() returned null — user has no active org. Returning [].')
+    console.warn(
+      "[getCalls] getOrgId() returned null — user has no active org. Returning [].",
+    );
     return [];
   }
 

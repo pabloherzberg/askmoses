@@ -1,7 +1,9 @@
 import { Resend } from 'resend'
 import { buildCoachingEmail, type CoachingEmailSection } from '@/lib/email/coaching-template'
+import { intentFeedback } from '@/lib/utils/intentFeedback'
 import { getActiveOrgContext, getRole, getSession, requireOwnerWrite, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { CallResult } from '@/lib/types'
 
 interface SendCoachingBody {
   trainerName?: string
@@ -12,6 +14,11 @@ interface SendCoachingBody {
   strengths?: string[]
   improvements?: string[]
   locale?: string
+  // Intent (1–5) lido da transcrição pela IA. closed → forçado a 5 a partir de
+  // detectedOutcome; demais resultados usam `intent`. Ambos opcionais: sem um
+  // valor válido, a seção de Intent simplesmente não é renderizada no email.
+  intent?: number
+  detectedOutcome?: CallResult
 }
 
 // POST /api/send-coaching
@@ -107,6 +114,15 @@ export async function POST(request: Request) {
       feedback: s.feedback,
     }))
 
+    // Regra fixa: result === 'closed' → intent sempre 5 (sem análise). Demais
+    // resultados usam o intent calculado pela IA, recebido no body. Sem um valor
+    // válido (1–5), intentScore fica undefined e a seção é omitida no template.
+    const rawIntent = body.detectedOutcome === 'closed' ? 5 : body.intent
+    const intentScore = typeof rawIntent === 'number' && rawIntent >= 1 && rawIntent <= 5
+      ? rawIntent
+      : undefined
+    const intentMessage = intentScore !== undefined ? intentFeedback(intentScore, locale) : undefined
+
     const { subject, html } = buildCoachingEmail({
       trainerName,
       trainerEmail: trainerEmail ?? '',
@@ -116,6 +132,8 @@ export async function POST(request: Request) {
       strengths,
       improvements,
       locale,
+      intentScore,
+      intentMessage,
     })
 
     const apiKey = process.env.RESEND_API_KEY

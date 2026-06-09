@@ -12,24 +12,50 @@ Respond ONLY with a valid JSON object — no markdown, no explanation outside th
   "description": "string — one-sentence description",
   "sections": [
     {
-      "name": "string",
+      "name": "Discovery",
       "instructions": "string",
       "tips": "string",
-      "weight": number (integer 1–100; all sections must sum to exactly 100),
-      "critical": boolean (true if a low score here is eliminatory — e.g. Discovery, Problem Agitation)
+      "weight": number (integer 1–100),
+      "critical": boolean
+    },
+    {
+      "name": "Problem Agitation",
+      "instructions": "string",
+      "tips": "string",
+      "weight": number,
+      "critical": boolean
+    },
+    {
+      "name": "Offer Presentation",
+      "instructions": "string",
+      "tips": "string",
+      "weight": number,
+      "critical": boolean
+    },
+    {
+      "name": "Objection Handling",
+      "instructions": "string",
+      "tips": "string",
+      "weight": number,
+      "critical": boolean
+    },
+    {
+      "name": "Close & Next Steps",
+      "instructions": "string",
+      "tips": "string",
+      "weight": number,
+      "critical": boolean
     }
   ],
   "full_script": "string — complete script text with all sections combined",
-  "criteria": [
-    { "name": "string", "description": "string — what the evaluator should look for" }
-  ],
   "explanation": "string — why this script structure works based on the provided material"
 }
 
-Rules for weight and critical:
-- weight values must sum to exactly 100 across all sections.
-- Mark critical: true for sections where failure is eliminatory (e.g. Discovery, Problem Agitation, Objection Handling).
-- Distribute weights proportionally to each section's impact on closing the deal.`
+Rules:
+- The sections array must contain EXACTLY these 5 sections in this exact order, with these exact names: Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps. Do not add, remove, or rename any section.
+- weight values must sum to exactly 100 across all 5 sections.
+- Mark critical: true for sections where failure is eliminatory (typically Discovery, Problem Agitation, Objection Handling).
+- Fill instructions and tips based on the provided material — make them specific and actionable.`
 
 function buildUserPrompt(transcripts: string[], textInput: string | null): string {
   const parts: string[] = []
@@ -45,7 +71,7 @@ function buildUserPrompt(transcripts: string[], textInput: string | null): strin
     parts.push(`## Additional Text / Existing Script\n${textInput}`)
   }
 
-  parts.push(`\n## Task\nBased on the material above, generate a structured sales script with 5–7 sections, a complete full_script text, and 5–7 evaluation criteria. Focus on what made the calls effective.`)
+  parts.push(`\n## Task\nBased on the material above, generate a structured sales script using exactly the 5 fixed sections (Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps) with specific instructions and tips for each, plus a complete full_script text. Focus on what made the calls effective.`)
 
   return parts.join('\n\n')
 }
