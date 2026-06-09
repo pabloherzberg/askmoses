@@ -15,6 +15,53 @@ export function chunkStoragePath(callId: string, chunkIndex: number): string {
   return `chunks/${callId}/${chunkIndex}.mp3`
 }
 
+/**
+ * Path do áudio ORIGINAL (transitório). Vive só entre o ingest e o chunking:
+ * a rota /api/calls/chunk baixa daqui, corta, e deleta. Extensão neutra porque
+ * o ffmpeg detecta o formato pelo conteúdo, não pelo nome.
+ */
+export function originalStoragePath(callId: string): string {
+  return `originals/${callId}.input`
+}
+
+/** Sobe o áudio original (ingest manual ou recording do GHL). */
+export async function putOriginalAudio(
+  callId: string,
+  buffer: Buffer,
+  contentType = 'application/octet-stream',
+): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase.storage
+    .from(CALL_AUDIO_BUCKET)
+    .upload(originalStoragePath(callId), buffer, { contentType, upsert: true })
+
+  if (error) throw new Error(`putOriginalAudio(${callId}): ${error.message}`)
+}
+
+/** Baixa o áudio original pra cortar. */
+export async function getOriginalAudio(callId: string): Promise<Buffer> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.storage
+    .from(CALL_AUDIO_BUCKET)
+    .download(originalStoragePath(callId))
+
+  if (error) throw new Error(`getOriginalAudio(${callId}): ${error.message}`)
+  if (!data) throw new Error(`getOriginalAudio(${callId}): resposta vazia`)
+
+  return Buffer.from(await data.arrayBuffer())
+}
+
+/** Remove o áudio original após o chunking (best-effort). */
+export async function deleteOriginalAudio(callId: string): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase.storage
+    .from(CALL_AUDIO_BUCKET)
+    .remove([originalStoragePath(callId)])
+  if (error) {
+    console.warn(`[call-audio-storage] deleteOriginalAudio(${callId}) falhou: ${error.message}`)
+  }
+}
+
 /** Sobe o mp3 de um chunk. `upsert` true pra ser idempotente em re-chunking. */
 export async function putChunkAudio(
   path: string,

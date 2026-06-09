@@ -19,7 +19,9 @@ import {
   chunkStoragePath,
   deleteAllChunkAudioForCall,
   deleteChunkAudio,
+  deleteOriginalAudio,
   getChunkAudio,
+  getOriginalAudio,
   putChunkAudio,
 } from '@/lib/services/call-audio-storage'
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
@@ -71,11 +73,48 @@ function whisperChunkCost(chunk: DbCallChunk): number {
   return Number((minutes * WHISPER_USD_PER_MINUTE).toFixed(6))
 }
 
+/**
+ * Dispara a rota de chunking (fire-and-forget). Usada pelo ingest (manual e
+ * GHL) após subir o áudio original pro Storage: a rota /api/calls/chunk roda
+ * o ffmpeg (função dedicada com o binário no bundle) e enfileira os chunks.
+ */
+export function triggerChunking(callId: string): void {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  void fetch(`${baseUrl}/api/calls/chunk`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
+    },
+    body: JSON.stringify({ callId }),
+  }).catch((err) => {
+    console.error('[chunk-pipeline] triggerChunking falhou:', err)
+  })
+}
+
+/**
+ * Orquestra o chunking de uma call já com o áudio original no Storage: baixa,
+ * corta + enfileira, apaga o original e cutuca o worker pra começar a drenar.
+ * Chamada pela rota /api/calls/chunk. O áudio original é apagado SEMPRE (mesmo
+ * em erro do chunking, o finally limpa) — ele é puramente transitório.
+ */
+export async function runChunkingForCall(callId: string): Promise<void> {
+  const call = await dbGetCallById(callId)
+  if (!call) throw new Error(`runChunkingForCall: call ${callId} não encontrada`)
+
+  try {
+    const audio = await getOriginalAudio(callId)
+    await chunkAndEnqueueCall({ callId, orgId: call.org_id, audio })
+    kickChunkWorker()
+  } finally {
+    await deleteOriginalAudio(callId)
+  }
+}
+
 export interface ChunkAndEnqueueInput {
   callId: string
   orgId: string | null
   audio: Buffer
-  mimeType: string
   options?: ChunkOptions
 }
 
@@ -83,10 +122,10 @@ export interface ChunkAndEnqueueInput {
  * Corta o áudio em chunks sobrepostos, sobe cada um no Storage e enfileira.
  * Move a call: 'chunking' → 'awaiting_chunks'. Em erro, marca
  * 'transcription_failed' e alerta. O áudio original NÃO é persistido — vive só
- * no buffer recebido e é descartado quando esta função retorna.
+ * no buffer recebido e é descartado pelo caller.
  */
 export async function chunkAndEnqueueCall(input: ChunkAndEnqueueInput): Promise<void> {
-  const { callId, orgId, audio, mimeType } = input
+  const { callId, orgId, audio } = input
   const options = input.options ?? DEFAULT_CHUNK_OPTIONS
 
   await dbUpdateGhlCallPipeline(callId, { processingStatus: 'chunking' })
