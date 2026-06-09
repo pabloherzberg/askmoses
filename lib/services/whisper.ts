@@ -70,6 +70,22 @@ export async function transcribeAudioBuffer(
   }
 }
 
+/**
+ * Diariza um transcript JÁ pronto (texto puro → turnos rotulados Trainer/
+ * Prospect). Usado pelo pipeline de chunks: cada chunk é transcrito SEM
+ * diarização (diarize:false) e a diarização roda 1x sobre o transcript
+ * consolidado — mais barato e mais coerente que diarizar pedaço a pedaço.
+ *
+ * Best-effort no caller: se falhar, use o texto sem labels.
+ */
+export async function diarizeTranscript(
+  transcript: string,
+  options: Pick<TranscribeOptions, "trainerName" | "clientName"> = {},
+): Promise<string> {
+  if (!transcript.trim()) return transcript
+  return assignSpeakerLabels(transcript, options)
+}
+
 async function callWhisperTranslate(
   buffer: Buffer,
   mimeType: string,

@@ -260,6 +260,11 @@ export type ProcessingStatus =
   | 'transcription_failed'
   | 'webhook_failed'
   | 'auth_expired'
+  // Pipeline de transcrição por chunks — added in migration 078.
+  | 'queued_for_chunking'
+  | 'chunking'
+  | 'awaiting_chunks'
+  | 'consolidating'
 
 export interface CreateGhlCallInput {
   orgId: string
