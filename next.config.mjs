@@ -16,6 +16,9 @@ const nextConfig = {
       sizeLimit: '50mb',
     },
   },
+  outputFileTracingIncludes: {
+    '/api/calls/chunk': ['./node_modules/ffmpeg-static/**'],
+  },
 }
 
 export default withNextIntl(nextConfig)

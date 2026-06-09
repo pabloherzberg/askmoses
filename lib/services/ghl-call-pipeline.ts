@@ -1,25 +1,27 @@
 import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
-import { runGhlCallScoring } from "@/lib/services/ghl-call-scoring"
-import { sendGhlCoachingEmail } from "@/lib/services/ghl-coaching-email"
+import { putOriginalAudio } from "@/lib/services/call-audio-storage"
+import { triggerChunking } from "@/lib/services/chunk-pipeline"
 import { downloadRecording, fetchRecordingUrl, GhlAuthError } from "@/lib/services/ghl-api"
 import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
-import { transcribeAudioBuffer } from "@/lib/services/whisper"
-
-const TRANSCRIBE_RETRY_DELAYS_MS = [0, 1500, 4000]
 
 /**
- * Pipeline assíncrono disparado pelo webhook (via waitUntil).
+ * Pipeline assíncrono disparado pelo webhook (via after()).
  *
- * Estados terminais possíveis:
- *   - 'transcribed'           — sucesso. Outras features consomem daqui.
+ * Desde a migração pra transcrição por chunks (077-080), este pipeline NÃO
+ * transcreve mais inline — o recording (que pode passar de 25MB e estourar o
+ * Whisper) é subido pro Storage e entregue à fila de chunking. A transcrição,
+ * scoring e coaching email rodam depois, no worker auto-drenante
+ * (finalizeCallIfReady), igual ao fluxo de upload manual.
+ *
+ * Estados possíveis ao fim desta função:
+ *   - 'queued_for_chunking'   — sucesso. O chunking foi disparado; daqui o
+ *                               pipeline de chunks assume (→ awaiting_chunks →
+ *                               transcribed → scoring/email).
  *   - 'no_recording'          — não encontramos áudio no GHL para o contato.
- *   - 'transcription_failed'  — áudio existe mas Whisper falhou 3x.
+ *   - 'transcription_failed'  — áudio existe mas falhou ao baixar/subir.
  *   - 'auth_expired'          — GHL retornou 401/403; PIT da org foi rotacionado.
- *
- * NÃO faz scoring nem envia coaching email — decisão deliberada para que
- * features posteriores plugem nesse status terminal sem acoplamento.
  */
 export interface ProcessGhlCallOptions {
   accessToken: string
@@ -103,73 +105,22 @@ export async function processGhlCall(
     return
   }
 
-  let transcript: string | null = null
-  let lastError: unknown = null
-  for (let attempt = 0; attempt < TRANSCRIBE_RETRY_DELAYS_MS.length; attempt++) {
-    const delay = TRANSCRIBE_RETRY_DELAYS_MS[attempt]
-    if (delay > 0) await sleep(delay)
-    try {
-      transcript = await transcribeAudioBuffer(audio.buffer, audio.mimeType, {
-        trainerName: payload.userName ?? undefined,
-        clientName: payload.contactName ?? undefined,
-      })
-      break
-    } catch (err) {
-      lastError = err
-      console.warn("[ghl-pipeline] Whisper attempt failed", {
-        callId,
-        attempt: attempt + 1,
-        err: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
-
-  if (!transcript) {
-    console.error("[ghl-pipeline] Whisper exhausted retries", { callId, lastError })
+  // Entrega à fila de chunking: sobe o recording (transitório) e dispara a rota
+  // de corte. A partir daqui o pipeline de chunks assume — transcrição, scoring
+  // e email rodam na consolidação (finalizeCallIfReady).
+  try {
+    await putOriginalAudio(callId, audio.buffer, audio.mimeType)
+    await dbUpdateGhlCallPipeline(callId, { processingStatus: "queued_for_chunking" })
+    triggerChunking(callId)
+  } catch (err) {
+    console.error("[ghl-pipeline] enqueue chunking failed", { callId, err })
     await dbUpdateGhlCallPipeline(callId, {
       processingStatus: "transcription_failed",
     })
     await notifyPipelineFailure("transcription_failed", {
       callId,
       contactId: payload.contactId,
-      error: lastError,
-    })
-    return
-  }
-
-  await dbUpdateGhlCallPipeline(callId, {
-    transcript,
-    transcriptSource: "whisper",
-    processingStatus: "transcribed",
-  })
-
-  // Demo: roda scoring + coaching email inline após transcribed.
-  // Best-effort — erros NÃO afetam o transcript salvo. Erro no scoring
-  // pula o email (email só faz sentido se scoring rodou).
-  try {
-    await runGhlCallScoring(callId)
-  } catch (err) {
-    console.error("[ghl-pipeline] scoring failed (non-fatal)", {
-      callId,
-      err: err instanceof Error ? err.message : String(err),
-    })
-    return  // sem score, não envia email
-  }
-
-  // Email é separado num catch próprio porque é "mais best-effort" ainda
-  // que scoring — mesmo se falhar, score já tá no DB e admin pode ver
-  // via /calls. Idempotência via calls.email_sent garante que retentativa
-  // manual depois não duplica.
-  try {
-    await sendGhlCoachingEmail(callId)
-  } catch (err) {
-    console.error("[ghl-pipeline] coaching email failed (non-fatal)", {
-      callId,
-      err: err instanceof Error ? err.message : String(err),
+      error: err,
     })
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }

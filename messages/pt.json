@@ -1654,7 +1654,8 @@
         "percentComplete": "{progress}% concluído",
         "uploadingAudio": "Enviando áudio...",
         "transcribingAudio": "Transcrevendo áudio...",
-        "analyzingRubric": "Analisando contra a rubrica..."
+        "analyzingRubric": "Analisando contra a rubrica...",
+        "queueing": "Na fila para transcrição..."
       },
       "errors": {
         "fileTooLarge": "O arquivo deve ter menos de 50MB.",
@@ -1724,6 +1725,10 @@
         "subtitle": "O feedback de coaching foi enviado para {email}",
         "uploadAnother": "Enviar outra",
         "viewHistory": "Ver histórico"
+      },
+      "queued": {
+        "heading": "Call recebida — processando",
+        "subtitle": "Sua call está sendo transcrita e analisada. Vai aparecer no Histórico quando estiver pronta."
       },
       "form": {
         "salesPersonInfoTitle": "Informações do vendedor",

@@ -1654,7 +1654,8 @@
         "percentComplete": "{progress}% complete",
         "uploadingAudio": "Uploading audio...",
         "transcribingAudio": "Transcribing audio...",
-        "analyzingRubric": "Analyzing against rubric..."
+        "analyzingRubric": "Analyzing against rubric...",
+        "queueing": "Queueing for transcription..."
       },
       "errors": {
         "fileTooLarge": "File size must be less than 50MB.",
@@ -1724,6 +1725,10 @@
         "subtitle": "Coaching feedback has been sent to {email}",
         "uploadAnother": "Upload Another",
         "viewHistory": "View History"
+      },
+      "queued": {
+        "heading": "Call received — processing",
+        "subtitle": "Your call is being transcribed and analyzed. It will appear in History when ready."
       },
       "form": {
         "salesPersonInfoTitle": "Sales Person Information",

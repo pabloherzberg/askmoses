@@ -1,5 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { dbHasPendingChunkWork } from '@/lib/db/call-chunks'
+import { kickChunkWorker } from '@/lib/services/chunk-pipeline'
 
 // GET /api/cron/recover-stale-analyses
 //
@@ -123,5 +125,25 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return Response.json({ recovered, cleaned, errored, scanned: staleRows?.length ?? 0 })
+  // Rede de segurança da fila de chunks (077-080): a fila é auto-drenante por
+  // eventos, mas se um elo da cadeia morreu, há chunks 'pending' parados sem
+  // ninguém pra processá-los. Reusamos este cron (já agendado, sem custo de um
+  // cron novo) só pra cutucar o worker quando há trabalho preso.
+  let chunkWorkerKicked = false
+  try {
+    if (await dbHasPendingChunkWork()) {
+      kickChunkWorker()
+      chunkWorkerKicked = true
+    }
+  } catch (err) {
+    console.error('[cron/recover-stale-analyses] chunk safety-net falhou:', err)
+  }
+
+  return Response.json({
+    recovered,
+    cleaned,
+    errored,
+    scanned: staleRows?.length ?? 0,
+    chunkWorkerKicked,
+  })
 }
