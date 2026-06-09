@@ -1654,7 +1654,8 @@
         "percentComplete": "{progress}% terminé",
         "uploadingAudio": "Téléversement de l'audio...",
         "transcribingAudio": "Transcription de l'audio...",
-        "analyzingRubric": "Analyse avec la grille d'évaluation..."
+        "analyzingRubric": "Analyse avec la grille d'évaluation...",
+        "queueing": "En file pour transcription..."
       },
       "errors": {
         "fileTooLarge": "Le fichier doit peser moins de 50 Mo.",
@@ -1724,6 +1725,10 @@
         "subtitle": "Le retour de coaching a été envoyé à {email}",
         "uploadAnother": "Téléverser un autre",
         "viewHistory": "Voir l'historique"
+      },
+      "queued": {
+        "heading": "Appel reçu — traitement en cours",
+        "subtitle": "Votre appel est en cours de transcription et d'analyse. Il apparaîtra dans l'Historique une fois prêt."
       },
       "form": {
         "salesPersonInfoTitle": "Informations du commercial",

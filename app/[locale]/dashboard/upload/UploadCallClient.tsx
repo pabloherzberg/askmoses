@@ -39,11 +39,19 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { Trainer } from "@/lib/types";
+import type { CallOutcome } from "@/lib/constants";
 import { toNumber5 } from "@/lib/score-display";
 import { UpsellCard } from "@/components/shared/UpsellCard";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
+import { createClient } from "@/lib/supabase/client";
 
-type UploadStep = "input" | "processing" | "results" | "sending" | "complete";
+type UploadStep =
+  | "input"
+  | "processing"
+  | "results"
+  | "sending"
+  | "complete"
+  | "queued";
 
 interface FormData {
   trainerId: string;
@@ -225,77 +233,61 @@ export default function UploadCallClient() {
     setProgress(0);
 
     try {
-      let transcript = formData.transcript;
-
-      // Step 1: Transcribe audio if needed
+      // Caminho de áudio: assíncrono por chunks (migrations 077-080). O arquivo
+      // vai DIRETO pro Storage via signed URL (não passa pelo body da função,
+      // então suporta arquivos grandes — justamente os que estouravam o limite
+      // do Whisper). Transcrição + análise rodam no pipeline de chunks; o
+      // resultado aparece no histórico quando pronto.
       if (uploadType === "audio" && formData.audioFile) {
-        // Step 1a: Upload to Vercel Blob via server
         setProcessingStatus(t("processing.uploadingAudio"));
-        setProgress(10);
+        setProgress(15);
 
-        // Create FormData to send file to server
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", formData.audioFile);
-        uploadFormData.append("filename", formData.audioFile.name);
-
-        const uploadRes = await fetch("/api/blob-token", {
-          method: "POST",
-          body: uploadFormData,
-        });
-
-        if (!uploadRes.ok) {
-          const errData = await uploadRes.json().catch(() => ({}));
-          throw new Error(errData.error || t("errors.uploadFailed"));
-        }
-
-        const uploadData = await uploadRes.json();
-        const blobUrl = uploadData.url;
-
-        setProgress(30);
-
-        // Step 1b: Transcribe using Blob URL
-        setProcessingStatus(t("processing.transcribingAudio"));
-        setProgress(40);
-
-        const transcribeRes = await fetch("/api/transcribe", {
+        const createRes = await fetch("/api/calls/create-upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            blobUrl,
-            filename: formData.audioFile.name,
+            trainerId: formData.trainerId || undefined,
+            trainerName: formData.trainerName,
+            trainerEmail: formData.trainerEmail,
+            clientName: formData.clientName,
           }),
         });
+        const createJson = await createRes.json().catch(() => ({}));
+        if (!createRes.ok || !createJson?.data) {
+          throw new Error(createJson?.error || t("errors.uploadFailed"));
+        }
+        const { callId, bucket, path, token } = createJson.data;
 
-        console.log("[v0] Transcribe response status:", transcribeRes.status);
-
-        if (!transcribeRes.ok) {
-          let errorMsg = t("errors.transcribeFailed");
-          const contentType = transcribeRes.headers.get("content-type") || "";
-          if (contentType.includes("application/json")) {
-            try {
-              const errData = await transcribeRes.clone().json();
-              errorMsg = errData.error || errorMsg;
-            } catch {
-              /* ignore parse error */
-            }
-          } else {
-            errorMsg =
-              transcribeRes.status === 404
-                ? t("errors.apiUnavailable")
-                : t("errors.httpStatus", { status: transcribeRes.status });
-          }
-          console.error("[v0] Transcribe error:", errorMsg);
-          throw new Error(errorMsg);
+        // Upload direto browser → Supabase Storage via signed URL.
+        setProgress(40);
+        const supabase = createClient();
+        const { error: upErr } = await supabase.storage
+          .from(bucket)
+          .uploadToSignedUrl(path, token, formData.audioFile);
+        if (upErr) {
+          throw new Error(upErr.message || t("errors.uploadFailed"));
         }
 
-        const transcribeData = await transcribeRes.json();
-        console.log(
-          "[v0] Transcript received:",
-          transcribeData.transcript?.substring(0, 100),
-        );
-        transcript = transcribeData.transcript;
-        setProgress(50);
+        // Dispara o chunking; o restante roda assíncrono.
+        setProcessingStatus(t("processing.queueing"));
+        setProgress(80);
+        const startRes = await fetch("/api/calls/start-chunking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callId }),
+        });
+        if (!startRes.ok) {
+          const startJson = await startRes.json().catch(() => ({}));
+          throw new Error(startJson?.error || t("errors.uploadFailed"));
+        }
+
+        setProgress(100);
+        setStep("queued");
+        return;
       }
+
+      // Caminho de transcript colado: análise síncrona direta (sem áudio).
+      const transcript = formData.transcript;
 
       // Step 2: Analyze transcript (API fetches criteria + system prompt from Supabase)
       setProcessingStatus(t("processing.analyzingRubric"));
@@ -746,6 +738,38 @@ export default function UploadCallClient() {
             </CardContent>
           </Card>
         )}
+      </div>
+    );
+  }
+
+  if (step === "queued") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center pb-16 lg:pb-0">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-primary/10 p-3">
+                <Sparkles className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">
+                {t("queued.heading")}
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("queued.subtitle")}
+              </p>
+              <div className="mt-6 flex gap-2">
+                <Button variant="outline" onClick={resetForm}>
+                  {t("complete.uploadAnother")}
+                </Button>
+                <Button asChild>
+                  <a href={`/${locale}/dashboard/history`}>
+                    {t("complete.viewHistory")}
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
