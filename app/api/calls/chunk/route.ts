@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 import { dbUpdateGhlCallPipeline } from '@/lib/db/calls'
 import { runChunkingForCall } from '@/lib/services/chunk-pipeline'
 import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
@@ -22,7 +22,11 @@ export const maxDuration = 800
 
 export async function POST(request: NextRequest) {
   const internal = request.headers.get('x-internal-secret') ?? ''
-  if (!process.env.INTERNAL_API_SECRET || internal !== process.env.INTERNAL_API_SECRET) {
+  if (!process.env.INTERNAL_API_SECRET) {
+    console.error('[calls/chunk] MISCONFIG: INTERNAL_API_SECRET ausente — rota interna desabilitada')
+    return Response.json({ error: 'forbidden' }, { status: 401 })
+  }
+  if (internal !== process.env.INTERNAL_API_SECRET) {
     return Response.json({ error: 'forbidden' }, { status: 401 })
   }
 
@@ -35,21 +39,34 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'invalid JSON' }, { status: 400 })
   }
 
-  try {
-    await runChunkingForCall(callId)
-  } catch (err) {
-    console.error('[calls/chunk] chunking falhou', {
-      callId,
-      err: err instanceof Error ? err.message : String(err),
-    })
-    // Garante estado terminal mesmo em falhas fora do escopo do chunkAndEnqueue
-    // (ex.: download do original do Storage). UPDATE idempotente.
-    await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' }).catch(
-      () => {},
-    )
-    await notifyPipelineFailure('transcription_failed', { callId, error: err })
-    return Response.json({ error: 'chunking failed' }, { status: 500 })
-  }
+  // Processa em BACKGROUND e responde já (202). O disparo (triggerChunking) é um
+  // self-fetch que, em serverless, era morto quando a função do CALLER retornava
+  // — e como esta rota era SÍNCRONA (corte de uma call de 5h leva minutos), o
+  // caller tinha que segurar o fetch o tempo todo, então ele era cortado e a
+  // call ficava presa em 'queued_for_chunking' de forma intermitente. Com
+  // after(), a rota responde na hora; o caller (também em after()) confirma a
+  // entrega rápida, e o corte roda aqui desacoplado, dentro do maxDuration desta
+  // função (que é a que tem o ffmpeg + os 800s).
+  const id = callId
+  after(async () => {
+    try {
+      await runChunkingForCall(id)
+    } catch (err) {
+      console.error('[calls/chunk] chunking falhou', {
+        callId: id,
+        err: err instanceof Error ? err.message : String(err),
+      })
+      // Estado terminal mesmo em falhas fora do escopo do chunkAndEnqueue
+      // (ex.: download do original do Storage). UPDATE idempotente.
+      await dbUpdateGhlCallPipeline(id, { processingStatus: 'transcription_failed' }).catch(
+        () => {},
+      )
+      await notifyPipelineFailure('transcription_failed', { callId: id, error: err })
+    }
+  })
 
-  return Response.json({ data: { callId, status: 'chunking_started' }, error: null })
+  return Response.json(
+    { data: { callId, status: 'chunking_started' }, error: null },
+    { status: 202 },
+  )
 }
