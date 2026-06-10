@@ -30,6 +30,7 @@ import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
 import { diarizeTranscript } from '@/lib/services/whisper'
 import { transcribeAudioBuffer } from '@/lib/services/whisper'
+import { selfBaseUrl } from '@/lib/internal-url'
 
 // ────────────────────────────────────────────────────────────────────────────
 // Orquestração do pipeline de transcrição por chunks (Fase 3).
@@ -44,21 +45,32 @@ import { transcribeAudioBuffer } from '@/lib/services/whisper'
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Dispara o worker da fila (fire-and-forget). A fila é auto-drenante por
- * eventos, SEM cron próprio: o ingest chama isto após enfileirar, e o próprio
- * worker chama de novo enquanto sobra trabalho. O cron existente
- * (recover-stale-analyses, 15min) também chama como rede de segurança caso um
- * elo da cadeia morra. Idempotente — chamadas concorrentes só competem pelo
- * claim atômico (SKIP LOCKED), nunca duplicam transcrição.
+ * Dispara o worker da fila. A fila é auto-drenante por eventos, SEM cron
+ * próprio: o ingest chama isto após enfileirar, e o próprio worker chama de novo
+ * enquanto sobra trabalho. O cron existente (recover-stale-analyses, 15min)
+ * também chama como rede de segurança caso um elo da cadeia morra. Idempotente —
+ * chamadas concorrentes só competem pelo claim atômico (SKIP LOCKED), nunca
+ * duplicam transcrição.
+ *
+ * É `async` e o caller DEVE aguardar (dentro de after()/waitUntil quando vier de
+ * um route handler): em serverless o fetch não-aguardado é morto quando a função
+ * retorna, e o disparo se perde silenciosamente. O worker responde 202 na hora,
+ * então o await é barato.
  */
-export function kickChunkWorker(): void {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  void fetch(`${baseUrl}/api/calls/process-chunks`, {
-    method: 'POST',
-    headers: { 'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '' },
-  }).catch((err) => {
+export async function kickChunkWorker(): Promise<void> {
+  const secret = process.env.INTERNAL_API_SECRET
+  if (!secret) {
+    console.error('[chunk-pipeline] MISCONFIG: INTERNAL_API_SECRET ausente — worker não disparado')
+    return
+  }
+  try {
+    await fetch(`${selfBaseUrl()}/api/calls/process-chunks`, {
+      method: 'POST',
+      headers: { 'x-internal-secret': secret },
+    })
+  } catch (err) {
     console.error('[chunk-pipeline] kickChunkWorker falhou:', err)
-  })
+  }
 }
 
 /** Whisper-1: US$0.006 por minuto de áudio. */
@@ -74,22 +86,34 @@ function whisperChunkCost(chunk: DbCallChunk): number {
 }
 
 /**
- * Dispara a rota de chunking (fire-and-forget). Usada pelo ingest (manual e
- * GHL) após subir o áudio original pro Storage: a rota /api/calls/chunk roda
- * o ffmpeg (função dedicada com o binário no bundle) e enfileira os chunks.
+ * Dispara a rota de chunking. Usada pelo ingest (manual e GHL) após subir o
+ * áudio original pro Storage: a rota /api/calls/chunk corta o ffmpeg e enfileira
+ * os chunks (ela mesma responde 202 e processa em after()).
+ *
+ * É `async` e o caller DEVE aguardar dentro de after()/waitUntil. Antes era um
+ * `void fetch` fire-and-forget: em serverless ele era morto quando a função do
+ * caller retornava, deixando a call presa em 'queued_for_chunking' de forma
+ * INTERMITENTE (passava ou não conforme cold start/timing). Aguardar dentro de
+ * after() garante que o request saia antes de a função ser congelada.
  */
-export function triggerChunking(callId: string): void {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  void fetch(`${baseUrl}/api/calls/chunk`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
-    },
-    body: JSON.stringify({ callId }),
-  }).catch((err) => {
-    console.error('[chunk-pipeline] triggerChunking falhou:', err)
-  })
+export async function triggerChunking(callId: string): Promise<void> {
+  const secret = process.env.INTERNAL_API_SECRET
+  if (!secret) {
+    console.error('[chunk-pipeline] MISCONFIG: INTERNAL_API_SECRET ausente — chunking não disparado', { callId })
+    return
+  }
+  try {
+    await fetch(`${selfBaseUrl()}/api/calls/chunk`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-secret': secret,
+      },
+      body: JSON.stringify({ callId }),
+    })
+  } catch (err) {
+    console.error('[chunk-pipeline] triggerChunking falhou:', { callId, err })
+  }
 }
 
 /**
@@ -105,7 +129,7 @@ export async function runChunkingForCall(callId: string): Promise<void> {
   try {
     const audio = await getOriginalAudio(callId)
     await chunkAndEnqueueCall({ callId, orgId: call.org_id, audio })
-    kickChunkWorker()
+    await kickChunkWorker()
   } finally {
     await deleteOriginalAudio(callId)
   }

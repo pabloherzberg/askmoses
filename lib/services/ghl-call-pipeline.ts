@@ -111,7 +111,10 @@ export async function processGhlCall(
   try {
     await putOriginalAudio(callId, audio.buffer, audio.mimeType)
     await dbUpdateGhlCallPipeline(callId, { processingStatus: "queued_for_chunking" })
-    triggerChunking(callId)
+    // Aguarda o disparo: processGhlCall roda dentro do after() do webhook, então
+    // o await mantém a função viva até o request de chunking sair (evita a corrida
+    // do serverless que deixava a call presa em 'queued_for_chunking').
+    await triggerChunking(callId)
   } catch (err) {
     console.error("[ghl-pipeline] enqueue chunking failed", { callId, err })
     await dbUpdateGhlCallPipeline(callId, {

@@ -44,6 +44,9 @@ const STALE_SECONDS = 300
 const FINALIZE_SCAN_LIMIT = 25
 
 function isAuthorized(request: NextRequest): boolean {
+  if (!process.env.INTERNAL_API_SECRET && !process.env.CRON_SECRET) {
+    console.error('[process-chunks] MISCONFIG: nem INTERNAL_API_SECRET nem CRON_SECRET configurados — worker desabilitado')
+  }
   const internal = request.headers.get('x-internal-secret') ?? ''
   if (process.env.INTERNAL_API_SECRET && internal === process.env.INTERNAL_API_SECRET) {
     return true
@@ -110,9 +113,10 @@ export async function POST(request: NextRequest) {
 
       // ─── 4. Auto-drenagem: se houve trabalho, continua a cadeia ──────────
       // Re-dispara só quando reivindicou algo — evita hot-loop quando a fila
-      // está vazia (próximo ingest ou o cron de 15min reativam).
+      // está vazia (próximo ingest ou o cron de 15min reativam). Aguarda dentro
+      // do after() pra garantir que o request saia antes da função congelar.
       if (claimed > 0) {
-        kickChunkWorker()
+        await kickChunkWorker()
       }
     } catch (err) {
       console.error('[process-chunks] run falhou:', err)
