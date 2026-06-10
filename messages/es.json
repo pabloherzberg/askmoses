@@ -1658,7 +1658,7 @@
         "queueing": "En cola para transcripción..."
       },
       "errors": {
-        "fileTooLarge": "El archivo debe pesar menos de 50MB.",
+        "fileTooLarge": "El archivo debe pesar menos de {size}MB.",
         "uploadFailed": "No se pudo subir el audio",
         "transcribeFailed": "No se pudo transcribir el audio",
         "analyzeFailed": "No se pudo analizar la llamada",

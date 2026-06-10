@@ -16,7 +16,9 @@ import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 //   Auth: 'x-internal-secret: $INTERNAL_API_SECRET' (chamada server-to-server).
 
 export const runtime = 'nodejs'
-export const maxDuration = 300
+// Áudio longo (ex.: call de 5h ≈ 30 chunks de ffmpeg + download de ~430MB do
+// Storage) não cabe em 300s. Fluid Compute (Vercel Teams) suporta até 800s.
+export const maxDuration = 800
 
 export async function POST(request: NextRequest) {
   const internal = request.headers.get('x-internal-secret') ?? ''

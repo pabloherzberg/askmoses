@@ -1658,7 +1658,7 @@
         "queueing": "En file pour transcription..."
       },
       "errors": {
-        "fileTooLarge": "Le fichier doit peser moins de 50 Mo.",
+        "fileTooLarge": "Le fichier doit peser moins de {size} Mo.",
         "uploadFailed": "Échec du téléversement de l'audio",
         "transcribeFailed": "Échec de la transcription de l'audio",
         "analyzeFailed": "Échec de l'analyse de l'appel",

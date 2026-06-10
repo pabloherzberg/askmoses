@@ -1658,7 +1658,7 @@
         "queueing": "Queueing for transcription..."
       },
       "errors": {
-        "fileTooLarge": "File size must be less than 50MB.",
+        "fileTooLarge": "File size must be less than {size}MB.",
         "uploadFailed": "Failed to upload audio",
         "transcribeFailed": "Failed to transcribe audio",
         "analyzeFailed": "Failed to analyze call",

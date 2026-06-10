@@ -9,6 +9,14 @@ const WHISPER_TRANSLATE_ENDPOINT = "https://api.openai.com/v1/audio/translations
 const DEFAULT_PROMPT =
   "This is a sales call between a salesperson and a prospect. Provide a clean, natural English translation of the call."
 
+// Timeout POR TENTATIVA da chamada ao Whisper. Um chunk é ~10min de áudio
+// (~5MB) e o translate volta em ~1min; 120s dá folga. Sem isto, o fetch herda
+// o headersTimeout default do undici (5min) — um chunk lento trava o worker
+// inteiro e estoura o maxDuration. Com timeout curto + retry, blips de rede
+// ("fetch failed") são absorvidos antes de queimar as tentativas do chunk.
+const WHISPER_TIMEOUT_MS = 120_000
+const WHISPER_MAX_ATTEMPTS = 3
+
 // Whisper API olha a EXTENSÃO do filename pra decidir formato, não o MIME.
 // Lista permitida: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm.
 // GHL devolve `audio/x-wav` (MIME legado Microsoft); split direto vira
@@ -102,24 +110,57 @@ async function callWhisperTranslate(
     buffer.byteOffset + buffer.byteLength,
   ) as ArrayBuffer
 
-  const form = new FormData()
-  form.append("file", new Blob([ab], { type: mimeType }), filename)
-  form.append("model", "whisper-1")
-  form.append("prompt", options.prompt ?? DEFAULT_PROMPT)
+  const blob = new Blob([ab], { type: mimeType })
 
-  const res = await fetch(WHISPER_TRANSLATE_ENDPOINT, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
-  })
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= WHISPER_MAX_ATTEMPTS; attempt++) {
+    // FormData é reconstruída por tentativa (o body é consumido no fetch); o
+    // Blob é reaproveitável.
+    const form = new FormData()
+    form.append("file", blob, filename)
+    form.append("model", "whisper-1")
+    form.append("prompt", options.prompt ?? DEFAULT_PROMPT)
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Whisper API error ${res.status}: ${err}`)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), WHISPER_TIMEOUT_MS)
+    try {
+      const res = await fetch(WHISPER_TRANSLATE_ENDPOINT, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: form,
+        signal: controller.signal,
+      })
+
+      if (res.ok) {
+        const data = (await res.json()) as { text: string }
+        return data.text.trim()
+      }
+
+      const errText = await res.text()
+      // 4xx (exceto 429) é erro de request — retentar não muda nada.
+      if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        throw new Error(`Whisper API error ${res.status}: ${errText}`)
+      }
+      lastErr = new Error(`Whisper API error ${res.status}: ${errText}`)
+    } catch (err) {
+      // Timeout (AbortError) e falha de rede ("fetch failed") são retentáveis;
+      // o 4xx acima é re-lançado direto.
+      if (err instanceof Error && err.message.startsWith("Whisper API error 4")) {
+        throw err
+      }
+      lastErr = err
+    } finally {
+      clearTimeout(timer)
+    }
+
+    if (attempt < WHISPER_MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1))) // 1s, 2s
+    }
   }
 
-  const data = (await res.json()) as { text: string }
-  return data.text.trim()
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error(`Whisper falhou após ${WHISPER_MAX_ATTEMPTS} tentativas`)
 }
 
 /**
