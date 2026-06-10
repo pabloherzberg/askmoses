@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { selfBaseUrl } from '@/lib/internal-url'
 import type { Role } from '@/lib/types'
 
 interface RetryBody {
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
   // Dispatch fire-and-forget — mesmo padrão de send/route.ts. Em serverless
   // o request pode ser cortado se a função retornar antes do socket sair,
   // por isso o cron da parte C é o safety net.
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const baseUrl = selfBaseUrl()
   void fetch(`${baseUrl}/api/script-intelligence/process`, {
     method: 'POST',
     headers: {

@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 import { forbidden, getOrgId, getSession, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { dbGetCallById, dbUpdateGhlCallPipeline } from '@/lib/db/calls'
 import { triggerChunking } from '@/lib/services/chunk-pipeline'
@@ -30,7 +30,11 @@ export async function POST(request: NextRequest) {
   if (!call) return forbidden()
 
   await dbUpdateGhlCallPipeline(call.id, { processingStatus: 'queued_for_chunking' })
-  triggerChunking(call.id)
+  // Dispara dentro de after() e AGUARDA: em serverless o fetch não-aguardado é
+  // morto quando esta função retorna, deixando a call presa em
+  // 'queued_for_chunking' de forma intermitente. after() mantém a função viva
+  // até o request sair (a rota de chunk responde 202 na hora, então é rápido).
+  after(() => triggerChunking(call.id))
 
   return Response.json({ data: { callId: call.id, status: 'queued_for_chunking' }, error: null })
 }

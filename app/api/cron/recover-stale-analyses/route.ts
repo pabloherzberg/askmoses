@@ -1,7 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbHasPendingChunkWork } from '@/lib/db/call-chunks'
-import { kickChunkWorker } from '@/lib/services/chunk-pipeline'
+import { kickChunkWorker, triggerChunking } from '@/lib/services/chunk-pipeline'
+import { selfBaseUrl } from '@/lib/internal-url'
 
 // GET /api/cron/recover-stale-analyses
 //
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
         .eq('org_id', orgId)
         .eq('org_script_id', orgScriptId)
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+      const baseUrl = selfBaseUrl()
       void fetch(`${baseUrl}/api/script-intelligence/process`, {
         method: 'POST',
         headers: {
@@ -132,11 +133,36 @@ export async function GET(request: NextRequest) {
   let chunkWorkerKicked = false
   try {
     if (await dbHasPendingChunkWork()) {
-      kickChunkWorker()
+      await kickChunkWorker()
       chunkWorkerKicked = true
     }
   } catch (err) {
     console.error('[cron/recover-stale-analyses] chunk safety-net falhou:', err)
+  }
+
+  // Safety-net pro handoff 'queued_for_chunking' → 'chunking'. O triggerChunking
+  // é um self-fetch que pode se perder em serverless (a função do caller encerra
+  // antes do request sair), deixando a call presa em 'queued_for_chunking' SEM
+  // ninguém pra re-disparar — o kick do worker acima só cobre chunks já
+  // enfileirados ('awaiting_chunks'). Aqui re-disparamos o chunk pras que
+  // passaram do cutoff (15min). Re-trigger é seguro: nessas o chunk nunca rodou,
+  // então o áudio original ainda está no Storage. Não tocamos em 'chunking'
+  // (pode estar em andamento dentro dos 800s do maxDuration).
+  let chunkingRetriggered = 0
+  try {
+    const { data: stuckQueued } = await admin
+      .from('calls')
+      .select('id')
+      .eq('processing_status', 'queued_for_chunking')
+      .lt('updated_at', cutoff)
+      .order('updated_at', { ascending: true })
+      .limit(BATCH_LIMIT)
+    for (const row of stuckQueued ?? []) {
+      await triggerChunking(row.id as string)
+      chunkingRetriggered += 1
+    }
+  } catch (err) {
+    console.error('[cron/recover-stale-analyses] re-trigger chunking falhou:', err)
   }
 
   return Response.json({
@@ -145,5 +171,6 @@ export async function GET(request: NextRequest) {
     errored,
     scanned: staleRows?.length ?? 0,
     chunkWorkerKicked,
+    chunkingRetriggered,
   })
 }

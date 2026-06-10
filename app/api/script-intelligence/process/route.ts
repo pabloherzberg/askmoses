@@ -1,6 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { runScriptIntelligence } from '@/lib/script-intelligence/analyze'
+import { selfBaseUrl } from '@/lib/internal-url'
 
 // POST /api/script-intelligence/process
 // Rota interna — chamada pelo admin/send após criar o pending.
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
   }).eq('org_script_id', nextMatch.id)
 
   // Dispara a análise da próxima em background
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const baseUrl = selfBaseUrl()
   void fetch(`${baseUrl}/api/script-intelligence/process`, {
     method: 'POST',
     headers: {

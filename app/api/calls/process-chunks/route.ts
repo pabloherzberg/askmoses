@@ -29,21 +29,27 @@ import {
 //   'Authorization: Bearer $CRON_SECRET' (rede de segurança via cron).
 
 export const runtime = 'nodejs'
-export const maxDuration = 300
+// Fluid Compute (Vercel Teams) suporta até 800s. Damos folga porque o batch
+// agora roda concorrente e queremos drenar bastante chunk por ciclo.
+export const maxDuration = 800
 
-// Quantos chunks transcrever por execução. Cada chunk leva ~1min no Whisper, e
-// o run é SEQUENCIAL — então o tempo total do run ≈ CHUNK_BATCH min. Tem que
-// caber com folga abaixo de dois limites de 5min: (1) maxDuration=300 da Vercel
-// e (2) o headersTimeout default do undici (5min), que mata o auto-kick
-// (kickChunkWorker espera a resposta do próximo run). Batch=2 → run ~2min, bem
-// abaixo dos dois. A fila drena em mais ciclos, mas cada um é seguro.
-const CHUNK_BATCH = 2
+// Quantos chunks reivindicar por execução. Como agora a transcrição do batch
+// roda CONCORRENTE (Promise.all), este número é o nível de CONCORRÊNCIA, não um
+// multiplicador de tempo: N chunks terminam em ~1 chunk de tempo (~45s), não N.
+// O fix do after() removeu a antiga trava do headersTimeout (que me obrigou a
+// usar 2), então dá pra subir. Limites a respeitar: maxDuration desta função e
+// o rate-limit do Whisper (429 já tem retry/backoff no whisper.ts). 6 é um
+// equilíbrio seguro; ajuste vendo o comportamento real.
+const CHUNK_BATCH = 6
 // Stale de 'processing' (chunk reivindicado mas nunca finalizado): re-elegível.
 const STALE_SECONDS = 300
 // Calls em 'awaiting_chunks' varridas por run como safety net de consolidação.
 const FINALIZE_SCAN_LIMIT = 25
 
 function isAuthorized(request: NextRequest): boolean {
+  if (!process.env.INTERNAL_API_SECRET && !process.env.CRON_SECRET) {
+    console.error('[process-chunks] MISCONFIG: nem INTERNAL_API_SECRET nem CRON_SECRET configurados — worker desabilitado')
+  }
   const internal = request.headers.get('x-internal-secret') ?? ''
   if (process.env.INTERNAL_API_SECRET && internal === process.env.INTERNAL_API_SECRET) {
     return true
@@ -78,10 +84,13 @@ export async function POST(request: NextRequest) {
       claimed = chunks.length
 
       const toFinalize = new Set<string>()
-      // Sequencial de propósito: limita memória (cada chunk é baixado inteiro) e
-      // evita rajada de chamadas simultâneas ao Whisper.
-      for (const chunk of chunks) {
-        const callId = await transcribeChunk(chunk)
+      // Transcreve o batch em PARALELO. transcribeChunk é I/O-bound (download do
+      // chunk + Whisper), trata o próprio erro e NUNCA lança — então Promise.all
+      // é seguro e N chunks terminam em ~1 chunk de tempo, não N. A concorrência
+      // é limitada pelo tamanho do batch (CHUNK_BATCH). Memória: cada chunk
+      // (~5MB transcodado) × CHUNK_BATCH — folgado.
+      const callIds = await Promise.all(chunks.map((chunk) => transcribeChunk(chunk)))
+      for (const callId of callIds) {
         toFinalize.add(callId)
         transcribed += 1
       }
@@ -110,9 +119,10 @@ export async function POST(request: NextRequest) {
 
       // ─── 4. Auto-drenagem: se houve trabalho, continua a cadeia ──────────
       // Re-dispara só quando reivindicou algo — evita hot-loop quando a fila
-      // está vazia (próximo ingest ou o cron de 15min reativam).
+      // está vazia (próximo ingest ou o cron de 15min reativam). Aguarda dentro
+      // do after() pra garantir que o request saia antes da função congelar.
       if (claimed > 0) {
-        kickChunkWorker()
+        await kickChunkWorker()
       }
     } catch (err) {
       console.error('[process-chunks] run falhou:', err)

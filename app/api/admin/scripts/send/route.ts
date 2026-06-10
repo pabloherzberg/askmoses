@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { MAX_BULK_ORG_IDS, RATE_LIMITS } from '@/lib/constants/limits'
+import { selfBaseUrl } from '@/lib/internal-url'
 import type { Role } from '@/lib/types'
 
 interface SendBody {
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
 
   // Dispara apenas a primeira da fila em background.
   // O process/route.ts se encarrega de acionar a próxima quando terminar.
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const baseUrl = selfBaseUrl()
   const first = queue[0]
   void fetch(`${baseUrl}/api/script-intelligence/process`, {
     method: 'POST',
