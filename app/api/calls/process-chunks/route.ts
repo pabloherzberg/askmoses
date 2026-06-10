@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbClaimChunks } from '@/lib/db/call-chunks'
 import {
@@ -31,9 +31,13 @@ import {
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-// Quantos chunks transcrever por execução. Cada chunk ~10min de áudio ≈ alguns
-// segundos de Whisper; conservador pra caber folgado em maxDuration.
-const CHUNK_BATCH = 5
+// Quantos chunks transcrever por execução. Cada chunk leva ~1min no Whisper, e
+// o run é SEQUENCIAL — então o tempo total do run ≈ CHUNK_BATCH min. Tem que
+// caber com folga abaixo de dois limites de 5min: (1) maxDuration=300 da Vercel
+// e (2) o headersTimeout default do undici (5min), que mata o auto-kick
+// (kickChunkWorker espera a resposta do próximo run). Batch=2 → run ~2min, bem
+// abaixo dos dois. A fila drena em mais ciclos, mas cada um é seguro.
+const CHUNK_BATCH = 2
 // Stale de 'processing' (chunk reivindicado mas nunca finalizado): re-elegível.
 const STALE_SECONDS = 300
 // Calls em 'awaiting_chunks' varridas por run como safety net de consolidação.
@@ -56,59 +60,65 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'forbidden' }, { status: 401 })
   }
 
-  let claimed = 0
-  let transcribed = 0
-  let finalized = 0
+  // Processa em BACKGROUND e responde já. O worker é disparado por self-fetch
+  // fire-and-forget (kickChunkWorker / triggerChunking → chunk). Se a resposta
+  // esperasse o batch inteiro terminar, o fetch do disparo estouraria o
+  // headersTimeout default do undici (5min → UND_ERR_HEADERS_TIMEOUT) sempre que
+  // um run chegasse perto disso. Com after(), o disparo recebe 200 na hora e o
+  // batch roda desacoplado — a Vercel mantém a função viva pro after() (mesmo
+  // padrão do webhook do GHL). O work completa independente da conexão do kick.
+  after(async () => {
+    let claimed = 0
+    let transcribed = 0
+    let finalized = 0
 
-  try {
-    // ─── 1. Reivindica e transcreve um lote de chunks ──────────────────────
-    const chunks = await dbClaimChunks(CHUNK_BATCH, STALE_SECONDS)
-    claimed = chunks.length
+    try {
+      // ─── 1. Reivindica e transcreve um lote de chunks ────────────────────
+      const chunks = await dbClaimChunks(CHUNK_BATCH, STALE_SECONDS)
+      claimed = chunks.length
 
-    const toFinalize = new Set<string>()
-    // Sequencial de propósito: limita memória (cada chunk é baixado inteiro) e
-    // evita rajada de chamadas simultâneas ao Whisper.
-    for (const chunk of chunks) {
-      const callId = await transcribeChunk(chunk)
-      toFinalize.add(callId)
-      transcribed += 1
-    }
-
-    // ─── 2 + 3. Consolida calls tocadas + safety net de awaiting_chunks ────
-    const admin = createAdminClient()
-    const { data: stuck } = await admin
-      .from('calls')
-      .select('id')
-      .eq('processing_status', 'awaiting_chunks')
-      .order('updated_at', { ascending: true })
-      .limit(FINALIZE_SCAN_LIMIT)
-    for (const row of stuck ?? []) toFinalize.add(row.id as string)
-
-    for (const callId of toFinalize) {
-      try {
-        await finalizeCallIfReady(callId)
-        finalized += 1
-      } catch (err) {
-        console.error('[process-chunks] finalize falhou', {
-          callId,
-          err: err instanceof Error ? err.message : String(err),
-        })
+      const toFinalize = new Set<string>()
+      // Sequencial de propósito: limita memória (cada chunk é baixado inteiro) e
+      // evita rajada de chamadas simultâneas ao Whisper.
+      for (const chunk of chunks) {
+        const callId = await transcribeChunk(chunk)
+        toFinalize.add(callId)
+        transcribed += 1
       }
-    }
 
-    // ─── 4. Auto-drenagem: se houve trabalho, continua a cadeia ────────────
-    // Re-dispara só quando reivindicou algo — evita hot-loop quando a fila
-    // está vazia (próximo ingest ou o cron de 15min reativam).
-    if (claimed > 0) {
-      kickChunkWorker()
-    }
-  } catch (err) {
-    console.error('[process-chunks] run falhou:', err)
-    return Response.json(
-      { error: 'run failed', claimed, transcribed, finalized },
-      { status: 500 },
-    )
-  }
+      // ─── 2 + 3. Consolida calls tocadas + safety net de awaiting_chunks ──
+      const admin = createAdminClient()
+      const { data: stuck } = await admin
+        .from('calls')
+        .select('id')
+        .eq('processing_status', 'awaiting_chunks')
+        .order('updated_at', { ascending: true })
+        .limit(FINALIZE_SCAN_LIMIT)
+      for (const row of stuck ?? []) toFinalize.add(row.id as string)
 
-  return Response.json({ claimed, transcribed, finalized })
+      for (const callId of toFinalize) {
+        try {
+          await finalizeCallIfReady(callId)
+          finalized += 1
+        } catch (err) {
+          console.error('[process-chunks] finalize falhou', {
+            callId,
+            err: err instanceof Error ? err.message : String(err),
+          })
+        }
+      }
+
+      // ─── 4. Auto-drenagem: se houve trabalho, continua a cadeia ──────────
+      // Re-dispara só quando reivindicou algo — evita hot-loop quando a fila
+      // está vazia (próximo ingest ou o cron de 15min reativam).
+      if (claimed > 0) {
+        kickChunkWorker()
+      }
+    } catch (err) {
+      console.error('[process-chunks] run falhou:', err)
+    }
+  })
+
+  // Aceito: o batch roda no after(). 202 deixa claro que é assíncrono.
+  return Response.json({ accepted: true }, { status: 202 })
 }

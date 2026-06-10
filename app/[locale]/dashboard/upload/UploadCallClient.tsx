@@ -45,6 +45,13 @@ import { UpsellCard } from "@/components/shared/UpsellCard";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
 import { createClient } from "@/lib/supabase/client";
 
+// Teto do upload manual de áudio. O arquivo vai DIRETO browser → Storage via
+// signed URL, então quem barra é (1) este maxSize do dropzone e (2) o
+// file_size_limit do bucket `call-audio` (migration 081) + o limite global do
+// projeto no dashboard do Supabase. Os três precisam estar alinhados.
+const MAX_UPLOAD_MB = 500;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 type UploadStep =
   | "input"
   | "processing"
@@ -179,7 +186,7 @@ export default function UploadCallClient() {
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0];
         if (rejection.errors[0]?.code === "file-too-large") {
-          alert(t("errors.fileTooLarge"));
+          alert(t("errors.fileTooLarge", { size: MAX_UPLOAD_MB }));
           return;
         }
       }
@@ -204,7 +211,7 @@ export default function UploadCallClient() {
       "video/webm": [".webm"],
     },
     maxFiles: 1,
-    maxSize: 50 * 1024 * 1024, // 50MB limit via Blob
+    maxSize: MAX_UPLOAD_BYTES,
   });
 
   const removeFile = () => {

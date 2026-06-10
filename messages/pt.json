@@ -1658,7 +1658,7 @@
         "queueing": "Na fila para transcrição..."
       },
       "errors": {
-        "fileTooLarge": "O arquivo deve ter menos de 50MB.",
+        "fileTooLarge": "O arquivo deve ter menos de {size}MB.",
         "uploadFailed": "Falha ao enviar o áudio",
         "transcribeFailed": "Falha ao transcrever o áudio",
         "analyzeFailed": "Falha ao analisar a chamada",
