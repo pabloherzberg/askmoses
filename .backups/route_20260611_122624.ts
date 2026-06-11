@@ -13,11 +13,9 @@ import {
 } from "@/lib/services/ghl-helpers"
 
 export const runtime = "nodejs"
-// Vercel Teams + Fluid Compute permitem até 800s. O download da gravação agora
-// tem retry com espera (60+120+180s = ~6min) porque o GHL processa o áudio de
-// forma assíncrona após o webhook — 300s não cabia, 800s dá folga pro pipeline
-// completo (retries + download + upload pro Storage + disparo do chunking).
-export const maxDuration = 800
+// Vercel Teams + Fluid Compute permitem até 800s. 300s é folga confortável
+// para o pipeline completo (download áudio + Whisper).
+export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
   // 1. Identifica a org pelo header X-GHL-Location-Id. URL é única para

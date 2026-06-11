@@ -2,7 +2,6 @@ import { type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbHasPendingChunkWork } from '@/lib/db/call-chunks'
 import { kickChunkWorker, triggerChunking } from '@/lib/services/chunk-pipeline'
-import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { selfBaseUrl } from '@/lib/internal-url'
 
 // GET /api/cron/recover-stale-analyses
@@ -158,67 +157,12 @@ export async function GET(request: NextRequest) {
       .lt('updated_at', cutoff)
       .order('updated_at', { ascending: true })
       .limit(BATCH_LIMIT)
-    // try/catch POR CALL: triggerChunking lança em falha (HTTP non-ok, secret
-    // ausente) — uma call com problema não pode abortar a recuperação das demais.
     for (const row of stuckQueued ?? []) {
-      const stuckCallId = row.id as string
-      try {
-        await triggerChunking(stuckCallId)
-        chunkingRetriggered += 1
-      } catch (err) {
-        console.error('[cron/recover-stale-analyses] re-trigger falhou pra call', { callId: stuckCallId, err })
-        await notifyPipelineFailure('stale_call', {
-          callId: stuckCallId,
-          error: err,
-          stage: 'trigger_chunking',
-          reason: inferFailureReason(err),
-          meta: {
-            stuckIn: 'queued_for_chunking',
-            stuckSince: `>${STALE_THRESHOLD_MIN}min`,
-            note: 'Cron tentou re-disparar o chunking e falhou.',
-          },
-        }).catch(() => {})
-      }
+      await triggerChunking(row.id as string)
+      chunkingRetriggered += 1
     }
   } catch (err) {
     console.error('[cron/recover-stale-analyses] re-trigger chunking falhou:', err)
-  }
-
-  // Detecção de calls MORTAS: presas em 'pending'/'processing' além do cutoff.
-  // Nesses status o pipeline morreu ANTES de chegar ao chunking (after() do
-  // webhook cortado, crash sem catch) — nenhum mecanismo as recupera e, sem
-  // este alerta, elas ficam invisíveis pra sempre: "salvou a call mas não
-  // analisou" sem nenhum erro no Slack.
-  // Janela de 15–30min: cada call morta gera UM alerta (no run seguinte ao
-  // travamento), não um a cada 15min pra sempre.
-  let staleAlerted = 0
-  try {
-    const alertWindowStart = new Date(Date.now() - STALE_THRESHOLD_MIN * 2 * 60_000).toISOString()
-    const { data: deadCalls } = await admin
-      .from('calls')
-      .select('id, org_id, processing_status, created_at, updated_at')
-      .in('processing_status', ['pending', 'processing'])
-      .lt('updated_at', cutoff)
-      .gte('updated_at', alertWindowStart)
-      .order('updated_at', { ascending: true })
-      .limit(BATCH_LIMIT)
-    for (const row of deadCalls ?? []) {
-      await notifyPipelineFailure('stale_call', {
-        callId: row.id as string,
-        orgId: (row.org_id as string) ?? undefined,
-        stage: 'webhook',
-        reason: 'pipeline_stalled',
-        meta: {
-          stuckIn: String(row.processing_status),
-          createdAt: String(row.created_at),
-          lastUpdate: String(row.updated_at),
-          note: 'Pipeline morreu antes do chunking — re-processar manualmente via admin.',
-        },
-      }).catch(() => {})
-      staleAlerted += 1
-    }
-  } catch (err) {
-    console.error('[cron/recover-stale-analyses] stale-call sweep falhou:', err)
   }
 
   return Response.json({
@@ -228,6 +172,5 @@ export async function GET(request: NextRequest) {
     scanned: staleRows?.length ?? 0,
     chunkWorkerKicked,
     chunkingRetriggered,
-    staleAlerted,
   })
 }

@@ -26,16 +26,11 @@ import {
 } from '@/lib/services/call-audio-storage'
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
 import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
-import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
+import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
 import { diarizeTranscript } from '@/lib/services/whisper'
 import { transcribeAudioBuffer } from '@/lib/services/whisper'
 import { selfBaseUrl } from '@/lib/internal-url'
-
-function truncateStr(s: string, max: number): string {
-  if (s.length <= max) return s
-  return s.slice(0, max - 1) + "…"
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Orquestração do pipeline de transcrição por chunks (Fase 3).
@@ -66,25 +61,15 @@ export async function kickChunkWorker(): Promise<void> {
   const secret = process.env.INTERNAL_API_SECRET
   if (!secret) {
     console.error('[chunk-pipeline] MISCONFIG: INTERNAL_API_SECRET ausente — worker não disparado')
-    // Alerta crítico de misconfig: sem isso, nenhuma call será transcrita
-    await notifyPipelineFailure("transcription_failed", {
-      callId: "N/A",
-      stage: "misconfig",
-      reason: "missing_internal_api_secret",
-    })
     return
   }
-  const workerUrl = `${selfBaseUrl()}/api/calls/process-chunks`
   try {
-    const res = await fetch(workerUrl, {
+    await fetch(`${selfBaseUrl()}/api/calls/process-chunks`, {
       method: 'POST',
       headers: { 'x-internal-secret': secret },
     })
-    if (!res.ok) {
-      console.error('[chunk-pipeline] kickChunkWorker: worker retornou non-ok', { status: res.status, url: workerUrl })
-    }
   } catch (err) {
-    console.error('[chunk-pipeline] kickChunkWorker falhou:', { err, url: workerUrl })
+    console.error('[chunk-pipeline] kickChunkWorker falhou:', err)
   }
 }
 
@@ -115,20 +100,19 @@ export async function triggerChunking(callId: string): Promise<void> {
   const secret = process.env.INTERNAL_API_SECRET
   if (!secret) {
     console.error('[chunk-pipeline] MISCONFIG: INTERNAL_API_SECRET ausente — chunking não disparado', { callId })
-    throw new Error("INTERNAL_API_SECRET não configurado — chunking não pode ser disparado")
+    return
   }
-  const chunkUrl = `${selfBaseUrl()}/api/calls/chunk`
-  const res = await fetch(chunkUrl, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-internal-secret': secret,
-    },
-    body: JSON.stringify({ callId }),
-  })
-  if (!res.ok) {
-    const body = await res.text().catch(() => "")
-    throw new Error(`/api/calls/chunk retornou HTTP ${res.status}: ${truncateStr(body, 300)}`)
+  try {
+    await fetch(`${selfBaseUrl()}/api/calls/chunk`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-internal-secret': secret,
+      },
+      body: JSON.stringify({ callId }),
+    })
+  } catch (err) {
+    console.error('[chunk-pipeline] triggerChunking falhou:', { callId, err })
   }
 }
 
@@ -196,16 +180,12 @@ export async function chunkAndEnqueueCall(input: ChunkAndEnqueueInput): Promise<
     await dbSetCallChunkProgress(callId, { chunkTotal: chunks.length, chunksDone: 0 })
     await dbUpdateGhlCallPipeline(callId, { processingStatus: 'awaiting_chunks' })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[chunk-pipeline] chunkAndEnqueueCall falhou', { callId, err: msg })
-    await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
-    await notifyPipelineFailure('transcription_failed', {
+    console.error('[chunk-pipeline] chunkAndEnqueueCall falhou', {
       callId,
-      orgId: orgId ?? undefined,
-      error: err,
-      stage: 'chunking',
-      reason: inferFailureReason(err),
+      err: err instanceof Error ? err.message : String(err),
     })
+    await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+    await notifyPipelineFailure('transcription_failed', { callId, orgId: orgId ?? undefined, error: err })
     throw err
   }
 }
@@ -233,39 +213,13 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     const result = await dbRetryOrFailChunk(chunk, msg, MAX_CHUNK_ATTEMPTS)
-    const nextAttempt = (chunk.attempts ?? 0) + 1
-
     console.warn('[chunk-pipeline] transcribeChunk falhou', {
       chunkId: chunk.id,
       callId: chunk.call_id,
-      attempt: nextAttempt,
+      attempt: chunk.attempts,
       next: result,
       err: msg,
     })
-
-    // Alerta Slack quando o chunk é aposentado (failed) — aqui está a causa real
-    // do "Whisper retornou erro após 3 tentativas". Antes só havia log de console.
-    if (result === 'failed') {
-      const reason = inferFailureReason(err)
-      const durationMin = chunk.start_ms != null && chunk.end_ms != null
-        ? ((chunk.end_ms - chunk.start_ms) / 60_000).toFixed(1)
-        : null
-
-      await notifyPipelineFailure('transcription_failed', {
-        callId: chunk.call_id,
-        error: err,
-        stage: 'transcription',
-        reason,
-        meta: {
-          chunkIndex: chunk.chunk_index,
-          chunkId: chunk.id,
-          attempts: nextAttempt,
-          mimeType: chunk.mime_type,
-          storagePath: chunk.storage_path ?? "—",
-          ...(durationMin ? { durationMin } : {}),
-        },
-      })
-    }
   }
   return chunk.call_id
 }
@@ -286,19 +240,9 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
   if (counts.failed > 0) {
     await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
     await deleteAllChunkAudioForCall(callId)
-    // Nota: cada chunk que chegou a 'failed' já gerou alerta individual em transcribeChunk()
-    // com a causa exata. Este alerta é o resumo consolidado — indica quantos chunks falharam.
     await notifyPipelineFailure('transcription_failed', {
       callId,
-      stage: 'transcription',
-      reason: 'unknown',
-      error: new Error(`${counts.failed}/${counts.total} chunk(s) falharam após ${MAX_CHUNK_ATTEMPTS} tentativas cada`),
-      meta: {
-        totalChunks: counts.total,
-        failedChunks: counts.failed,
-        doneChunks: counts.done,
-        note: "Ver alertas individuais por chunk acima para a causa exata de cada falha.",
-      },
+      error: new Error(`${counts.failed}/${counts.total} chunks falharam`),
     })
     return
   }
@@ -344,35 +288,23 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
     await dbClearChunkPayloads(callId)
     await deleteAllChunkAudioForCall(callId)
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[chunk-pipeline] consolidação falhou', { callId, err: msg })
-    await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
-    await notifyPipelineFailure('transcription_failed', {
+    console.error('[chunk-pipeline] consolidação falhou', {
       callId,
-      error: err,
-      stage: 'consolidation',
-      reason: inferFailureReason(err),
+      err: err instanceof Error ? err.message : String(err),
     })
+    await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+    await notifyPipelineFailure('transcription_failed', { callId, error: err })
     return
   }
 
-  // Fanout pós-transcribed: scoring + coaching email. Best-effort — erros não
-  // afetam o transcript já salvo, MAS são alertados: uma call transcrita sem
-  // score aparece "salva mas não analisada" no dashboard, e sem alerta esse
-  // estado é invisível (ninguém sabe que a análise falhou).
+  // Fanout pós-transcribed: scoring + coaching email. Best-effort, idêntico ao
+  // tail do processGhlCall — erros não afetam o transcript já salvo.
   try {
     await runGhlCallScoring(callId)
   } catch (err) {
     console.error('[chunk-pipeline] scoring falhou (non-fatal)', {
       callId,
       err: err instanceof Error ? err.message : String(err),
-    })
-    await notifyPipelineFailure('scoring_failed', {
-      callId,
-      error: err,
-      stage: 'consolidation',
-      reason: 'scoring_error',
-      meta: { note: 'Transcript está salvo. Re-rodar análise via admin ou re-disparar runGhlCallScoring.' },
     })
     return // sem score, não envia email
   }
@@ -383,13 +315,6 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
     console.error('[chunk-pipeline] coaching email falhou (non-fatal)', {
       callId,
       err: err instanceof Error ? err.message : String(err),
-    })
-    await notifyPipelineFailure('email_failed', {
-      callId,
-      error: err,
-      stage: 'consolidation',
-      reason: 'email_error',
-      meta: { note: 'Call já tem transcript + score. Só o email falhou — reenviar manualmente se necessário.' },
     })
   }
 }

@@ -13,11 +13,9 @@ import {
 } from "@/lib/services/ghl-helpers"
 
 export const runtime = "nodejs"
-// Vercel Teams + Fluid Compute permitem até 800s. O download da gravação agora
-// tem retry com espera (60+120+180s = ~6min) porque o GHL processa o áudio de
-// forma assíncrona após o webhook — 300s não cabia, 800s dá folga pro pipeline
-// completo (retries + download + upload pro Storage + disparo do chunking).
-export const maxDuration = 800
+// Vercel Teams + Fluid Compute permitem até 800s. 300s é folga confortável
+// para o pipeline completo (download áudio + Whisper).
+export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
   // 1. Identifica a org pelo header X-GHL-Location-Id. URL é única para
@@ -37,38 +35,16 @@ export async function POST(req: NextRequest) {
     void notifyPipelineFailure("webhook_failed", {
       callId: `sync-error:lookup:${locationId}`,
       error: err instanceof Error ? `[lookup] ${err.message}` : String(err),
-      stage: "webhook",
-      reason: "db_error",
-      meta: { locationId, operation: "dbGetOrgGhlConfigByLocation" },
     })
     return jsonError("Server error", 500)
   }
   if (!orgConfig) {
-    // Webhook real do GHL (tem locationId) mas a org não existe ou está
-    // desativada — a call está sendo PERDIDA. Sem alerta, ninguém fica sabendo.
-    console.warn("[ghl-webhook] unknown/disabled location", { locationId })
-    void notifyPipelineFailure("webhook_rejected", {
-      callId: `rejected:unknown-location:${locationId}`,
-      stage: "webhook",
-      reason: "webhook_unknown_location",
-      meta: { locationId, httpStatus: 404 },
-    })
     return jsonError("Unknown or disabled location", 404)
   }
 
   // 3. Valida o secret per-org via comparação timing-safe.
   const secretHeader = req.headers.get("x-askmoses-secret") ?? ""
   if (!safeEqual(secretHeader, orgConfig.webhookSecret)) {
-    // Org existe mas o secret não bate — Pepper configurado com secret errado.
-    // Calls dessa org estão sendo PERDIDAS até corrigirem.
-    console.warn("[ghl-webhook] secret mismatch", { locationId, orgId: orgConfig.orgId })
-    void notifyPipelineFailure("webhook_rejected", {
-      callId: `rejected:secret-mismatch:${locationId}`,
-      orgId: orgConfig.orgId,
-      stage: "webhook",
-      reason: "webhook_secret_mismatch",
-      meta: { locationId, secretHeaderPresent: secretHeader.length > 0, httpStatus: 401 },
-    })
     return jsonError("Unauthorized", 401)
   }
 
@@ -98,28 +74,10 @@ export async function POST(req: NextRequest) {
       customDataKeys: Object.keys(payload),
       rootKeys: Object.keys(rawBody),
     })
-    void notifyPipelineFailure("webhook_rejected", {
-      callId: `rejected:bad-type:${locationId}`,
-      orgId: orgConfig.orgId,
-      stage: "webhook",
-      reason: "webhook_invalid_payload",
-      meta: {
-        receivedType: String(payload.type ?? "—"),
-        customDataKeys: Object.keys(payload).join(", "),
-        httpStatus: 400,
-      },
-    })
     return jsonError(`Unsupported webhook type: ${payload.type}`, 400)
   }
   const contactId = normalizeEmpty(payload.contactId)
   if (!contactId) {
-    void notifyPipelineFailure("webhook_rejected", {
-      callId: `rejected:no-contact:${locationId}`,
-      orgId: orgConfig.orgId,
-      stage: "webhook",
-      reason: "webhook_invalid_payload",
-      meta: { missingField: "contactId", httpStatus: 400 },
-    })
     return jsonError("contactId is required", 400)
   }
 
@@ -155,9 +113,6 @@ export async function POST(req: NextRequest) {
       orgId: orgConfig.orgId,
       contactId,
       error: err instanceof Error ? `[upsert] ${err.message}` : String(err),
-      stage: "webhook",
-      reason: "db_error",
-      meta: { externalCallId, operation: "dbUpsertGhlCall" },
     })
     return jsonError("Failed to persist call", 500)
   }
@@ -197,8 +152,6 @@ export async function POST(req: NextRequest) {
         orgId: orgConfig.orgId,
         contactId,
         error: err,
-        stage: "webhook",
-        meta: { note: "Crash não previsto em processGhlCall — ver stack trace acima." },
       })
     }
   })
