@@ -356,23 +356,14 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
     return
   }
 
-  // Fanout pós-transcribed: scoring + coaching email. Best-effort — erros não
-  // afetam o transcript já salvo, MAS são alertados: uma call transcrita sem
-  // score aparece "salva mas não analisada" no dashboard, e sem alerta esse
-  // estado é invisível (ninguém sabe que a análise falhou).
+  // Fanout pós-transcribed: scoring + coaching email. Best-effort, idêntico ao
+  // tail do processGhlCall — erros não afetam o transcript já salvo.
   try {
     await runGhlCallScoring(callId)
   } catch (err) {
     console.error('[chunk-pipeline] scoring falhou (non-fatal)', {
       callId,
       err: err instanceof Error ? err.message : String(err),
-    })
-    await notifyPipelineFailure('scoring_failed', {
-      callId,
-      error: err,
-      stage: 'consolidation',
-      reason: 'scoring_error',
-      meta: { note: 'Transcript está salvo. Re-rodar análise via admin ou re-disparar runGhlCallScoring.' },
     })
     return // sem score, não envia email
   }
@@ -383,13 +374,6 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
     console.error('[chunk-pipeline] coaching email falhou (non-fatal)', {
       callId,
       err: err instanceof Error ? err.message : String(err),
-    })
-    await notifyPipelineFailure('email_failed', {
-      callId,
-      error: err,
-      stage: 'consolidation',
-      reason: 'email_error',
-      meta: { note: 'Call já tem transcript + score. Só o email falhou — reenviar manualmente se necessário.' },
     })
   }
 }

@@ -2,13 +2,7 @@ import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
 import { putOriginalAudio } from "@/lib/services/call-audio-storage"
 import { triggerChunking } from "@/lib/services/chunk-pipeline"
-import {
-  downloadRecording,
-  type DownloadedRecording,
-  fetchRecordingUrl,
-  GhlAuthError,
-  GhlDownloadError,
-} from "@/lib/services/ghl-api"
+import { downloadRecording, fetchRecordingUrl, GhlAuthError } from "@/lib/services/ghl-api"
 import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { inferFailureReason, notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 
@@ -24,58 +18,6 @@ import { inferFailureReason, notifyPipelineFailure } from "@/lib/services/pipeli
 export interface ProcessGhlCallOptions {
   accessToken: string
   orgId: string
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Retry do download com espera.
-//
-// CAUSA RAIZ descoberta em 2026-06-11: o webhook callCompleted do GHL dispara
-// IMEDIATAMENTE ao fim da call, mas a gravação ainda está sendo processada do
-// lado deles — o endpoint /recording responde 422 por alguns minutos. Sem
-// retry, a call era marcada transcription_failed ~1s após criada, de forma
-// permanente, mesmo a gravação ficando disponível logo depois (confirmado:
-// mesma URL retornou 200 + 16MB horas depois).
-//
-// Esperas: 60s → 120s → 180s (total ~6min + tentativa inicial). O webhook tem
-// maxDuration de 800s (Fluid Compute), então cabe com folga. Erros NÃO
-// transientes (auth, too large) não são retentados.
-// ─────────────────────────────────────────────────────────────────────────────
-const DOWNLOAD_RETRY_DELAYS_MS = [60_000, 120_000, 180_000]
-
-async function downloadRecordingWithRetry(
-  url: string,
-  accessToken: string,
-  callId: string,
-): Promise<DownloadedRecording> {
-  let lastErr: unknown
-  const totalAttempts = DOWNLOAD_RETRY_DELAYS_MS.length + 1
-
-  for (let attempt = 1; attempt <= totalAttempts; attempt++) {
-    try {
-      return await downloadRecording(url, accessToken)
-    } catch (err) {
-      // Auth e erros permanentes (ex.: too large) sobem direto — retry não muda nada.
-      if (err instanceof GhlAuthError) throw err
-      if (err instanceof GhlDownloadError && !err.isTransient) throw err
-      if (!(err instanceof GhlDownloadError)) {
-        // Falha de rede ("fetch failed") também é transiente — retenta.
-      }
-      lastErr = err
-
-      if (attempt < totalAttempts) {
-        const waitMs = DOWNLOAD_RETRY_DELAYS_MS[attempt - 1]
-        console.warn("[ghl-pipeline] download transiente falhou, aguardando retry", {
-          callId,
-          attempt,
-          nextWaitSeconds: waitMs / 1000,
-          err: err instanceof Error ? err.message : String(err),
-        })
-        await new Promise((r) => setTimeout(r, waitMs))
-      }
-    }
-  }
-
-  throw lastErr
 }
 
 async function handleAuthExpired(
@@ -146,26 +88,20 @@ export async function processGhlCall(
 
   await dbUpdateGhlCallPipeline(callId, { recordingUrl: recording.url })
 
-  // ── 2. Baixar o arquivo de áudio (com retry — GHL processa o áudio async) ──
+  // ── 2. Baixar o arquivo de áudio ───────────────────────────────────────────
   let audio
   try {
-    audio = await downloadRecordingWithRetry(recording.url, options.accessToken, callId)
+    audio = await downloadRecording(recording.url, options.accessToken)
   } catch (err) {
     if (err instanceof GhlAuthError) {
       await handleAuthExpired(callId, options.orgId, payload.contactId, err)
       return
     }
-    console.error("[ghl-pipeline] downloadRecording failed (após retries)", { callId, err })
-
-    // 422/404 transiente mesmo após ~6min de retries: a gravação ainda não está
-    // pronta no GHL. Status 'no_recording' (não 'transcription_failed') — é
-    // semanticamente correto e a dica orienta re-processar em alguns minutos.
-    const isStillProcessing = err instanceof GhlDownloadError && err.isTransient
-    const status = isStillProcessing ? "no_recording" : "transcription_failed"
-    const reason = isStillProcessing ? "recording_not_ready" : inferFailureReason(err)
-
-    await dbUpdateGhlCallPipeline(callId, { processingStatus: status })
-    await notifyPipelineFailure(status, {
+    const reason = inferFailureReason(err)
+    const isTooBig = reason === "recording_too_large"
+    console.error("[ghl-pipeline] downloadRecording failed", { callId, err })
+    await dbUpdateGhlCallPipeline(callId, { processingStatus: "transcription_failed" })
+    await notifyPipelineFailure("transcription_failed", {
       callId,
       orgId: options.orgId,
       contactId: payload.contactId,
@@ -174,10 +110,7 @@ export async function processGhlCall(
       reason,
       meta: {
         recordingUrl: recording.url,
-        attempts: DOWNLOAD_RETRY_DELAYS_MS.length + 1,
-        totalWaitMin: (DOWNLOAD_RETRY_DELAYS_MS.reduce((a, b) => a + b, 0) / 60_000).toFixed(0),
-        ...(err instanceof GhlDownloadError ? { httpStatus: err.status } : {}),
-        ...(reason === "recording_too_large" ? { sizeLimitMb: 200 } : {}),
+        ...(isTooBig ? { sizeLimitMb: 200 } : {}),
       },
     })
     return

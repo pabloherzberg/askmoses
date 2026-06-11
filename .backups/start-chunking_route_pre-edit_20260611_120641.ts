@@ -1,8 +1,7 @@
-import { after, type NextRequest } from 'next/server'
+﻿import { after, type NextRequest } from 'next/server'
 import { forbidden, getOrgId, getSession, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { dbGetCallById, dbUpdateGhlCallPipeline } from '@/lib/db/calls'
 import { triggerChunking } from '@/lib/services/chunk-pipeline'
-import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 
 // POST /api/calls/start-chunking  { callId: string }
 //
@@ -35,24 +34,7 @@ export async function POST(request: NextRequest) {
   // morto quando esta função retorna, deixando a call presa em
   // 'queued_for_chunking' de forma intermitente. after() mantém a função viva
   // até o request sair (a rota de chunk responde 202 na hora, então é rápido).
-  // triggerChunking lança em falha (HTTP non-ok / secret ausente) — sem o catch
-  // aqui viraria unhandled rejection dentro do after().
-  after(async () => {
-    try {
-      await triggerChunking(call.id)
-    } catch (err) {
-      console.error('[start-chunking] triggerChunking falhou', { callId: call.id, err })
-      await dbUpdateGhlCallPipeline(call.id, { processingStatus: 'transcription_failed' }).catch(() => {})
-      await notifyPipelineFailure('transcription_failed', {
-        callId: call.id,
-        orgId,
-        error: err,
-        stage: 'trigger_chunking',
-        reason: inferFailureReason(err),
-        meta: { source: 'manual-upload', note: 'Áudio já está no Storage. Retentar via /api/calls/chunk com o callId.' },
-      })
-    }
-  })
+  after(() => triggerChunking(call.id))
 
   return Response.json({ data: { callId: call.id, status: 'queued_for_chunking' }, error: null })
 }

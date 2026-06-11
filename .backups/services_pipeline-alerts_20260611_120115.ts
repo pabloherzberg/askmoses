@@ -6,23 +6,11 @@
 // PipelineFailureReason  → causa específica — substitui a mensagem genérica
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Statuses de alerta. Os 4 primeiros espelham processing_status do banco;
- * os demais são ALERT-ONLY — situações que não mudam o status da call mas
- * precisam de visibilidade no Slack (rejeições de webhook, scoring/email
- * falho, worker crash, calls presas).
- */
 export type PipelineFailureStatus =
   | "no_recording"
   | "transcription_failed"
   | "webhook_failed"
   | "auth_expired"
-  // ── Alert-only (não são processing_status do banco) ──────────────────────
-  | "webhook_rejected"   // webhook recebido mas rejeitado (secret/org/payload)
-  | "scoring_failed"     // transcript OK, mas análise IA falhou — call sem score
-  | "email_failed"       // score OK, mas coaching email não foi enviado
-  | "worker_failed"      // run do worker de chunks crashou inteiro
-  | "stale_call"         // call presa em status intermediário além do tolerável
 
 /** Etapa onde o erro foi detectado — aparece no campo Stage do Slack. */
 export type PipelineFailureStage =
@@ -49,7 +37,6 @@ export type PipelineFailureReason =
   | "ghl_auth_expired"             // PIT rotacionado/revogado — 401/403 da GHL API
   | "ghl_api_error"                // Erro HTTP da GHL API (4xx/5xx inesperado)
   | "recording_not_found"          // GHL não retornou recording URL p/ esse contato
-  | "recording_not_ready"          // GHL ainda processando o áudio (422/404 transiente)
   | "recording_url_expired"        // URL de recording retornou 404/410 ao baixar
   | "recording_too_large"          // Arquivo > 200 MB — Whisper não aceita
   // ── Whisper / Transcrição ─────────────────────────────────────────────────
@@ -68,14 +55,6 @@ export type PipelineFailureReason =
   | "db_error"                     // Falha em operação no banco Supabase
   | "supabase_storage_error"       // Supabase Storage indisponível (geral)
   | "internal_fetch_failed"        // Fetch interno falhou (rede, timeout, URL errada)
-  // ── Webhook (rejeições antes de criar a call) ─────────────────────────────
-  | "webhook_secret_mismatch"      // x-askmoses-secret não bate com o da org
-  | "webhook_unknown_location"     // X-GHL-Location-Id não mapeia pra org ativa
-  | "webhook_invalid_payload"      // customData ausente, type errado, contactId vazio
-  // ── Pós-transcrição ───────────────────────────────────────────────────────
-  | "scoring_error"                // LLM de scoring falhou — call sem nota
-  | "email_error"                  // Envio do coaching email falhou
-  | "pipeline_stalled"             // Call presa em status intermediário (after() morto)
   // ── Fallback ──────────────────────────────────────────────────────────────
   | "unknown"                      // Erro não classificado — ver stack trace
 
@@ -128,36 +107,6 @@ const STATUS_DISPLAY: Record<PipelineFailureStatus, StatusDisplay> = {
     hint: "O PIT da org foi rotacionado/revogado. Abrir /admin/organizations/<id>/integrations/ghl e colar token novo.",
     color: "#7F1D1D",
   },
-  webhook_rejected: {
-    emoji: "🚫",
-    title: "Webhook GHL rejeitado",
-    hint: "Um webhook chegou mas foi recusado antes de criar a call. Se isso se repetir, calls estão sendo PERDIDAS — verificar configuração do Pepper/GHL.",
-    color: "#ECB22E",
-  },
-  scoring_failed: {
-    emoji: "📊",
-    title: "Análise IA falhou (call transcrita, sem score)",
-    hint: "O transcript foi salvo mas o scoring não rodou. A call aparece sem nota no dashboard. Re-rodar análise manualmente ou verificar OPENAI_API_KEY/modelo.",
-    color: "#ECB22E",
-  },
-  email_failed: {
-    emoji: "📧",
-    title: "Coaching email não enviado",
-    hint: "Call transcrita e com score, mas o email de coaching falhou. Verificar RESEND_API_KEY e o email do trainer na call.",
-    color: "#ECB22E",
-  },
-  worker_failed: {
-    emoji: "⚙️",
-    title: "Worker de chunks crashou",
-    hint: "O run inteiro do worker falhou — chunks pendentes não foram processados neste ciclo. O cron de 15min re-dispara, mas se o erro persistir, a fila trava.",
-    color: "#E01E5A",
-  },
-  stale_call: {
-    emoji: "🐌",
-    title: "Call presa no pipeline",
-    hint: "Call parada em status intermediário além do tolerável — o pipeline morreu sem marcar erro. Ver campo Status atual e considerar re-processar.",
-    color: "#ECB22E",
-  },
 }
 
 /** Dica de ação específica por causa — substitui a dica genérica do status. */
@@ -174,8 +123,6 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "A API do GHL retornou erro inesperado. Ver campo *Erro* para HTTP status e body. Pode ser instabilidade temporária — retentar. Se persistir, checar status.gohighlevel.com.",
   recording_not_found:
     "GHL não tem recording associado a esse contato ainda. Delay de processamento GHL. Retentar via /admin após 5-10 min. Se persistir, a call pode não ter sido gravada.",
-  recording_not_ready:
-    "GHL ainda estava processando a gravação — o endpoint respondeu erro transiente (422/404) mesmo após todas as tentativas com espera. A gravação provavelmente ficará disponível em breve: re-processar a call via admin em ~10-30 min.",
   recording_url_expired:
     "URL de recording retornou 404/410 — GHL expirou ou removeu o arquivo. A call precisa ser re-processada manualmente a partir de um novo webhook.",
   recording_too_large:
@@ -206,18 +153,6 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "Supabase Storage indisponível. Ver status.supabase.com. Pode ser instabilidade temporária.",
   internal_fetch_failed:
     "Fetch interno falhou (rota /api/calls/chunk ou /api/calls/process-chunks). Causas: URL base incorreta, cold start timeout, INTERNAL_API_SECRET errado. Ver VERCEL_URL e NEXT_PUBLIC_APP_URL.",
-  webhook_secret_mismatch:
-    "O header x-askmoses-secret enviado pelo Pepper/GHL NÃO bate com o secret cadastrado na org. Calls estão sendo PERDIDAS. Comparar o secret no Pepper com o em /admin/organizations/<id>/integrations/ghl.",
-  webhook_unknown_location:
-    "X-GHL-Location-Id recebido não corresponde a nenhuma org ativa. Ou a integração está desativada no admin, ou o locationId no Pepper está errado. Calls estão sendo PERDIDAS.",
-  webhook_invalid_payload:
-    "Payload do webhook inválido (customData ausente, type ≠ callCompleted, ou contactId vazio). Verificar o mapeamento de Custom Data no workflow do Pepper.",
-  scoring_error:
-    "Scoring IA falhou — a call tem transcript mas está SEM NOTA no dashboard. Verificar OPENAI_API_KEY, o modelo configurado em /dashboard/settings, e re-rodar a análise manualmente.",
-  email_error:
-    "Coaching email não foi enviado (call já tem transcript + score). Verificar RESEND_API_KEY e se o trainer tem email válido na call.",
-  pipeline_stalled:
-    "Call presa em status intermediário há mais tempo que o tolerável — provavelmente o processo serverless morreu sem marcar erro. Verificar a call no admin e re-processar.",
   unknown:
     "Erro não classificado. Ver campo *Erro* para stack trace completo e buscar no Vercel logs pelos prefixos [ghl-webhook], [ghl-pipeline], [chunk-pipeline].",
 }
@@ -230,7 +165,6 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   ghl_auth_expired: "🔐",
   ghl_api_error: "🌐",
   recording_not_found: "📭",
-  recording_not_ready: "⏳",
   recording_url_expired: "🗑️",
   recording_too_large: "📦",
   whisper_timeout: "⏱️",
@@ -246,12 +180,6 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   db_error: "🗄️",
   supabase_storage_error: "💾",
   internal_fetch_failed: "🔌",
-  webhook_secret_mismatch: "🔑",
-  webhook_unknown_location: "📍",
-  webhook_invalid_payload: "📋",
-  scoring_error: "📊",
-  email_error: "📧",
-  pipeline_stalled: "🐌",
   unknown: "❓",
 }
 
@@ -268,50 +196,37 @@ export function inferFailureReason(err: unknown): PipelineFailureReason {
   const msg = err instanceof Error ? err.message : String(err ?? "")
   const lower = msg.toLowerCase()
 
-  // ── Configuração (mensagens determinísticas dos nossos próprios throws) ──
-  if (lower.includes("openai_api_key"))
+  if (lower.includes("openai_api_key") || lower.includes("api key") && lower.includes("not configured"))
     return "missing_openai_api_key"
   if (lower.includes("internal_api_secret"))
     return "missing_internal_api_secret"
-  if (lower.includes("vercel_url") || lower.includes("next_public_app_url"))
+  if (lower.includes("vercel_url") || lower.includes("next_public_app_url") || lower.includes("selfbaseurl"))
     return "missing_app_url"
-
-  // ── Whisper (mensagem padrão: "Whisper API error <status>: <body>") ──────
-  if (lower.includes("whisper api error 429"))
+  if (lower.includes("whisper api error 429") || lower.includes("rate limit"))
     return "whisper_rate_limit"
-  if (lower.includes("invalid file format") || lower.includes("unsupported file") || (lower.includes("whisper") && lower.includes("format")))
-    return "whisper_invalid_format"
   if (/whisper api error 4\d\d/.test(lower))
     return "whisper_http_4xx"
   if (/whisper api error 5\d\d/.test(lower))
     return "whisper_http_5xx"
+  if (lower.includes("aborterror") || lower.includes("timed out") || lower.includes("timeout") || lower.includes("aborted"))
+    return "whisper_timeout"
   if (lower.includes("whisper falhou") || lower.includes("whisper failed"))
     return "whisper_empty_response"
-
-  // ── Recording (mensagens do ghl-api.ts) ──────────────────────────────────
-  if (lower.includes("recording too large"))
-    return "recording_too_large"
-  if (lower.includes("failed to download recording"))
-    return "recording_url_expired"
-
-  // ── ffmpeg / chunking ─────────────────────────────────────────────────────
   if (lower.includes("ffmpeg") && (lower.includes("not found") || lower.includes("enoent")))
     return "ffmpeg_not_found"
   if (lower.includes("ffmpeg"))
     return "ffmpeg_error"
-  if (lower.includes("chunk") && (lower.includes("exceed") || lower.includes("maxchunks") || lower.includes("max chunks")))
+  if (lower.includes("exceeds") && lower.includes("chunk"))
     return "chunk_exceeds_max"
-
-  // ── Timeout / rede (depois dos matches específicos acima) ────────────────
-  if (lower.includes("aborterror") || lower.includes("timed out") || lower.includes("timeout") || lower.includes("aborted") || (err instanceof Error && err.name === "AbortError"))
-    return "whisper_timeout"
-  if (lower.includes("fetch failed") || lower.includes("econnrefused") || lower.includes("enotfound") || lower.includes("und_err"))
+  if (lower.includes("200") && (lower.includes("mb") || lower.includes("too large") || lower.includes("size")))
+    return "recording_too_large"
+  if (lower.includes("404") || lower.includes("410") || lower.includes("not found") && lower.includes("recording"))
+    return "recording_url_expired"
+  if (lower.includes("fetch failed") || lower.includes("econnrefused") || lower.includes("enotfound"))
     return "internal_fetch_failed"
-
-  // ── Infra ─────────────────────────────────────────────────────────────────
   if (lower.includes("storage") || lower.includes("bucket"))
     return "supabase_storage_error"
-  if (lower.includes("supabase") || lower.includes("postgres") || lower.includes("database") || /^db[A-Z]/.test(msg))
+  if (lower.includes("supabase") || lower.includes("postgres") || lower.includes("database"))
     return "db_error"
 
   return "unknown"

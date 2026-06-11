@@ -6,7 +6,6 @@ import {
   kickChunkWorker,
   transcribeChunk,
 } from '@/lib/services/chunk-pipeline'
-import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 
 // POST /api/calls/process-chunks
 //
@@ -115,15 +114,6 @@ export async function POST(request: NextRequest) {
             callId,
             err: err instanceof Error ? err.message : String(err),
           })
-          // finalizeCallIfReady alerta internamente na maioria dos paths; este
-          // catch pega falhas ANTES disso (ex.: dbGetChunkStatusCounts).
-          await notifyPipelineFailure('worker_failed', {
-            callId,
-            error: err,
-            stage: 'consolidation',
-            reason: inferFailureReason(err),
-            meta: { phase: 'finalizeCallIfReady' },
-          }).catch(() => {})
         }
       }
 
@@ -136,15 +126,6 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       console.error('[process-chunks] run falhou:', err)
-      // Crash do run inteiro — chunks reivindicados ficam 'processing' até o
-      // stale-reclaim (300s). Sem alerta, a fila pode travar invisível.
-      await notifyPipelineFailure('worker_failed', {
-        callId: 'N/A',
-        error: err,
-        stage: 'transcription',
-        reason: inferFailureReason(err),
-        meta: { claimed, transcribed, finalized, route: '/api/calls/process-chunks' },
-      }).catch(() => {})
     }
   })
 

@@ -49,7 +49,6 @@ export type PipelineFailureReason =
   | "ghl_auth_expired"             // PIT rotacionado/revogado — 401/403 da GHL API
   | "ghl_api_error"                // Erro HTTP da GHL API (4xx/5xx inesperado)
   | "recording_not_found"          // GHL não retornou recording URL p/ esse contato
-  | "recording_not_ready"          // GHL ainda processando o áudio (422/404 transiente)
   | "recording_url_expired"        // URL de recording retornou 404/410 ao baixar
   | "recording_too_large"          // Arquivo > 200 MB — Whisper não aceita
   // ── Whisper / Transcrição ─────────────────────────────────────────────────
@@ -174,8 +173,6 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "A API do GHL retornou erro inesperado. Ver campo *Erro* para HTTP status e body. Pode ser instabilidade temporária — retentar. Se persistir, checar status.gohighlevel.com.",
   recording_not_found:
     "GHL não tem recording associado a esse contato ainda. Delay de processamento GHL. Retentar via /admin após 5-10 min. Se persistir, a call pode não ter sido gravada.",
-  recording_not_ready:
-    "GHL ainda estava processando a gravação — o endpoint respondeu erro transiente (422/404) mesmo após todas as tentativas com espera. A gravação provavelmente ficará disponível em breve: re-processar a call via admin em ~10-30 min.",
   recording_url_expired:
     "URL de recording retornou 404/410 — GHL expirou ou removeu o arquivo. A call precisa ser re-processada manualmente a partir de um novo webhook.",
   recording_too_large:
@@ -230,7 +227,6 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   ghl_auth_expired: "🔐",
   ghl_api_error: "🌐",
   recording_not_found: "📭",
-  recording_not_ready: "⏳",
   recording_url_expired: "🗑️",
   recording_too_large: "📦",
   whisper_timeout: "⏱️",

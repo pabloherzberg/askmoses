@@ -1,7 +1,7 @@
 import { after, type NextRequest } from 'next/server'
 import { dbUpdateGhlCallPipeline } from '@/lib/db/calls'
 import { runChunkingForCall } from '@/lib/services/chunk-pipeline'
-import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
+import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 
 // POST /api/calls/chunk  { callId: string }
 //
@@ -24,12 +24,6 @@ export async function POST(request: NextRequest) {
   const internal = request.headers.get('x-internal-secret') ?? ''
   if (!process.env.INTERNAL_API_SECRET) {
     console.error('[calls/chunk] MISCONFIG: INTERNAL_API_SECRET ausente — rota interna desabilitada')
-    void notifyPipelineFailure('transcription_failed', {
-      callId: 'N/A',
-      stage: 'misconfig',
-      reason: 'missing_internal_api_secret',
-      meta: { route: '/api/calls/chunk', note: 'Rota interna desabilitada — NENHUM áudio será cortado/transcrito.' },
-    })
     return Response.json({ error: 'forbidden' }, { status: 401 })
   }
   if (internal !== process.env.INTERNAL_API_SECRET) {
@@ -67,13 +61,7 @@ export async function POST(request: NextRequest) {
       await dbUpdateGhlCallPipeline(id, { processingStatus: 'transcription_failed' }).catch(
         () => {},
       )
-      await notifyPipelineFailure('transcription_failed', {
-        callId: id,
-        error: err,
-        stage: 'chunking',
-        reason: inferFailureReason(err),
-        meta: { route: '/api/calls/chunk' },
-      })
+      await notifyPipelineFailure('transcription_failed', { callId: id, error: err })
     }
   })
 

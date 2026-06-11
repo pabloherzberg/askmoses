@@ -24,32 +24,6 @@ export class GhlAuthError extends Error {
   }
 }
 
-/**
- * Erro de download da gravação com o HTTP status preservado. Permite ao
- * pipeline distinguir falhas TRANSIENTES (422 = GHL ainda processando o áudio,
- * 404/410 = ainda não publicado, 429/5xx = instabilidade) — que merecem retry
- * com espera — de falhas permanentes.
- */
-export class GhlDownloadError extends Error {
-  readonly status: number
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "GhlDownloadError"
-    this.status = status
-  }
-  /** O recording pode ficar disponível se tentarmos de novo mais tarde? */
-  get isTransient(): boolean {
-    return (
-      this.status === 404 ||
-      this.status === 410 ||
-      this.status === 422 ||
-      this.status === 425 ||
-      this.status === 429 ||
-      this.status >= 500
-    )
-  }
-}
-
 function buildAuthHeaders(accessToken: string): HeadersInit {
   if (!accessToken) throw new Error("GHL access token is required")
   return {
@@ -257,10 +231,7 @@ export async function downloadRecording(
         `Failed to download recording: auth rejected (${res.status})`,
       )
     }
-    throw new GhlDownloadError(
-      res.status,
-      `Failed to download recording: ${res.status} ${res.statusText}`,
-    )
+    throw new Error(`Failed to download recording: ${res.status} ${res.statusText}`)
   }
 
   const contentLength = Number.parseInt(
