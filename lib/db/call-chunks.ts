@@ -27,6 +27,7 @@ export interface DbCallChunk {
   attempts: number
   last_error: string | null
   transcription_cost_usd: number | null
+  next_attempt_at: string
   created_at: string
   updated_at: string
 }
@@ -74,19 +75,25 @@ export async function dbCreateChunks(
 }
 
 /**
- * Claim atômico via RPC (077-079). Marca até `batch` chunks como 'processing'
- * (incrementando attempts) e os retorna pro worker. `staleSeconds` recupera
- * chunks travados em 'processing' (função morreu sem finalizar).
+ * Claim atômico via RPC (077-079, estendido na 083). Marca até `batch` chunks
+ * como 'processing' (incrementando attempts) e os retorna pro worker.
+ * `staleSeconds` recupera chunks travados em 'processing' (função morreu sem
+ * finalizar). `maxInflight` é o teto GLOBAL de 'processing' simultâneos —
+ * cadeias de worker se sobrepõem, e sem o teto a concorrência contra a OpenAI
+ * é batch × nº de cadeias. Só elegem chunks com next_attempt_at vencido
+ * (backoff de 429/quota).
  */
 export async function dbClaimChunks(
   batch: number,
   staleSeconds = 300,
+  maxInflight: number | null = null,
 ): Promise<DbCallChunk[]> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase.rpc('claim_chunks', {
     p_batch: batch,
     p_stale_seconds: staleSeconds,
+    p_max_inflight: maxInflight,
   })
 
   if (error) throw new Error(`dbClaimChunks: ${error.message}`)
@@ -172,11 +179,16 @@ export async function dbMarkChunkDone(
  * maxAttempts), volta pra 'pending' pro próximo claim retentar; senão,
  * aposenta em 'failed'. `attempts` já foi incrementado no claim, então
  * comparamos o valor atual da linha. Retorna o status final aplicado.
+ *
+ * `delaySeconds` agenda o retry: o claim (083) só re-reivindica o chunk após
+ * `next_attempt_at`. Essencial pra 429 — sem o delay, o worker auto-drenante
+ * re-pega o chunk em segundos, dentro da mesma janela de rate limit.
  */
 export async function dbRetryOrFailChunk(
   chunk: DbCallChunk,
   errorMessage: string,
   maxAttempts: number,
+  delaySeconds = 0,
 ): Promise<'pending' | 'failed'> {
   const supabase = createAdminClient()
   const next: 'pending' | 'failed' = chunk.attempts >= maxAttempts ? 'failed' : 'pending'
@@ -186,12 +198,69 @@ export async function dbRetryOrFailChunk(
     .update({
       status: next,
       last_error: errorMessage.slice(0, 1000),
+      next_attempt_at: new Date(Date.now() + delaySeconds * 1000).toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', chunk.id)
 
   if (error) throw new Error(`dbRetryOrFailChunk: ${error.message}`)
   return next
+}
+
+/** Remove todos os chunks de uma call (usado antes de re-cortar). */
+export async function dbDeleteChunksForCall(callId: string): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase.from('call_chunks').delete().eq('call_id', callId)
+  if (error) throw new Error(`dbDeleteChunksForCall: ${error.message}`)
+}
+
+/**
+ * Reseta chunks 'failed' de uma call para 'pending' com attempts=0.
+ * Usado pelo reprocess manual para que o worker tente novamente após
+ * uma falha de quota ou erro temporário.
+ */
+export async function dbResetFailedChunks(callId: string): Promise<number> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('call_chunks')
+    .update({
+      status: 'pending',
+      attempts: 0,
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('call_id', callId)
+    .eq('status', 'failed')
+    .select('id')
+
+  if (error) throw new Error(`dbResetFailedChunks: ${error.message}`)
+  return (data ?? []).length
+}
+
+/**
+ * Aposenta os chunks ainda 'pending' de uma call que já falhou. Sem isto, a
+ * fila continuaria reivindicando trabalho de uma call morta: o download
+ * falharia (o áudio é removido junto com a falha da call) e cada chunk
+ * queimaria todas as tentativas — invocações e alertas à toa.
+ */
+export async function dbFailPendingChunksForCall(
+  callId: string,
+  reason: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('call_chunks')
+    .update({
+      status: 'failed' as ChunkStatus,
+      last_error: reason.slice(0, 1000),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('call_id', callId)
+    .eq('status', 'pending')
+
+  if (error) throw new Error(`dbFailPendingChunksForCall: ${error.message}`)
 }
 
 /**

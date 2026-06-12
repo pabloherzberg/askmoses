@@ -657,7 +657,14 @@
       "forbidden": "Vous n'avez pas accès à cet appel.",
       "thScript": "Script",
       "filterAllScripts": "Tous les scripts",
-      "activeScriptTag": "Script actif : {name}"
+      "activeScriptTag": "Script actif : {name}",
+      "reprocess": {
+        "label": "Réanalyser",
+        "queuing": "En file…",
+        "processing": "En cours…",
+        "error": "Erreur",
+        "tooltip": "Réanalyser cet appel"
+      }
     }
   },
   "Admin": {

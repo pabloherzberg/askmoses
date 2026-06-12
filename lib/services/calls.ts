@@ -127,6 +127,7 @@ function toCall(db: DbCall): Call {
     improvements: db.improvements ?? [],
     transcript: db.transcript ?? "",
     scriptId: db.script_id ?? null,
+    processingStatus: db.processing_status ?? null,
   };
 }
 

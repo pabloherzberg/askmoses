@@ -2,6 +2,7 @@ import {
   dbClaimCallForConsolidation,
   dbClearChunkPayloads,
   dbCreateChunks,
+  dbFailPendingChunksForCall,
   dbGetChunkStatusCounts,
   dbGetChunksForCall,
   dbRetryOrFailChunk,
@@ -93,6 +94,31 @@ const WHISPER_USD_PER_MINUTE = 0.006
 
 /** Teto de tentativas por chunk antes de aposentar em 'failed'. */
 export const MAX_CHUNK_ATTEMPTS = 3
+
+/**
+ * Teto maior pra falhas de throttling (429 rate limit / quota esgotada):
+ * não são defeito do chunk — a mesma transcrição funciona minutos depois.
+ * Com os delays abaixo, 8 tentativas cobrem ~1h de rate limit contínuo
+ * (e ~4h de quota esgotada) antes de desistir.
+ */
+export const MAX_CHUNK_ATTEMPTS_THROTTLED = 8
+
+/** Delay de re-fila por tentativa quando o Whisper devolveu 429 de rate limit.
+ *  Escada 1min → 5min → 15min (última repete). O claim (083) só re-reivindica
+ *  o chunk após o delay — sem isso o worker auto-drenante re-pega em segundos,
+ *  dentro da mesma janela de rate limit, e queima as tentativas à toa. */
+const RATE_LIMIT_REQUEUE_DELAYS_S = [60, 300, 900]
+
+/** Quota esgotada: re-tenta a cada 30min — espera créditos serem adicionados. */
+const QUOTA_REQUEUE_DELAY_S = 1_800
+
+// Dedup do alerta de quota esgotada: a quota é da CONTA OpenAI, não da call —
+// num esgotamento, TODO chunk de TODA call falharia e dispararia o mesmo
+// alerta (com 100 usuários, dezenas de mensagens idênticas no Slack). Um
+// alerta por instância warm a cada 30min é suficiente pra acionar a recarga;
+// cold starts podem repetir, mas cortam ~95% do ruído.
+const QUOTA_ALERT_DEDUP_MS = 30 * 60_000
+let lastQuotaAlertAtMs = 0
 
 function whisperChunkCost(chunk: DbCallChunk): number {
   if (chunk.start_ms == null || chunk.end_ms == null) return 0
@@ -232,21 +258,55 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
     await deleteChunkAudio(chunk.storage_path)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    const result = await dbRetryOrFailChunk(chunk, msg, MAX_CHUNK_ATTEMPTS)
-    const nextAttempt = (chunk.attempts ?? 0) + 1
+    const reason = inferFailureReason(err)
+
+    // Throttling (429 rate limit / quota) ganha teto maior e re-fila COM delay:
+    // a falha é do momento, não do chunk. Erros "reais" mantêm o retry imediato
+    // e o teto curto de sempre.
+    const isRateLimit = reason === 'whisper_rate_limit'
+    const isQuota = reason === 'whisper_quota_exhausted'
+    const maxAttempts = isRateLimit || isQuota ? MAX_CHUNK_ATTEMPTS_THROTTLED : MAX_CHUNK_ATTEMPTS
+    const delaySeconds = isQuota
+      ? QUOTA_REQUEUE_DELAY_S
+      : isRateLimit
+        ? RATE_LIMIT_REQUEUE_DELAYS_S[
+            Math.min(Math.max(chunk.attempts - 1, 0), RATE_LIMIT_REQUEUE_DELAYS_S.length - 1)
+          ]
+        : 0
+
+    const result = await dbRetryOrFailChunk(chunk, msg, maxAttempts, delaySeconds)
 
     console.warn('[chunk-pipeline] transcribeChunk falhou', {
       chunkId: chunk.id,
       callId: chunk.call_id,
-      attempt: nextAttempt,
+      // attempts já vem incrementado do claim — este É o número da tentativa.
+      attempt: chunk.attempts,
       next: result,
+      delaySeconds,
+      reason,
       err: msg,
     })
 
+    // Quota esgotada exige ação humana (recarga no billing) — alerta na hora,
+    // não só quando o chunk aposenta horas depois. Dedup global (ver constante).
+    if (isQuota && Date.now() - lastQuotaAlertAtMs > QUOTA_ALERT_DEDUP_MS) {
+      lastQuotaAlertAtMs = Date.now()
+      await notifyPipelineFailure('transcription_failed', {
+        callId: chunk.call_id,
+        error: err,
+        stage: 'transcription',
+        reason,
+        meta: {
+          chunkIndex: chunk.chunk_index,
+          chunkId: chunk.id,
+          note: `Quota é da conta — TODAS as calls estão paradas. A fila re-tenta a cada ${QUOTA_REQUEUE_DELAY_S / 60}min e transcreve sozinha após a recarga.`,
+        },
+      })
+    }
+
     // Alerta Slack quando o chunk é aposentado (failed) — aqui está a causa real
-    // do "Whisper retornou erro após 3 tentativas". Antes só havia log de console.
+    // do "Whisper retornou erro após N tentativas". Antes só havia log de console.
     if (result === 'failed') {
-      const reason = inferFailureReason(err)
       const durationMin = chunk.start_ms != null && chunk.end_ms != null
         ? ((chunk.end_ms - chunk.start_ms) / 60_000).toFixed(1)
         : null
@@ -259,7 +319,7 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
         meta: {
           chunkIndex: chunk.chunk_index,
           chunkId: chunk.id,
-          attempts: nextAttempt,
+          attempts: chunk.attempts,
           mimeType: chunk.mime_type,
           storagePath: chunk.storage_path ?? "—",
           ...(durationMin ? { durationMin } : {}),
@@ -284,7 +344,18 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
   await dbSetCallChunkProgress(callId, { chunksDone: counts.done }).catch(() => {})
 
   if (counts.failed > 0) {
+    // Re-entrância: cada chunk remanescente que termina re-chama finalize pra
+    // esta call; sem o guard, a call já falhada seria re-marcada e re-alertada
+    // a cada vez.
+    const call = await dbGetCallById(callId)
+    if (call?.processing_status === 'transcription_failed') return
+
     await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+    // Aposenta os 'pending' restantes ANTES de deletar o áudio: sem isso eles
+    // continuariam sendo reivindicados, falhariam no download (arquivo já
+    // removido) e queimariam todas as tentativas — invocações e alertas à toa
+    // numa call já morta. Chunks 'processing' em voo terminam sós (inócuo).
+    await dbFailPendingChunksForCall(callId, 'call aposentada: outro chunk falhou definitivamente').catch(() => {})
     await deleteAllChunkAudioForCall(callId)
     // Nota: cada chunk que chegou a 'failed' já gerou alerta individual em transcribeChunk()
     // com a causa exata. Este alerta é o resumo consolidado — indica quantos chunks falharam.
@@ -292,7 +363,7 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       callId,
       stage: 'transcription',
       reason: 'unknown',
-      error: new Error(`${counts.failed}/${counts.total} chunk(s) falharam após ${MAX_CHUNK_ATTEMPTS} tentativas cada`),
+      error: new Error(`${counts.failed}/${counts.total} chunk(s) falharam após esgotar as tentativas (${MAX_CHUNK_ATTEMPTS} normais / ${MAX_CHUNK_ATTEMPTS_THROTTLED} com rate limit)`),
       meta: {
         totalChunks: counts.total,
         failedChunks: counts.failed,
