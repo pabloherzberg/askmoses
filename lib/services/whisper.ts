@@ -18,12 +18,18 @@ const DEFAULT_PROMPT =
 const WHISPER_TIMEOUT_MS = 120_000;
 const WHISPER_MAX_ATTEMPTS = 3;
 
-// Backoff em duas pistas: Para 429, respeitamos o header Retry-After quando presente
-// (com piso na escada abaixo e teto de 120s pra não estourar o maxDuration do
-// worker) + jitter pra dessincornizar chunks concorrentes que levaram 429 juntos.
+// Backoff em duas pistas: para 429, respeitamos o header Retry-After quando
+// presente (com piso na escada abaixo) + jitter pra dessincronizar chunks
+// concorrentes que levaram 429 juntos. O teto de 45s é deliberado: in-process
+// só absorve blip CURTO de rate limit — espera longa pertence à re-fila com
+// next_attempt_at (delay de 1-15min via dbRetryOrFailChunk), que não gasta
+// tempo de função serverless. O teto também mantém o pior caso de um chunk
+// (~480s com timeouts) abaixo do stale-reclaim do worker (600s) — sem isso,
+// outro worker re-reivindicaria um chunk ainda em backoff e transcreveria em
+// dobro.
 const NETWORK_BACKOFF_MS = [1_000, 2_000];
 const RATE_LIMIT_BACKOFF_MS = [15_000, 30_000];
-const RATE_LIMIT_MAX_WAIT_MS = 120_000;
+const RATE_LIMIT_MAX_WAIT_MS = 45_000;
 const RATE_LIMIT_JITTER_MS = 5_000;
 
 // Whisper API olha a EXTENSÃO do filename pra decidir formato, não o MIME.

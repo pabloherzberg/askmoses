@@ -2,6 +2,7 @@ import {
   dbClaimCallForConsolidation,
   dbClearChunkPayloads,
   dbCreateChunks,
+  dbFailPendingChunksForCall,
   dbGetChunkStatusCounts,
   dbGetChunksForCall,
   dbRetryOrFailChunk,
@@ -110,6 +111,14 @@ const RATE_LIMIT_REQUEUE_DELAYS_S = [60, 300, 900]
 
 /** Quota esgotada: re-tenta a cada 30min — espera créditos serem adicionados. */
 const QUOTA_REQUEUE_DELAY_S = 1_800
+
+// Dedup do alerta de quota esgotada: a quota é da CONTA OpenAI, não da call —
+// num esgotamento, TODO chunk de TODA call falharia e dispararia o mesmo
+// alerta (com 100 usuários, dezenas de mensagens idênticas no Slack). Um
+// alerta por instância warm a cada 30min é suficiente pra acionar a recarga;
+// cold starts podem repetir, mas cortam ~95% do ruído.
+const QUOTA_ALERT_DEDUP_MS = 30 * 60_000
+let lastQuotaAlertAtMs = 0
 
 function whisperChunkCost(chunk: DbCallChunk): number {
   if (chunk.start_ms == null || chunk.end_ms == null) return 0
@@ -266,21 +275,22 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
         : 0
 
     const result = await dbRetryOrFailChunk(chunk, msg, maxAttempts, delaySeconds)
-    const nextAttempt = (chunk.attempts ?? 0) + 1
 
     console.warn('[chunk-pipeline] transcribeChunk falhou', {
       chunkId: chunk.id,
       callId: chunk.call_id,
-      attempt: nextAttempt,
+      // attempts já vem incrementado do claim — este É o número da tentativa.
+      attempt: chunk.attempts,
       next: result,
       delaySeconds,
       reason,
       err: msg,
     })
 
-    // Quota esgotada exige ação humana (recarga no billing) — alerta na PRIMEIRA
-    // ocorrência, não só quando o chunk aposenta horas depois.
-    if (isQuota && chunk.attempts <= 1 && result !== 'failed') {
+    // Quota esgotada exige ação humana (recarga no billing) — alerta na hora,
+    // não só quando o chunk aposenta horas depois. Dedup global (ver constante).
+    if (isQuota && Date.now() - lastQuotaAlertAtMs > QUOTA_ALERT_DEDUP_MS) {
+      lastQuotaAlertAtMs = Date.now()
       await notifyPipelineFailure('transcription_failed', {
         callId: chunk.call_id,
         error: err,
@@ -289,7 +299,7 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
         meta: {
           chunkIndex: chunk.chunk_index,
           chunkId: chunk.id,
-          note: `Chunk segue na fila re-tentando a cada ${QUOTA_REQUEUE_DELAY_S / 60}min — transcreve sozinho após a recarga.`,
+          note: `Quota é da conta — TODAS as calls estão paradas. A fila re-tenta a cada ${QUOTA_REQUEUE_DELAY_S / 60}min e transcreve sozinha após a recarga.`,
         },
       })
     }
@@ -309,7 +319,7 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
         meta: {
           chunkIndex: chunk.chunk_index,
           chunkId: chunk.id,
-          attempts: nextAttempt,
+          attempts: chunk.attempts,
           mimeType: chunk.mime_type,
           storagePath: chunk.storage_path ?? "—",
           ...(durationMin ? { durationMin } : {}),
@@ -334,7 +344,18 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
   await dbSetCallChunkProgress(callId, { chunksDone: counts.done }).catch(() => {})
 
   if (counts.failed > 0) {
+    // Re-entrância: cada chunk remanescente que termina re-chama finalize pra
+    // esta call; sem o guard, a call já falhada seria re-marcada e re-alertada
+    // a cada vez.
+    const call = await dbGetCallById(callId)
+    if (call?.processing_status === 'transcription_failed') return
+
     await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+    // Aposenta os 'pending' restantes ANTES de deletar o áudio: sem isso eles
+    // continuariam sendo reivindicados, falhariam no download (arquivo já
+    // removido) e queimariam todas as tentativas — invocações e alertas à toa
+    // numa call já morta. Chunks 'processing' em voo terminam sós (inócuo).
+    await dbFailPendingChunksForCall(callId, 'call aposentada: outro chunk falhou definitivamente').catch(() => {})
     await deleteAllChunkAudioForCall(callId)
     // Nota: cada chunk que chegou a 'failed' já gerou alerta individual em transcribeChunk()
     // com a causa exata. Este alerta é o resumo consolidado — indica quantos chunks falharam.

@@ -43,8 +43,18 @@ export const maxDuration = 800
 // o rate limit estourou em produção; 3 enquanto o tier da conta OpenAI for
 // baixo — subir junto com o tier (Settings → Limits no dashboard OpenAI).
 const CHUNK_BATCH = 3
+// Teto GLOBAL de chunks 'processing' simultâneos, somando TODAS as cadeias de
+// worker vivas (kick do ingest + auto-kick + cron se sobrepõem). O claim (083)
+// desconta os processing não-stale dos slots — contagem aproximada, pode
+// ultrapassar por até um batch em claims concorrentes, mas impede o cenário
+// N cadeias × batch que estourava o rate limit. Subir junto com o tier OpenAI.
+const MAX_INFLIGHT_GLOBAL = 8
 // Stale de 'processing' (chunk reivindicado mas nunca finalizado): re-elegível.
-const STALE_SECONDS = 300
+// PRECISA ser maior que o pior caso de um transcribeChunk (~480s: 3 timeouts de
+// 120s + 2 backoffs de 429 de até 50s + download) — abaixo disso, outro worker
+// re-reivindica um chunk ainda em voo e transcreve em dobro (custo 2× e mais
+// pressão no rate limit).
+const STALE_SECONDS = 600
 // Calls em 'awaiting_chunks' varridas por run como safety net de consolidação.
 const FINALIZE_SCAN_LIMIT = 25
 
@@ -82,19 +92,28 @@ export async function POST(request: NextRequest) {
 
     try {
       // ─── 1. Reivindica e transcreve um lote de chunks ────────────────────
-      const chunks = await dbClaimChunks(CHUNK_BATCH, STALE_SECONDS)
+      const chunks = await dbClaimChunks(CHUNK_BATCH, STALE_SECONDS, MAX_INFLIGHT_GLOBAL)
       claimed = chunks.length
 
       const toFinalize = new Set<string>()
       // Transcreve o batch em PARALELO. transcribeChunk é I/O-bound (download do
-      // chunk + Whisper), trata o próprio erro e NUNCA lança — então Promise.all
-      // é seguro e N chunks terminam em ~1 chunk de tempo, não N. A concorrência
-      // é limitada pelo tamanho do batch (CHUNK_BATCH). Memória: cada chunk
-      // (~5MB transcodado) × CHUNK_BATCH — folgado.
-      const callIds = await Promise.all(chunks.map((chunk) => transcribeChunk(chunk)))
-      for (const callId of callIds) {
-        toFinalize.add(callId)
-        transcribed += 1
+      // chunk + Whisper) e trata o próprio erro de transcrição — mas o caminho de
+      // persistência da falha (dbRetryOrFailChunk) PODE lançar num blip de banco.
+      // allSettled isola: um chunk com erro de DB não descarta o resultado dos
+      // outros (o rejeitado fica 'processing' até o stale-reclaim). Memória: cada
+      // chunk (~5MB transcodado) × CHUNK_BATCH — folgado.
+      const results = await Promise.allSettled(chunks.map((chunk) => transcribeChunk(chunk)))
+      for (const [i, result] of results.entries()) {
+        if (result.status === 'fulfilled') {
+          toFinalize.add(result.value)
+          transcribed += 1
+        } else {
+          console.error('[process-chunks] transcribeChunk rejeitou (falha ao persistir o erro?)', {
+            chunkId: chunks[i]?.id,
+            callId: chunks[i]?.call_id,
+            err: result.reason instanceof Error ? result.reason.message : String(result.reason),
+          })
+        }
       }
 
       // ─── 2 + 3. Consolida calls tocadas + safety net de awaiting_chunks ──
