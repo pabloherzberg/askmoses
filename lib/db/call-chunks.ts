@@ -27,6 +27,7 @@ export interface DbCallChunk {
   attempts: number
   last_error: string | null
   transcription_cost_usd: number | null
+  next_attempt_at: string
   created_at: string
   updated_at: string
 }
@@ -172,11 +173,16 @@ export async function dbMarkChunkDone(
  * maxAttempts), volta pra 'pending' pro próximo claim retentar; senão,
  * aposenta em 'failed'. `attempts` já foi incrementado no claim, então
  * comparamos o valor atual da linha. Retorna o status final aplicado.
+ *
+ * `delaySeconds` agenda o retry: o claim (083) só re-reivindica o chunk após
+ * `next_attempt_at`. Essencial pra 429 — sem o delay, o worker auto-drenante
+ * re-pega o chunk em segundos, dentro da mesma janela de rate limit.
  */
 export async function dbRetryOrFailChunk(
   chunk: DbCallChunk,
   errorMessage: string,
   maxAttempts: number,
+  delaySeconds = 0,
 ): Promise<'pending' | 'failed'> {
   const supabase = createAdminClient()
   const next: 'pending' | 'failed' = chunk.attempts >= maxAttempts ? 'failed' : 'pending'
@@ -186,6 +192,7 @@ export async function dbRetryOrFailChunk(
     .update({
       status: next,
       last_error: errorMessage.slice(0, 1000),
+      next_attempt_at: new Date(Date.now() + delaySeconds * 1000).toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', chunk.id)

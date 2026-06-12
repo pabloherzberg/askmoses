@@ -94,6 +94,23 @@ const WHISPER_USD_PER_MINUTE = 0.006
 /** Teto de tentativas por chunk antes de aposentar em 'failed'. */
 export const MAX_CHUNK_ATTEMPTS = 3
 
+/**
+ * Teto maior pra falhas de throttling (429 rate limit / quota esgotada):
+ * não são defeito do chunk — a mesma transcrição funciona minutos depois.
+ * Com os delays abaixo, 8 tentativas cobrem ~1h de rate limit contínuo
+ * (e ~4h de quota esgotada) antes de desistir.
+ */
+export const MAX_CHUNK_ATTEMPTS_THROTTLED = 8
+
+/** Delay de re-fila por tentativa quando o Whisper devolveu 429 de rate limit.
+ *  Escada 1min → 5min → 15min (última repete). O claim (083) só re-reivindica
+ *  o chunk após o delay — sem isso o worker auto-drenante re-pega em segundos,
+ *  dentro da mesma janela de rate limit, e queima as tentativas à toa. */
+const RATE_LIMIT_REQUEUE_DELAYS_S = [60, 300, 900]
+
+/** Quota esgotada: re-tenta a cada 30min — espera créditos serem adicionados. */
+const QUOTA_REQUEUE_DELAY_S = 1_800
+
 function whisperChunkCost(chunk: DbCallChunk): number {
   if (chunk.start_ms == null || chunk.end_ms == null) return 0
   const minutes = (chunk.end_ms - chunk.start_ms) / 60_000
@@ -232,7 +249,23 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
     await deleteChunkAudio(chunk.storage_path)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    const result = await dbRetryOrFailChunk(chunk, msg, MAX_CHUNK_ATTEMPTS)
+    const reason = inferFailureReason(err)
+
+    // Throttling (429 rate limit / quota) ganha teto maior e re-fila COM delay:
+    // a falha é do momento, não do chunk. Erros "reais" mantêm o retry imediato
+    // e o teto curto de sempre.
+    const isRateLimit = reason === 'whisper_rate_limit'
+    const isQuota = reason === 'whisper_quota_exhausted'
+    const maxAttempts = isRateLimit || isQuota ? MAX_CHUNK_ATTEMPTS_THROTTLED : MAX_CHUNK_ATTEMPTS
+    const delaySeconds = isQuota
+      ? QUOTA_REQUEUE_DELAY_S
+      : isRateLimit
+        ? RATE_LIMIT_REQUEUE_DELAYS_S[
+            Math.min(Math.max(chunk.attempts - 1, 0), RATE_LIMIT_REQUEUE_DELAYS_S.length - 1)
+          ]
+        : 0
+
+    const result = await dbRetryOrFailChunk(chunk, msg, maxAttempts, delaySeconds)
     const nextAttempt = (chunk.attempts ?? 0) + 1
 
     console.warn('[chunk-pipeline] transcribeChunk falhou', {
@@ -240,13 +273,30 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
       callId: chunk.call_id,
       attempt: nextAttempt,
       next: result,
+      delaySeconds,
+      reason,
       err: msg,
     })
 
+    // Quota esgotada exige ação humana (recarga no billing) — alerta na PRIMEIRA
+    // ocorrência, não só quando o chunk aposenta horas depois.
+    if (isQuota && chunk.attempts <= 1 && result !== 'failed') {
+      await notifyPipelineFailure('transcription_failed', {
+        callId: chunk.call_id,
+        error: err,
+        stage: 'transcription',
+        reason,
+        meta: {
+          chunkIndex: chunk.chunk_index,
+          chunkId: chunk.id,
+          note: `Chunk segue na fila re-tentando a cada ${QUOTA_REQUEUE_DELAY_S / 60}min — transcreve sozinho após a recarga.`,
+        },
+      })
+    }
+
     // Alerta Slack quando o chunk é aposentado (failed) — aqui está a causa real
-    // do "Whisper retornou erro após 3 tentativas". Antes só havia log de console.
+    // do "Whisper retornou erro após N tentativas". Antes só havia log de console.
     if (result === 'failed') {
-      const reason = inferFailureReason(err)
       const durationMin = chunk.start_ms != null && chunk.end_ms != null
         ? ((chunk.end_ms - chunk.start_ms) / 60_000).toFixed(1)
         : null
@@ -292,7 +342,7 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       callId,
       stage: 'transcription',
       reason: 'unknown',
-      error: new Error(`${counts.failed}/${counts.total} chunk(s) falharam após ${MAX_CHUNK_ATTEMPTS} tentativas cada`),
+      error: new Error(`${counts.failed}/${counts.total} chunk(s) falharam após esgotar as tentativas (${MAX_CHUNK_ATTEMPTS} normais / ${MAX_CHUNK_ATTEMPTS_THROTTLED} com rate limit)`),
       meta: {
         totalChunks: counts.total,
         failedChunks: counts.failed,

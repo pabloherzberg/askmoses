@@ -34,14 +34,15 @@ export const runtime = 'nodejs'
 // agora roda concorrente e queremos drenar bastante chunk por ciclo.
 export const maxDuration = 800
 
-// Quantos chunks reivindicar por execução. Como agora a transcrição do batch
-// roda CONCORRENTE (Promise.all), este número é o nível de CONCORRÊNCIA, não um
+// Quantos chunks reivindicar por execução. Como a transcrição do batch roda
+// CONCORRENTE (Promise.all), este número é o nível de CONCORRÊNCIA, não um
 // multiplicador de tempo: N chunks terminam em ~1 chunk de tempo (~45s), não N.
-// O fix do after() removeu a antiga trava do headersTimeout (que me obrigou a
-// usar 2), então dá pra subir. Limites a respeitar: maxDuration desta função e
-// o rate-limit do Whisper (429 já tem retry/backoff no whisper.ts). 6 é um
-// equilíbrio seguro; ajuste vendo o comportamento real.
-const CHUNK_BATCH = 6
+// Limites a respeitar: maxDuration desta função e o rate-limit do Whisper —
+// e workers podem se SOBREPOR (kick do ingest + auto-kick + cron), então a
+// concorrência real contra a OpenAI pode ser um múltiplo deste valor. Com 6
+// o rate limit estourou em produção; 3 enquanto o tier da conta OpenAI for
+// baixo — subir junto com o tier (Settings → Limits no dashboard OpenAI).
+const CHUNK_BATCH = 3
 // Stale de 'processing' (chunk reivindicado mas nunca finalizado): re-elegível.
 const STALE_SECONDS = 300
 // Calls em 'awaiting_chunks' varridas por run como safety net de consolidação.
