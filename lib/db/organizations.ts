@@ -68,6 +68,43 @@ export async function dbGetOrgGhlConfigByLocation(
 }
 
 /**
+ * Lookup pelo orgId (para reprocessamento de calls já existentes).
+ * Retorna null se a integração estiver desabilitada ou sem credenciais.
+ */
+export async function dbGetOrgGhlConfigByOrgId(
+  orgId: string,
+): Promise<OrgGhlConfig | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
+    .eq('id', orgId)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbGetOrgGhlConfigByOrgId: ${error.message}`)
+  }
+  if (!data) return null
+
+  const accessToken = data.ghl_access_token as string | null
+  const webhookSecret = data.ghl_webhook_secret as string | null
+  const enabled = Boolean(data.ghl_integration_enabled)
+  const dbLocation = data.ghl_location_id as string | null
+
+  if (!enabled || !accessToken || !dbLocation) return null
+
+  return {
+    orgId: data.id as string,
+    locationId: dbLocation,
+    accessToken,
+    webhookSecret: webhookSecret ?? '',
+    enabled,
+  }
+}
+
+/**
  * View mascarada para a UI admin. Nunca retorna plaintext de token/secret.
  */
 export async function dbGetOrgGhlAdminView(

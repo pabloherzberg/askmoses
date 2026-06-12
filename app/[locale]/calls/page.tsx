@@ -74,6 +74,7 @@ export default async function CallsPage() {
         showTrainerColumn={!isTrainer}
         sectionLabel={isTrainer ? t('myCallsLabel') : t('teamCallsLabel')}
         title={isTrainer ? t('myCalls') : t('allCalls')}
+        canReprocess={role === 'admin'}
       />
     </div>
   )

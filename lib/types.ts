@@ -98,6 +98,8 @@ export interface Call {
   // Formato "v{rubric}.{minor}.{owner_edit}" (migration 063). Null quando o
   // script é anterior ao versionamento ou não tem as 3 colunas populadas.
   scriptVersion?: string | null;
+  // Status do pipeline GHL (transcription_failed, no_recording, etc.)
+  processingStatus?: string | null;
 }
 
 export interface TrainerScore {

@@ -1,15 +1,121 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone, FileText } from 'lucide-react'
+import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { IntentCell } from '@/components/shared/IntentCell'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
+
+const FAILED_STATUSES = new Set(['transcription_failed', 'no_recording', 'auth_expired', 'webhook_failed'])
+const IN_PROGRESS_STATUSES = new Set(['processing', 'queued_for_chunking', 'chunking', 'awaiting_chunks', 'consolidating', 'transcribed'])
+const REFRESH_INTERVAL_MS = 8_000
+const REFRESH_MAX = 45 // ~6 minutos
+
+// Call está completamente analisada se tem sections (rubrica preenchida pela IA).
+// Score 0.0 sozinho não é critério — pode ser score legítimo.
+function isAnalysisComplete(call: Call): boolean {
+  return Array.isArray(call.sections) && call.sections.length > 0
+}
+
+// Mostra o botão se a call falhou OU está em progresso sem análise completa.
+function shouldShowReprocessButton(call: Call): boolean {
+  const status = call.processingStatus ?? null
+  if (status && FAILED_STATUSES.has(status)) return true
+  if (status && IN_PROGRESS_STATUSES.has(status) && !isAnalysisComplete(call)) return true
+  return false
+}
+
+type ReprocessState = 'idle' | 'loading' | 'queued' | 'error'
+
+function ReprocessButton({ callId, hasSections, onRefresh }: { callId: string; hasSections: boolean; onRefresh: () => void }) {
+  const [state, setState] = useState<ReprocessState>('idle')
+  const [errorMsg, setErrorMsg] = useState<string>('')
+  const t = useTranslations('Owner.calls.reprocess')
+
+  // Quando em 'queued', faz refresh periódico. O pai para de renderizar
+  // este botão quando sections chegarem (análise finalizada).
+  useEffect(() => {
+    if (state !== 'queued') return
+    let count = 0
+    const id = setInterval(() => {
+      count++
+      onRefresh()
+      if (count >= REFRESH_MAX) clearInterval(id)
+    }, REFRESH_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [state, onRefresh])
+
+  // Sections chegaram — o pai vai desmontar este componente, mas se por algum
+  // motivo ainda estiver montado, muda estado local para idle.
+  useEffect(() => {
+    if (state === 'queued' && hasSections) setState('idle')
+  }, [hasSections, state])
+
+  const handleClick = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (state !== 'idle') return
+    setState('loading')
+    setErrorMsg('')
+    try {
+      const res = await fetch(`/api/calls/${callId}/reprocess`, { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body?.error?.message ?? `HTTP ${res.status}`)
+      }
+      setState('queued')
+      onRefresh()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[reprocess]', callId, msg)
+      setErrorMsg(msg)
+      setState('error')
+      setTimeout(() => setState('idle'), 6000)
+    }
+  }, [callId, state, onRefresh])
+
+  if (state === 'queued') {
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap"
+        style={{ color: 'var(--am-blue)', background: 'rgba(94,179,255,0.12)' }}
+      >
+        <RefreshCw size={11} className="animate-spin" />
+        {t('processing')}
+      </span>
+    )
+  }
+
+  if (state === 'error') {
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap cursor-help"
+        style={{ color: 'var(--am-red)', background: 'rgba(255,94,94,0.12)' }}
+        title={errorMsg}
+      >
+        <AlertCircle size={12} />
+        {t('error')}
+      </span>
+    )
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={state === 'loading'}
+      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
+      style={{ color: 'var(--am-amber)', background: 'rgba(255,171,46,0.12)', border: '1px solid rgba(255,171,46,0.25)' }}
+      title={t('tooltip')}
+    >
+      <RefreshCw size={11} className={state === 'loading' ? 'animate-spin' : ''} />
+      {state === 'loading' ? t('queuing') : t('label')}
+    </button>
+  )
+}
 
 interface CallsTableProps {
   calls: Call[]
@@ -23,6 +129,7 @@ interface CallsTableProps {
   showAdvancedFilters?: boolean
   sectionLabel: string
   title: string
+  canReprocess?: boolean
 }
 
 const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
@@ -32,6 +139,7 @@ export function CallsTable({
   showTrainerColumn = true,
   sectionLabel,
   title,
+  canReprocess = false,
 }: CallsTableProps) {
   const router = useRouter()
   const locale = useLocale()
@@ -232,8 +340,12 @@ export function CallsTable({
                           {outcomeLabel}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        {canReprocess && shouldShowReprocessButton(call) ? (
+                          <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
+                        ) : (
+                          <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
+                        )}
                       </td>
                     </tr>
                   )

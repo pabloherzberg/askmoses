@@ -207,6 +207,37 @@ export async function dbRetryOrFailChunk(
   return next
 }
 
+/** Remove todos os chunks de uma call (usado antes de re-cortar). */
+export async function dbDeleteChunksForCall(callId: string): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase.from('call_chunks').delete().eq('call_id', callId)
+  if (error) throw new Error(`dbDeleteChunksForCall: ${error.message}`)
+}
+
+/**
+ * Reseta chunks 'failed' de uma call para 'pending' com attempts=0.
+ * Usado pelo reprocess manual para que o worker tente novamente após
+ * uma falha de quota ou erro temporário.
+ */
+export async function dbResetFailedChunks(callId: string): Promise<number> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('call_chunks')
+    .update({
+      status: 'pending',
+      attempts: 0,
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('call_id', callId)
+    .eq('status', 'failed')
+    .select('id')
+
+  if (error) throw new Error(`dbResetFailedChunks: ${error.message}`)
+  return (data ?? []).length
+}
+
 /**
  * Aposenta os chunks ainda 'pending' de uma call que já falhou. Sem isto, a
  * fila continuaria reivindicando trabalho de uma call morta: o download

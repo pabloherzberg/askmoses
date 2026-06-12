@@ -43,6 +43,8 @@ export interface DbCall {
   // Estado do pipeline GHL/chunks — added in migration 044. Opcional pelo
   // mesmo motivo de script_id.
   processing_status?: ProcessingStatus | null
+  recording_url?: string | null
+  ghl_payload?: Record<string, unknown> | null
 }
 
 export interface CreateCallInput {
