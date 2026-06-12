@@ -57,6 +57,7 @@ export type PipelineFailureReason =
   | "whisper_http_4xx"             // Erro 4xx da API Whisper (request inválido)
   | "whisper_http_5xx"             // Erro 5xx da API Whisper (OpenAI instável)
   | "whisper_rate_limit"           // 429 — rate limit OpenAI esgotado
+  | "whisper_quota_exhausted"      // 429 insufficient_quota — créditos OpenAI acabaram
   | "whisper_invalid_format"       // Extensão/formato de áudio rejeitado pelo Whisper
   | "whisper_empty_response"       // Whisper retornou body vazio ou text: ""
   // ── ffmpeg / Chunking ─────────────────────────────────────────────────────
@@ -187,7 +188,9 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
   whisper_http_5xx:
     "OpenAI retornou 5xx em todas as 3 tentativas. Ver status.openai.com. Re-tentar após estabilização.",
   whisper_rate_limit:
-    "Rate limit OpenAI atingido (429). Muitas calls sendo processadas simultaneamente. Considerar reduzir CHUNK_BATCH ou adicionar delay entre chunks. Temporário — re-tentar.",
+    "Rate limit OpenAI atingido (429) e esgotou até o backoff automático (Retry-After + re-fila com delay de 1-15min). Volume acima do tier da conta OpenAI — pedir ao responsável pelo billing para subir o tier (Settings → Limits) ou reduzir CHUNK_BATCH.",
+  whisper_quota_exhausted:
+    "🚨 Créditos OpenAI ESGOTADOS (429 insufficient_quota). Retry não resolve — é preciso adicionar créditos no billing da OpenAI (platform.openai.com → Billing). Os chunks re-tentam a cada 30min automaticamente após a recarga; nenhuma call será transcrita até lá.",
   whisper_invalid_format:
     "Formato/extensão de áudio rejeitado pelo Whisper. Formatos aceitos: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm. Verificar o MIME type que o GHL está retornando.",
   whisper_empty_response:
@@ -237,6 +240,7 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   whisper_http_4xx: "❌",
   whisper_http_5xx: "💥",
   whisper_rate_limit: "🚦",
+  whisper_quota_exhausted: "💳",
   whisper_invalid_format: "🎵",
   whisper_empty_response: "🔇",
   ffmpeg_not_found: "🔧",
@@ -277,6 +281,10 @@ export function inferFailureReason(err: unknown): PipelineFailureReason {
     return "missing_app_url"
 
   // ── Whisper (mensagem padrão: "Whisper API error <status>: <body>") ──────
+  // insufficient_quota ANTES do 429 genérico — ambos são 429, mas quota
+  // esgotada exige ação humana (recarga) em vez de retry.
+  if (lower.includes("insufficient_quota"))
+    return "whisper_quota_exhausted"
   if (lower.includes("whisper api error 429"))
     return "whisper_rate_limit"
   if (lower.includes("invalid file format") || lower.includes("unsupported file") || (lower.includes("whisper") && lower.includes("format")))

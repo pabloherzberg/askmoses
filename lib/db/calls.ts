@@ -40,6 +40,9 @@ export interface DbCall {
   // pelo mesmo motivo de script_id (bancos sem a migration não retornam a
   // coluna); o mapper deriva um fallback por resultado quando ausente/null.
   intent?: number | null
+  // Estado do pipeline GHL/chunks — added in migration 044. Opcional pelo
+  // mesmo motivo de script_id.
+  processing_status?: ProcessingStatus | null
 }
 
 export interface CreateCallInput {

@@ -37,3 +37,5 @@ next-env.d.ts
 # claude code per-machine settings (may contain tokens in permission snippets)
 .claude/settings.local.json
 .claude/settings.json
+# backups locais de sessao de edicao (artefatos, nunca versionar)
+.backups/
