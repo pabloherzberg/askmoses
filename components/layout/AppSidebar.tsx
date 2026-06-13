@@ -20,6 +20,7 @@ import {
   Cog,
   Brain,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -121,6 +122,7 @@ export function OwnerNavItems() {
     },
   ];
   const toolsNav = [
+    { label: t("billing"), href: "/dashboard/billing", icon: CreditCard },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
@@ -176,6 +178,7 @@ export function AdminNavItems({
     ...(manualUploadEnabled
       ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
       : []),
+    { label: t("billing"), href: "/admin/billing", icon: CreditCard },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];

@@ -25,6 +25,7 @@ function notFound(resource: string) {
   )
 }
 
+
 // ─── Supabase PostgREST handlers ─────────────────────────────────────────────
 
 function parseOrderParam(order: string | null) {
@@ -87,6 +88,10 @@ const apiHandlers = [
   http.get('/api/ai-module-configs', () => {
     return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
   }),
+
+  // GET /api/billing/usage e /api/billing/cycle — delegados para as API routes
+  // REAIS (Supabase, agregação de calls.duration_seconds). Migration 082 +
+  // lib/db/billing.ts. Sem mock aqui pra o fetch cair na rota de verdade.
 
   // PUT /api/ai-module-configs
   http.put('/api/ai-module-configs', async ({ request }) => {
