@@ -7,6 +7,8 @@ import {
   demoCredentials,
   aiModuleConfigs,
   aiModuleConfigLog,
+  mockBillingUsage,
+  mockBillingCycle,
 } from '@/lib/mock-data'
 import type { AiModuleId } from '@/lib/types'
 
@@ -89,9 +91,21 @@ const apiHandlers = [
     return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
   }),
 
-  // GET /api/billing/usage e /api/billing/cycle — delegados para as API routes
-  // REAIS (Supabase, agregação de calls.duration_seconds). Migration 082 +
-  // lib/db/billing.ts. Sem mock aqui pra o fetch cair na rota de verdade.
+  // GET /api/billing/usage
+  http.get('/api/billing/usage', ({ request }) => {
+    const url = new URL(request.url)
+    const scope = url.searchParams.get('scope') ?? 'owner'
+    const range = (url.searchParams.get('range') ?? '1m') as import('@/lib/types').BillingPeriodRange
+    return ok(mockBillingUsage(scope, range))
+  }),
+
+  // GET /api/billing/cycle
+  http.get('/api/billing/cycle', ({ request }) => {
+    const url = new URL(request.url)
+    const scope = url.searchParams.get('scope') ?? 'owner'
+    const month = url.searchParams.get('month') ?? new Date().toISOString().slice(0, 7)
+    return ok(mockBillingCycle(scope, month))
+  }),
 
   // PUT /api/ai-module-configs
   http.put('/api/ai-module-configs', async ({ request }) => {
