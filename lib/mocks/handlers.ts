@@ -7,6 +7,8 @@ import {
   demoCredentials,
   aiModuleConfigs,
   aiModuleConfigLog,
+  mockBillingUsage,
+  mockBillingCycle,
 } from '@/lib/mock-data'
 import type { AiModuleId } from '@/lib/types'
 
@@ -24,6 +26,7 @@ function notFound(resource: string) {
     { status: 404 }
   )
 }
+
 
 // ─── Supabase PostgREST handlers ─────────────────────────────────────────────
 
@@ -86,6 +89,22 @@ const apiHandlers = [
   // GET /api/ai-module-configs
   http.get('/api/ai-module-configs', () => {
     return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
+  }),
+
+  // GET /api/billing/usage
+  http.get('/api/billing/usage', ({ request }) => {
+    const url = new URL(request.url)
+    const scope = url.searchParams.get('scope') ?? 'owner'
+    const range = (url.searchParams.get('range') ?? '1m') as import('@/lib/types').BillingPeriodRange
+    return ok(mockBillingUsage(scope, range))
+  }),
+
+  // GET /api/billing/cycle
+  http.get('/api/billing/cycle', ({ request }) => {
+    const url = new URL(request.url)
+    const scope = url.searchParams.get('scope') ?? 'owner'
+    const month = url.searchParams.get('month') ?? new Date().toISOString().slice(0, 7)
+    return ok(mockBillingCycle(scope, month))
   }),
 
   // PUT /api/ai-module-configs

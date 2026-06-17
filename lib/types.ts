@@ -331,3 +331,78 @@ export interface AiModuleConfigLogEntry {
   updated_by: string;
   updated_at: string;
 }
+
+// ─── Billing ─────────────────────────────────────────────────────────────────
+// Feature de exposição de valor para cobrança MANUAL fora da plataforma. O
+// front NÃO calcula nada — todos os valores chegam prontos no payload (amount,
+// billableMinutes, ratePerMinute, etc.). Owner NUNCA recebe cogs/llmCost/outras
+// orgs (filtrado no handler). Ver askmoses-billing-mock.html + handoff.
+
+export type BillingStatus = "PAID" | "PILOT" | "DEMO" | "DISABLED";
+
+// Presets do seletor do Bloco 1 (janela rolante). NÃO afeta o Bloco 2.
+export type BillingPeriodRange = "1w" | "2w" | "3w" | "1m";
+
+export type BillingScope = "admin" | "owner";
+
+// Bloco 1 — Usage in period (rolling). Cards de monitoramento.
+export interface BillingUsage {
+  callsAnalyzed: number;
+  billableMinutes: number;
+  estimatedValue: number; // USD — rótulo "not the billed amount"
+  // Owner mostra avgCallLengthMin; Admin mostra activePayingOrgs/totalOrgs.
+  avgCallLengthMin?: number;
+  activePayingOrgs?: number;
+  totalOrgs?: number;
+  // Bar list "Estimated value by organization" (admin only). Ordenado desc.
+  valueByOrg?: BillingValueByOrg[];
+  // Sparkline "Calls per day · last 14 days" (owner only).
+  callsPerDay?: number[];
+}
+
+export interface BillingValueByOrg {
+  orgId: string;
+  name: string;
+  value: number; // USD
+}
+
+// Linha da tabela de orgs (Bloco 2, admin). PILOT/DISABLED vêm zeradas:
+// ratePerMinute/billableMinutes = null (UI mostra "—"), amount/llmCost = 0.
+export interface BillingOrgRow {
+  orgId: string;
+  name: string;
+  status: BillingStatus;
+  planName: string;
+  ratePerMinute: number | null;
+  billableMinutes: number | null;
+  callsBilled: number;
+  amount: number; // USD
+  llmCost: number; // USD — admin only
+}
+
+export interface BillingHistoryRow {
+  period: string; // ex.: "June 2026"
+  inProgress?: boolean;
+  calls: number;
+  minutes: number;
+  amount: number; // USD
+}
+
+// Bloco 2 — Billing cycle (calendar month). Base da cobrança manual.
+// Campos admin-only (cogs, rows com llmCost) são OMITIDOS do payload owner.
+export interface BillingCycle {
+  month: string; // "YYYY-MM"
+  monthLabel: string; // "June 2026"
+  amountDue: number; // USD
+  billableMinutes: number;
+  callsBilled: number;
+  avgCallLengthMin: number;
+  ratePerMinute: number;
+  planName: string;
+  cogs?: number; // admin only — custo interno (COGS)
+  rows?: BillingOrgRow[]; // admin only — tabela de orgs
+  history?: BillingHistoryRow[]; // owner only — usage history
+  // Copy configurável de "How you're billed" (regras pendentes §7 do handoff —
+  // não hardcodar no front). Owner only.
+  howYouAreBilled?: string[];
+}
