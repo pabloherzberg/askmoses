@@ -7,6 +7,7 @@ import {
   demoCredentials,
   aiModuleConfigs,
   aiModuleConfigLog,
+  intentSignals,
 } from '@/lib/mock-data'
 import type { AiModuleId } from '@/lib/types'
 
@@ -62,8 +63,8 @@ const supabaseHandlers = [
 // ─── New views API handlers (MSW-only, no server route) ──────────────────────
 
 const apiHandlers = [
-  // GET /api/calls — passthrough to real API route (Supabase)
-  // GET /api/calls/:id — passthrough to real API route (Supabase)
+  // GET /api/calls — real API route (Supabase)
+  // GET /api/calls/:id — real API route (Supabase)
 
   // GET /api/trainers — passthrough to real API route (Supabase, org-scoped).
   // This handler used to return the global mock list from lib/mock-data.ts,
@@ -109,6 +110,11 @@ const apiHandlers = [
 
   // GET /api/coaching — passthrough to real API route (server-side translation
   // of bestCalls/worstCalls.analysis, coachingRecs, and behavioral dimensions)
+
+  // GET /api/intent-signals — Intent weights and signal metadata
+  http.get('/api/intent-signals', () => {
+    return ok({ signals: intentSignals })
+  }),
 
   // GET /api/rubric — delegado para API route real (Supabase)
   // GET /api/rubric?config=true — delegado para API route real (Supabase)

@@ -13,6 +13,7 @@ import type {
   PerformanceTrendPoint,
   AiModuleConfig,
   AiModuleConfigLogEntry,
+  IntentSignal,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -1706,4 +1707,16 @@ export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
     low:  'No clear close or next steps. The call ended without any commitment from the prospect.',
   },
 }
+
+// ─── Ask Moses Intent Index ───────────────────────────────────────────────────
+// 4 signals que indicam probabilidade de conversão. Cada sinal recebe nota 1-10,
+// agregando para Intent Index 0-5 com decimal. Mutável em memória para demo.
+// Nomes, perguntas e descrições são traduzidos via i18n (messages/*.json).
+
+export const intentSignals: IntentSignal[] = [
+  { id: 'financial', weight: 4, color: 'red' },
+  { id: 'urgency', weight: 3, color: 'amber' },
+  { id: 'authority', weight: 2, color: 'blue' },
+  { id: 'engagement', weight: 1, color: 'accent2' },
+]
 

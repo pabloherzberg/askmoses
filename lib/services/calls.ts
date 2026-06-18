@@ -10,7 +10,14 @@ import { normaliseOutcome } from "@/lib/constants";
 import { resolveIntent } from "@/lib/utils/intent";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
-import type { Call, CallSection, RubricScores, LeadSource } from "@/lib/types";
+import type {
+  Call,
+  CallSection,
+  CallResult,
+  IntentScore,
+  RubricScores,
+  LeadSource,
+} from "@/lib/types";
 import type {
   DbCall,
   CreateCallInput,
@@ -103,20 +110,38 @@ function parseLeadSource(raw: string | null | undefined): LeadSource | null {
   return VALID_LEAD_SOURCES.has(v as LeadSource) ? (v as LeadSource) : "other";
 }
 
+// Lê o intent (0–5 decimal) JÁ persistido. O intent é definido na ANÁLISE como
+// o Intent Index ponderado do intent_breakdown (= o cálculo do CallDetail) e
+// gravado no banco — aqui apenas lemos, sem recalcular nem arredondar.
+//   - closed → sempre 5 (regra fixa);
+//   - valor numérico válido → usado como está, clampado a 0–5;
+//   - ausente (calls antigas sem backfill) → fallback por resultado/IA.
+function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
+  if (result === "closed") return 5;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (Number.isFinite(n)) return Math.max(0, Math.min(5, n));
+  return resolveIntent(raw, result);
+}
+
 function toCall(db: DbCall): Call {
   const result =
     normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome";
+  // dbGetCalls já remapeia intent_breakdown/intent_weights (snake) → camelCase
+  // antes de chegar aqui; aceita ambas as chaves por segurança.
+  const intentBreakdown =
+    (db as any).intentBreakdown ?? db.intent_breakdown ?? undefined;
+  const intentWeights =
+    (db as any).intentWeights ?? db.intent_weights ?? undefined;
   return {
     id: db.id,
-    trainerId: db.trainer_id ?? "",
+    trainerId: db.trainer_id ?? null,
     trainerName: db.trainer_name,
     date: db.created_at,
     durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result,
-    // Prefere o intent (1–5) calculado pela IA (db.intent); cai num default
-    // por resultado quando ausente/null/inválido. closed é sempre 5.
-    intent: resolveIntent(db.intent, result),
+    // intent (0–5 decimal) definido na análise (Intent Index do breakdown) e lido aqui.
+    intent: readStoredIntent(db.intent, result),
     prospect: db.client_name ?? "—",
     lead_name: db.lead_name?.trim() || null,
     lead_source: parseLeadSource(db.lead_source),
@@ -127,6 +152,10 @@ function toCall(db: DbCall): Call {
     improvements: db.improvements ?? [],
     transcript: db.transcript ?? "",
     scriptId: db.script_id ?? null,
+    // Phase 3: Intent breakdown (4 signals: financial, urgency, authority, engagement)
+    intentBreakdown,
+    // Intent weights snapshot at time of analysis
+    intentWeights,
   };
 }
 

@@ -11,7 +11,10 @@ export type AvatarColor = "blue" | "purple" | "green" | "red" | "amber";
 export type TagColor = "red" | "amber" | "blue" | "green";
 export type RubricColor = "blue" | "amber" | "green" | "red" | "accent2";
 export type InviteStatus = "pending" | "accepted";
-export type IntentScore = 1 | 2 | 3 | 4 | 5;
+// Nota de intenção de compra, escala 0–5 COM decimais — derivada do
+// intentBreakdown via computeIntentIndex (fonte da verdade). Não arredondar para
+// inteiro. O fallback por resultado/IA (sem breakdown) usa valores inteiros.
+export type IntentScore = number;
 export type OtpType =
   | "invite"
   | "magiclink"
@@ -98,6 +101,12 @@ export interface Call {
   // Formato "v{rubric}.{minor}.{owner_edit}" (migration 063). Null quando o
   // script é anterior ao versionamento ou não tem as 3 colunas populadas.
   scriptVersion?: string | null;
+  // Phase 3: Intent scores calculated by IA (4 signals: financial, urgency, authority, engagement)
+  // Mapped from intent_breakdown (DB snake_case) to intentBreakdown (TS camelCase)
+  intentBreakdown?: Record<string, number>;
+  // Intent weights snapshot at time of analysis
+  // Mapped from intent_weights (DB) to intentWeights (TS camelCase)
+  intentWeights?: Record<string, number>;
 }
 
 export interface TrainerScore {
@@ -251,6 +260,7 @@ export interface RubricGap {
 }
 
 export interface BestCall {
+  id?: string;
   prospect: string;
   date: string;
   score: number;
@@ -260,6 +270,7 @@ export interface BestCall {
   trainerInitials?: string;
   trainerName?: string;
   trainerColor?: string;
+  intentBreakdown?: Record<string, number>;
 }
 
 export type CallsByTrainerMap = Record<string, BestCall[]>;
@@ -328,4 +339,26 @@ export interface AiModuleConfigLogEntry {
   new_value: number;
   updated_by: string;
   updated_at: string;
+}
+
+export interface IntentSignal {
+  id: "financial" | "urgency" | "authority" | "engagement";
+  weight: number;
+  color: RubricColor;
+}
+
+export interface IntentBreakdown {
+  financial: number;
+  urgency: number;
+  authority: number;
+  engagement: number;
+}
+
+export interface OrgIntentWeights {
+  orgId: string;
+  financial: number;
+  urgency: number;
+  authority: number;
+  engagement: number;
+  updatedAt: string;
 }

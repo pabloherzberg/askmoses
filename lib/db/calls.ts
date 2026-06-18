@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Call } from '@/lib/types'
 
 export interface DbCall {
   id: string
@@ -40,6 +41,13 @@ export interface DbCall {
   // pelo mesmo motivo de script_id (bancos sem a migration não retornam a
   // coluna); o mapper deriva um fallback por resultado quando ausente/null.
   intent?: number | null
+  // Buying intent breakdown (4 signals: financial, urgency, authority, engagement) — added in migration 084.
+  // Each score 0–10, stored as JSONB. Mapped to intentBreakdown (camelCase) on the TS side.
+  intent_breakdown?: Record<string, number> | null  // DB field — DO NOT use directly in TS, use intentBreakdown instead
+  // Intent weights snapshot at time of analysis — added in migration 086.
+  // Stores the weights (financial, urgency, authority, engagement) used during scoring.
+  // NULL for calls analyzed before this migration; use current org weights as fallback.
+  intent_weights?: Record<string, number> | null
   // Estado do pipeline GHL/chunks — added in migration 044. Opcional pelo
   // mesmo motivo de script_id.
   processing_status?: ProcessingStatus | null
@@ -71,6 +79,10 @@ export interface CreateCallInput {
   // Buying intent 1–5 (analyze). Quando omitido, persiste null e o mapper
   // deriva o fallback por resultado na leitura.
   intent?: number | null
+  // Buying intent breakdown (4 signals with scores 0–10).
+  intentBreakdown?: Record<string, number> | null
+  // Intent weights snapshot at time of analysis (financial, urgency, authority, engagement).
+  intentWeights?: Record<string, number> | null
 }
 
 export interface UpdateCallInput {
@@ -121,7 +133,15 @@ export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
 
   if (error) throw new Error(`dbGetCalls: ${error.message}`)
 
-  return (data ?? []) as DbCall[]
+  // Map DB snake_case to TS camelCase
+  return ((data ?? []) as any[]).map(row => {
+    const { intent_breakdown, intent_weights, ...rest } = row
+    return {
+      ...rest,
+      intentBreakdown: intent_breakdown,
+      intentWeights: intent_weights,
+    }
+  }) as unknown as Call[]
 }
 
 export interface GetCallByIdScope {
@@ -129,7 +149,7 @@ export interface GetCallByIdScope {
   trainerId?: string
 }
 
-export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promise<DbCall | null> {
+export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promise<Call | null> {
   const supabase = createAdminClient()
 
   let query = supabase
@@ -147,7 +167,18 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
     throw new Error(`dbGetCallById: ${error.message}`)
   }
 
-  return (data ?? null) as DbCall | null
+  if (!data) return null
+
+  // Map DB snake_case to TS camelCase
+  // IMPORTANT: Must explicitly omit intent_breakdown and intent_weights to prevent Next.js RSC serialization issues
+  const { intent_breakdown, intent_weights, ...rest } = data as any
+  const call: Call = {
+    ...rest,
+    intentBreakdown: intent_breakdown,
+    intentWeights: intent_weights,
+  }
+
+  return call
 }
 
 export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
@@ -180,6 +211,8 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       lead_name: input.leadName ?? null,
       lead_source: input.leadSource ?? null,
       intent: input.intent ?? null,
+      intent_breakdown: input.intentBreakdown ?? null,
+      intent_weights: input.intentWeights ?? null,
     })
     .select()
     .single()
@@ -370,6 +403,8 @@ export interface UpdateGhlPipelineInput {
   outputTokens?: number | null
   costUsd?: number | null
   promptVersion?: string | null
+  // Buying intent breakdown (4 signals).
+  intentBreakdown?: Record<string, number> | null
   // Campos populados pela fase de coaching email (após scoring).
   emailSent?: boolean
   emailId?: string | null
@@ -400,6 +435,7 @@ export async function dbUpdateGhlCallPipeline(
   if (input.outputTokens !== undefined) patch.output_tokens = input.outputTokens
   if (input.costUsd !== undefined) patch.cost_usd = input.costUsd
   if (input.promptVersion !== undefined) patch.prompt_version = input.promptVersion
+  if (input.intentBreakdown !== undefined) patch.intent_breakdown = input.intentBreakdown
   if (input.emailSent !== undefined) patch.email_sent = input.emailSent
   if (input.emailId !== undefined) patch.email_id = input.emailId
 

@@ -11,11 +11,13 @@ import {
 } from '@/lib/services/coaching'
 import { translateStrings } from '@/lib/i18n/translate'
 import { routing, type Locale } from '@/i18n/routing'
+import { intentSignals } from '@/lib/mock-data'
 import type {
   Call,
   Trainer,
   CallsByTrainerMap,
   PerformanceTrendPoint,
+  IntentSignal,
 } from '@/lib/types'
 import type { BehavioralDimension } from '@/lib/mock-data'
 
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
     worstCalls: {},
     trainerBehavioral: {},
     performanceTrends: {},
+    intentSignals,
   }
   if (!orgId) return ok(empty)
 
@@ -147,5 +150,6 @@ export async function GET(request: NextRequest) {
     worstCalls: outWorst,
     trainerBehavioral: outBehavioral,
     performanceTrends: performanceTrends as Record<string, PerformanceTrendPoint[]>,
+    intentSignals,
   })
 }

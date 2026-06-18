@@ -2696,5 +2696,54 @@
     "MobileCta": {
       "label": "Book My Free Demo"
     }
+  },
+  "Intent": {
+    "sectionLabel": "Ask Moses Intent Index",
+    "subtitle": "4 signals that indicate conversion probability",
+    "intentScore": "Intent Index",
+    "scoreOutOf5": "{score} out of 5",
+    "signals": {
+      "financial": {
+        "name": "Financial",
+        "question": "Did the person react to the price with curiosity or demonstrate resistance?",
+        "description": "Evaluates if the prospect showed genuine interest or concern about the investment."
+      },
+      "urgency": {
+        "name": "Urgency",
+        "question": "Is there a specific and painful event motivating the call or is it just casual interest?",
+        "description": "Measures if there's an immediate need or if it's just exploring options."
+      },
+      "authority": {
+        "name": "Authority",
+        "question": "Does the person on the call have the power to make the final decision without consulting anyone else?",
+        "description": "Identifies if the prospect is a decision-maker or needs approval."
+      },
+      "engagement": {
+        "name": "Engagement",
+        "question": "Is she asking detailed questions and thinking about next steps, or giving short and vague answers?",
+        "description": "Evaluates the level of active interest and involvement in the conversation."
+      }
+    },
+    "weight": "Weight {weight}",
+    "weightInfo": "Weight: {weight} — {percentage}% of final score",
+    "loading": "Loading...",
+    "callsList": "Highest priority leads",
+    "noCallsFound": "No high-intent leads to display",
+    "callDate": "Date",
+    "callProspect": "Prospect",
+    "callScore": "Score",
+    "callTrainer": "Trainer",
+    "lastCalls": "Last calls with highest intent",
+    "configTitle": "Intent Index — Signals & Weights",
+    "configSubtitle": "Configure the weight of each signal in calculating intent. Weights must sum to exactly 10.",
+    "weightLabel": "Weight",
+    "weightHint": "Integer value from 1 to 10",
+    "filterDays": "Days to analyze",
+    "filterApply": "Apply",
+    "buyingIntent": "Buying Intent",
+    "teamAverage": "Team Avg",
+    "breakdownLabel": "Breakdown",
+    "radarLabel": "Intent Index",
+    "highestIntentLeads": "Highest Priority Leads"
   }
 }

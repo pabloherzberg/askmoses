@@ -7,6 +7,7 @@ import {
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
+import { getIntentSignals } from "@/lib/services/intent";
 import type { Locale } from "@/i18n/routing";
 import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
 import { getScriptGaps } from "@/lib/services/script-gaps";
@@ -18,6 +19,7 @@ import { CorrelationEngine } from "@/components/shared/CorrelationEngine";
 import { ScriptGapDetection } from "@/components/shared/ScriptGapDetection";
 import { CloseRateTrend } from "@/components/shared/CloseRateTrend";
 import { PendingScriptBanner } from "@/components/shared/PendingScriptBanner";
+import { IntentDashboard } from "@/components/shared/IntentDashboard";
 import { getActiveOrgContext } from "@/lib/auth";
 
 export default async function DashboardPage() {
@@ -29,9 +31,11 @@ export default async function DashboardPage() {
     teamHealth,
     ctx,
     gapAnalysis,
+    intentSignals,
     t,
     tMetrics,
     tHealth,
+    tIntent,
   ] = await Promise.all([
     getTrainers(),
     getInsights(locale),
@@ -39,9 +43,11 @@ export default async function DashboardPage() {
     getTeamHealth(),
     getActiveOrgContext(),
     getScriptGaps(),
+    getIntentSignals().catch(() => []),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
+    getTranslations("Intent"),
   ]);
 
   // Banner só pra Owner real — Admin impersonando não tem poder de
@@ -431,6 +437,14 @@ export default async function DashboardPage() {
           </tbody>
         </table>
       </div>
+
+      {/* ── Ask Moses Intent Index ────────────────────────────── */}
+      {intentSignals.length > 0 && (
+        <>
+          <SectionLabel>{tIntent("sectionLabel")}</SectionLabel>
+          <IntentDashboard signals={intentSignals} />
+        </>
+      )}
 
       {/* ── AI Insights ───────────────────────────────────────── */}
       <SectionLabel>{t("aiInsights")}</SectionLabel>
