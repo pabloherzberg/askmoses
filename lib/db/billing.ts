@@ -16,8 +16,9 @@ import type {
 //  • Minutos faturáveis por call = ceil(duration_seconds / 60), e calls com
 //    duration_seconds < 30 NÃO são faturadas (0 min). NULL = não faturável.
 //  • Custo = minutos faturáveis × rate_per_minute (por org, da coluna).
-//  • LLM cost / COGS NÃO são persistidos — derivados como % do faturado
-//    (margem ~70% → COGS ≈ 30%). Admin only.
+//  • LLM cost / COGS agora é REAL: soma de llm_usage_events.cost_usd por org
+//    (ver aggregateLlmCost + migrations 088/089). Substitui o antigo chute de
+//    30% do faturado. Admin only — owner nunca recebe cogs/llmCost.
 
 const PG_MAX_ROWS = 1000;
 
@@ -29,9 +30,6 @@ const DEFAULT_RATE_MICROS = 66700;
 
 /** Tarifa default em USD/min — fallback quando a org não tem rate setada. */
 const DEFAULT_RATE_USD = DEFAULT_RATE_MICROS / 1_000_000;
-
-/** Fração do faturado tratada como custo interno (COGS) — margem ~70%. */
-const COGS_FRACTION = 0.3;
 
 /** "Copy" de How you're billed — config (regras pendentes §7). Owner only. */
 export const BILLING_HOW_YOU_ARE_BILLED = [
@@ -144,6 +142,49 @@ async function aggregateCalls(
   return byOrg;
 }
 
+/**
+ * Soma o custo REAL de LLM por org em [from, to) a partir de llm_usage_events.
+ * É a fonte do COGS (admin only). Pagina como aggregateCalls. Ignora eventos
+ * sem org (org_id null = não atribuível, ex.: tradução i18n). orgIds vazio →
+ * todas as orgs.
+ */
+async function aggregateLlmCost(
+  supabase: AdminSupabase,
+  from: string,
+  to: string | null,
+  orgIds: string[] | null,
+): Promise<Map<string, number>> {
+  const byOrg = new Map<string, number>();
+  let offset = 0;
+  for (;;) {
+    let q = supabase
+      .from("llm_usage_events")
+      .select("org_id, cost_usd, created_at")
+      .gte("created_at", from)
+      .not("org_id", "is", null)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + PG_MAX_ROWS - 1);
+    if (to) q = q.lt("created_at", to);
+    if (orgIds && orgIds.length > 0) q = q.in("org_id", orgIds);
+
+    const { data, error } = await q;
+    if (error) throw new Error(`aggregateLlmCost: ${error.message}`);
+    const rows = (data ?? []) as {
+      org_id: string;
+      cost_usd: number | string | null;
+      created_at: string;
+    }[];
+    for (const r of rows) {
+      // NUMERIC vem como string do PostgREST — coage pra number.
+      const cost = Number(r.cost_usd ?? 0);
+      byOrg.set(r.org_id, (byOrg.get(r.org_id) ?? 0) + cost);
+    }
+    if (rows.length < PG_MAX_ROWS) break;
+    offset += PG_MAX_ROWS;
+  }
+  return byOrg;
+}
+
 // ── Orgs (rate + status + nome + plano) ──────────────────────────────────────
 
 interface OrgBillingMeta {
@@ -198,8 +239,9 @@ export async function dbGetAdminUsage(
 ): Promise<BillingUsage> {
   const supabase = createAdminClient();
   const from = rollingStartIso(range);
-  const [aggByOrg, orgs] = await Promise.all([
+  const [aggByOrg, costByOrg, orgs] = await Promise.all([
     aggregateCalls(supabase, from, null, null),
+    aggregateLlmCost(supabase, from, null, null),
     fetchOrgMeta(supabase, null),
   ]);
 
@@ -224,6 +266,10 @@ export async function dbGetAdminUsage(
   const totalOrgs = orgs.length;
   const activePayingOrgs = orgs.filter((o) => isPaying(o.billingStatus)).length;
 
+  // COGS real do período = soma do custo de LLM de todas as orgs (admin only).
+  let cogs = 0;
+  for (const c of costByOrg.values()) cogs += c;
+
   return {
     callsAnalyzed,
     billableMinutes,
@@ -231,6 +277,7 @@ export async function dbGetAdminUsage(
     activePayingOrgs,
     totalOrgs,
     valueByOrg,
+    cogs: Number(cogs.toFixed(2)),
   };
 }
 
@@ -302,8 +349,9 @@ async function dbGetCallsPerDay(
 export async function dbGetAdminCycle(month: string): Promise<BillingCycle> {
   const supabase = createAdminClient();
   const { start, end } = monthBoundsIso(month);
-  const [aggByOrg, orgs] = await Promise.all([
+  const [aggByOrg, costByOrg, orgs] = await Promise.all([
     aggregateCalls(supabase, start, end, null),
+    aggregateLlmCost(supabase, start, end, null),
     fetchOrgMeta(supabase, null),
   ]);
 
@@ -323,7 +371,9 @@ export async function dbGetAdminCycle(month: string): Promise<BillingCycle> {
       billableMinutes: paying ? minutes : null,
       callsBilled: calls,
       amount,
-      llmCost: Number((amount * COGS_FRACTION).toFixed(2)),
+      // Custo REAL de LLM da org no mês (não fração do faturado). Mostrado p/
+      // TODAS as orgs incl. PILOT — o custo existe independente de cobrança.
+      llmCost: Number((costByOrg.get(org.id) ?? 0).toFixed(2)),
     };
   });
 
@@ -332,7 +382,8 @@ export async function dbGetAdminCycle(month: string): Promise<BillingCycle> {
   const amountDue = rows.reduce((s, r) => s + r.amount, 0);
   const billableMinutes = rows.reduce((s, r) => s + (r.billableMinutes ?? 0), 0);
   const callsBilled = rows.reduce((s, r) => s + r.callsBilled, 0);
-  const cogs = Number((amountDue * COGS_FRACTION).toFixed(2));
+  // COGS = soma do custo real de LLM de todas as orgs no mês (bate com a tabela).
+  const cogs = Number(rows.reduce((s, r) => s + r.llmCost, 0).toFixed(2));
 
   return {
     month,

@@ -27,9 +27,10 @@
       "callsBilled": "Llamadas facturadas",
       "amount": "Importe",
       "llmCosts": "Costos LLM",
-      "actions": "",
+      "actions": "Uso",
       "totalPaid": "Total — de pago",
-      "editRate": "Editar tarifa"
+      "editRate": "Editar tarifa",
+      "viewUsage": "Ver uso"
     },
     "editRate": {
       "title": "Editar tarifa de facturación",
@@ -54,7 +55,7 @@
       "billableMinutesMonth": "Minutos facturables —",
       "closedMonth": "mes natural cerrado",
       "cogs": "Costo interno (COGS)",
-      "cogsTag": "Solo admin · ~70% margen",
+      "cogsTag": "Solo admin · costo real de LLM",
       "footerNote": "Los importes son de referencia — el cobro se realiza manualmente, fuera de la plataforma"
     },
     "owner": {

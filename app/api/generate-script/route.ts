@@ -1,8 +1,9 @@
 import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
 import { getOpenAIModel } from '@/lib/openai'
-import { getSession, requireOwnerWrite, unauthorized } from '@/lib/auth'
+import { getSession, getOrgId, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { getRubricConfig } from '@/lib/services/rubric'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 
 const SYSTEM_PROMPT = `You are a sales script architect. Analyze the provided call transcripts and/or text and generate a structured sales script.
 
@@ -91,10 +92,19 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Provide at least one transcript or text input.' }, { status: 400 })
   }
 
-  const { text } = await generateText({
+  const { text, usage } = await generateText({
     model: getOpenAIModel('gpt-4o-mini'),
     system: SYSTEM_PROMPT,
     prompt: buildUserPrompt(transcripts, textInput),
+  })
+
+  // Telemetria de custo p/ COGS (best-effort).
+  void recordLlmUsage({
+    orgId: await getOrgId(),
+    surface: 'script_generation',
+    model: 'gpt-4o-mini',
+    inputTokens: usage?.inputTokens ?? 0,
+    outputTokens: usage?.outputTokens ?? 0,
   })
 
   // Strip potential markdown fences before parsing

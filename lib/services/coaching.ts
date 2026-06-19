@@ -1,5 +1,6 @@
-import { getGeminiModel } from '@/lib/gemini'
-import { runWithGeminiChain } from '@/lib/gemini-chain'
+import { generateText } from 'ai'
+import { getOpenAIModel } from '@/lib/openai'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { normaliseOutcome } from '@/lib/constants'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
 import type {
@@ -282,6 +283,7 @@ export async function generateCoachingRecs(
   trainerName: string,
   calls: Call[],
   locale: string,
+  orgId?: string | null,
 ): Promise<CoachingRec[]> {
   if (calls.length === 0) return []
 
@@ -332,22 +334,31 @@ Return ONLY valid JSON (no markdown), with this exact shape:
 {"recommendations":[{"title":"<short imperative, max 8 words>","text":"<1-2 sentences: the behavior to change and how>"}]}
 Exactly 3 items.`.trim()
 
-  // Model chain: flash-lite (default) → 2.0-flash → 2.0-flash-lite. On 429,
-  // each model is cooled down for the provider-reported delay and the next is
-  // tried. Cooldown state is shared with the translation pipeline.
-  const parsed = await runWithGeminiChain<{
-    recommendations?: { title?: string; text?: string }[]
-  }>(async (modelName) => {
-    const model = getGeminiModel(modelName)
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim()
+  let parsed: { recommendations?: { title?: string; text?: string }[] } | null
+  try {
+    const result = await generateText({
+      model: getOpenAIModel('gpt-4o'),
+      prompt,
+    })
+    // Telemetria de custo p/ COGS (best-effort).
+    void recordLlmUsage({
+      orgId: orgId ?? null,
+      surface: 'coaching',
+      model: 'gpt-4o',
+      inputTokens: result.usage?.inputTokens ?? 0,
+      outputTokens: result.usage?.outputTokens ?? 0,
+    })
+    const text = result.text.trim()
     const cleaned = text
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```$/, '')
       .trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
-    return JSON.parse(match ? match[0] : cleaned)
-  })
+    parsed = JSON.parse(match ? match[0] : cleaned)
+  } catch (err) {
+    console.error('[coaching] failed to generate/parse recommendations:', err)
+    return []
+  }
 
   if (!parsed) return []
 

@@ -358,6 +358,8 @@ export interface BillingUsage {
   valueByOrg?: BillingValueByOrg[];
   // Sparkline "Calls per day · last 14 days" (owner only).
   callsPerDay?: number[];
+  // Custo interno (COGS) real do período — soma de llm_usage_events. Admin only.
+  cogs?: number;
 }
 
 export interface BillingValueByOrg {

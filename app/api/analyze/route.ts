@@ -7,6 +7,7 @@ import {
   dbGetCriteriaByRubric,
 } from "@/lib/db/rubric";
 import { dbCreateCall } from "@/lib/db/calls";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 import { dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
@@ -635,6 +636,18 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Telemetria de custo p/ COGS (best-effort, fire-and-forget). 1 evento
+    // cobre o retry — totalInput/OutputTokens já somam ambas as tentativas.
+    void recordLlmUsage({
+      orgId,
+      surface: "analyze",
+      model: modelUsed,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      costUsdOverride: costUsd,
+      callId: savedCall.id ?? null,
+    });
 
     if (sessionTrainerId) {
       syncTrainerStats(sessionTrainerId).catch((e) =>

@@ -157,7 +157,7 @@ export function AdminNavItems({
   manualUploadEnabled?: boolean;
 } = {}) {
   const t = useTranslations("Shared.sidebar");
-  const nav = [
+  const mainNav = [
     { label: t("saasPanel"), href: "/admin", icon: Building2 },
     {
       label: t("createOrganization"),
@@ -178,13 +178,24 @@ export function AdminNavItems({
     ...(manualUploadEnabled
       ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
       : []),
-    { label: t("billing"), href: "/admin/billing", icon: CreditCard },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
+  ];
+  const toolsNav = [
+    { label: t("billing"), href: "/admin/billing", icon: CreditCard },
     { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
   return (
     <nav className="flex flex-col gap-1">
-      {nav.map((item) => (
+      {mainNav.map((item) => (
+        <NavItem key={item.href} {...item} />
+      ))}
+
+      <div
+        className="my-2 mx-3 h-px"
+        style={{ background: "var(--am-border)" }}
+      />
+
+      {toolsNav.map((item) => (
         <NavItem key={item.href} {...item} />
       ))}
     </nav>
