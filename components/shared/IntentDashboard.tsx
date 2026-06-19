@@ -15,6 +15,7 @@ const PERIOD_DAYS: Record<BillingPeriodRange, number> = { '1w': 7, '2w': 14, '3w
 interface Call {
   id?: string
   prospect: string
+  trainerName?: string | null
   date: string
   score: number
   result: string
@@ -123,6 +124,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
                     {call.prospect}
                   </p>
                   <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                    {call.trainerName && <span className="font-medium">{call.trainerName} · </span>}
                     {new Date(call.date).toLocaleDateString(locale)}
                   </p>
                 </div>
