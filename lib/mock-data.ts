@@ -14,6 +14,9 @@ import type {
   AiModuleConfig,
   AiModuleConfigLogEntry,
   IntentSignal,
+  BillingUsage,
+  BillingCycle,
+  BillingPeriodRange,
 } from '@/lib/types'
 
 // ─── Trainers ────────────────────────────────────────────────────────────────
@@ -1732,9 +1735,6 @@ export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
 }
 
 // ─── Ask Moses Intent Index ───────────────────────────────────────────────────
-// 4 signals que indicam probabilidade de conversão. Cada sinal recebe nota 1-10,
-// agregando para Intent Index 0-5 com decimal. Mutável em memória para demo.
-// Nomes, perguntas e descrições são traduzidos via i18n (messages/*.json).
 
 export const intentSignals: IntentSignal[] = [
   { id: 'financial', weight: 4, color: 'red' },
@@ -1742,4 +1742,90 @@ export const intentSignals: IntentSignal[] = [
   { id: 'authority', weight: 2, color: 'blue' },
   { id: 'engagement', weight: 1, color: 'accent2' },
 ]
+
+// ─── Billing mock data ────────────────────────────────────────────────────────
+
+const BILLING_CALLS_PER_DAY_14 = [2, 3, 1, 4, 5, 3, 2, 6, 4, 3, 5, 7, 4, 3]
+
+export function mockBillingUsage(scope: string, range: BillingPeriodRange): BillingUsage {
+  const multiplier: Record<BillingPeriodRange, number> = { '1w': 0.25, '2w': 0.5, '3w': 0.75, '1m': 1 }
+  const m = multiplier[range] ?? 1
+
+  if (scope === 'admin') {
+    return {
+      callsAnalyzed: Math.round(312 * m),
+      billableMinutes: Math.round(4680 * m),
+      estimatedValue: Number((312.05 * m).toFixed(2)),
+      activePayingOrgs: 8,
+      totalOrgs: 11,
+      valueByOrg: [
+        { orgId: 'org-1', name: 'Dog Wizard HQ',     value: Number((87.3 * m).toFixed(2)) },
+        { orgId: 'org-2', name: 'Canine Academy',    value: Number((64.1 * m).toFixed(2)) },
+        { orgId: 'org-3', name: 'Paw Perfect',       value: Number((52.8 * m).toFixed(2)) },
+        { orgId: 'org-4', name: 'Sit & Stay Pro',    value: Number((41.2 * m).toFixed(2)) },
+        { orgId: 'org-5', name: 'Alpha Dog Training',value: Number((38.7 * m).toFixed(2)) },
+      ],
+    }
+  }
+
+  return {
+    callsAnalyzed: Math.round(47 * m),
+    billableMinutes: Math.round(705 * m),
+    estimatedValue: Number((47.02 * m).toFixed(2)),
+    avgCallLengthMin: 15.1,
+    callsPerDay: BILLING_CALLS_PER_DAY_14,
+  }
+}
+
+export function mockBillingCycle(scope: string, month: string): BillingCycle {
+  const label = new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const howYouAreBilled = [
+    '$0.0667 per minute of analyzed calls (≈ $1 per 15-min call)',
+    'Billed in whole minutes, rounded up',
+    'Calls under 30 seconds aren\'t billed',
+    'Charged monthly, on the calendar month',
+  ]
+
+  if (scope === 'admin') {
+    return {
+      month,
+      monthLabel: label,
+      amountDue: 1248.20,
+      billableMinutes: 18720,
+      callsBilled: 1248,
+      avgCallLengthMin: 15.0,
+      ratePerMinute: 0.0667,
+      planName: '—',
+      cogs: 374.46,
+      rows: [
+        { orgId: 'org-1', name: 'Dog Wizard HQ',      status: 'PAID', planName: 'Pro',  ratePerMinute: 0.0667, billableMinutes: 5400, callsBilled: 360, amount: 360.18, llmCost: 108.05 },
+        { orgId: 'org-2', name: 'Canine Academy',     status: 'PAID', planName: 'Pro',  ratePerMinute: 0.0667, billableMinutes: 3960, callsBilled: 264, amount: 264.13, llmCost: 79.24 },
+        { orgId: 'org-3', name: 'Paw Perfect',        status: 'DEMO', planName: 'Solo', ratePerMinute: 0.0667, billableMinutes: 3150, callsBilled: 210, amount: 210.11, llmCost: 63.03 },
+        { orgId: 'org-4', name: 'Sit & Stay Pro',     status: 'PAID', planName: 'Solo', ratePerMinute: 0.0667, billableMinutes: 2460, callsBilled: 164, amount: 163.99, llmCost: 49.20 },
+        { orgId: 'org-5', name: 'Alpha Dog Training', status: 'PAID', planName: 'Solo', ratePerMinute: 0.0667, billableMinutes: 2310, callsBilled: 154, amount: 154.07, llmCost: 46.22 },
+        { orgId: 'org-6', name: 'Bark & Train',       status: 'PILOT', planName: 'Solo', ratePerMinute: null,   billableMinutes: null,  callsBilled: 38,  amount: 0,      llmCost: 0 },
+        { orgId: 'org-7', name: 'Happy Paws',         status: 'PILOT', planName: 'Solo', ratePerMinute: null,   billableMinutes: null,  callsBilled: 22,  amount: 0,      llmCost: 0 },
+        { orgId: 'org-8', name: 'Top Dog Academy',    status: 'PILOT', planName: 'Solo', ratePerMinute: null,   billableMinutes: null,  callsBilled: 46,  amount: 0,      llmCost: 0 },
+      ],
+    }
+  }
+
+  return {
+    month,
+    monthLabel: label,
+    amountDue: 204.06,
+    billableMinutes: 3060,
+    callsBilled: 204,
+    avgCallLengthMin: 15.0,
+    ratePerMinute: 0.0667,
+    planName: 'Pro',
+    howYouAreBilled,
+    history: [
+      { period: label,        inProgress: true,  calls: 204, minutes: 3060, amount: 204.06 },
+      { period: 'May 2026',   inProgress: false, calls: 187, minutes: 2805, amount: 187.09 },
+      { period: 'April 2026', inProgress: false, calls: 163, minutes: 2445, amount: 163.08 },
+      { period: 'March 2026', inProgress: false, calls: 141, minutes: 2115, amount: 141.07 },
+    ],
+  }
+}
 

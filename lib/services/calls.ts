@@ -156,6 +156,7 @@ function toCall(db: DbCall): Call {
     intentBreakdown,
     // Intent weights snapshot at time of analysis
     intentWeights,
+    processingStatus: db.processing_status ?? null,
   };
 }
 

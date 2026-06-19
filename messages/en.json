@@ -6,6 +6,82 @@
     "loading": "Loading...",
     "error": "Something went wrong"
   },
+  "Billing": {
+    "title": "Billing",
+    "block1": { "title": "Usage in period" },
+    "block2": { "title": "Billing cycle" },
+    "cards": {
+      "callsAnalyzed": "Calls analyzed",
+      "billableMinutes": "Billable minutes",
+      "estimatedValue": "Estimated value",
+      "inSelectedPeriod": "in selected period",
+      "avgCallLength": "Avg call length",
+      "minSuffix": "min"
+    },
+    "table": {
+      "organization": "Organization",
+      "status": "Billing status",
+      "plan": "Plan",
+      "rate": "Rate / min",
+      "billableMin": "Billable min",
+      "callsBilled": "Calls billed",
+      "amount": "Amount",
+      "llmCosts": "LLM Costs",
+      "actions": "",
+      "totalPaid": "Total — paid",
+      "editRate": "Edit billing rate"
+    },
+    "editRate": {
+      "title": "Edit billing rate",
+      "description": "Set the per-minute rate for this organization",
+      "rateLabel": "Rate per minute (USD)",
+      "hint": "e.g. 0.0667 ≈ $1 per 15-min call",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "invalid": "Enter a valid rate (USD per minute)"
+    },
+    "admin": {
+      "subtitle": "Usage, value and cycle charges across all organizations",
+      "block1Hint": "rolling window · for monitoring",
+      "block2Hint": "calendar month · basis for manual charging",
+      "estimatedValueNote": "rolling · not the billed amount",
+      "activePayingOrgs": "Active paying orgs",
+      "freePilotNote": "on free pilot",
+      "valueByOrgTitle": "Estimated value by organization · selected period",
+      "amountDue": "Amount due —",
+      "payingOrgsNote": "paying organizations",
+      "billableMinutesMonth": "Billable minutes —",
+      "closedMonth": "closed calendar month",
+      "cogs": "Internal cost (COGS)",
+      "cogsTag": "Admin only · ~70% margin",
+      "footerNote": "Amounts are for reference — billing is collected manually, outside the platform"
+    },
+    "owner": {
+      "subtitle": "Usage and amount due for your organization",
+      "block1Hint": "rolling window",
+      "block2Hint": "calendar month",
+      "estimatedValueNote": "selected period · not your bill",
+      "callsPerDayTitle": "Calls per day",
+      "callsPerDaySubtitle": "Last 14 days",
+      "amountDueTitle": "Amount due this cycle",
+      "amountDueFor": "· so far this month",
+      "updatesTag": "Updates as calls come in",
+      "howTitle": "How you're billed",
+      "callsBilledMonth": "Calls billed — month",
+      "billableMinutesMonth": "Billable minutes — month",
+      "yourRate": "Your rate",
+      "perMinSuffix": "/ min",
+      "usageHistory": "Usage history",
+      "inProgress": "in progress",
+      "colPeriod": "Period",
+      "colCalls": "Calls",
+      "colMinutes": "Minutes",
+      "colAmount": "Amount",
+      "payTitle": "Billing is handled directly with the AskMoses team",
+      "payBody": "This page shows your usage and amount due for reference. Payment is arranged outside the platform — there's nothing to pay here."
+    }
+  },
   "Navigation": {
     "overview": "Overview",
     "calls": "Calls",
@@ -200,6 +276,7 @@
       "rubric": "Rubric",
       "members": "Members",
       "howToUse": "How to Use",
+      "billing": "Billing",
       "saasPanel": "SaaS Panel",
       "rubricConfig": "Rubric Config",
       "coachingSettings": "Rubric Config",
@@ -657,7 +734,14 @@
       "forbidden": "You don't have access to this call.",
       "thScript": "Script",
       "filterAllScripts": "All Scripts",
-      "activeScriptTag": "Active script: {name}"
+      "activeScriptTag": "Active script: {name}",
+      "reprocess": {
+        "label": "Re-analyze",
+        "queuing": "Queuing…",
+        "processing": "Processing…",
+        "error": "Error",
+        "tooltip": "Re-analyze this call"
+      }
     }
   },
   "Admin": {

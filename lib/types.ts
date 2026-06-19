@@ -107,6 +107,8 @@ export interface Call {
   // Intent weights snapshot at time of analysis
   // Mapped from intent_weights (DB) to intentWeights (TS camelCase)
   intentWeights?: Record<string, number>;
+  // Status do pipeline GHL (transcription_failed, no_recording, etc.)
+  processingStatus?: string | null;
 }
 
 export interface TrainerScore {
@@ -361,4 +363,64 @@ export interface OrgIntentWeights {
   authority: number;
   engagement: number;
   updatedAt: string;
+}
+
+// ─── Billing ─────────────────────────────────────────────────────────────────
+
+export type BillingStatus = "PAID" | "PILOT" | "DEMO" | "DISABLED";
+
+export type BillingPeriodRange = "1w" | "2w" | "3w" | "1m";
+
+export type BillingScope = "admin" | "owner";
+
+export interface BillingUsage {
+  callsAnalyzed: number;
+  billableMinutes: number;
+  estimatedValue: number;
+  avgCallLengthMin?: number;
+  activePayingOrgs?: number;
+  totalOrgs?: number;
+  valueByOrg?: BillingValueByOrg[];
+  callsPerDay?: number[];
+}
+
+export interface BillingValueByOrg {
+  orgId: string;
+  name: string;
+  value: number;
+}
+
+export interface BillingOrgRow {
+  orgId: string;
+  name: string;
+  status: BillingStatus;
+  planName: string;
+  ratePerMinute: number | null;
+  billableMinutes: number | null;
+  callsBilled: number;
+  amount: number;
+  llmCost: number;
+}
+
+export interface BillingHistoryRow {
+  period: string;
+  inProgress?: boolean;
+  calls: number;
+  minutes: number;
+  amount: number;
+}
+
+export interface BillingCycle {
+  month: string;
+  monthLabel: string;
+  amountDue: number;
+  billableMinutes: number;
+  callsBilled: number;
+  avgCallLengthMin: number;
+  ratePerMinute: number;
+  planName: string;
+  cogs?: number;
+  rows?: BillingOrgRow[];
+  history?: BillingHistoryRow[];
+  howYouAreBilled?: string[];
 }

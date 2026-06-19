@@ -1,8 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { useDropzone } from "react-dropzone"
-import { upload } from "@vercel/blob/client"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import {
@@ -16,22 +14,15 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import {
-  FileAudio,
-  FileText,
-  X,
   Loader2,
   Wand2,
-  Sparkles,
-  CheckCircle,
   Save,
   Lightbulb,
 } from "lucide-react"
 
-// F4 — as 5 seções fixas, sempre nesta ordem, imutáveis
 const FIXED_SECTIONS = [
   { name: "Discovery" },
   { name: "Problem Agitation" },
@@ -39,14 +30,6 @@ const FIXED_SECTIONS = [
   { name: "Objection Handling" },
   { name: "Close & Next Steps" },
 ]
-
-interface AudioFile {
-  file: File
-  name: string
-  status: "pending" | "uploading" | "transcribing" | "done" | "error"
-  transcript?: string
-  error?: string
-}
 
 interface GeneratedScript {
   name: string
@@ -64,7 +47,6 @@ interface GeneratedScript {
 
 type BuilderStep = "input" | "processing" | "preview" | "confirm"
 
-// F4 — seções do preview/confirm: nome fixo + conteúdo preenchido pela IA
 type FixedSection = {
   name: string
   instructions: string
@@ -78,15 +60,7 @@ export default function ScriptBuilderPage() {
   const t = useTranslations("Dashboard.scriptBuilder")
   const locale = useLocale()
 
-  const LLM_MODELS = [
-    { value: "openai/gpt-4o-mini", label: t("llmModels.gpt4oMini") },
-    { value: "google/gemini-2.5-flash", label: t("llmModels.gemini25Flash") },
-    { value: "google/gemini-2.5-pro", label: t("llmModels.gemini25Pro") },
-  ]
-
   const [step, setStep] = useState<BuilderStep>("input")
-  const [inputType, setInputType] = useState<"audio" | "text">("audio")
-  const [audioFiles, setAudioFiles] = useState<AudioFile[]>([])
   const [textInput, setTextInput] = useState("")
   const [progress, setProgress] = useState(0)
   const [processingStatus, setProcessingStatus] = useState("")
@@ -95,118 +69,19 @@ export default function ScriptBuilderPage() {
   const [editedDescription, setEditedDescription] = useState("")
   const [saving, setSaving] = useState(false)
 
-  // F2/F3 — preview: só seções fixas, sem criteria, sem enabled
   const [previewSections, setPreviewSections] = useState<FixedSection[]>([])
 
-  // Confirm step state
   const [confirmSections, setConfirmSections] = useState<FixedSection[]>([])
   const [confirmLlmModel, setConfirmLlmModel] = useState("openai/gpt-4o-mini")
   const [confirmSystemPrompt, setConfirmSystemPrompt] = useState("")
   const [rubrics, setRubrics] = useState<Array<{ id: string; name: string }>>([])
   const [selectedRubricId, setSelectedRubricId] = useState<string>("")
 
-  const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      const remainingSlots = 3 - audioFiles.length
-      const newFiles = acceptedFiles.slice(0, remainingSlots).map((file) => ({
-        file,
-        name: file.name,
-        status: "pending" as const,
-      }))
-      setAudioFiles((prev) => [...prev, ...newFiles])
-    },
-    [audioFiles.length]
-  )
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "audio/*": [".mp3", ".wav", ".m4a", ".webm", ".ogg"],
-    },
-    maxFiles: 3 - audioFiles.length,
-    disabled: audioFiles.length >= 3,
-  })
-
-  const removeFile = (index: number) => {
-    setAudioFiles((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const processAudioFiles = async (): Promise<string[]> => {
-    const transcripts: string[] = []
-
-    for (let i = 0; i < audioFiles.length; i++) {
-      const audioFile = audioFiles[i]
-
-      setAudioFiles((prev) =>
-        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
-      )
-      setProcessingStatus(t("processing.uploadingAudio", { current: i + 1, total: audioFiles.length }))
-      setProgress(((i * 2) / (audioFiles.length * 3)) * 100)
-
-      try {
-        const sanitizedName = audioFile.file.name
-          .replace(/[^a-zA-Z0-9.-]/g, "_")
-          .replace(/\.\.+/g, ".")
-        const timestamp = Date.now()
-        const blobName = `${timestamp}_${sanitizedName}`
-
-        const blob = await upload(blobName, audioFile.file, {
-          access: "public",
-          handleUploadUrl: "/api/blob-token",
-        })
-
-        const blobUrl = blob.url
-
-        setAudioFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: "transcribing" } : f))
-        )
-        setProcessingStatus(t("processing.transcribingAudio", { current: i + 1, total: audioFiles.length }))
-        setProgress(((i * 2 + 1) / (audioFiles.length * 3)) * 100)
-
-        const transcribeRes = await fetch("/api/transcribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blobUrl, filename: audioFile.file.name }),
-        })
-
-        if (!transcribeRes.ok) {
-          throw new Error(t("processing.transcriptionFailed"))
-        }
-
-        const { transcript } = await transcribeRes.json()
-        transcripts.push(transcript)
-
-        setAudioFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i ? { ...f, status: "done", transcript } : f
-          )
-        )
-        setProgress(((i * 2 + 2) / (audioFiles.length * 3)) * 100)
-      } catch (error) {
-        setAudioFiles((prev) =>
-          prev.map((f, idx) =>
-            idx === i
-              ? { ...f, status: "error", error: error instanceof Error ? error.message : t("processing.unknownError") }
-              : f
-          )
-        )
-      }
-    }
-
-    return transcripts
-  }
-
   const handleGenerate = async () => {
     setStep("processing")
     setProgress(0)
 
     try {
-      let transcripts: string[] = []
-
-      if (audioFiles.length > 0) {
-        transcripts = await processAudioFiles()
-      }
-
       setProcessingStatus(t("processing.analyzing"))
       setProgress(80)
 
@@ -214,7 +89,7 @@ export default function ScriptBuilderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          transcripts,
+          transcripts: [],
           textInput: textInput.trim() || null,
         }),
       })
@@ -229,8 +104,6 @@ export default function ScriptBuilderPage() {
       setEditedName(script.name)
       setEditedDescription(script.description)
 
-      // F4 — ignorar seções da IA, sempre usar FIXED_SECTIONS.
-      // Mapear instructions/tips da IA por nome de seção quando disponível.
       const aiByName = new Map<string, GeneratedScript["sections"][number]>(
         (script.sections ?? []).map((s: GeneratedScript["sections"][number]) => [
           s.name.toLowerCase(),
@@ -259,38 +132,7 @@ export default function ScriptBuilderPage() {
     }
   }
 
-  const handleSaveAsRubric = async () => {
-    if (!generatedScript) return
-
-    setSaving(true)
-    try {
-      const rubricRes = await fetch("/api/rubric?config=true")
-      const { data: rubricData } = (await rubricRes.json()) as { data: { id: string } | null; error: unknown }
-      if (!rubricData?.id) throw new Error(t("confirm.saveFailed"))
-      const rubricId = rubricData.id
-
-      const res = await fetch("/api/scripts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rubric_id: rubricId,
-          name: editedName,
-          description: editedDescription,
-          sections: generatedScript.sections,
-          full_script: generatedScript.full_script,
-          is_active: true,
-        }),
-      })
-      if (!res.ok) throw new Error(t("confirm.saveFailed"))
-
-      router.push(`/${locale}/dashboard/settings`)
-    } catch (error) {
-      console.error("[v0] Save error:", error)
-    }
-    setSaving(false)
-  }
-
-  const canGenerate = audioFiles.length > 0 || textInput.trim().length > 50
+  const canGenerate = textInput.trim().length > 50
 
   return (
     <div className="space-y-6">
@@ -313,105 +155,18 @@ export default function ScriptBuilderPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Tabs value={inputType} onValueChange={(v) => setInputType(v as "audio" | "text")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="audio" className="flex items-center gap-2">
-                  <FileAudio className="h-4 w-4" />
-                  {t("tabs.audio")}
-                </TabsTrigger>
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  {t("tabs.text")}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="audio" className="space-y-4 mt-4">
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    isDragActive
-                      ? "border-primary bg-primary/5"
-                      : audioFiles.length >= 3
-                      ? "border-muted bg-muted/20 cursor-not-allowed"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <input {...getInputProps()} />
-                  <FileAudio className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  {audioFiles.length >= 3 ? (
-                    <p className="text-muted-foreground">{t("dropzone.maxReached")}</p>
-                  ) : isDragActive ? (
-                    <p className="text-primary">{t("dropzone.dropHere")}</p>
-                  ) : (
-                    <>
-                      <p className="text-foreground font-medium">
-                        {t("dropzone.dragAndDrop")}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {(3 - audioFiles.length) === 1
-                          ? t("dropzone.orClickOne", { count: 3 - audioFiles.length })
-                          : t("dropzone.orClickOther", { count: 3 - audioFiles.length })}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {audioFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>{t("selectedFiles", { count: audioFiles.length })}</Label>
-                    {audioFiles.map((audioFile, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileAudio className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium text-sm">{audioFile.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {t("fileSizeMb", { size: (audioFile.file.size / (1024 * 1024)).toFixed(2) })}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFile(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="text" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label>{t("textTab.label")}</Label>
-                  <Textarea
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder={t("textTab.placeholder")}
-                    className="min-h-64 font-mono text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t("textTab.charsCount", { count: textInput.length })}
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {audioFiles.length > 0 && textInput.trim().length > 0 && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <p className="text-sm">
-                  {audioFiles.length === 1
-                    ? t("combinedIndicatorOne", { count: audioFiles.length })
-                    : t("combinedIndicatorOther", { count: audioFiles.length })}
-                </p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label>{t("textTab.label")}</Label>
+              <Textarea
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder={t("textTab.placeholder")}
+                className="min-h-64 font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("textTab.charsCount", { count: textInput.length })}
+              </p>
+            </div>
 
             <Button
               onClick={handleGenerate}
@@ -438,31 +193,6 @@ export default function ScriptBuilderPage() {
                 </p>
               </div>
               <Progress value={progress} className="w-full max-w-md" />
-
-              {audioFiles.length > 0 && (
-                <div className="w-full max-w-md space-y-2 mt-4">
-                  {audioFiles.map((audioFile, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 rounded bg-card border text-sm"
-                    >
-                      <span className="truncate">{audioFile.name}</span>
-                      <Badge
-                        variant={
-                          audioFile.status === "done"
-                            ? "default"
-                            : audioFile.status === "error"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {audioFile.status === "done" && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {t(`status.${audioFile.status}`)}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -470,7 +200,6 @@ export default function ScriptBuilderPage() {
 
       {step === "preview" && generatedScript && (
         <div className="space-y-6">
-          {/* Explanation Card */}
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
@@ -483,7 +212,6 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* Script Preview */}
           <Card>
             <CardHeader>
               <CardTitle>{t("preview.generatedScript")}</CardTitle>
@@ -492,7 +220,6 @@ export default function ScriptBuilderPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Editable name and description */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("preview.scriptName")}</Label>
@@ -510,7 +237,6 @@ export default function ScriptBuilderPage() {
                 </div>
               </div>
 
-              {/* F1/F2 — Seções fixas: sem Eye toggle, sem Add Section */}
               <div className="space-y-4">
                 <Label>{t("preview.sections", { count: previewSections.length })}</Label>
                 {previewSections.map((section, index) => (
@@ -534,7 +260,6 @@ export default function ScriptBuilderPage() {
                 ))}
               </div>
 
-              {/* Full Script */}
               <div className="space-y-2">
                 <Label>{t("preview.fullScript")}</Label>
                 <div className="p-4 rounded-lg border bg-muted text-foreground max-h-64 overflow-y-auto">
@@ -544,7 +269,6 @@ export default function ScriptBuilderPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 pt-4 border-t">
                 <Button
                   onClick={async () => {
@@ -556,7 +280,6 @@ export default function ScriptBuilderPage() {
                     const { data: rubricList } = (await rubricListRes.json()) as { data: Array<{ id: string; name: string }> | null; error: unknown }
                     setConfirmSystemPrompt(rubricData?.system_prompt || "")
                     setConfirmLlmModel(rubricData?.llm_model || "openai/gpt-4o-mini")
-                    // F4 — passar as seções fixas para o confirm step
                     setConfirmSections([...previewSections])
                     const list = rubricList ?? []
                     setRubrics(list)
@@ -573,7 +296,6 @@ export default function ScriptBuilderPage() {
                   onClick={() => {
                     setStep("input")
                     setGeneratedScript(null)
-                    setAudioFiles([])
                     setTextInput("")
                     setPreviewSections([])
                   }}
@@ -598,7 +320,6 @@ export default function ScriptBuilderPage() {
             </div>
           </div>
 
-          {/* Script Name & Description */}
           <Card>
             <CardHeader>
               <CardTitle>{t("confirm.scriptInfo")}</CardTitle>
@@ -622,7 +343,6 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* Rubric selector */}
           <Card>
             <CardHeader>
               <CardTitle>{t("confirm.rubricLabel")}</CardTitle>
@@ -645,7 +365,6 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* F1/F4 — Seções fixas: nome somente leitura, sem botão X, sem Add Section */}
           <Card>
             <CardHeader>
               <CardTitle>{t("confirm.scriptSections")}</CardTitle>
@@ -656,7 +375,6 @@ export default function ScriptBuilderPage() {
                 <div key={idx} className="p-3 border rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{idx + 1}</Badge>
-                    {/* F4 — nome fixo, só leitura */}
                     <span className="font-semibold flex-1">{section.name}</span>
                   </div>
                   <Textarea
@@ -725,7 +443,6 @@ export default function ScriptBuilderPage() {
             </CardContent>
           </Card>
 
-          {/* Save */}
           <div className="flex gap-3 pb-16 lg:pb-0">
             <Button
               onClick={async () => {
@@ -735,8 +452,6 @@ export default function ScriptBuilderPage() {
                 if (weightTotal !== 100) return
                 setSaving(true)
                 try {
-                  const rubricId = selectedRubricId
-
                   const fullScriptText = confirmSections
                     .map((s, i) => `${i + 1}. ${s.name}\n${s.instructions}${s.tips ? "\n" + t("preview.tipPrefix", { tip: s.tips }) : ""}`)
                     .join("\n\n")
@@ -745,7 +460,7 @@ export default function ScriptBuilderPage() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                      rubric_id: rubricId,
+                      rubric_id: selectedRubricId,
                       name: editedName,
                       description: editedDescription,
                       sections: confirmSections,

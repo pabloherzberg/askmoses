@@ -6,6 +6,82 @@
     "loading": "Chargement...",
     "error": "Une erreur est survenue"
   },
+  "Billing": {
+    "title": "Facturation",
+    "block1": { "title": "Utilisation sur la période" },
+    "block2": { "title": "Cycle de facturation" },
+    "cards": {
+      "callsAnalyzed": "Appels analysés",
+      "billableMinutes": "Minutes facturables",
+      "estimatedValue": "Valeur estimée",
+      "inSelectedPeriod": "sur la période sélectionnée",
+      "avgCallLength": "Durée moyenne",
+      "minSuffix": "min"
+    },
+    "table": {
+      "organization": "Organisation",
+      "status": "Statut de facturation",
+      "plan": "Forfait",
+      "rate": "Tarif / min",
+      "billableMin": "Min facturables",
+      "callsBilled": "Appels facturés",
+      "amount": "Montant",
+      "llmCosts": "Coûts LLM",
+      "actions": "",
+      "totalPaid": "Total — payants",
+      "editRate": "Modifier le tarif"
+    },
+    "editRate": {
+      "title": "Modifier le tarif de facturation",
+      "description": "Définissez le tarif par minute de cette organisation",
+      "rateLabel": "Tarif par minute (USD)",
+      "hint": "ex. : 0.0667 ≈ 1 $ par appel de 15 min",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "invalid": "Saisissez un tarif valide (USD par minute)"
+    },
+    "admin": {
+      "subtitle": "Utilisation, valeur et charges du cycle pour toutes les organisations",
+      "block1Hint": "fenêtre glissante · suivi",
+      "block2Hint": "mois calendaire · base de la facturation manuelle",
+      "estimatedValueNote": "glissant · pas le montant facturé",
+      "activePayingOrgs": "Orgs payantes actives",
+      "freePilotNote": "en pilote gratuit",
+      "valueByOrgTitle": "Valeur estimée par organisation · période sélectionnée",
+      "amountDue": "Montant dû —",
+      "payingOrgsNote": "organisations payantes",
+      "billableMinutesMonth": "Minutes facturables —",
+      "closedMonth": "mois calendaire clôturé",
+      "cogs": "Coût interne (COGS)",
+      "cogsTag": "Admin uniquement · ~70% marge",
+      "footerNote": "Les montants sont indicatifs — la facturation se fait manuellement, hors plateforme"
+    },
+    "owner": {
+      "subtitle": "Utilisation et montant dû pour votre organisation",
+      "block1Hint": "fenêtre glissante",
+      "block2Hint": "mois calendaire",
+      "estimatedValueNote": "période sélectionnée · pas votre facture",
+      "callsPerDayTitle": "Appels par jour",
+      "callsPerDaySubtitle": "14 derniers jours",
+      "amountDueTitle": "Montant dû ce cycle",
+      "amountDueFor": "· jusqu'à présent ce mois-ci",
+      "updatesTag": "Mis à jour au fil des appels",
+      "howTitle": "Comment vous êtes facturé",
+      "callsBilledMonth": "Appels facturés — mois",
+      "billableMinutesMonth": "Minutes facturables — mois",
+      "yourRate": "Votre tarif",
+      "perMinSuffix": "/ min",
+      "usageHistory": "Historique d'utilisation",
+      "inProgress": "en cours",
+      "colPeriod": "Période",
+      "colCalls": "Appels",
+      "colMinutes": "Minutes",
+      "colAmount": "Montant",
+      "payTitle": "La facturation est gérée directement avec l'équipe AskMoses",
+      "payBody": "Cette page affiche votre utilisation et le montant dû à titre indicatif. Le paiement s'organise hors plateforme — il n'y a rien à payer ici."
+    }
+  },
   "Navigation": {
     "overview": "Vue d'ensemble",
     "calls": "Appels",
@@ -200,6 +276,7 @@
       "rubric": "Grille",
       "members": "Membres",
       "howToUse": "Mode d'emploi",
+      "billing": "Facturation",
       "saasPanel": "Panneau SaaS",
       "rubricConfig": "Config de la grille",
       "coachingSettings": "Rubric Config",
@@ -657,7 +734,14 @@
       "forbidden": "Vous n'avez pas accès à cet appel.",
       "thScript": "Script",
       "filterAllScripts": "Tous les scripts",
-      "activeScriptTag": "Script actif : {name}"
+      "activeScriptTag": "Script actif : {name}",
+      "reprocess": {
+        "label": "Réanalyser",
+        "queuing": "En file…",
+        "processing": "En cours…",
+        "error": "Erreur",
+        "tooltip": "Réanalyser cet appel"
+      }
     }
   },
   "Admin": {

@@ -6,6 +6,82 @@
     "loading": "Cargando...",
     "error": "Algo salió mal"
   },
+  "Billing": {
+    "title": "Facturación",
+    "block1": { "title": "Uso en el período" },
+    "block2": { "title": "Ciclo de facturación" },
+    "cards": {
+      "callsAnalyzed": "Llamadas analizadas",
+      "billableMinutes": "Minutos facturables",
+      "estimatedValue": "Valor estimado",
+      "inSelectedPeriod": "en el período seleccionado",
+      "avgCallLength": "Duración media",
+      "minSuffix": "min"
+    },
+    "table": {
+      "organization": "Organización",
+      "status": "Estado de cobro",
+      "plan": "Plan",
+      "rate": "Tarifa / min",
+      "billableMin": "Min facturables",
+      "callsBilled": "Llamadas facturadas",
+      "amount": "Importe",
+      "llmCosts": "Costos LLM",
+      "actions": "",
+      "totalPaid": "Total — de pago",
+      "editRate": "Editar tarifa"
+    },
+    "editRate": {
+      "title": "Editar tarifa de facturación",
+      "description": "Define la tarifa por minuto de esta organización",
+      "rateLabel": "Tarifa por minuto (USD)",
+      "hint": "ej.: 0.0667 ≈ $1 por llamada de 15 min",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "invalid": "Introduce una tarifa válida (USD por minuto)"
+    },
+    "admin": {
+      "subtitle": "Uso, valor y cargos del ciclo en todas las organizaciones",
+      "block1Hint": "ventana móvil · monitoreo",
+      "block2Hint": "mes natural · base del cobro manual",
+      "estimatedValueNote": "móvil · no es el importe cobrado",
+      "activePayingOrgs": "Orgs de pago activas",
+      "freePilotNote": "en piloto gratis",
+      "valueByOrgTitle": "Valor estimado por organización · período seleccionado",
+      "amountDue": "Importe a pagar —",
+      "payingOrgsNote": "organizaciones de pago",
+      "billableMinutesMonth": "Minutos facturables —",
+      "closedMonth": "mes natural cerrado",
+      "cogs": "Costo interno (COGS)",
+      "cogsTag": "Solo admin · ~70% margen",
+      "footerNote": "Los importes son de referencia — el cobro se realiza manualmente, fuera de la plataforma"
+    },
+    "owner": {
+      "subtitle": "Uso e importe a pagar de tu organización",
+      "block1Hint": "ventana móvil",
+      "block2Hint": "mes natural",
+      "estimatedValueNote": "período seleccionado · no es tu factura",
+      "callsPerDayTitle": "Llamadas por día",
+      "callsPerDaySubtitle": "Últimos 14 días",
+      "amountDueTitle": "Importe a pagar este ciclo",
+      "amountDueFor": "· hasta ahora este mes",
+      "updatesTag": "Se actualiza con las llamadas",
+      "howTitle": "Cómo se te factura",
+      "callsBilledMonth": "Llamadas facturadas — mes",
+      "billableMinutesMonth": "Minutos facturables — mes",
+      "yourRate": "Tu tarifa",
+      "perMinSuffix": "/ min",
+      "usageHistory": "Historial de uso",
+      "inProgress": "en curso",
+      "colPeriod": "Período",
+      "colCalls": "Llamadas",
+      "colMinutes": "Minutos",
+      "colAmount": "Importe",
+      "payTitle": "La facturación se gestiona directamente con el equipo de AskMoses",
+      "payBody": "Esta página muestra tu uso e importe a pagar como referencia. El pago se acuerda fuera de la plataforma — aquí no hay nada que pagar."
+    }
+  },
   "Navigation": {
     "overview": "Visión general",
     "calls": "Llamadas",
@@ -200,6 +276,7 @@
       "rubric": "Rúbrica",
       "members": "Miembros",
       "howToUse": "Cómo usar",
+      "billing": "Facturación",
       "saasPanel": "Panel SaaS",
       "rubricConfig": "Configuración de rúbrica",
       "coachingSettings": "Rubric Config",
@@ -657,7 +734,14 @@
       "forbidden": "No tienes acceso a esta llamada.",
       "thScript": "Script",
       "filterAllScripts": "Todos los scripts",
-      "activeScriptTag": "Script activo: {name}"
+      "activeScriptTag": "Script activo: {name}",
+      "reprocess": {
+        "label": "Reanalizar",
+        "queuing": "En cola…",
+        "processing": "Procesando…",
+        "error": "Error",
+        "tooltip": "Reanalizar esta llamada"
+      }
     }
   },
   "Admin": {

@@ -6,6 +6,82 @@
     "loading": "Carregando...",
     "error": "Algo deu errado"
   },
+  "Billing": {
+    "title": "Faturamento",
+    "block1": { "title": "Uso no período" },
+    "block2": { "title": "Ciclo de faturamento" },
+    "cards": {
+      "callsAnalyzed": "Calls analisadas",
+      "billableMinutes": "Minutos faturáveis",
+      "estimatedValue": "Valor estimado",
+      "inSelectedPeriod": "no período selecionado",
+      "avgCallLength": "Duração média",
+      "minSuffix": "min"
+    },
+    "table": {
+      "organization": "Organização",
+      "status": "Status de cobrança",
+      "plan": "Plano",
+      "rate": "Tarifa / min",
+      "billableMin": "Min faturáveis",
+      "callsBilled": "Calls faturadas",
+      "amount": "Valor",
+      "llmCosts": "Custos LLM",
+      "actions": "",
+      "totalPaid": "Total — pagantes",
+      "editRate": "Editar tarifa"
+    },
+    "editRate": {
+      "title": "Editar tarifa de cobrança",
+      "description": "Defina a tarifa por minuto desta organização",
+      "rateLabel": "Tarifa por minuto (USD)",
+      "hint": "ex.: 0.0667 ≈ $1 por call de 15 min",
+      "cancel": "Cancelar",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "invalid": "Informe uma tarifa válida (USD por minuto)"
+    },
+    "admin": {
+      "subtitle": "Uso, valor e cobranças do ciclo em todas as organizações",
+      "block1Hint": "janela rolante · monitoramento",
+      "block2Hint": "mês-calendário · base da cobrança manual",
+      "estimatedValueNote": "rolante · não é o valor cobrado",
+      "activePayingOrgs": "Orgs pagantes ativas",
+      "freePilotNote": "em piloto grátis",
+      "valueByOrgTitle": "Valor estimado por organização · período selecionado",
+      "amountDue": "Valor devido —",
+      "payingOrgsNote": "organizações pagantes",
+      "billableMinutesMonth": "Minutos faturáveis —",
+      "closedMonth": "mês-calendário fechado",
+      "cogs": "Custo interno (COGS)",
+      "cogsTag": "Apenas admin · ~70% margem",
+      "footerNote": "Valores são de referência — a cobrança é feita manualmente, fora da plataforma"
+    },
+    "owner": {
+      "subtitle": "Uso e valor devido da sua organização",
+      "block1Hint": "janela rolante",
+      "block2Hint": "mês-calendário",
+      "estimatedValueNote": "período selecionado · não é a sua fatura",
+      "callsPerDayTitle": "Calls por dia",
+      "callsPerDaySubtitle": "Últimos 14 dias",
+      "amountDueTitle": "Valor devido neste ciclo",
+      "amountDueFor": "· até agora neste mês",
+      "updatesTag": "Atualiza conforme as calls chegam",
+      "howTitle": "Como você é cobrado",
+      "callsBilledMonth": "Calls faturadas — mês",
+      "billableMinutesMonth": "Minutos faturáveis — mês",
+      "yourRate": "Sua tarifa",
+      "perMinSuffix": "/ min",
+      "usageHistory": "Histórico de uso",
+      "inProgress": "em andamento",
+      "colPeriod": "Período",
+      "colCalls": "Calls",
+      "colMinutes": "Minutos",
+      "colAmount": "Valor",
+      "payTitle": "A cobrança é tratada diretamente com a equipe AskMoses",
+      "payBody": "Esta página mostra seu uso e valor devido para referência. O pagamento é combinado fora da plataforma — não há nada a pagar aqui."
+    }
+  },
   "Navigation": {
     "overview": "Visão geral",
     "calls": "Chamadas",
@@ -200,6 +276,7 @@
       "rubric": "Rubrica",
       "members": "Membros",
       "howToUse": "Como usar",
+      "billing": "Faturamento",
       "saasPanel": "Painel SaaS",
       "rubricConfig": "Configuração da rubrica",
       "coachingSettings": "Rubric Config",
@@ -657,7 +734,14 @@
       "forbidden": "Você não tem acesso a esta chamada.",
       "thScript": "Script",
       "filterAllScripts": "Todos os scripts",
-      "activeScriptTag": "Script ativo: {name}"
+      "activeScriptTag": "Script ativo: {name}",
+      "reprocess": {
+        "label": "Reanalisar",
+        "queuing": "Enfileirando…",
+        "processing": "Processando…",
+        "error": "Erro",
+        "tooltip": "Reanalisar esta chamada"
+      }
     }
   },
   "Admin": {
