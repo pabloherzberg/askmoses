@@ -7,11 +7,15 @@ import type { IntentSignal } from '@/lib/types'
 import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
 import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
 import { IntentRadarChart } from '@/components/shared/IntentRadarChart'
-import { DateRangePicker } from '@/components/shared/DateRangePicker'
+import { PeriodTabs } from '@/components/shared/billing/PeriodTabs'
+import type { BillingPeriodRange } from '@/lib/types'
+
+const PERIOD_DAYS: Record<BillingPeriodRange, number> = { '1w': 7, '2w': 14, '3w': 21, '1m': 30 }
 
 interface Call {
   id?: string
   prospect: string
+  trainerName?: string | null
   date: string
   score: number
   result: string
@@ -25,18 +29,15 @@ interface IntentDashboardProps {
 export function IntentDashboard({ signals }: IntentDashboardProps) {
   const t = useTranslations('Intent')
   const locale = useLocale()
-  const [startDate, setStartDate] = useState<Date>(() => {
-    const today = new Date()
-    return new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-  })
-  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [period, setPeriod] = useState<BillingPeriodRange>('1w')
+  const endDate = new Date()
+  const startDate = new Date(endDate.getTime() - PERIOD_DAYS[period] * 24 * 60 * 60 * 1000)
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     setLoading(true)
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000))
-    fetch(`/api/calls?days=${days}`)
+    fetch(`/api/calls?days=${PERIOD_DAYS[period]}`)
       .then((r) => r.json())
       .then((response) => {
         if (Array.isArray(response?.data)) {
@@ -45,7 +46,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
       })
       .catch(() => setCalls([]))
       .finally(() => setLoading(false))
-  }, [startDate, endDate])
+  }, [period])
 
   const callsWithIntent = calls
     .map((c) => {
@@ -78,15 +79,9 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
           </p>
         </div>
 
-        {/* Date Range Picker */}
+        {/* Period selector */}
         <div className="mb-6">
-          <DateRangePicker
-            onDateRangeChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
-            }}
-            defaultDays={7}
-          />
+          <PeriodTabs value={period} onChange={setPeriod} />
         </div>
       </div>
 
@@ -129,6 +124,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
                     {call.prospect}
                   </p>
                   <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                    {call.trainerName && <span className="font-medium">{call.trainerName} · </span>}
                     {new Date(call.date).toLocaleDateString(locale)}
                   </p>
                 </div>

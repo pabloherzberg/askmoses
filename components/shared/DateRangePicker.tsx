@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Calendar } from "lucide-react";
 import { DayPicker } from "react-day-picker";
-import { pt } from "react-day-picker/locale";
+import { enUS } from "react-day-picker/locale";
 import "react-day-picker/dist/style.css";
 
 interface DateRangePickerProps {
@@ -12,12 +12,10 @@ interface DateRangePickerProps {
 }
 
 const QUICK_PERIODS = [
-  { label: "7 dias", days: 7 },
-  { label: "15 dias", days: 15 },
-  { label: "30 dias", days: 30 },
-  { label: "90 dias", days: 90 },
-  { label: "180 dias", days: 180 },
-  { label: "360 dias", days: 360 },
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+  { label: "3 weeks", days: 21 },
+  { label: "1 month", days: 30 },
 ];
 
 export function DateRangePicker({
@@ -59,8 +57,8 @@ export function DateRangePicker({
   };
 
   const formatDate = (date: Date | undefined) => {
-    if (!date) return "Data";
-    return date.toLocaleDateString("pt-BR", {
+    if (!date) return "Date";
+    return date.toLocaleDateString("en-US", {
       day: "2-digit",
       month: "2-digit",
       year: "2-digit",
@@ -70,7 +68,7 @@ export function DateRangePicker({
   const rangeLabel =
     selectedRange.from && selectedRange.to
       ? `${formatDate(selectedRange.from)} - ${formatDate(selectedRange.to)}`
-      : "Selecionar período";
+      : "Select period";
 
   return (
     <div className="relative">
@@ -111,7 +109,7 @@ export function DateRangePicker({
                   mode === "quick" ? "2px solid var(--am-accent)" : "none",
               }}
             >
-              Períodos
+              Periods
             </button>
             <button
               onClick={() => setMode("custom")}
@@ -123,7 +121,7 @@ export function DateRangePicker({
                   mode === "custom" ? "2px solid var(--am-accent)" : "none",
               }}
             >
-              Customizado
+              Custom
             </button>
           </div>
 
@@ -202,7 +200,7 @@ export function DateRangePicker({
                   }}
                   onSelect={(range) => setSelectedRange(range || {})}
                   disabled={(date) => date > new Date()}
-                  locale={pt}
+                  locale={enUS}
                   classNames={{
                     months: "flex gap-4",
                     month: "space-y-4",
@@ -239,7 +237,7 @@ export function DateRangePicker({
                       : "not-allowed",
                 }}
               >
-                Aplicar
+                Apply
               </button>
             </div>
           )}
