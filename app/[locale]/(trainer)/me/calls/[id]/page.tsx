@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
 import { getScripts, formatScriptVersion } from '@/lib/services/scripts'
+import { getIntentSignals } from '@/lib/services/intent'
 import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
 import { getOrgId, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
@@ -20,11 +21,12 @@ export default async function TrainerCallDetailPage({ params }: Props) {
   if (!trainerId) notFound()
 
   const orgId = await getOrgId()
-  const [call, scripts, activeScriptId] = await Promise.all([
+  const [call, scripts, activeScriptId, intentSignals] = await Promise.all([
     getCallById(id, { locale, trainerId }),
     getScripts().catch(() => []),
     // Helper leve (só id) — basta o id pra comparar com call.scriptId.
     orgId ? dbGetActiveOrgScriptId(orgId).catch(() => null) : Promise.resolve(null),
+    getIntentSignals().catch(() => []),
   ])
   if (!call) notFound()
 
@@ -38,5 +40,5 @@ export default async function TrainerCallDetailPage({ params }: Props) {
     scriptVersion: formatScriptVersion(script),
   }
 
-  return <CallDetail call={enrichedCall} viewerRole="trainer" backHref="/me" />
+  return <CallDetail call={enrichedCall} viewerRole="trainer" backHref="/me" intentSignals={intentSignals} />
 }

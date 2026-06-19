@@ -2781,5 +2781,54 @@
     "MobileCta": {
       "label": "Réserver ma démo gratuite"
     }
+  },
+  "Intent": {
+    "sectionLabel": "Ask Moses Intent Index",
+    "subtitle": "4 signaux indiquant la probabilité de conversion",
+    "intentScore": "Intent Index",
+    "scoreOutOf5": "{score} sur 5",
+    "signals": {
+      "financial": {
+        "name": "Financier",
+        "question": "La personne a-t-elle réagi au prix avec curiosité ou a-t-elle montré de la résistance?",
+        "description": "Évalue si le prospect a montré un intérêt authentique ou une préoccupation concernant l'investissement."
+      },
+      "urgency": {
+        "name": "Urgence",
+        "question": "Existe-t-il un événement spécifique et douloureux motivant l'appel ou c'est juste un intérêt occasionnel?",
+        "description": "Mesure s'il y a un besoin immédiat ou s'il s'agit simplement d'une exploration d'options."
+      },
+      "authority": {
+        "name": "Autorité",
+        "question": "La personne en ligne a-t-elle le pouvoir de prendre la décision finale sans consulter quelqu'un d'autre?",
+        "description": "Identifie si le prospect est un décideur ou s'il a besoin d'une approbation."
+      },
+      "engagement": {
+        "name": "Engagement",
+        "question": "Pose-t-elle des questions détaillées et envisage-t-elle les prochaines étapes, ou donne-t-elle des réponses courtes et vagues?",
+        "description": "Évalue le niveau d'intérêt actif et d'engagement dans la conversation."
+      }
+    },
+    "weight": "Poids {weight}",
+    "weightInfo": "Poids: {weight} — {percentage}% du score final",
+    "loading": "Chargement...",
+    "callsList": "Leads avec plus haute priorité",
+    "noCallsFound": "Aucun lead à haut intent à afficher",
+    "callDate": "Date",
+    "callProspect": "Prospect",
+    "callScore": "Score",
+    "callTrainer": "Vendeur",
+    "lastCalls": "Derniers appels avec plus haute intention",
+    "configTitle": "Intent Index — Signaux et Poids",
+    "configSubtitle": "Configurez le poids de chaque signal dans le calcul de l'intention. Les poids doivent totaliser exactement 10.",
+    "weightLabel": "Poids",
+    "weightHint": "Valeur entière de 1 à 10",
+    "filterDays": "Jours à analyser",
+    "filterApply": "Appliquer",
+    "buyingIntent": "Intention d'achat",
+    "teamAverage": "Moyenne d'équipe",
+    "breakdownLabel": "Ventilation",
+    "radarLabel": "Intent Index",
+    "highestIntentLeads": "Leads de Plus Haute Priorité"
   }
 }

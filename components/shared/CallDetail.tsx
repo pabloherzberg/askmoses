@@ -3,13 +3,22 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle, FileText } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle, FileText, Info } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { RubricBar } from '@/components/shared/RubricBar'
+import { IntentBreakdownComponent } from '@/components/shared/IntentBreakdown'
 import { formatDuration } from '@/lib/format'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
 import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
-import type { Call, Role, RubricColor } from '@/lib/types'
+import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
+import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
+import type { Call, Role, RubricColor, IntentSignal } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
   { key: 'discovery', labelKey: 'discovery', color: 'blue' },
@@ -27,12 +36,14 @@ interface CallDetailProps {
   call: Call
   viewerRole: Role
   backHref: string
+  intentSignals?: IntentSignal[]
 }
 
-export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
+export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: CallDetailProps) {
   const t = useTranslations('Shared.callDetail')
   const tRubric = useTranslations('Shared.rubric')
   const tOutcomes = useTranslations('Shared.outcomes')
+  const tIntent = useTranslations('Intent')
   const locale = useLocale()
   const [expanded, setExpanded] = useState(false)
   const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
@@ -43,6 +54,34 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
   const transcriptLines = call.transcript.split('\n')
   const showAll = expanded || transcriptLines.length <= 4
   const visibleLines = showAll ? transcriptLines : transcriptLines.slice(0, 4)
+
+  // Phase 3: Use intent scores from IA (c.intentBreakdown), fallback to derived scores
+  const intentBreakdown = call.intentBreakdown && typeof call.intentBreakdown === 'object'
+    ? call.intentBreakdown
+    : deriveIntentBreakdownForCall(call.score, intentSignals)
+
+  // Use stored weights from analysis time, fallback to current org weights
+  const storedWeights = call.intentWeights
+  const currentWeights = {
+    financial: intentSignals.find(s => s.id === 'financial')?.weight || 4,
+    urgency: intentSignals.find(s => s.id === 'urgency')?.weight || 3,
+    authority: intentSignals.find(s => s.id === 'authority')?.weight || 2,
+    engagement: intentSignals.find(s => s.id === 'engagement')?.weight || 1,
+  }
+  const weights = storedWeights || currentWeights
+
+  // If weights are from history, update signals to reflect them
+  const signalsWithHistoricalWeights = storedWeights
+    ? intentSignals.map(s => ({
+        ...s,
+        weight: storedWeights[s.id as keyof typeof storedWeights] || s.weight,
+      }))
+    : intentSignals
+
+  // Closed calls always have Intent Index of 5 with all signals at 10
+  const isClosed = call.result === 'closed'
+  const finalIntentBreakdown = isClosed ? { financial: 10, urgency: 10, authority: 10, engagement: 10 } : intentBreakdown
+  const intentIndex = isClosed ? 5 : computeIntentIndex(finalIntentBreakdown, weights)
 
   return (
     <div>
@@ -187,49 +226,59 @@ export function CallDetail({ call, viewerRole, backHref }: CallDetailProps) {
           )}
         </div>
 
-        {/* Strengths + improvements */}
-        <div className="flex flex-col gap-4">
-          <div
-            className="rounded-2xl p-5 border"
-            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
-          >
-            <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-              {t('strengths')}
-            </p>
-            <ul className="flex flex-col gap-2">
-              {call.strengths.map((s, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
-                  <CheckCircle
-                    size={14}
-                    className="flex-shrink-0 mt-0.5"
-                    style={{ color: 'var(--am-green)' }}
-                  />
-                  <span style={{ color: 'var(--am-text)' }}>{s}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Ask Moses Intent Index */}
+        {signalsWithHistoricalWeights.length > 0 && (
+          <IntentBreakdownComponent
+            signals={signalsWithHistoricalWeights}
+            scores={finalIntentBreakdown}
+            variant="detailed"
+            showTitle={true}
+          />
+        )}
+      </div>
 
-          <div
-            className="rounded-2xl p-5 border"
-            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
-          >
-            <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
-              {t('areasToImprove')}
-            </p>
-            <ul className="flex flex-col gap-2">
-              {call.improvements.map((s, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
-                  <ArrowUpRight
-                    size={14}
-                    className="flex-shrink-0 mt-0.5"
-                    style={{ color: 'var(--am-amber)' }}
-                  />
-                  <span style={{ color: 'var(--am-text)' }}>{s}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* Strengths + improvements (full width) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div
+          className="rounded-2xl p-5 border"
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+        >
+          <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
+            {t('strengths')}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {call.strengths.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
+                <CheckCircle
+                  size={14}
+                  className="flex-shrink-0 mt-0.5"
+                  style={{ color: 'var(--am-green)' }}
+                />
+                <span style={{ color: 'var(--am-text)' }}>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div
+          className="rounded-2xl p-5 border"
+          style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+        >
+          <p className="text-[13px] font-medium mb-3" style={{ color: 'var(--am-text)' }}>
+            {t('areasToImprove')}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {call.improvements.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
+                <ArrowUpRight
+                  size={14}
+                  className="flex-shrink-0 mt-0.5"
+                  style={{ color: 'var(--am-amber)' }}
+                />
+                <span style={{ color: 'var(--am-text)' }}>{s}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

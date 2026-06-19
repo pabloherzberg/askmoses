@@ -11,7 +11,10 @@ export type AvatarColor = "blue" | "purple" | "green" | "red" | "amber";
 export type TagColor = "red" | "amber" | "blue" | "green";
 export type RubricColor = "blue" | "amber" | "green" | "red" | "accent2";
 export type InviteStatus = "pending" | "accepted";
-export type IntentScore = 1 | 2 | 3 | 4 | 5;
+// Nota de intenção de compra, escala 0–5 COM decimais — derivada do
+// intentBreakdown via computeIntentIndex (fonte da verdade). Não arredondar para
+// inteiro. O fallback por resultado/IA (sem breakdown) usa valores inteiros.
+export type IntentScore = number;
 export type OtpType =
   | "invite"
   | "magiclink"
@@ -98,6 +101,12 @@ export interface Call {
   // Formato "v{rubric}.{minor}.{owner_edit}" (migration 063). Null quando o
   // script é anterior ao versionamento ou não tem as 3 colunas populadas.
   scriptVersion?: string | null;
+  // Phase 3: Intent scores calculated by IA (4 signals: financial, urgency, authority, engagement)
+  // Mapped from intent_breakdown (DB snake_case) to intentBreakdown (TS camelCase)
+  intentBreakdown?: Record<string, number>;
+  // Intent weights snapshot at time of analysis
+  // Mapped from intent_weights (DB) to intentWeights (TS camelCase)
+  intentWeights?: Record<string, number>;
   // Status do pipeline GHL (transcription_failed, no_recording, etc.)
   processingStatus?: string | null;
 }
@@ -253,6 +262,7 @@ export interface RubricGap {
 }
 
 export interface BestCall {
+  id?: string;
   prospect: string;
   date: string;
   score: number;
@@ -262,6 +272,7 @@ export interface BestCall {
   trainerInitials?: string;
   trainerName?: string;
   trainerColor?: string;
+  intentBreakdown?: Record<string, number>;
 }
 
 export type CallsByTrainerMap = Record<string, BestCall[]>;
@@ -332,31 +343,44 @@ export interface AiModuleConfigLogEntry {
   updated_at: string;
 }
 
+export interface IntentSignal {
+  id: "financial" | "urgency" | "authority" | "engagement";
+  weight: number;
+  color: RubricColor;
+}
+
+export interface IntentBreakdown {
+  financial: number;
+  urgency: number;
+  authority: number;
+  engagement: number;
+}
+
+export interface OrgIntentWeights {
+  orgId: string;
+  financial: number;
+  urgency: number;
+  authority: number;
+  engagement: number;
+  updatedAt: string;
+}
+
 // ─── Billing ─────────────────────────────────────────────────────────────────
-// Feature de exposição de valor para cobrança MANUAL fora da plataforma. O
-// front NÃO calcula nada — todos os valores chegam prontos no payload (amount,
-// billableMinutes, ratePerMinute, etc.). Owner NUNCA recebe cogs/llmCost/outras
-// orgs (filtrado no handler). Ver askmoses-billing-mock.html + handoff.
 
 export type BillingStatus = "PAID" | "PILOT" | "DEMO" | "DISABLED";
 
-// Presets do seletor do Bloco 1 (janela rolante). NÃO afeta o Bloco 2.
 export type BillingPeriodRange = "1w" | "2w" | "3w" | "1m";
 
 export type BillingScope = "admin" | "owner";
 
-// Bloco 1 — Usage in period (rolling). Cards de monitoramento.
 export interface BillingUsage {
   callsAnalyzed: number;
   billableMinutes: number;
-  estimatedValue: number; // USD — rótulo "not the billed amount"
-  // Owner mostra avgCallLengthMin; Admin mostra activePayingOrgs/totalOrgs.
+  estimatedValue: number;
   avgCallLengthMin?: number;
   activePayingOrgs?: number;
   totalOrgs?: number;
-  // Bar list "Estimated value by organization" (admin only). Ordenado desc.
   valueByOrg?: BillingValueByOrg[];
-  // Sparkline "Calls per day · last 14 days" (owner only).
   callsPerDay?: number[];
   // Custo interno (COGS) real do período — soma de llm_usage_events. Admin only.
   cogs?: number;
@@ -365,11 +389,9 @@ export interface BillingUsage {
 export interface BillingValueByOrg {
   orgId: string;
   name: string;
-  value: number; // USD
+  value: number;
 }
 
-// Linha da tabela de orgs (Bloco 2, admin). PILOT/DISABLED vêm zeradas:
-// ratePerMinute/billableMinutes = null (UI mostra "—"), amount/llmCost = 0.
 export interface BillingOrgRow {
   orgId: string;
   name: string;
@@ -378,33 +400,29 @@ export interface BillingOrgRow {
   ratePerMinute: number | null;
   billableMinutes: number | null;
   callsBilled: number;
-  amount: number; // USD
-  llmCost: number; // USD — admin only
+  amount: number;
+  llmCost: number;
 }
 
 export interface BillingHistoryRow {
-  period: string; // ex.: "June 2026"
+  period: string;
   inProgress?: boolean;
   calls: number;
   minutes: number;
-  amount: number; // USD
+  amount: number;
 }
 
-// Bloco 2 — Billing cycle (calendar month). Base da cobrança manual.
-// Campos admin-only (cogs, rows com llmCost) são OMITIDOS do payload owner.
 export interface BillingCycle {
-  month: string; // "YYYY-MM"
-  monthLabel: string; // "June 2026"
-  amountDue: number; // USD
+  month: string;
+  monthLabel: string;
+  amountDue: number;
   billableMinutes: number;
   callsBilled: number;
   avgCallLengthMin: number;
   ratePerMinute: number;
   planName: string;
-  cogs?: number; // admin only — custo interno (COGS)
-  rows?: BillingOrgRow[]; // admin only — tabela de orgs
-  history?: BillingHistoryRow[]; // owner only — usage history
-  // Copy configurável de "How you're billed" (regras pendentes §7 do handoff —
-  // não hardcodar no front). Owner only.
+  cogs?: number;
+  rows?: BillingOrgRow[];
+  history?: BillingHistoryRow[];
   howYouAreBilled?: string[];
 }

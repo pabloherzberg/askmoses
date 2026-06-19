@@ -29,6 +29,11 @@ import {
 } from "@/lib/constants";
 import type { IntentScore, LeadSource } from "@/lib/types";
 import { resolveIntent } from "@/lib/utils/intent";
+import { computeIntentIndex } from "@/lib/utils/intentScore";
+import {
+  scoreIntentFromTranscript,
+} from "@/lib/services/intent-scoring";
+import { getOrgIntentWeightsForScoring } from "@/lib/services/intent";
 import {
   LLM_TEMPERATURE_PRIMARY,
   LLM_TEMPERATURE_RETRY,
@@ -82,6 +87,7 @@ export interface AnalyzeResult {
   overallScore: number;
   detectedOutcome: CallOutcome;
   intent: IntentScore;
+  intentBreakdown?: Record<string, number> | null;
   summary: string;
   strengths: string[];
   improvements: string[];
@@ -542,6 +548,9 @@ export async function POST(request: NextRequest) {
 
     const parsed = reorderSectionsToRubric(validation.data, allowedSections);
 
+    // ── 3b. Get current org weights for intent scoring (will be stored with call) ──
+    const currentOrgWeights = await getOrgIntentWeightsForScoring(orgId);
+
     // ── 4. Compute overallScore (0–100, integer): média simples das sections.
     //       Sem cap por outcome — o score reflete qualidade de execução; o
     //       outcome (badge) é metadado independente.
@@ -552,7 +561,40 @@ export async function POST(request: NextRequest) {
         : 0;
     const overallScore = Math.round(avg);
     const detectedOutcome = coerceOutcome(parsed.detectedOutcome);
-    const intent = resolveIntent(parsed.intent, detectedOutcome);
+
+    // Intent breakdown (4 signals: financial, urgency, authority, engagement).
+    // Phase 3: IA retorna os scores durante scoring via scoreIntentFromTranscript.
+    let intentBreakdown: Record<string, number> | null = null;
+    try {
+      const intentResult = await scoreIntentFromTranscript({
+        transcript,
+        trainerName: trainerName ?? undefined,
+        clientName: clientName ?? undefined,
+        weights: currentOrgWeights,
+      });
+      intentBreakdown = intentResult.breakdown as unknown as Record<string, number>;
+    } catch (err) {
+      console.error("[analyze] intent scoring failed:", {
+        orgId,
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      intentBreakdown = null;
+    }
+
+    // O IntentScore (0–5, decimal) da call É o Intent Index ponderado do
+    // intent_breakdown (= o cálculo do CallDetail) — definido AQUI na análise e
+    // persistido, em vez de recalculado a cada leitura. closed → 5; sem
+    // breakdown (falha da IA), cai no fallback por resultado/IA.
+    const intent: IntentScore =
+      detectedOutcome === "closed"
+        ? 5
+        : intentBreakdown
+          ? Math.max(
+              0,
+              Math.min(5, computeIntentIndex(intentBreakdown, currentOrgWeights)),
+            )
+          : resolveIntent(parsed.intent, detectedOutcome);
 
     // ── 5. Assemble sections + criteriaScores (back-compat) ──────────────
     // criteriaScores keys back to the original scored item's id when
@@ -613,6 +655,8 @@ export async function POST(request: NextRequest) {
         clientName: clientName ?? undefined,
         detectedOutcome,
         intent,
+        intentBreakdown,
+        intentWeights: currentOrgWeights,
         modelUsed,
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
@@ -660,6 +704,8 @@ export async function POST(request: NextRequest) {
       overallScore,
       detectedOutcome,
       intent,
+      intentBreakdown,
+      intentWeights: currentOrgWeights,
       summary: parsed.summary,
       strengths: parsed.strengths,
       improvements: parsed.improvements,

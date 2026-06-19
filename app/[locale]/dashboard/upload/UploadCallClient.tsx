@@ -38,10 +38,12 @@ import {
   Sparkles,
   ChevronDown,
 } from "lucide-react";
-import type { Trainer } from "@/lib/types";
+import type { Trainer, IntentSignal } from "@/lib/types";
 import type { CallOutcome } from "@/lib/constants";
 import { toNumber5 } from "@/lib/score-display";
 import { UpsellCard } from "@/components/shared/UpsellCard";
+import { IntentBreakdownComponent } from "@/components/shared/IntentBreakdown";
+import { computeIntentIndex } from "@/lib/utils/intentScore";
 import { useCurrentClient } from "@/lib/hooks/use-current-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -89,6 +91,8 @@ interface AnalysisResult {
   // Buying intent 1–5 calculado pela IA no /api/analyze. Encaminhado pro
   // /api/send-coaching, que aplica a regra final (closed → 5).
   intent?: number;
+  // Phase 3: 4 sinais de intent (Financial, Urgency, Authority, Engagement)
+  intentBreakdown?: Record<string, number> | null;
   summary: string;
   strengths: string[];
   improvements: string[];
@@ -644,6 +648,65 @@ export default function UploadCallClient() {
             )}
           </CardContent>
         </Card>
+
+        {/* Intent Index — Phase 3 AI-calculated buying intent */}
+        {analysisResult.intentBreakdown && (
+          (() => {
+            // Use weights from analysis result (stored at time of analysis)
+            const weights = analysisResult.intentWeights || {
+              financial: 4,
+              urgency: 3,
+              authority: 2,
+              engagement: 1,
+            };
+            const signals: IntentSignal[] = [
+              { id: 'financial', weight: weights.financial, color: 'amber' },
+              { id: 'urgency', weight: weights.urgency, color: 'red' },
+              { id: 'authority', weight: weights.authority, color: 'blue' },
+              { id: 'engagement', weight: weights.engagement, color: 'accent2' },
+            ];
+            const intentIndex = computeIntentIndex(analysisResult.intentBreakdown, weights);
+            const finalIntentIndex = analysisResult.detectedOutcome === 'closed' ? 5.0 : intentIndex;
+
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ask Moses Intent Index</CardTitle>
+                  <CardDescription>
+                    Buying intent assessment (0-5 scale)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Intent Index Score */}
+                  <div className="flex items-center gap-4">
+                    <div className="text-5xl font-bold font-mono" style={{ color: 'var(--am-green)' }}>
+                      {finalIntentIndex.toFixed(1)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-muted-foreground mb-2">Final Intent Index</div>
+                      <Progress value={(finalIntentIndex / 5) * 100} className="h-3" />
+                    </div>
+                    {analysisResult.detectedOutcome === 'closed' && (
+                      <Badge variant="default" className="bg-green-600">
+                        Deal Closed
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Intent Breakdown — accordion variant for upload results */}
+                  <div className="pt-4 border-t space-y-2">
+                    <IntentBreakdownComponent
+                      signals={signals}
+                      scores={analysisResult.intentBreakdown}
+                      variant="accordion"
+                      showTitle={false}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()
+        )}
 
         {/* Summary & Insights */}
         <div className="grid gap-6 lg:grid-cols-2">

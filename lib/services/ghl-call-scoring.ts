@@ -1,14 +1,21 @@
-import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
-import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric"
-import { dbGetScriptById, type DbScript } from "@/lib/db/scripts"
-import { createAdminClient } from "@/lib/supabase/admin"
-import { recordLlmUsage } from "@/lib/services/llm-usage"
+import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls";
+import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric";
+import { dbGetScriptById, type DbScript } from "@/lib/db/scripts";
+import { syncTrainerStats } from "@/lib/db/trainers";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 import {
   DEFAULT_SECTIONS,
   buildDefaultSystemPrompt,
   scoreTranscript,
   type ScoredItem,
-} from "@/lib/services/scoring"
+} from "@/lib/services/scoring";
+import {
+  scoreIntentFromTranscript,
+  type IntentScoringInput,
+} from "@/lib/services/intent-scoring";
+import { getOrgIntentWeightsForScoring } from "@/lib/services/intent";
+import type { IntentBreakdown } from "@/lib/types";
 
 /**
  * Roda scoring na call já transcrita pelo pipeline GHL.
@@ -25,15 +32,15 @@ import {
  * best-effort: transcript já está salvo, score fica null se isso falhar.
  */
 export async function runGhlCallScoring(callId: string): Promise<void> {
-  const call = await dbGetCallById(callId)
+  const call = await dbGetCallById(callId);
   if (!call) {
-    throw new Error(`runGhlCallScoring: call ${callId} not found`)
+    throw new Error(`runGhlCallScoring: call ${callId} not found`);
   }
   if (!call.transcript) {
-    throw new Error(`runGhlCallScoring: call ${callId} has no transcript`)
+    throw new Error(`runGhlCallScoring: call ${callId} has no transcript`);
   }
-  if (!call.org_id) {
-    throw new Error(`runGhlCallScoring: call ${callId} has no org_id`)
+  if (!call.orgId) {
+    throw new Error(`runGhlCallScoring: call ${callId} has no org_id`);
   }
 
   // Prioridade de resolução (alinhado com /api/analyze):
@@ -44,8 +51,9 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   //
   // Script tem sections (scored items); rubric vira "framework" no prompt
   // (contexto pra LLM, não scored).
-  let script: DbScript | null = null
-  let rubricData: Awaited<ReturnType<typeof dbGetDefaultRubricWithCriteria>> = null
+  let script: DbScript | null = null;
+  let rubricData: Awaited<ReturnType<typeof dbGetDefaultRubricWithCriteria>> =
+    null;
 
   // 1. Script "em vigor" via view org_scripts_current.
   //
@@ -59,45 +67,46 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   // 'deprecated') — ambos significam "owner já aprovou em algum momento".
   // Status 'pending' (não-aprovado) e 'rejected' são excluídos.
   try {
-    const supabase = createAdminClient()
+    const supabase = createAdminClient();
     const { data: current } = await supabase
       .from("org_scripts_current")
       .select("script_id, effective_status")
-      .eq("org_id", call.org_id)
+      .eq("org_id", call.orgId)
       .is("ended_at", null)
       .in("effective_status", ["active", "deprecated"])
       .order("started_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (current?.script_id) {
       // orgId="" porque scripts podem ter org_id=null (templates globais).
       // A autorização org→script já foi feita pela linha org_scripts.
-      script = await dbGetScriptById(current.script_id as string, "")
+      script = await dbGetScriptById(current.script_id as string, "");
     }
   } catch (err) {
     console.warn("[ghl-scoring] active script lookup failed, falling back", {
       callId,
-      orgId: call.org_id,
+      orgId: call.orgId,
       err: err instanceof Error ? err.message : String(err),
-    })
+    });
   }
 
   // 2. Rubric default (sempre tenta — vira framework quando script existe,
   //    ou source primária quando não tem script).
   try {
-    rubricData = await dbGetDefaultRubricWithCriteria(call.org_id)
+    rubricData = await dbGetDefaultRubricWithCriteria(call.orgId);
   } catch (err) {
     console.warn("[ghl-scoring] rubric fetch failed", {
       callId,
-      orgId: call.org_id,
+      orgId: call.orgId,
       err: err instanceof Error ? err.message : String(err),
-    })
+    });
   }
 
-  const rubricId = rubricData?.rubric.id ?? null
-  const systemPrompt = rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt()
-  const llmModel = rubricData?.rubric.llm_model ?? null
+  const rubricId = rubricData?.rubric.id ?? null;
+  const systemPrompt =
+    rubricData?.rubric.system_prompt ?? buildDefaultSystemPrompt();
+  const llmModel = rubricData?.rubric.llm_model ?? null;
 
   const scoredItems: ScoredItem[] = (() => {
     // 1. Script.sections — owner aprovou, weights validados pela UI.
@@ -110,24 +119,25 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
         weight: typeof s.weight === "number" ? s.weight : undefined,
         critical: Boolean(s.critical),
         source: "script" as const,
-      }))
+      }));
     }
     // 2. Rubric.criteria como scored (sem script ativo).
-    const criteria = rubricData?.criteria ?? []
+    const criteria = rubricData?.criteria ?? [];
     if (criteria.length > 0) {
       return criteria.map((c) => ({
         id: c.id,
         name: c.name,
         description: c.description ?? "",
         weight:
-          typeof (c as unknown as Record<string, unknown>)["weight"] === "number"
+          typeof (c as unknown as Record<string, unknown>)["weight"] ===
+          "number"
             ? ((c as unknown as Record<string, unknown>)["weight"] as number)
             : undefined,
         critical: Boolean(
           (c as unknown as Record<string, unknown>)["is_critical"],
         ),
         source: "rubric" as const,
-      }))
+      }));
     }
     // 3. Último fallback: defaults genéricos.
     return DEFAULT_SECTIONS.map((s) => ({
@@ -136,8 +146,8 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
       weight: undefined,
       critical: s.critical,
       source: "default" as const,
-    }))
-  })()
+    }));
+  })();
 
   // Framework = rubric.criteria quando script existe (rubric vira contexto).
   // Quando não tem script, sections JÁ são rubric.criteria — framework vazio
@@ -147,17 +157,51 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
         name: c.name,
         description: c.description ?? "",
       })) ?? [])
-    : []
+    : [];
 
-  const result = await scoreTranscript({
-    transcript: call.transcript,
-    scoredItems,
-    framework,
-    systemPrompt,
-    llmModel,
-    trainerName: call.trainer_name ?? undefined,
-    clientName: call.client_name ?? undefined,
-  })
+  let result: Awaited<ReturnType<typeof scoreTranscript>> | null = null;
+  let intentBreakdown: IntentBreakdown | null = null;
+
+  try {
+    result = await scoreTranscript({
+      transcript: call.transcript,
+      scoredItems,
+      framework,
+      systemPrompt,
+      llmModel,
+      trainerName: call.trainer_name ?? undefined,
+      clientName: call.client_name ?? undefined,
+    });
+
+    // Intent breakdown (4 signals: financial, urgency, authority, engagement).
+    // Phase 3: IA retorna os scores durante scoring.
+    if (result.intent) {
+      // Use intent scores from main scoring (Phase 3)
+      intentBreakdown = result.intent as IntentBreakdown;
+    } else if (call.orgId) {
+      // Fallback: call dedicated intent scoring (older phase or API update)
+      const weights = getOrgIntentWeightsForScoring(call.orgId);
+      const intentResult = await scoreIntentFromTranscript({
+        transcript: call.transcript,
+        trainerName: call.trainer_name ?? undefined,
+        clientName: call.client_name ?? undefined,
+        weights,
+      });
+      intentBreakdown = intentResult.breakdown as IntentBreakdown;
+    }
+  } catch (err) {
+    console.error("[ghl-scoring] scoreTranscript failed", {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    // Re-throw to fail the pipeline
+    throw err;
+  }
+
+  // Validate result was populated
+  if (!result) {
+    throw new Error(`runGhlCallScoring: scoreTranscript returned empty for call ${callId}`)
+  }
 
   await dbUpdateGhlCallPipeline(callId, {
     rubricId,
@@ -176,13 +220,18 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     outputTokens: result.outputTokens,
     costUsd: result.costUsd,
     promptVersion: result.promptVersion,
-  })
+    intentBreakdown,
+  });
+
+  if (call.trainer_id) {
+    await syncTrainerStats(call.trainer_id);
+  }
 
   // Telemetria de custo p/ COGS (best-effort). Mesmo surface 'analyze' do
   // /api/analyze — este é o caminho de scoring da pipeline GHL/chunked. 1
   // evento cobre o retry (tokens já somados em scoreTranscript).
   void recordLlmUsage({
-    orgId: call.org_id ?? null,
+    orgId: call.orgId ?? null,
     surface: "analyze",
     model: result.modelUsed,
     inputTokens: result.inputTokens,
@@ -193,13 +242,13 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
 
   console.info("[ghl-scoring] scored call", {
     callId,
-    orgId: call.org_id,
+    orgId: call.orgId,
     scriptId: script?.id ?? null,
     rubricId,
-    source: script ? "script" : (rubricData ? "rubric" : "default"),
-    overallScore: result.overallScore,
-    detectedOutcome: result.detectedOutcome,
-    sectionsCount: result.sections.length,
-    costUsd: result.costUsd,
-  })
+    source: script ? "script" : rubricData ? "rubric" : "default",
+    overallScore: result?.overallScore ?? null,
+    detectedOutcome: result?.detectedOutcome ?? null,
+    sectionsCount: result?.sections.length ?? 0,
+    costUsd: result?.costUsd ?? 0,
+  });
 }

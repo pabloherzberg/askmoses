@@ -11,11 +11,13 @@ import {
 } from '@/lib/services/coaching'
 import { translateStrings } from '@/lib/i18n/translate'
 import { routing, type Locale } from '@/i18n/routing'
+import { intentSignals } from '@/lib/mock-data'
 import type {
   Call,
   Trainer,
   CallsByTrainerMap,
   PerformanceTrendPoint,
+  IntentSignal,
 } from '@/lib/types'
 import type { BehavioralDimension } from '@/lib/mock-data'
 
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
     worstCalls: {},
     trainerBehavioral: {},
     performanceTrends: {},
+    intentSignals,
   }
   if (!orgId) return ok(empty)
 
@@ -141,11 +144,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // callsByTrainer como objeto plain (Map → Record) para serialização JSON.
+  // Usado pelo TrainerTabs para radar de intent e Highest Priority Leads
+  // sem precisar de um segundo fetch /api/calls?trainerId=X (que falharia
+  // se as calls tiverem trainer_id nulo no banco).
+  const callsByTrainerObj: Record<string, Call[]> = {}
+  for (const [tid, tc] of callsByTrainer.entries()) {
+    callsByTrainerObj[tid] = tc
+  }
+
   return ok({
     trainers: outTrainers,
     bestCalls: outBest,
     worstCalls: outWorst,
     trainerBehavioral: outBehavioral,
     performanceTrends: performanceTrends as Record<string, PerformanceTrendPoint[]>,
+    intentSignals,
+    callsByTrainer: callsByTrainerObj,
+    allCalls: calls,
   })
 }
