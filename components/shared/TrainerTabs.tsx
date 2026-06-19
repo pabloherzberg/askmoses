@@ -12,8 +12,11 @@ import { CoachingRecommendations } from '@/components/shared/CoachingRecommendat
 import { CallCard } from '@/components/shared/CallCard'
 import { PerformanceTrend } from '@/components/shared/PerformanceTrend'
 import { TeamIntentRadarChart } from '@/components/shared/TeamIntentRadarChart'
-import { DateRangePicker } from '@/components/shared/DateRangePicker'
+import { PeriodTabs } from '@/components/shared/billing/PeriodTabs'
+import type { BillingPeriodRange } from '@/lib/types'
 import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
+
+const PERIOD_DAYS: Record<BillingPeriodRange, number> = { '1w': 7, '2w': 14, '3w': 21, '1m': 30 }
 import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
 
 // Coaching recs são geradas por IA sob demanda — 'loading'/'error' são estados
@@ -34,11 +37,9 @@ export function TrainerTabs() {
   const [allCallsByTrainer, setAllCallsByTrainer] = useState<Record<string, Call[]>>({})
   const [allTeamCallsList, setAllTeamCallsList] = useState<Call[]>([])
   const [activeId, setActiveId] = useState<string>('')
-  const [startDate, setStartDate] = useState<Date>(() => {
-    const today = new Date()
-    return new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000)
-  })
-  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [period, setPeriod] = useState<BillingPeriodRange>('1m')
+  const endDate = new Date()
+  const startDate = new Date(endDate.getTime() - PERIOD_DAYS[period] * 24 * 60 * 60 * 1000)
 
   // Dedup das gerações de recs (sobrevive ao double-invoke do Strict Mode).
   const recsRequested = useRef<Set<string>>(new Set())
@@ -229,7 +230,7 @@ export function TrainerTabs() {
             <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} trainerName={firstName} />
           </div>
 
-          {/* ── Buying Intent (DateRangePicker + Radar + Leads) ──── */}
+          {/* ── Buying Intent (Period selector + Radar + Leads) ──── */}
           {intentSignals.length > 0 && (() => {
             const trainerCalls = allCallsByTrainer[trainerKey] ?? []
             const filteredTrainerCalls = trainerCalls.filter((call) => {
@@ -283,15 +284,9 @@ export function TrainerTabs() {
                   </p>
                 </div>
 
-                {/* Date Range Picker */}
+                {/* Period selector */}
                 <div className="mb-4">
-                  <DateRangePicker
-                    onDateRangeChange={(start, end) => {
-                      setStartDate(start)
-                      setEndDate(end)
-                    }}
-                    defaultDays={365}
-                  />
+                  <PeriodTabs value={period} onChange={setPeriod} />
                 </div>
 
                 {/* Radar (Trainer + Team comparison) + Leads */}

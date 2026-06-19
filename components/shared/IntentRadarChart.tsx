@@ -148,13 +148,13 @@ export function IntentRadarChart({
   const radarData = signals.map((signal) => {
     const signalName =
       signal.id === "financial"
-        ? "Financeiro"
+        ? "Financial"
         : signal.id === "urgency"
-          ? "Urgência"
+          ? "Urgency"
           : signal.id === "authority"
-            ? "Autoridade"
+            ? "Authority"
             : signal.id === "engagement"
-              ? "Engajamento"
+              ? "Engagement"
               : signal.id;
 
     const trainerValue = (breakdown[signal.id] ?? 0) / 2;
@@ -173,15 +173,15 @@ export function IntentRadarChart({
   const chartConfig: ChartConfig = hasTeam
     ? {
         trainer: { label: trainerName || "Trainer", color: "var(--am-accent)" },
-        team: { label: "Média do time", color: "var(--am-accent2)" },
+        team: { label: "Team avg", color: "var(--am-accent2)" },
       }
     : {
         value: { label: "Intent", color: "var(--am-blue)" },
       };
 
   const subtitle = hasTeam
-    ? `${trainerName} (${intentDisplay}) vs. média do time (${teamIntentDisplay})`
-    : `Média do time — nota ponderada ${intentDisplay} / 5`;
+    ? `${trainerName} (${intentDisplay}) vs. team avg (${teamIntentDisplay})`
+    : `Team average — weighted score ${intentDisplay} / 5`;
 
   return (
     <div
@@ -194,7 +194,7 @@ export function IntentRadarChart({
           className="text-[13px] font-medium"
           style={{ color: "var(--am-text)" }}
         >
-          testeLucas Intenção de compra
+          Buying Intent
         </p>
         <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
           {subtitle}
@@ -220,7 +220,7 @@ export function IntentRadarChart({
               color: delta >= 0 ? "var(--am-green)" : "var(--am-red)",
             }}
           >
-            {delta >= 0 ? "+" : ""}{delta} vs time
+            {delta >= 0 ? "+" : ""}{delta} vs team
           </span>
         )}
       </div>
@@ -246,10 +246,10 @@ export function IntentRadarChart({
                 const dy = y > cy ? 4 : y < cy ? -4 : 4;
                 const signalId = radarData.find(d => d.name === payload.value)
                   ? signals.find(s =>
-                      (s.id === "financial" && payload.value === "Financeiro") ||
-                      (s.id === "urgency" && payload.value === "Urgência") ||
-                      (s.id === "authority" && payload.value === "Autoridade") ||
-                      (s.id === "engagement" && payload.value === "Engajamento")
+                      (s.id === "financial" && payload.value === "Financial") ||
+                      (s.id === "urgency" && payload.value === "Urgency") ||
+                      (s.id === "authority" && payload.value === "Authority") ||
+                      (s.id === "engagement" && payload.value === "Engagement")
                     )?.id
                   : undefined;
                 const color = signalId ? SIGNAL_COLORS[signalId] : "var(--am-muted)";
@@ -302,7 +302,7 @@ export function IntentRadarChart({
                   isAnimationActive={false}
                 />
                 <Radar
-                  name="Média do time"
+                  name="Team avg"
                   dataKey="team"
                   fill="var(--color-team)"
                   fillOpacity={0.15}
@@ -346,11 +346,11 @@ export function IntentRadarChart({
           }}
         >
           {trendDelta > 0
-            ? "Intenção crescendo"
+            ? "Intent growing"
             : trendDelta < 0
-              ? "Intenção caindo"
-              : "Intenção estável"}{" "}
-          {Math.abs(trendDelta)}% este período
+              ? "Intent declining"
+              : "Intent stable"}{" "}
+          {Math.abs(trendDelta)}% this period
           {trendDelta !== 0 && (
             <TrendingUp
               className="h-4 w-4"
@@ -360,12 +360,12 @@ export function IntentRadarChart({
         </div>
         {startDate && endDate && (
           <div className="flex items-center gap-2 leading-none text-muted-foreground">
-            {startDate.toLocaleDateString("pt-BR", {
+            {startDate.toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
             })}{" "}
             -{" "}
-            {endDate.toLocaleDateString("pt-BR", {
+            {endDate.toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric",
