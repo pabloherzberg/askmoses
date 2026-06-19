@@ -63,8 +63,8 @@ const supabaseHandlers = [
 // ─── New views API handlers (MSW-only, no server route) ──────────────────────
 
 const apiHandlers = [
-  // GET /api/calls — real API route (Supabase)
-  // GET /api/calls/:id — real API route (Supabase)
+  // GET /api/calls — passthrough to real API route (Supabase, org-scoped).
+  // GET /api/calls/:id — passthrough to real API route (Supabase, org-scoped).
 
   // GET /api/trainers — passthrough to real API route (Supabase, org-scoped).
   // This handler used to return the global mock list from lib/mock-data.ts,

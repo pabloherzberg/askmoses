@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { scoreLevel, toDisplay5, toDisplay5Delta } from '@/lib/score-display'
-import type { Trainer, BestCall, CallsByTrainerMap, PerformanceTrendPoint, IntentSignal } from '@/lib/types'
+import type { Trainer, Call, BestCall, CallsByTrainerMap, PerformanceTrendPoint, IntentSignal } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallCard } from '@/components/shared/CallCard'
 import { PerformanceTrend } from '@/components/shared/PerformanceTrend'
-import { IntentRadarChart } from '@/components/shared/IntentRadarChart'
+import { TeamIntentRadarChart } from '@/components/shared/TeamIntentRadarChart'
 import { DateRangePicker } from '@/components/shared/DateRangePicker'
 import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
 import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
@@ -36,7 +36,7 @@ export function TrainerTabs() {
   const [activeId, setActiveId] = useState<string>('')
   const [startDate, setStartDate] = useState<Date>(() => {
     const today = new Date()
-    return new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000)
   })
   const [endDate, setEndDate] = useState<Date>(new Date())
 
@@ -44,7 +44,8 @@ export function TrainerTabs() {
   const recsRequested = useRef<Set<string>>(new Set())
 
   // Bundle do Team Command Center — tudo menos as coaching recs (essas são IA,
-  // carregadas por trainer sob demanda).
+  // carregadas por trainer sob demanda). callsByTrainer e allCalls vêm no
+  // mesmo response para evitar fetches secundários com trainer_id nulo.
   useEffect(() => {
     fetch('/api/coaching', { headers: { 'x-locale': locale } })
       .then((r) => r.json())
@@ -57,33 +58,9 @@ export function TrainerTabs() {
         setWorstCallsMap(data.worstCalls ?? {})
         setIntentSignals(data.intentSignals ?? [])
         setActiveId((prev) => prev || data.trainers[0]?.id || '')
+        if (data.callsByTrainer) setAllCallsByTrainer(data.callsByTrainer)
+        if (Array.isArray(data.allCalls)) setAllTeamCallsList(data.allCalls)
       })
-  }, [locale])
-
-  // Fetch recent calls for the active trainer
-  useEffect(() => {
-    if (!activeId) return
-    const trainer = trainers.find((tr) => tr.id === activeId)
-    if (!trainer || (trainer.totalCalls ?? 0) === 0) return
-
-    fetch(`/api/calls?trainerId=${activeId}&limit=50`, { headers: { 'x-locale': locale } })
-      .then((r) => r.json())
-      .then((response) => {
-        const calls = Array.isArray(response?.data) ? response.data : []
-        setAllCallsByTrainer((prev) => ({ ...prev, [activeId]: calls }))
-      })
-      .catch(() => setAllCallsByTrainer((prev) => ({ ...prev, [activeId]: [] })))
-  }, [activeId, trainers, locale])
-
-  // Fetch all team calls (for team average comparison)
-  useEffect(() => {
-    fetch(`/api/calls?limit=200`, { headers: { 'x-locale': locale } })
-      .then((r) => r.json())
-      .then((response) => {
-        const calls = Array.isArray(response?.data) ? response.data : []
-        setAllTeamCallsList(calls)
-      })
-      .catch(() => setAllTeamCallsList([]))
   }, [locale])
 
   // Gera as coaching recs do trainer ativo via IA na primeira vez que a tab
@@ -115,6 +92,7 @@ export function TrainerTabs() {
   const trainerKey = trainer.id
   const firstName = trainer.name.split(' ')[0]
   const hasData = (trainer.totalCalls ?? 0) > 0
+
 
   const callsLabel = trainer.totalCalls === 1
     ? t('callsLabelOne', { count: trainer.totalCalls })
@@ -275,11 +253,11 @@ export function TrainerTabs() {
               ? Math.round((trainerIntentScores.reduce((a, b) => a + b, 0) / trainerIntentScores.length) * 10) / 10
               : 0
 
-            // Calculate team's average intent (all team calls, same period)
+            // Calculate team's average intent (all team calls, same period, excluding active trainer)
             const allTeamCalls = allTeamCallsList
               .filter((call) => {
                 const callDate = new Date(call.date)
-                return callDate >= startDate && callDate <= endDate
+                return callDate >= startDate && callDate <= endDate && call.trainerId !== trainerKey
               })
             const teamIntentScores = allTeamCalls.map((c) => {
               const breakdown = c.intentBreakdown && typeof c.intentBreakdown === 'object'
@@ -312,21 +290,20 @@ export function TrainerTabs() {
                       setStartDate(start)
                       setEndDate(end)
                     }}
-                    defaultDays={30}
+                    defaultDays={365}
                   />
                 </div>
 
                 {/* Radar (Trainer + Team comparison) + Leads */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Radar with 2 datasets */}
-                  <IntentRadarChart
-                    calls={filteredTrainerCalls}
-                    signals={intentSignals}
+                  <TeamIntentRadarChart
+                    trainerCalls={filteredTrainerCalls}
                     teamCalls={allTeamCalls}
+                    signals={intentSignals}
                     trainerName={trainer.name}
                     startDate={startDate}
                     endDate={endDate}
-                    variant="compact"
                   />
 
                   {/* Leads list */}

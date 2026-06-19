@@ -14,7 +14,15 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { computeIntentIndex } from "@/lib/utils/intentScore";
+import { deriveIntentBreakdownForCall } from "@/lib/services/intent";
 import type { Call, IntentSignal } from "@/lib/types";
+
+const SIGNAL_COLORS: Record<string, string> = {
+  financial: "var(--am-red)",
+  urgency: "var(--am-amber)",
+  authority: "var(--am-blue)",
+  engagement: "var(--am-accent2)",
+};
 
 interface IntentRadarChartProps {
   calls: Call[];
@@ -46,13 +54,15 @@ function calculateIntentBreakdown(
   };
 
   calls.forEach((call) => {
-    if (call.intentBreakdown && typeof call.intentBreakdown === "object") {
-      totals.urgency += toNum(call.intentBreakdown["urgency"]);
-      totals.authority += toNum(call.intentBreakdown["authority"]);
-      totals.financial += toNum(call.intentBreakdown["financial"]);
-      totals.engagement += toNum(call.intentBreakdown["engagement"]);
-      validCount++;
-    }
+    const bd =
+      call.intentBreakdown && typeof call.intentBreakdown === "object"
+        ? call.intentBreakdown
+        : deriveIntentBreakdownForCall(call.score, signals);
+    totals.urgency += toNum(bd["urgency"]);
+    totals.authority += toNum(bd["authority"]);
+    totals.financial += toNum(bd["financial"]);
+    totals.engagement += toNum(bd["engagement"]);
+    validCount++;
   });
 
   if (validCount === 0) {
@@ -173,26 +183,6 @@ export function IntentRadarChart({
     ? `${trainerName} (${intentDisplay}) vs. média do time (${teamIntentDisplay})`
     : `Média do time — nota ponderada ${intentDisplay} / 5`;
 
-  // 🔍 DIAGNÓSTICO TEMPORÁRIO — remover após confirmar consistência.
-  // Mostra o que chega de trainer e time + o array final que vai pro <Radar>.
-  if (typeof window !== "undefined") {
-    console.log("[IntentRadar]", {
-      trainerName,
-      hasTeam,
-      qtdCallsTrainer: calls.length,
-      qtdCallsTime: teamCalls?.length ?? 0,
-      callsComBreakdown: calls.filter(
-        (c) => c.intentBreakdown && typeof c.intentBreakdown === "object",
-      ).length,
-      breakdownTrainer: breakdown,
-      breakdownTime: teamBreakdown,
-      intentIndexTrainer: intentIndex,
-      intentIndexTime: teamIntentIndex,
-    });
-    // eslint-disable-next-line no-console
-    console.table(radarData);
-  }
-
   return (
     <div
       className="rounded-2xl p-5 border shadow-md"
@@ -204,63 +194,137 @@ export function IntentRadarChart({
           className="text-[13px] font-medium"
           style={{ color: "var(--am-text)" }}
         >
-          Intenção de compra
+          testeLucas Intenção de compra
         </p>
         <p className="text-[11px]" style={{ color: "var(--am-muted)" }}>
           {subtitle}
         </p>
       </div>
 
+      {/* Intent Index badge */}
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className="px-3 py-1 rounded-full text-[22px] font-bold font-mono"
+          style={{ color: "var(--am-green)" }}
+        >
+          {intentDisplay}
+          <span className="text-[13px] font-normal ml-0.5" style={{ color: "var(--am-muted)" }}>
+            /5
+          </span>
+        </div>
+        {hasTeam && delta !== null && (
+          <span
+            className="text-[12px] font-mono font-medium px-2 py-0.5 rounded-full"
+            style={{
+              background: delta >= 0 ? "rgba(34,217,160,0.12)" : "rgba(255,94,94,0.12)",
+              color: delta >= 0 ? "var(--am-green)" : "var(--am-red)",
+            }}
+          >
+            {delta >= 0 ? "+" : ""}{delta} vs time
+          </span>
+        )}
+      </div>
+
       {/* Radar Chart */}
       <div
-        style={{ width: "100%", height: variant === "detailed" ? 350 : 280 }}
+        style={{ width: "100%", height: variant === "detailed" ? 350 : 300 }}
       >
         <ChartContainer config={chartConfig} className="w-full h-full">
           <RadarChart
             data={radarData}
-            margin={{ top: 20, right: 80, bottom: 20, left: 80 }}
+            margin={{ top: 24, right: 90, bottom: 24, left: 90 }}
           >
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="line" />}
             />
+            <PolarGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
             <PolarAngleAxis
               dataKey="name"
-              tick={{ fill: "var(--am-muted)", fontSize: 11 }}
+              tick={({ x, y, payload, cx, cy }) => {
+                const dx = x > cx ? 6 : x < cx ? -6 : 0;
+                const dy = y > cy ? 4 : y < cy ? -4 : 4;
+                const signalId = radarData.find(d => d.name === payload.value)
+                  ? signals.find(s =>
+                      (s.id === "financial" && payload.value === "Financeiro") ||
+                      (s.id === "urgency" && payload.value === "Urgência") ||
+                      (s.id === "authority" && payload.value === "Autoridade") ||
+                      (s.id === "engagement" && payload.value === "Engajamento")
+                    )?.id
+                  : undefined;
+                const color = signalId ? SIGNAL_COLORS[signalId] : "var(--am-muted)";
+                const val = radarData.find(d => d.name === payload.value);
+                const numVal = val ? (hasTeam ? (val as { name: string; trainer?: number }).trainer : (val as { name: string; value?: number }).value) : undefined;
+                return (
+                  <g>
+                    <text
+                      x={x + dx}
+                      y={y + dy - 6}
+                      textAnchor="middle"
+                      fontSize={11}
+                      fontWeight={600}
+                      fill={color}
+                    >
+                      {payload.value}
+                    </text>
+                    {numVal !== undefined && (
+                      <text
+                        x={x + dx}
+                        y={y + dy + 8}
+                        textAnchor="middle"
+                        fontSize={10}
+                        fontFamily="DM Mono, monospace"
+                        fill="var(--am-text)"
+                      >
+                        {numVal.toFixed(1)}
+                      </text>
+                    )}
+                  </g>
+                );
+              }}
             />
-            <PolarGrid stroke="var(--am-border)" />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 5]}
-              tick={{ fill: "var(--am-muted)", fontSize: 9 }}
+              tick={{ fill: "var(--am-muted)", fontSize: 8 }}
+              tickCount={6}
+              stroke="transparent"
             />
             {hasTeam ? (
               <>
                 <Radar
-                  name="Trainer"
+                  name={trainerName || "Trainer"}
                   dataKey="trainer"
                   fill="var(--color-trainer)"
-                  fillOpacity={0.6}
+                  fillOpacity={0.45}
                   stroke="var(--color-trainer)"
+                  strokeWidth={2}
                   isAnimationActive={false}
                 />
                 <Radar
-                  name="Team"
+                  name="Média do time"
                   dataKey="team"
                   fill="var(--color-team)"
-                  fillOpacity={0.3}
+                  fillOpacity={0.15}
                   stroke="var(--color-team)"
+                  strokeWidth={1.5}
+                  strokeDasharray="5 3"
                   isAnimationActive={false}
                 />
-                <Legend />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                />
               </>
             ) : (
               <Radar
                 name="Intent"
                 dataKey="value"
                 fill="var(--color-value)"
-                fillOpacity={0.25}
+                fillOpacity={0.35}
                 stroke="var(--color-value)"
+                strokeWidth={2}
                 isAnimationActive={false}
               />
             )}

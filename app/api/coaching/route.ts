@@ -144,6 +144,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // callsByTrainer como objeto plain (Map → Record) para serialização JSON.
+  // Usado pelo TrainerTabs para radar de intent e Highest Priority Leads
+  // sem precisar de um segundo fetch /api/calls?trainerId=X (que falharia
+  // se as calls tiverem trainer_id nulo no banco).
+  const callsByTrainerObj: Record<string, Call[]> = {}
+  for (const [tid, tc] of callsByTrainer.entries()) {
+    callsByTrainerObj[tid] = tc
+  }
+
   return ok({
     trainers: outTrainers,
     bestCalls: outBest,
@@ -151,5 +160,7 @@ export async function GET(request: NextRequest) {
     trainerBehavioral: outBehavioral,
     performanceTrends: performanceTrends as Record<string, PerformanceTrendPoint[]>,
     intentSignals,
+    callsByTrainer: callsByTrainerObj,
+    allCalls: calls,
   })
 }
