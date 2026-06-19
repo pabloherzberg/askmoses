@@ -255,12 +255,14 @@ export function buildBestWorstCalls(
   // normalised here so the i18n `Shared.outcomes.short.<key>` lookup hits a
   // known key on the client.
   const toBestCall = (c: Call): BestCall => ({
+    id: c.id,
     prospect: c.prospect,
     date: c.date,
     score: c.score,
     result: normaliseOutcome(c.result) ?? c.result,
     analysis: c.feedback || '—',
     listenAt: '',
+    intentBreakdown: c.intentBreakdown,
   })
 
   const sorted = [...calls].sort((a, b) => b.score - a.score)

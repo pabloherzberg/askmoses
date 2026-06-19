@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import { getCallById } from '@/lib/services/calls'
 import { getScripts, formatScriptVersion } from '@/lib/services/scripts'
+import { getIntentSignals } from '@/lib/services/intent'
 import { dbGetActiveOrgScriptId } from '@/lib/db/scripts'
 import { getRole, getOrgId, getTrainerDbId } from '@/lib/auth'
 import { CallDetail } from '@/components/shared/CallDetail'
@@ -32,12 +33,13 @@ export default async function CallDetailPage({ params }: Props) {
   }
 
   const detailOrgId = scope.orgId ?? (await getOrgId())
-  const [call, scripts, activeScriptId] = await Promise.all([
+  const [call, scripts, activeScriptId, intentSignals] = await Promise.all([
     getCallById(id, { locale, ...scope }),
     getScripts().catch(() => []),
     // Helper leve (só id) — esta página não precisa do payload completo
     // do script ativo, só do id pra comparar com call.scriptId.
     detailOrgId ? dbGetActiveOrgScriptId(detailOrgId).catch(() => null) : Promise.resolve(null),
+    getIntentSignals().catch(() => []),
   ])
   if (!call) notFound()
 
@@ -52,5 +54,5 @@ export default async function CallDetailPage({ params }: Props) {
     scriptVersion: formatScriptVersion(script),
   }
 
-  return <CallDetail call={enrichedCall} viewerRole={role ?? 'owner'} backHref="/calls" />
+  return <CallDetail call={enrichedCall} viewerRole={role ?? 'owner'} backHref="/calls" intentSignals={intentSignals} />
 }
