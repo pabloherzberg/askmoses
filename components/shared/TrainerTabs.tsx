@@ -1,15 +1,20 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { scoreLevel, toDisplay5, toDisplay5Delta } from '@/lib/score-display'
-import type { Trainer, BestCall, CallsByTrainerMap, PerformanceTrendPoint } from '@/lib/types'
+import type { Trainer, Call, BestCall, CallsByTrainerMap, PerformanceTrendPoint, IntentSignal } from '@/lib/types'
 import type { BehavioralDimension, CoachingRec } from '@/lib/mock-data'
 import { TrainerAvatar } from '@/components/shared/TrainerAvatar'
 import { BehavioralProfile } from '@/components/shared/BehavioralProfile'
 import { CoachingRecommendations } from '@/components/shared/CoachingRecommendations'
 import { CallCard } from '@/components/shared/CallCard'
 import { PerformanceTrend } from '@/components/shared/PerformanceTrend'
+import { TeamIntentRadarChart } from '@/components/shared/TeamIntentRadarChart'
+import { DateRangePicker } from '@/components/shared/DateRangePicker'
+import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
+import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
 
 // Coaching recs são geradas por IA sob demanda — 'loading'/'error' são estados
 // de carregamento; o array é o resultado.
@@ -17,6 +22,7 @@ type RecsState = CoachingRec[] | 'loading' | 'error'
 
 export function TrainerTabs() {
   const t = useTranslations('Coaching')
+  const tIntent = useTranslations('Intent')
   const locale = useLocale()
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [behavioral, setBehavioral] = useState<Record<string, BehavioralDimension[]>>({})
@@ -24,13 +30,22 @@ export function TrainerTabs() {
   const [bestCallsMap, setBestCallsMap] = useState<CallsByTrainerMap>({})
   const [worstCallsMap, setWorstCallsMap] = useState<CallsByTrainerMap>({})
   const [recs, setRecs] = useState<Record<string, RecsState>>({})
+  const [intentSignals, setIntentSignals] = useState<IntentSignal[]>([])
+  const [allCallsByTrainer, setAllCallsByTrainer] = useState<Record<string, Call[]>>({})
+  const [allTeamCallsList, setAllTeamCallsList] = useState<Call[]>([])
   const [activeId, setActiveId] = useState<string>('')
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const today = new Date()
+    return new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000)
+  })
+  const [endDate, setEndDate] = useState<Date>(new Date())
 
   // Dedup das gerações de recs (sobrevive ao double-invoke do Strict Mode).
   const recsRequested = useRef<Set<string>>(new Set())
 
   // Bundle do Team Command Center — tudo menos as coaching recs (essas são IA,
-  // carregadas por trainer sob demanda).
+  // carregadas por trainer sob demanda). callsByTrainer e allCalls vêm no
+  // mesmo response para evitar fetches secundários com trainer_id nulo.
   useEffect(() => {
     fetch('/api/coaching', { headers: { 'x-locale': locale } })
       .then((r) => r.json())
@@ -41,7 +56,10 @@ export function TrainerTabs() {
         setPerfTrends(data.performanceTrends ?? {})
         setBestCallsMap(data.bestCalls ?? {})
         setWorstCallsMap(data.worstCalls ?? {})
+        setIntentSignals(data.intentSignals ?? [])
         setActiveId((prev) => prev || data.trainers[0]?.id || '')
+        if (data.callsByTrainer) setAllCallsByTrainer(data.callsByTrainer)
+        if (Array.isArray(data.allCalls)) setAllTeamCallsList(data.allCalls)
       })
   }, [locale])
 
@@ -74,6 +92,7 @@ export function TrainerTabs() {
   const trainerKey = trainer.id
   const firstName = trainer.name.split(' ')[0]
   const hasData = (trainer.totalCalls ?? 0) > 0
+
 
   const callsLabel = trainer.totalCalls === 1
     ? t('callsLabelOne', { count: trainer.totalCalls })
@@ -210,6 +229,141 @@ export function TrainerTabs() {
             <BehavioralProfile dimensions={behavioral[trainerKey] ?? []} trainerName={firstName} />
           </div>
 
+          {/* ── Buying Intent (DateRangePicker + Radar + Leads) ──── */}
+          {intentSignals.length > 0 && (() => {
+            const trainerCalls = allCallsByTrainer[trainerKey] ?? []
+            const filteredTrainerCalls = trainerCalls.filter((call) => {
+              const callDate = new Date(call.date)
+              return callDate >= startDate && callDate <= endDate
+            })
+
+            // Calculate trainer's average intent
+            const trainerIntentScores = filteredTrainerCalls.map((c) => {
+              const breakdown = c.intentBreakdown && typeof c.intentBreakdown === 'object'
+                ? c.intentBreakdown
+                : deriveIntentBreakdownForCall(c.score, intentSignals)
+              return computeIntentIndex(breakdown, {
+                financial: intentSignals.find(s => s.id === 'financial')?.weight || 4,
+                urgency: intentSignals.find(s => s.id === 'urgency')?.weight || 3,
+                authority: intentSignals.find(s => s.id === 'authority')?.weight || 2,
+                engagement: intentSignals.find(s => s.id === 'engagement')?.weight || 1,
+              })
+            })
+            const trainerAvgIntent = trainerIntentScores.length > 0
+              ? Math.round((trainerIntentScores.reduce((a, b) => a + b, 0) / trainerIntentScores.length) * 10) / 10
+              : 0
+
+            // Calculate team's average intent (all team calls, same period, excluding active trainer)
+            const allTeamCalls = allTeamCallsList
+              .filter((call) => {
+                const callDate = new Date(call.date)
+                return callDate >= startDate && callDate <= endDate && call.trainerId !== trainerKey
+              })
+            const teamIntentScores = allTeamCalls.map((c) => {
+              const breakdown = c.intentBreakdown && typeof c.intentBreakdown === 'object'
+                ? c.intentBreakdown
+                : deriveIntentBreakdownForCall(c.score, intentSignals)
+              return computeIntentIndex(breakdown, {
+                financial: intentSignals.find(s => s.id === 'financial')?.weight || 4,
+                urgency: intentSignals.find(s => s.id === 'urgency')?.weight || 3,
+                authority: intentSignals.find(s => s.id === 'authority')?.weight || 2,
+                engagement: intentSignals.find(s => s.id === 'engagement')?.weight || 1,
+              })
+            })
+            const teamAvgIntent = teamIntentScores.length > 0
+              ? Math.round((teamIntentScores.reduce((a, b) => a + b, 0) / teamIntentScores.length) * 10) / 10
+              : 0
+
+            return (
+              <div className="rounded-2xl p-5 border shadow-md mb-4" style={cardStyle}>
+                {/* Header */}
+                <div className="mb-4">
+                  <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+                    {tIntent('sectionLabel', { defaultValue: 'Buying Intent' })}
+                  </p>
+                </div>
+
+                {/* Date Range Picker */}
+                <div className="mb-4">
+                  <DateRangePicker
+                    onDateRangeChange={(start, end) => {
+                      setStartDate(start)
+                      setEndDate(end)
+                    }}
+                    defaultDays={365}
+                  />
+                </div>
+
+                {/* Radar (Trainer + Team comparison) + Leads */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Radar with 2 datasets */}
+                  <TeamIntentRadarChart
+                    trainerCalls={filteredTrainerCalls}
+                    teamCalls={allTeamCalls}
+                    signals={intentSignals}
+                    trainerName={trainer.name}
+                    startDate={startDate}
+                    endDate={endDate}
+                  />
+
+                  {/* Leads list */}
+                  <div className="space-y-2">
+                    <p className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>
+                      {tIntent('highestIntentLeads', { defaultValue: 'Highest Priority Leads' })}
+                    </p>
+                    <div className="space-y-2">
+                      {(() => {
+                        const callsWithIntent = filteredTrainerCalls
+                        .map((c) => {
+                          const breakdown = c.intentBreakdown && typeof c.intentBreakdown === 'object'
+                            ? c.intentBreakdown
+                            : deriveIntentBreakdownForCall(c.score, intentSignals)
+                          const score = c.result === 'closed' ? 5 : computeIntentIndex(breakdown, {
+                            financial: intentSignals.find(s => s.id === 'financial')?.weight || 4,
+                            urgency: intentSignals.find(s => s.id === 'urgency')?.weight || 3,
+                            authority: intentSignals.find(s => s.id === 'authority')?.weight || 2,
+                            engagement: intentSignals.find(s => s.id === 'engagement')?.weight || 1,
+                          })
+                          return { ...c, intentScore: score }
+                        })
+                        .filter((c) => c.result !== 'closed' && c.intentScore > 0)
+                        .sort((a, b) => b.intentScore - a.intentScore)
+                        .slice(0, 5)
+
+                      return callsWithIntent.length > 0 ? (
+                        callsWithIntent.map((call) => (
+                          <Link
+                            key={call.id}
+                            href={call.id ? `/${locale}/calls/${call.id}` : '#'}
+                            className="flex items-center justify-between p-3 rounded-lg transition-opacity hover:opacity-80"
+                            style={{ background: 'var(--am-bg3)' }}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>
+                                {call.prospect}
+                              </p>
+                              <p className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                                {new Date(call.date).toLocaleDateString(locale)}
+                              </p>
+                            </div>
+                            <span className="text-lg font-bold font-mono ml-3" style={{ color: 'var(--am-green)' }}>
+                              {intentIndexToDisplay(call.intentScore)}
+                            </span>
+                          </Link>
+                        ))
+                        ) : (
+                          <p className="text-[12px]" style={{ color: 'var(--am-muted)' }}>
+                            {tIntent('noCallsFound', { defaultValue: 'No calls found' })}
+                          </p>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           {/* ── Coaching Recommendations (IA, lazy + mock se IA falhar) ── */}
           <div className="mb-4">
             {Array.isArray(trainerRecs) ? (
@@ -229,6 +383,7 @@ export function TrainerTabs() {
               </div>
             )}
           </div>
+
 
           {/* ── Best + Needs Improvement ────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

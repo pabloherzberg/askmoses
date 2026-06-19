@@ -2780,5 +2780,54 @@
     "MobileCta": {
       "label": "Reservar mi demo gratis"
     }
+  },
+  "Intent": {
+    "sectionLabel": "Ask Moses Intent Index",
+    "subtitle": "4 señales que indican probabilidad de conversión",
+    "intentScore": "Intent Index",
+    "scoreOutOf5": "{score} de 5",
+    "signals": {
+      "financial": {
+        "name": "Financiero",
+        "question": "¿La persona reaccionó al precio con curiosidad o demostró resistencia?",
+        "description": "Evalúa si el prospecto mostró interés genuino o preocupación por la inversión."
+      },
+      "urgency": {
+        "name": "Urgencia",
+        "question": "¿Existe un evento específico y doloroso motivando la llamada o es solo interés casual?",
+        "description": "Mide si hay una necesidad inmediata o si es solo una exploración de opciones."
+      },
+      "authority": {
+        "name": "Autoridad",
+        "question": "¿La persona que está en la llamada tiene poder para tomar la decisión final sin consultar a otra persona?",
+        "description": "Identifica si el prospecto es un tomador de decisiones o necesita aprobación."
+      },
+      "engagement": {
+        "name": "Compromiso",
+        "question": "¿Está haciendo preguntas detalladas y pensando en los próximos pasos, o está dando respuestas cortas y vagas?",
+        "description": "Evalúa el nivel de interés activo e involucramiento en la conversación."
+      }
+    },
+    "weight": "Peso {weight}",
+    "weightInfo": "Peso: {weight} — {percentage}% de la puntuación final",
+    "loading": "Cargando...",
+    "callsList": "Leads con mayor prioridad",
+    "noCallsFound": "Sin leads de alto intent para mostrar",
+    "callDate": "Fecha",
+    "callProspect": "Prospecto",
+    "callScore": "Puntuación",
+    "callTrainer": "Vendedor",
+    "lastCalls": "Últimas llamadas con mayor intent",
+    "configTitle": "Intent Index — Señales y Pesos",
+    "configSubtitle": "Configure el peso de cada señal en el cálculo de intent. Los pesos deben sumar exactamente 10.",
+    "weightLabel": "Peso",
+    "weightHint": "Valor entero de 1 a 10",
+    "filterDays": "Días para analizar",
+    "filterApply": "Aplicar",
+    "buyingIntent": "Intención de compra",
+    "teamAverage": "Promedio del equipo",
+    "breakdownLabel": "Desglose",
+    "radarLabel": "Intent Index",
+    "highestIntentLeads": "Leads de Mayor Prioridad"
   }
 }

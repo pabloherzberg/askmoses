@@ -343,6 +343,31 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Re-export Recharts components for centralized imports
+export {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  LineChart,
+  BarChart,
+  PieChart,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  CartesianAxis,
+  Tooltip,
+  Legend,
+  Line,
+  Bar,
+  Pie,
+  Cell,
+  Area,
+} from 'recharts'
+
 export {
   ChartContainer,
   ChartTooltip,

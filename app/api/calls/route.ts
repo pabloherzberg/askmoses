@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const callOutcome = searchParams.get('callOutcome') ?? undefined
   const rubricId = searchParams.get('rubricId') ?? undefined
-  const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined
+  let limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined
   const offset = searchParams.get('offset') ? Number(searchParams.get('offset')) : undefined
   // Translation is opt-in: listings typically don't need the coaching text
   // (feedback/strengths/improvements only surface on detail). Callers that
@@ -40,8 +40,20 @@ export async function GET(request: NextRequest) {
     trainerId = searchParams.get('trainerId') ?? undefined
   }
 
-  const data = await getCalls({ trainerId, callOutcome, rubricId, limit, offset, locale })
-  return ok(data)
+  const callsData = await getCalls({ trainerId, callOutcome, rubricId, limit, offset, locale })
+
+  // Filter by days if provided (Intent Dashboard)
+  const days = searchParams.get('days') ? Number(searchParams.get('days')) : undefined
+  if (days && Array.isArray(callsData)) {
+    const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000
+    const filtered = callsData.filter((call: any) => {
+      const callTime = new Date(call.date).getTime()
+      return callTime >= cutoffTime
+    })
+    return ok(filtered)
+  }
+
+  return ok(callsData)
 }
 
 export async function POST(request: NextRequest) {

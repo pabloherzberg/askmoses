@@ -9,6 +9,8 @@ import { OwnerManagementCard } from './OwnerManagementCard'
 import { ScriptManagementCard, type PendingSnapshot, type ScriptSnapshot } from './ScriptManagementCard'
 import { SubscriptionOverrideCard } from './SubscriptionOverrideCard'
 import { ManualUploadToggleCard } from './ManualUploadToggleCard'
+import { IntentWeightsManager } from '@/components/admin/IntentWeightsManager'
+import { getDefaultOrgIntentWeights } from '@/lib/services/intent'
 
 type PlanCode = 'starter' | 'pro' | 'pro_rag'
 type SubStatus = 'active' | 'inactive' | 'trial'
@@ -87,6 +89,9 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
     loadPendingSnapshot(admin, orgId),
   ])
 
+  // Intent weights — usa defaults em Fase 1 (será hydratado no cliente via fetch)
+  const intentWeights = getDefaultOrgIntentWeights(orgId)
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-6">
@@ -132,6 +137,11 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
       <ManualUploadToggleCard
         orgId={orgRow.id}
         initialEnabled={Boolean(orgRow.manual_upload_enabled)}
+      />
+
+      <IntentWeightsManager
+        orgId={orgRow.id}
+        initialWeights={intentWeights}
       />
 
       {/* GHL integration entry — sub-página separada por ser form complexo
