@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Call } from '@/lib/types'
 
 export interface DbCall {
   id: string
@@ -143,7 +142,7 @@ export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
       intentBreakdown: intent_breakdown,
       intentWeights: intent_weights,
     }
-  }) as unknown as Call[]
+  }) as unknown as DbCall[]
 }
 
 export interface GetCallByIdScope {
@@ -151,7 +150,7 @@ export interface GetCallByIdScope {
   trainerId?: string
 }
 
-export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promise<Call | null> {
+export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promise<DbCall | null> {
   const supabase = createAdminClient()
 
   let query = supabase
@@ -174,11 +173,11 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
   // Map DB snake_case to TS camelCase
   // IMPORTANT: Must explicitly omit intent_breakdown and intent_weights to prevent Next.js RSC serialization issues
   const { intent_breakdown, intent_weights, ...rest } = data as any
-  const call: Call = {
+  const call = {
     ...rest,
     intentBreakdown: intent_breakdown,
     intentWeights: intent_weights,
-  }
+  } as unknown as DbCall
 
   return call
 }
@@ -405,8 +404,12 @@ export interface UpdateGhlPipelineInput {
   outputTokens?: number | null
   costUsd?: number | null
   promptVersion?: string | null
+  // Intent Index ponderado (0–5, decimal) = computeIntentIndex(breakdown, weights).
+  intent?: number | null
   // Buying intent breakdown (4 signals).
   intentBreakdown?: Record<string, number> | null
+  // Snapshot dos pesos da org no momento da análise (financial, urgency, authority, engagement).
+  intentWeights?: Record<string, number> | null
   // Campos populados pela fase de coaching email (após scoring).
   emailSent?: boolean
   emailId?: string | null
@@ -437,7 +440,9 @@ export async function dbUpdateGhlCallPipeline(
   if (input.outputTokens !== undefined) patch.output_tokens = input.outputTokens
   if (input.costUsd !== undefined) patch.cost_usd = input.costUsd
   if (input.promptVersion !== undefined) patch.prompt_version = input.promptVersion
+  if (input.intent !== undefined) patch.intent = input.intent
   if (input.intentBreakdown !== undefined) patch.intent_breakdown = input.intentBreakdown
+  if (input.intentWeights !== undefined) patch.intent_weights = input.intentWeights
   if (input.emailSent !== undefined) patch.email_sent = input.emailSent
   if (input.emailId !== undefined) patch.email_id = input.emailId
 

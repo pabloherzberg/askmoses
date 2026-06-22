@@ -438,8 +438,11 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       callId,
       err: err instanceof Error ? err.message : String(err),
     })
+    // org_id no alerta — sem isso aparecia "Org ID: —" mesmo com org definida.
+    const failedCall = await dbGetCallById(callId).catch(() => null)
     await notifyPipelineFailure('scoring_failed', {
       callId,
+      orgId: failedCall?.org_id ?? undefined,
       error: err,
       stage: 'consolidation',
       reason: 'scoring_error',

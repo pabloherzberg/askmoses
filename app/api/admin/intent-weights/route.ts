@@ -1,7 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { ok, unauthorized, getSession, getRole } from '@/lib/auth'
 import { recordIntentWeightChange } from '@/lib/services/intent'
-import { INTENT_WEIGHT_CONSTRAINTS, validateIntentWeights } from '@/lib/constants/intent'
+import { DEFAULT_INTENT_WEIGHTS, INTENT_WEIGHT_CONSTRAINTS, validateIntentWeights } from '@/lib/constants/intent'
 import {
   getOrgIntentWeightsFromStore,
   setOrgIntentWeightsInStore,

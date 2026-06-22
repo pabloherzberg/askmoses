@@ -118,6 +118,11 @@ function parseLeadSource(raw: string | null | undefined): LeadSource | null {
 //   - ausente (calls antigas sem backfill) → fallback por resultado/IA.
 function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
   if (result === "closed") return 5;
+  // Intent ausente → fallback por resultado. Trata null/""/undefined antes do
+  // Number() porque `Number(null) === 0` (finito) mostraria 0 indevidamente.
+  if (raw === null || raw === undefined || raw === "") {
+    return resolveIntent(raw, result);
+  }
   const n = typeof raw === "number" ? raw : Number(raw);
   if (Number.isFinite(n)) return Math.max(0, Math.min(5, n));
   return resolveIntent(raw, result);
