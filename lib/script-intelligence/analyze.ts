@@ -1,6 +1,7 @@
 import { generateText } from 'ai'
 import { getOpenAIModel } from '@/lib/openai'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { ScriptSection } from '@/lib/db/scripts'
 import type { ScriptIntelligenceResult } from '@/lib/mocks/data/script-intelligence'
 
@@ -147,6 +148,15 @@ export async function runScriptIntelligence(
       temperature: 0.3,
     })
     text = aiResult.text
+    // Telemetria de custo p/ COGS (best-effort).
+    void recordLlmUsage({
+      orgId,
+      surface: 'script_intelligence',
+      model: 'gpt-4o-mini',
+      inputTokens: aiResult.usage?.inputTokens ?? 0,
+      outputTokens: aiResult.usage?.outputTokens ?? 0,
+      ref: currentScriptId,
+    })
   } catch (err) {
     return { ok: false, error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}` }
   }

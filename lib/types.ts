@@ -74,7 +74,10 @@ export interface CallSection {
 
 export interface Call {
   id: string;
-  trainerId: string;
+  // Nullable: calls vindas do pipeline GHL podem não ter trainer resolvido.
+  // Consumidores (rubric, insights, coaching, CallsTable) já guardam com
+  // `if (!call.trainerId)`.
+  trainerId: string | null;
   trainerName: string;
   date: string;
   durationSeconds: number | null;
@@ -382,6 +385,8 @@ export interface BillingUsage {
   totalOrgs?: number;
   valueByOrg?: BillingValueByOrg[];
   callsPerDay?: number[];
+  // Custo interno (COGS) real do período — soma de llm_usage_events. Admin only.
+  cogs?: number;
 }
 
 export interface BillingValueByOrg {

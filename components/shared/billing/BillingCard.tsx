@@ -29,7 +29,7 @@ export function BillingCard({
     <div
       className="rounded-2xl border px-5 py-4 flex items-start justify-between gap-3"
       style={{
-        background: dashed ? "var(--am-bg)" : "var(--am-bg2)",
+        background: "var(--am-bg2)",
         borderColor: "var(--am-border)",
         borderStyle: dashed ? "dashed" : "solid",
       }}

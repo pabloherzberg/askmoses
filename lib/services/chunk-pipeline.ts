@@ -28,6 +28,7 @@ import {
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
 import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
 import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
 import { diarizeTranscript } from '@/lib/services/whisper'
 import { transcribeAudioBuffer } from '@/lib/services/whisper'
@@ -254,8 +255,18 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
       filename: `chunk-${chunk.chunk_index}.mp3`,
     })
 
-    await dbMarkChunkDone(chunk.id, transcript, whisperChunkCost(chunk))
+    const chunkCost = whisperChunkCost(chunk)
+    await dbMarkChunkDone(chunk.id, transcript, chunkCost)
     await deleteChunkAudio(chunk.storage_path)
+
+    // Telemetria de custo p/ COGS — Whisper é por-minuto, custo já computado.
+    void recordLlmUsage({
+      orgId: chunk.org_id ?? null,
+      surface: 'transcription',
+      model: 'whisper-1',
+      costUsdOverride: chunkCost,
+      callId: chunk.call_id,
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     const reason = inferFailureReason(err)
@@ -397,6 +408,8 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       finalTranscript = await diarizeTranscript(stitched, {
         trainerName: call?.trainer_name ?? undefined,
         clientName: call?.client_name ?? undefined,
+        orgId: call?.org_id ?? null,
+        callId,
       })
     } catch (err) {
       console.warn('[chunk-pipeline] diarização falhou, usando texto sem labels', {
@@ -438,8 +451,11 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       callId,
       err: err instanceof Error ? err.message : String(err),
     })
+    // org_id no alerta — sem isso aparecia "Org ID: —" mesmo com org definida.
+    const failedCall = await dbGetCallById(callId).catch(() => null)
     await notifyPipelineFailure('scoring_failed', {
       callId,
+      orgId: failedCall?.org_id ?? undefined,
       error: err,
       stage: 'consolidation',
       reason: 'scoring_error',

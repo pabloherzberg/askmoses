@@ -3,7 +3,12 @@
 // magic numbers (temperatures, prompt version) live in one place.
 
 /** USD per 1,000,000 tokens. Source: OpenAI public pricing as of 2026-01.
- *  Demo decision (Lucas, 2026-05-04): OpenAI-only — no Gemini fallback. */
+ *  Demo decision (Lucas, 2026-05-04): OpenAI-only — no Gemini fallback.
+ *
+ *  NOTA: a fonte de verdade dos preços p/ o COGS real agora é a tabela
+ *  versionada `llm_pricing` (migration 084), lida por lib/services/llm-usage.ts.
+ *  Este mapa permanece como (a) seed daquela tabela e (b) fallback do dual-write
+ *  das colunas de custo atuais (calls.cost_usd etc.). Manter os dois em sincronia. */
 export const PRICING_USD_PER_1M: Record<
   string,
   { input: number; output: number }

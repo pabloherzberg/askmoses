@@ -6,8 +6,8 @@ import { generateCoachingRecs, trainerPersona } from '@/lib/services/coaching'
 import { routing, type Locale } from '@/i18n/routing'
 import { coachingRecs as mockCoachingRecs, type CoachingRec } from '@/lib/mock-data'
 
-// Cache em memória das recs já geradas — geração custa 1 chamada LLM e o free
-// tier do Gemini é só 20 req/dia. TTL de 1h: fresco o bastante p/ refletir
+// Cache em memória das recs já geradas — geração custa 1 chamada LLM (paga).
+// TTL de 1h: fresco o bastante p/ refletir
 // novas calls em pouco tempo, baixo o bastante p/ pular regeneração entre tabs.
 // Sobrevive enquanto o processo do servidor estiver vivo; restart limpa.
 interface CacheEntry { recs: CoachingRec[]; expiresAt: number }
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   if (!trainer || calls.length === 0) return ok({ recs: [] })
 
   try {
-    const recs = await generateCoachingRecs(trainer.name, calls, locale)
+    const recs = await generateCoachingRecs(trainer.name, calls, locale, orgId)
     if (recs.length === 0) throw new Error('IA returned no recommendations')
     recsCache.set(cacheKey, { recs, expiresAt: Date.now() + TTL_MS })
     return ok({ recs })

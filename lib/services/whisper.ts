@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { getOpenAIModel } from "@/lib/openai";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 
 // Translations endpoint sempre devolve transcript em inglês,
 // independente do idioma falado. Mesmo modelo Whisper-1, mesma qualidade.
@@ -69,6 +70,9 @@ export interface TranscribeOptions {
   /** Contexto pra ajudar o LLM a saber quem é Trainer vs Prospect (opcional). */
   trainerName?: string;
   clientName?: string;
+  /** Atribuição de custo do passo de diarização (telemetria COGS, opcional). */
+  orgId?: string | null;
+  callId?: string | null;
 }
 
 export async function transcribeAudioBuffer(
@@ -106,7 +110,7 @@ export async function transcribeAudioBuffer(
  */
 export async function diarizeTranscript(
   transcript: string,
-  options: Pick<TranscribeOptions, "trainerName" | "clientName"> = {},
+  options: Pick<TranscribeOptions, "trainerName" | "clientName" | "orgId" | "callId"> = {},
 ): Promise<string> {
   if (!transcript.trim()) return transcript;
   return assignSpeakerLabels(transcript, options);
@@ -278,5 +282,17 @@ ${rawTranscript}
 
   const model = getOpenAIModel("openai/gpt-4o-mini");
   const result = await generateText({ model, prompt, temperature: 0 });
+
+  // Telemetria de custo p/ COGS (best-effort). orgId/callId só chegam quando o
+  // caller os passa (chunk-pipeline finalizeCallIfReady); senão fica sem org.
+  void recordLlmUsage({
+    orgId: options.orgId ?? null,
+    surface: "diarization",
+    model: "gpt-4o-mini",
+    inputTokens: result.usage?.inputTokens ?? 0,
+    outputTokens: result.usage?.outputTokens ?? 0,
+    callId: options.callId ?? null,
+  });
+
   return result.text.trim();
 }

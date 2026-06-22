@@ -67,6 +67,7 @@ export default async function AdminBillingPage() {
             actions: t('table.actions'),
             totalPaid: t('table.totalPaid'),
             editRate: t('table.editRate'),
+            viewUsage: t('table.viewUsage'),
             dialog: {
               title: t('editRate.title'),
               description: t('editRate.description'),

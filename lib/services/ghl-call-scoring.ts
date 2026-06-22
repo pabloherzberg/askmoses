@@ -3,6 +3,7 @@ import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric";
 import { dbGetScriptById, type DbScript } from "@/lib/db/scripts";
 import { syncTrainerStats } from "@/lib/db/trainers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 import {
   DEFAULT_SECTIONS,
   buildDefaultSystemPrompt,
@@ -14,6 +15,8 @@ import {
   type IntentScoringInput,
 } from "@/lib/services/intent-scoring";
 import { getOrgIntentWeightsForScoring } from "@/lib/services/intent";
+import { computeIntentIndex } from "@/lib/utils/intentScore";
+import { resolveIntent } from "@/lib/utils/intent";
 import type { IntentBreakdown } from "@/lib/types";
 
 /**
@@ -38,7 +41,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   if (!call.transcript) {
     throw new Error(`runGhlCallScoring: call ${callId} has no transcript`);
   }
-  if (!call.orgId) {
+  if (!call.org_id) {
     throw new Error(`runGhlCallScoring: call ${callId} has no org_id`);
   }
 
@@ -70,7 +73,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     const { data: current } = await supabase
       .from("org_scripts_current")
       .select("script_id, effective_status")
-      .eq("org_id", call.orgId)
+      .eq("org_id", call.org_id)
       .is("ended_at", null)
       .in("effective_status", ["active", "deprecated"])
       .order("started_at", { ascending: false })
@@ -85,7 +88,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   } catch (err) {
     console.warn("[ghl-scoring] active script lookup failed, falling back", {
       callId,
-      orgId: call.orgId,
+      orgId: call.org_id,
       err: err instanceof Error ? err.message : String(err),
     });
   }
@@ -93,11 +96,11 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   // 2. Rubric default (sempre tenta — vira framework quando script existe,
   //    ou source primária quando não tem script).
   try {
-    rubricData = await dbGetDefaultRubricWithCriteria(call.orgId);
+    rubricData = await dbGetDefaultRubricWithCriteria(call.org_id);
   } catch (err) {
     console.warn("[ghl-scoring] rubric fetch failed", {
       callId,
-      orgId: call.orgId,
+      orgId: call.org_id,
       err: err instanceof Error ? err.message : String(err),
     });
   }
@@ -161,6 +164,9 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   let result: Awaited<ReturnType<typeof scoreTranscript>> | null = null;
   let intentBreakdown: IntentBreakdown | null = null;
 
+  // Pesos da org, persistidos com a call e usados pra computar o Intent Index.
+  const orgIntentWeights = await getOrgIntentWeightsForScoring(call.org_id);
+
   try {
     result = await scoreTranscript({
       transcript: call.transcript,
@@ -177,14 +183,13 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     if (result.intent) {
       // Use intent scores from main scoring (Phase 3)
       intentBreakdown = result.intent as IntentBreakdown;
-    } else if (call.orgId) {
+    } else {
       // Fallback: call dedicated intent scoring (older phase or API update)
-      const weights = getOrgIntentWeightsForScoring(call.orgId);
       const intentResult = await scoreIntentFromTranscript({
         transcript: call.transcript,
         trainerName: call.trainer_name ?? undefined,
         clientName: call.client_name ?? undefined,
-        weights,
+        weights: orgIntentWeights,
       });
       intentBreakdown = intentResult.breakdown as IntentBreakdown;
     }
@@ -201,6 +206,18 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   if (!result) {
     throw new Error(`runGhlCallScoring: scoreTranscript returned empty for call ${callId}`)
   }
+
+  // Intent Index (0–5) ponderado, igual ao /api/analyze: closed → 5; sem
+  // breakdown → fallback por resultado.
+  const intent =
+    result.detectedOutcome === "closed"
+      ? 5
+      : intentBreakdown
+        ? Math.max(
+            0,
+            Math.min(5, computeIntentIndex(intentBreakdown, orgIntentWeights)),
+          )
+        : resolveIntent(null, result.detectedOutcome);
 
   await dbUpdateGhlCallPipeline(callId, {
     rubricId,
@@ -219,16 +236,31 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     outputTokens: result.outputTokens,
     costUsd: result.costUsd,
     promptVersion: result.promptVersion,
-    intentBreakdown,
+    intent,
+    intentBreakdown: intentBreakdown as unknown as Record<string, number> | null,
+    intentWeights: orgIntentWeights,
   });
 
   if (call.trainer_id) {
     await syncTrainerStats(call.trainer_id);
   }
 
+  // Telemetria de custo p/ COGS (best-effort). Mesmo surface 'analyze' do
+  // /api/analyze — este é o caminho de scoring da pipeline GHL/chunked. 1
+  // evento cobre o retry (tokens já somados em scoreTranscript).
+  void recordLlmUsage({
+    orgId: call.orgId ?? null,
+    surface: "analyze",
+    model: result.modelUsed,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+    costUsdOverride: result.costUsd,
+    callId,
+  })
+
   console.info("[ghl-scoring] scored call", {
     callId,
-    orgId: call.orgId,
+    orgId: call.org_id,
     scriptId: script?.id ?? null,
     rubricId,
     source: script ? "script" : rubricData ? "rubric" : "default",

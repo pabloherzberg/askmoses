@@ -27,9 +27,10 @@
       "callsBilled": "Appels facturés",
       "amount": "Montant",
       "llmCosts": "Coûts LLM",
-      "actions": "",
+      "actions": "Usage",
       "totalPaid": "Total — payants",
-      "editRate": "Modifier le tarif"
+      "editRate": "Modifier le tarif",
+      "viewUsage": "Voir l'usage"
     },
     "editRate": {
       "title": "Modifier le tarif de facturation",
@@ -54,7 +55,7 @@
       "billableMinutesMonth": "Minutes facturables —",
       "closedMonth": "mois calendaire clôturé",
       "cogs": "Coût interne (COGS)",
-      "cogsTag": "Admin uniquement · ~70% marge",
+      "cogsTag": "Admin uniquement · coût LLM réel",
       "footerNote": "Les montants sont indicatifs — la facturation se fait manuellement, hors plateforme"
     },
     "owner": {
