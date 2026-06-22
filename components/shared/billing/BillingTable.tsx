@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Pencil } from "lucide-react";
+import { Info } from "lucide-react";
 import type { BillingOrgRow, BillingStatus } from "@/lib/types";
 import { formatUsd, formatRate, formatInt } from "./format";
 import { EditRateDialog, type EditRateLabels } from "./EditRateDialog";
@@ -30,6 +30,7 @@ interface Props {
     actions: string;
     totalPaid: string;
     editRate: string; // tooltip/aria do botão
+    viewUsage: string; // texto do link da coluna de uso
     dialog: EditRateLabels;
   };
 }
@@ -123,10 +124,10 @@ export function BillingTable({ rows, footerNote, onRateUpdated, labels }: Props)
                       onClick={() => setEditing(r)}
                       aria-label={`${labels.editRate} · ${r.name}`}
                       title={`${labels.editRate} · ${r.name}`}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-md transition-opacity hover:opacity-80"
-                      style={{ color: "var(--am-muted)" }}
+                      className="text-[13px] font-medium transition-opacity hover:opacity-80"
+                      style={{ color: "var(--sidebar-primary)" }}
                     >
-                      <Pencil size={14} />
+                      {labels.viewUsage}
                     </button>
                   </td>
                 </tr>

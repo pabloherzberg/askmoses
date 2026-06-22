@@ -1,6 +1,7 @@
 import { generateText } from 'ai'
 import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
 import { computeCostUsd, LLM_TEMPERATURE_PRIMARY } from '@/lib/constants/llm'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { dbGetCalls } from '@/lib/db/calls'
 import {
   dbGetLatestMarketingRun,
@@ -317,6 +318,17 @@ export async function executeMarketingRun(params: {
     costUsd,
     createdBy: params.createdBy ?? null,
     trigger: params.trigger,
+  })
+
+  // Telemetria de custo p/ COGS (best-effort).
+  void recordLlmUsage({
+    orgId: params.orgId,
+    surface: 'marketing',
+    model: modelUsed,
+    inputTokens,
+    outputTokens,
+    costUsdOverride: costUsd,
+    ref: run.id,
   })
 
   return toMarketingIntelligence(run, buildSourceCallsFromSample(sample))

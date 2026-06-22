@@ -2,6 +2,7 @@ import { generateText } from 'ai'
 import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbGetActiveOrgScript } from '@/lib/db/scripts'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { ScriptSection } from '@/lib/db/scripts'
 import type { NewScriptGap } from '@/lib/db/script-gaps'
 
@@ -138,6 +139,15 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
       temperature: 0.3,
     })
     text = aiResult.text
+    // Telemetria de custo p/ COGS (best-effort).
+    void recordLlmUsage({
+      orgId,
+      surface: 'script_gap',
+      model: MODEL,
+      inputTokens: aiResult.usage?.inputTokens ?? 0,
+      outputTokens: aiResult.usage?.outputTokens ?? 0,
+      ref: script.id,
+    })
   } catch (err) {
     return { ok: false, error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}` }
   }

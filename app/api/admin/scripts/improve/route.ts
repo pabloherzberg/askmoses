@@ -3,6 +3,7 @@ import { generateText } from 'ai'
 import { getOpenAIModel } from '@/lib/openai'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { Role } from '@/lib/types'
 import type { ScriptSection, ScriptCriterion } from '@/lib/db/scripts'
 
@@ -137,10 +138,21 @@ export async function POST(request: NextRequest) {
     rubric_id: string
   }
 
-  const { text } = await generateText({
+  const { text, usage } = await generateText({
     model: getOpenAIModel('gpt-4o-mini'),
     system: SYSTEM_PROMPT,
     prompt: buildImprovePrompt(currentScript, recentCalls),
+  })
+
+  // Telemetria de custo p/ COGS (best-effort). orgId pode vir null (improve é
+  // chamada global pelo admin sobre scripts de qualquer org).
+  void recordLlmUsage({
+    orgId: body.orgId ?? null,
+    surface: 'script_improve',
+    model: 'gpt-4o-mini',
+    inputTokens: usage?.inputTokens ?? 0,
+    outputTokens: usage?.outputTokens ?? 0,
+    ref: scriptId,
   })
 
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()

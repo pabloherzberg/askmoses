@@ -1,9 +1,9 @@
 import { createHash } from 'crypto'
 import { generateObject } from 'ai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { z } from 'zod'
 import type { Locale } from '@/i18n/routing'
-import { runWithGeminiChain } from '@/lib/gemini-chain'
+import { getOpenAIModel } from '@/lib/openai'
+import { recordLlmUsage } from '@/lib/services/llm-usage'
 
 const LOCALE_NAMES: Record<Locale, string> = {
   en: 'English',
@@ -32,17 +32,15 @@ const TranslatedSchema = z.object({
 //
 // Two TTLs:
 //   - Success: 24h. The source text rarely changes — long TTL maximises hits
-//     and keeps us well under the Gemini RPM/RPD limits across page reloads.
-//   - Failure (all models on cooldown): 60s. Short cache of the source so
-//     concurrent/subsequent requests don't re-hit Gemini while the per-minute
-//     rate-limit bucket recovers.
+//     and keeps the LLM cost/rate-limit footprint low across page reloads.
+//   - Failure (LLM call failed): 60s. Short cache of the source so
+//     concurrent/subsequent requests don't re-hit the LLM while it recovers.
 
 const CACHE_TTL_SUCCESS_MS = 24 * 60 * 60 * 1000
 const CACHE_TTL_FAILURE_MS = 60 * 1000
 const CACHE_MAX_SIZE = 2000
 
-// Cache lives on globalThis to survive Next.js dev HMR (model cooldowns are
-// shared in @/lib/gemini-chain — this state is just translate-specific cache).
+// Cache lives on globalThis to survive Next.js dev HMR.
 // `inflight` tracks Promises for cache keys currently being resolved, so two
 // concurrent requests with the same payload (very common in React Strict Mode
 // double-fire + parallel page loads) share one LLM call instead of racing.
@@ -92,10 +90,8 @@ function cacheSet(key: string, value: string[], ttlMs: number = CACHE_TTL_SUCCES
  * Translate an array of strings to the target locale.
  *
  * - Returns the input unchanged when target===source or the array is empty.
- * - Uses a process-level in-memory cache (TTL {@link CACHE_TTL_MS}) keyed on
- *   the full string list. A locale switch invalidates naturally (different key).
- * - On failure tries the next model in {@link MODEL_CHAIN}. A model that hits
- *   rate limit is placed on cooldown for the duration reported by the provider.
+ * - Uses a process-level in-memory cache (TTL {@link CACHE_TTL_SUCCESS_MS})
+ *   keyed on the full string list. A locale switch invalidates naturally.
  * - Ultimate fallback: returns the source strings unchanged so pages never break.
  */
 export async function translateStrings(
@@ -108,8 +104,8 @@ export async function translateStrings(
   // Dev escape hatch: set TRANSLATE_COACHING=false in .env.local to bypass
   // the LLM entirely while working on UI (no quota burn, no latency).
   if (process.env.TRANSLATE_COACHING === 'false') return strings
-  if (!process.env.GOOGLE_AI_API_KEY) {
-    console.warn('[translate] GOOGLE_AI_API_KEY missing → returning source strings')
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn('[translate] OPENAI_API_KEY missing → returning source strings')
     return strings
   }
 
@@ -144,36 +140,45 @@ export async function translateStrings(
   // The wrapped Promise always resolves to a string[] of payload.length —
   // translated on success, source on failure — caller merges back into `strings`.
   const work: Promise<string[]> = (async () => {
-    // `generateObject` forces a response shape — Gemini cannot return prose or
-    // malformed JSON. `maxOutputTokens: 8192` lifts the default limit enough
-    // for large batches of coaching text (~100+ strings).
-    const result = await runWithGeminiChain<string[]>(async (modelName) => {
-      const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-      const { object } = await generateObject({
-        model: google(modelName),
+    // `generateObject` forces a response shape — the model cannot return prose
+    // or malformed JSON. `maxOutputTokens: 8192` lifts the default limit enough
+    // for large batches of coaching text (~100+ strings). On any failure we
+    // return the source payload so pages never break.
+    try {
+      const { object, usage } = await generateObject({
+        model: getOpenAIModel('gpt-4o-mini'),
         system,
         prompt: JSON.stringify(payload),
         schema: TranslatedSchema,
         temperature: 0,
         maxOutputTokens: 8192,
       })
+      // Telemetria de custo p/ COGS (best-effort). orgId=null: tradução i18n não
+      // é atribuível a uma org → fica fora do COGS por-org, mas o custo é registrado.
+      void recordLlmUsage({
+        orgId: null,
+        surface: 'translation',
+        model: 'gpt-4o-mini',
+        inputTokens: usage?.inputTokens ?? 0,
+        outputTokens: usage?.outputTokens ?? 0,
+      })
       const translated = object.translations
-      // Empty / drastically-truncated output → throw so the chain tries the
-      // next model instead of "succeeding" with all-source strings.
       if (translated.length === 0) {
-        throw new Error(`${modelName} returned 0 translations for ${payload.length} inputs`)
+        throw new Error(`returned 0 translations for ${payload.length} inputs`)
       }
       if (translated.length < payload.length) {
         console.warn(
-          `[translate] ${modelName} returned ${translated.length}/${payload.length} items — padding tail with source`,
+          `[translate] returned ${translated.length}/${payload.length} items — padding tail with source`,
         )
       }
       return payload.map((original, i) => {
         const t = translated[i]
         return typeof t === 'string' && t.length > 0 ? t : original
       })
-    })
-    return result ?? payload
+    } catch (err) {
+      console.warn('[translate] LLM call failed, returning source:', err)
+      return payload
+    }
   })()
 
   inflight.set(key, work)

@@ -1,7 +1,9 @@
 import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
-import { getGeminiModel } from "@/lib/gemini";
+import { generateText } from "ai";
+import { getOpenAIModel } from "@/lib/openai";
 import { getOrgId } from "@/lib/auth";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 import { translateInsightCards } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
 
@@ -222,7 +224,7 @@ export async function generateInsights(scriptId?: string) {
     closeRate,
   };
 
-  // ── 2. Build transcript summaries for Gemini ─────────────────────────────
+  // ── 2. Build transcript summaries for the LLM ────────────────────────────
   const callSummaries = calls
     .filter((c) => c.transcript)
     .slice(0, 20)
@@ -232,7 +234,7 @@ export async function generateInsights(scriptId?: string) {
     )
     .join("\n\n---\n\n");
 
-  // ── 3. Call Gemini ────────────────────────────────────────────────────────
+  // ── 3. Call the LLM ───────────────────────────────────────────────────────
   const prompt = `
 You are an expert sales coach analysing a batch of dog training sales calls.
 You have ${calls.length} calls: ${closedCalls.length} closed, ${partialCalls.length} partial (follow-up pending), ${notClosedCalls.length} not closed, ${noOutcomeCalls.length} with no clear outcome.
@@ -264,9 +266,21 @@ Analyse the patterns across these calls and return ONLY valid JSON (no markdown)
 Each array should have 4–8 items. Be specific and actionable — reference actual patterns from the calls when transcripts are available.
 `.trim();
 
-  const model = getGeminiModel();
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const result = await generateText({
+    model: getOpenAIModel("gpt-4o"),
+    prompt,
+  });
+  const text = result.text.trim();
+
+  // Telemetria de custo p/ COGS (best-effort).
+  void recordLlmUsage({
+    orgId: orgId ?? null,
+    surface: "insights",
+    model: "gpt-4o",
+    inputTokens: result.usage?.inputTokens ?? 0,
+    outputTokens: result.usage?.outputTokens ?? 0,
+    ref: scriptId ?? null,
+  });
 
   const cleaned = text
     .replace(/^```(?:json)?\s*/i, "")

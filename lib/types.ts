@@ -385,6 +385,8 @@ export interface BillingUsage {
   totalOrgs?: number;
   valueByOrg?: BillingValueByOrg[];
   callsPerDay?: number[];
+  // Custo interno (COGS) real do período — soma de llm_usage_events. Admin only.
+  cogs?: number;
 }
 
 export interface BillingValueByOrg {

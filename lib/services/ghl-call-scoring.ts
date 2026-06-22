@@ -3,6 +3,7 @@ import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric";
 import { dbGetScriptById, type DbScript } from "@/lib/db/scripts";
 import { syncTrainerStats } from "@/lib/db/trainers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordLlmUsage } from "@/lib/services/llm-usage";
 import {
   DEFAULT_SECTIONS,
   buildDefaultSystemPrompt,
@@ -243,6 +244,19 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   if (call.trainer_id) {
     await syncTrainerStats(call.trainer_id);
   }
+
+  // Telemetria de custo p/ COGS (best-effort). Mesmo surface 'analyze' do
+  // /api/analyze — este é o caminho de scoring da pipeline GHL/chunked. 1
+  // evento cobre o retry (tokens já somados em scoreTranscript).
+  void recordLlmUsage({
+    orgId: call.orgId ?? null,
+    surface: "analyze",
+    model: result.modelUsed,
+    inputTokens: result.inputTokens,
+    outputTokens: result.outputTokens,
+    costUsdOverride: result.costUsd,
+    callId,
+  })
 
   console.info("[ghl-scoring] scored call", {
     callId,
