@@ -25,7 +25,7 @@ export async function updateIntentWeights(weights: Record<string, number>): Prom
     body: JSON.stringify({ weights }),
   })
   const data = await response.json()
-  return data.signals || intentSignals
+  return data.signals || []
 }
 
 // Fallback derivation when IA scores unavailable. Returns neutral average (5 per signal).
@@ -128,7 +128,9 @@ export async function recordIntentWeightChange(
 // Used during intent calculation to respect org-specific weight preferences.
 // Loads from database history (most recent entry for the org).
 // Falls back to defaults if not found.
-export async function getOrgIntentWeightsForScoring(orgId: string): Promise<typeof DEFAULT_INTENT_WEIGHTS> {
+export async function getOrgIntentWeightsForScoring(
+  orgId: string,
+): Promise<{ financial: number; urgency: number; authority: number; engagement: number }> {
   try {
     const admin = await import('@/lib/supabase/admin').then((m) => m.createAdminClient())
     const { data, error } = await admin
