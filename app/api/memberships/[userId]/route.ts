@@ -10,7 +10,7 @@ import {
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbGetOrgGhlConfigByOrgId } from '@/lib/db/organizations'
-import { dbGetLinkedGhlUserIds, dbSetMemberGhlUserId } from '@/lib/db/trainers'
+import { dbGetLinkedGhlUserIds, dbSetTrainerGhlUserId, dbUpsertOwnerCallProfile } from '@/lib/db/trainers'
 import { fetchGhlUsers, GhlAuthError } from '@/lib/services/ghl-api'
 import type { Role } from '@/lib/types'
 
@@ -146,9 +146,21 @@ export async function PATCH(
   }
 
   // ─── Grava ───────────────────────────────────────────────────────────────
-  let updated: boolean
+  // Trainer: atualiza a linha existente. Owner: ativar = upsert da linha de
+  // "perfil de calls" (cria com owner_id = ele mesmo); limpar = só zera o ghl
+  // da linha se ela existir (no-op se nunca foi ativado). A linha NÃO é
+  // deletada — preserva histórico de calls (calls.trainer_id ON DELETE SET NULL).
   try {
-    updated = await dbSetMemberGhlUserId(orgId, userId, memberRole, ghlUserId)
+    if (memberRole === 'owner') {
+      if (ghlUserId !== null) {
+        await dbUpsertOwnerCallProfile(orgId, userId, ghlUserId)
+      } else {
+        await dbSetTrainerGhlUserId(orgId, userId, null)
+      }
+    } else {
+      const updated = await dbSetTrainerGhlUserId(orgId, userId, ghlUserId)
+      if (!updated) return notFound('Membro')
+    }
   } catch (err) {
     // Violação de unicidade (race) vira 409 amigável.
     const msg = (err as { message?: string }).message ?? ''
@@ -157,7 +169,6 @@ export async function PATCH(
     }
     return serverError('Não foi possível atualizar o vínculo GHL', err)
   }
-  if (!updated) return notFound('Membro')
 
   return ok({ userId, orgId, role: memberRole, ghlUserId })
 }

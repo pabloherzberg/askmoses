@@ -257,6 +257,33 @@
       "orgRequired": "Informe o ID da organização",
       "ownerRequired": "Informe o ID do owner para o vendedor"
     },
+    "ghl": {
+      "label": "Vendedor (via GHL)",
+      "help": "O nome e o e-mail são puxados do GHL. Selecione o usuário correspondente.",
+      "placeholder": "Selecione um usuário do GHL",
+      "loading": "Carregando usuários do GHL...",
+      "searchPlaceholder": "Buscar por nome ou e-mail",
+      "empty": "Nenhum usuário do GHL disponível",
+      "previewLabel": "Selecionado",
+      "notConfigured": "Integração GHL não configurada para esta organização. Configure o GHL antes de adicionar vendedores.",
+      "selectRequired": "Selecione um usuário do GHL para continuar",
+      "selectOrgFirst": "Selecione a organização primeiro para listar os usuários do GHL",
+      "loadError": "Não foi possível carregar os usuários do GHL",
+      "columnLabel": "GHL",
+      "actionsLabel": "Ações",
+      "unlinked": "Não vinculado",
+      "editButton": "Editar vínculo GHL",
+      "editTitle": "Editar vínculo GHL",
+      "editDescription": "Vincule este membro a um usuário do GHL para atribuir as calls automaticamente.",
+      "currentLink": "Vínculo atual",
+      "clearLink": "Remover vínculo",
+      "editSave": "Salvar vínculo",
+      "editSaved": "Vínculo GHL atualizado.",
+      "editError": "Não foi possível atualizar o vínculo GHL",
+      "ownerEditTitle": "Perfil de calls do owner",
+      "ownerEditDescription": "Ative o perfil de calls deste owner vinculando-o a um usuário do GHL. As calls dele passam a ser pontuadas e ele aparece no ranking do time.",
+      "ownerClearLink": "Desativar perfil de calls"
+    },
     "resendButton": "Reenviar convite"
   },
   "Shared": {
