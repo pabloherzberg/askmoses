@@ -180,6 +180,107 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
   return (data ?? []).map((row) => toTrainer(row as DbTrainerRow))
 }
 
+// ─── Vínculo membro ↔ usuário GHL ────────────────────────────────────────
+// O ghl_user_id mora em `trainers` (vendedores) e em `owners`. Os helpers
+// abaixo tratam os dois papéis: um mesmo usuário GHL não pode ser reusado
+// por dois membros da MESMA org, independente do papel.
+
+/** Tabela que guarda o ghl_user_id conforme o papel do membro. */
+function memberTableForRole(role: 'trainer' | 'owner'): 'trainers' | 'owners' {
+  return role === 'owner' ? 'owners' : 'trainers'
+}
+
+/**
+ * Retorna os ghl_user_id já vinculados a membros (trainers + owners) de uma
+ * org. Usado para filtrar a lista de candidatos do GHL (não oferecer um
+ * usuário já em uso) e para checar unicidade antes de gravar um vínculo.
+ *
+ * Inclui membros pending e accepted — um convite pendente já "reserva" o
+ * usuário GHL, então não pode ser oferecido de novo enquanto não for
+ * revogado. `excludeUserId` deixa de fora o próprio membro (edição, para
+ * que ele mantenha o vínculo atual).
+ */
+export async function dbGetLinkedGhlUserIds(
+  orgId: string,
+  excludeUserId?: string,
+): Promise<string[]> {
+  const supabase = createAdminClient()
+
+  const fetchFrom = async (table: 'trainers' | 'owners') => {
+    let query = supabase
+      .from(table)
+      .select('ghl_user_id, user_id')
+      .eq('org_id', orgId)
+      .not('ghl_user_id', 'is', null)
+    if (excludeUserId) query = query.neq('user_id', excludeUserId)
+    const { data, error } = await query
+    if (error) throw new Error(`dbGetLinkedGhlUserIds(${table}): ${error.message}`)
+    return (data ?? [])
+      .map((r) => r.ghl_user_id as string | null)
+      .filter((v): v is string => !!v)
+  }
+
+  const [trainers, owners] = await Promise.all([
+    fetchFrom('trainers'),
+    fetchFrom('owners'),
+  ])
+  return Array.from(new Set([...trainers, ...owners]))
+}
+
+/**
+ * Define (ou limpa, com null) o ghl_user_id de um membro identificado por
+ * (org_id, user_id) na tabela do papel informado. Retorna false se nenhuma
+ * linha foi afetada (membro inexistente nessa org).
+ */
+export async function dbSetMemberGhlUserId(
+  orgId: string,
+  userId: string,
+  role: 'trainer' | 'owner',
+  ghlUserId: string | null,
+): Promise<boolean> {
+  const supabase = createAdminClient()
+  const table = memberTableForRole(role)
+
+  const patch: Record<string, unknown> = { ghl_user_id: ghlUserId }
+  // Só trainers têm updated_at no path quente do sync; owners também têm a
+  // coluna, mas mantemos o patch mínimo e seguro para ambos.
+  patch.updated_at = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from(table)
+    .update(patch)
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .select('id')
+
+  if (error) throw new Error(`dbSetMemberGhlUserId(${table}): ${error.message}`)
+  return (data ?? []).length > 0
+}
+
+/**
+ * Mapa user_id → ghl_user_id para os membros (trainers + owners) de uma org.
+ * Usado pelo GET /api/invites para anexar o vínculo GHL às linhas da tabela
+ * de membros.
+ */
+export async function dbGetMemberGhlUserIdsByOrg(
+  orgId: string,
+): Promise<Map<string, string | null>> {
+  const supabase = createAdminClient()
+
+  const [trainersRes, ownersRes] = await Promise.all([
+    supabase.from('trainers').select('user_id, ghl_user_id').eq('org_id', orgId),
+    supabase.from('owners').select('user_id, ghl_user_id').eq('org_id', orgId),
+  ])
+  if (trainersRes.error) throw new Error(`dbGetMemberGhlUserIdsByOrg(trainers): ${trainersRes.error.message}`)
+  if (ownersRes.error) throw new Error(`dbGetMemberGhlUserIdsByOrg(owners): ${ownersRes.error.message}`)
+
+  const map = new Map<string, string | null>()
+  for (const r of [...(trainersRes.data ?? []), ...(ownersRes.data ?? [])]) {
+    map.set(r.user_id as string, (r.ghl_user_id as string | null) ?? null)
+  }
+  return map
+}
+
 export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
   const supabase = createAdminClient()
 

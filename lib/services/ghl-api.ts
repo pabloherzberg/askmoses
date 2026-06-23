@@ -231,6 +231,68 @@ function extractRecordingUrl(
   return null
 }
 
+/** Usuário de uma location do GHL, normalizado para o nosso uso. */
+export interface GhlUser {
+  /** ID do usuário no GHL — o mesmo `userId` que chega no webhook de call. */
+  id: string
+  name: string
+  email: string
+}
+
+interface RawGhlUser {
+  id?: string
+  name?: string
+  firstName?: string
+  lastName?: string
+  email?: string
+}
+
+/**
+ * Lista os usuários de uma location do GHL. Usado para vincular um trainer
+ * (vendedor) ao seu usuário no GHL na criação/edição de membros — escolher
+ * da lista evita erros de digitação do ghl_user_id.
+ *
+ * Requer um token (PIT) com escopo `users.readonly`. Em 401/403 lança
+ * GhlAuthError (token rotacionado/sem escopo); o caller traduz para uma
+ * resposta de erro amigável.
+ */
+export async function fetchGhlUsers(
+  locationId: string,
+  accessToken: string,
+): Promise<GhlUser[]> {
+  const base = getApiBase()
+  const headers = buildAuthHeaders(accessToken)
+
+  const res = await fetch(
+    `${base}/users/?locationId=${encodeURIComponent(locationId)}`,
+    { headers },
+  )
+  if (!res.ok) {
+    const body = await res.text()
+    if (res.status === 401 || res.status === 403) {
+      throw new GhlAuthError(
+        res.status,
+        `GHL users list auth failed (${res.status}): ${body}`,
+      )
+    }
+    throw new Error(`GHL users list failed ${res.status}: ${body}`)
+  }
+
+  const data = (await res.json()) as { users?: RawGhlUser[] }
+  const users = data.users ?? []
+
+  return users
+    .map((u): GhlUser | null => {
+      if (!u.id || !u.email) return null
+      const name =
+        u.name?.trim() ||
+        [u.firstName, u.lastName].filter(Boolean).join(' ').trim() ||
+        u.email
+      return { id: u.id, name, email: u.email }
+    })
+    .filter((u): u is GhlUser => u !== null)
+}
+
 export interface DownloadedRecording {
   buffer: Buffer
   mimeType: string
