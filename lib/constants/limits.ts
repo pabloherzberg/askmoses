@@ -15,17 +15,22 @@ export const MAX_MRR_USD = 10_000_000
 export const MAX_BULK_ORG_IDS = 100
 
 /** Piso de duração (s) para uma call valer análise. Calls confirmadamente
- *  abaixo disso são descartadas no ingest. Mesmo valor do piso de billing, mas
- *  o tratamento de duração nula diverge — ver isConfirmedShortCall. */
+ *  abaixo disso são descartadas no ingest. O billing tem seu próprio piso
+ *  independente — ver MIN_BILLABLE_SECONDS em billing.ts. */
 export const MIN_ANALYZABLE_CALL_SECONDS = 30
 
-/** True só com duração CONFIRMADA abaixo do piso — único caso em que o ingest
- *  pula a análise. Nula → false de propósito (perder call real > custo de LLM),
- *  divergindo do billing, que também não fatura duração nula. */
+/** True só com duração CONFIRMADA em (0, 30) s — único caso em que o ingest pula
+ *  a análise. Nula OU 0 → false de propósito: 0 costuma ser placeholder do GHL
+ *  ("ainda não computada"), e perder uma call real pesa mais que o custo de
+ *  analisá-la. Nesses casos quem decide é o pipeline, a partir do áudio real. */
 export function isConfirmedShortCall(
   durationSeconds: number | null | undefined,
 ): boolean {
-  return durationSeconds != null && durationSeconds < MIN_ANALYZABLE_CALL_SECONDS
+  return (
+    durationSeconds != null &&
+    durationSeconds > 0 &&
+    durationSeconds < MIN_ANALYZABLE_CALL_SECONDS
+  )
 }
 
 /** Rate limits — todos em (max, windowSeconds). Tweak por endpoint. */

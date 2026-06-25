@@ -144,9 +144,9 @@ export async function POST(req: NextRequest) {
   const durationSeconds = parseDuration(callPayload.duration)
 
   // 5b. Pula calls confirmadamente curtas (< 30s) antes de persistir/processar —
-  //     sem linha no banco, sem custo de LLM. Duração nula NÃO corta: perder uma
-  //     call real pesa mais que o custo; no reenvio com duração o hash muda e ela
-  //     é analisada.
+  //     sem linha no banco, sem custo de LLM. Duração nula ou 0 NÃO corta (0 pode
+  //     ser placeholder do GHL): perder uma call real pesa mais que o custo; quem
+  //     decide nesses casos é o pipeline, a partir do áudio real.
   if (isConfirmedShortCall(durationSeconds)) {
     console.info("[ghl-webhook] call too short — skipping analysis", {
       orgId: orgConfig.orgId,

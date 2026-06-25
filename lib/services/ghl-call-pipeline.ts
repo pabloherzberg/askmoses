@@ -187,23 +187,23 @@ export async function processGhlCall(
   // ── 2b. Backfill de duração: só quando o GHL não a informou ────────────────
   // O webhook já barrou as < 30s; aqui a duração do GHL é >= 30s ou nula. Não
   // mexemos numa duração que o GHL mandou. Nula distorceria o billing, então
-  // medimos o arquivo real e gravamos. Best-effort — análise segue se falhar.
+  // medimos o arquivo real e gravamos.
   if (parseDuration(payload.duration) == null) {
-    try {
-      const measuredSeconds = Math.round((await probeAudioDurationMs(audio.buffer)) / 1000)
-      // probe retorna 0 com header ilegível — não gravamos 0 (duração falsa);
-      // o chunking falha adiante nesse caso.
-      if (measuredSeconds > 0) {
-        await dbUpdateGhlCallPipeline(callId, { durationSeconds: measuredSeconds })
-      } else {
-        console.warn("[ghl-pipeline] header de áudio ilegível; duração segue nula", { callId })
-      }
-    } catch (err) {
-      // Só falha de ambiente (ffmpeg/IO), não por call.
-      console.warn("[ghl-pipeline] backfill de duração falhou; análise segue sem ela", {
-        callId,
-        err: err instanceof Error ? err.message : String(err),
+    // Medição é best-effort: se o ffmpeg falhar, segue a análise sem duração.
+    const measuredSeconds = await probeAudioDurationMs(audio.buffer)
+      .then((ms) => Math.round(ms / 1000))
+      .catch((err) => {
+        console.warn("[ghl-pipeline] não foi possível medir a duração; análise segue sem ela", {
+          callId,
+          err: err instanceof Error ? err.message : String(err),
+        })
+        return 0
       })
+    // 0 = header ilegível OU áudio < 1s: não gravamos (seria duração falsa). A
+    // persistência fica FORA do best-effort de propósito — se a gravação falhar,
+    // o erro sobe (vira webhook_failed, retentável) em vez de sub-faturar a call.
+    if (measuredSeconds > 0) {
+      await dbUpdateGhlCallPipeline(callId, { durationSeconds: measuredSeconds })
     }
   }
 
