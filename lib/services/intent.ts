@@ -9,11 +9,12 @@ export async function getIntentSignals(): Promise<IntentSignal[]> {
     return data?.data?.signals || []
   } catch {
     // Fallback: return default signal structure (should not happen in normal operation)
+    // Pesos base 100 (igual rubric), default 25/25/25/25.
     return [
-      { id: 'financial', weight: 4, color: 'amber' },
-      { id: 'urgency', weight: 3, color: 'red' },
-      { id: 'authority', weight: 2, color: 'blue' },
-      { id: 'engagement', weight: 1, color: 'accent2' },
+      { id: 'financial', weight: DEFAULT_INTENT_WEIGHTS.financial, color: 'amber' },
+      { id: 'urgency', weight: DEFAULT_INTENT_WEIGHTS.urgency, color: 'red' },
+      { id: 'authority', weight: DEFAULT_INTENT_WEIGHTS.authority, color: 'blue' },
+      { id: 'engagement', weight: DEFAULT_INTENT_WEIGHTS.engagement, color: 'accent2' },
     ]
   }
 }

@@ -112,6 +112,13 @@ export interface Call {
   intentWeights?: Record<string, number>;
   // Status do pipeline GHL (transcription_failed, no_recording, etc.)
   processingStatus?: string | null;
+  // GHL contactId (migration 091) — junta a call ao lead/appointment.
+  contactId?: string | null;
+  // Stage 2 — Actual Close (migration 092). result/call_outcome é o Stage 1
+  // (Initial Result); estes campos são o paying client, momento separado.
+  stage2Outcome?: 'paying' | 'not_paying' | 'pending' | null;
+  becamePayingAt?: string | null;
+  intentAtClose?: number | null;
 }
 
 export interface TrainerScore {

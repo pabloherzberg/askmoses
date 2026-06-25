@@ -264,6 +264,7 @@
       "dashboard": "Dashboard",
       "teamCommandCenter": "Centro de Mando",
       "marketingIntelligence": "Marketing Intelligence",
+      "intentAnalysis": "Intent Analysis",
       "calls": "Llamadas",
       "myDashboard": "Mi panel",
       "myCalls": "Mis llamadas",
@@ -326,7 +327,7 @@
       "guide": "Cómo usar"
     },
     "outcomes": {
-      "all": "Todos los resultados",
+      "all": "Todos los Resultados Iniciales",
       "unknown": "Sin resultado",
       "short": {
         "closed": "Cerrada",
@@ -577,7 +578,7 @@
     "thProspect": "Prospecto",
     "thDate": "Fecha",
     "thScore": "Puntuación",
-    "thResult": "Resultado",
+    "thResult": "Resultado Inicial",
     "forbidden": "No tienes acceso a esta llamada.",
     "settings": {
       "label": "Configuración",
@@ -2820,9 +2821,9 @@
     "callTrainer": "Vendedor",
     "lastCalls": "Últimas llamadas con mayor intent",
     "configTitle": "Intent Index — Señales y Pesos",
-    "configSubtitle": "Configure el peso de cada señal en el cálculo de intent. Los pesos deben sumar exactamente 10.",
+    "configSubtitle": "Configure el peso de cada señal en el cálculo de intent. Los pesos deben sumar exactamente 100%.",
     "weightLabel": "Peso",
-    "weightHint": "Valor entero de 1 a 10",
+    "weightHint": "Valor entero de 0 a 100",
     "filterDays": "Días para analizar",
     "filterApply": "Aplicar",
     "buyingIntent": "Intención de compra",

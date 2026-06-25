@@ -52,6 +52,14 @@ export interface DbCall {
   processing_status?: ProcessingStatus | null
   recording_url?: string | null
   ghl_payload?: Record<string, unknown> | null
+  // GHL contactId promovido a coluna — added in migration 091.
+  contact_id?: string | null
+  // Stage 2 (Actual Close / paying client) — added in migration 092.
+  // stage2_outcome: paying | not_paying | pending | null. became_paying_at:
+  // quando virou pagante. intent_at_close: snapshot do intent previsto (loop).
+  stage2_outcome?: string | null
+  became_paying_at?: string | null
+  intent_at_close?: number | null
 }
 
 export interface CreateCallInput {
@@ -180,6 +188,54 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
   } as unknown as DbCall
 
   return call
+}
+
+export interface MarkStage2Input {
+  stage2Outcome: 'paying' | 'not_paying' | 'pending'
+  // Snapshot do Intent Index previsto no momento — comporta o loop de
+  // aprendizado (intent previsto × fechou de fato). Só gravado quando vira paying.
+  intentAtClose?: number | null
+}
+
+// Marca o Stage 2 (Actual Close / paying client) de uma call. Separado do
+// Stage 1 (call_outcome / Initial Result). became_paying_at é setado quando
+// stage2Outcome === 'paying'. Escopado por org para evitar cross-tenant write.
+export async function dbMarkStage2(
+  id: string,
+  orgId: string,
+  input: MarkStage2Input,
+): Promise<DbCall | null> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = {
+    stage2_outcome: input.stage2Outcome,
+    became_paying_at: input.stage2Outcome === 'paying' ? new Date().toISOString() : null,
+  }
+  // intent_at_close só faz sentido (e é gravado) quando vira pagante.
+  if (input.stage2Outcome === 'paying' && input.intentAtClose != null) {
+    patch.intent_at_close = input.intentAtClose
+  }
+
+  const { data, error } = await supabase
+    .from('calls')
+    .update(patch)
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbMarkStage2: ${error.message}`)
+  }
+  if (!data) return null
+
+  const { intent_breakdown, intent_weights, ...rest } = data as any
+  return {
+    ...rest,
+    intentBreakdown: intent_breakdown,
+    intentWeights: intent_weights,
+  } as unknown as DbCall
 }
 
 export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {

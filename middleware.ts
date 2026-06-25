@@ -170,7 +170,7 @@ export async function middleware(request: NextRequest) {
   // intelligence, etc.) redirecionam pra /admin pra não dar impressão de que
   // ele pode operar a org. /admin continua acessível pra Admin sair do modo.
   if (impersonatingOrgId) {
-    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls', '/marketing-intelligence']
+    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls', '/marketing-intelligence', '/intent-analysis']
     const isAllowed =
       rawPath === '/' ||
       rawPath.startsWith('/admin') ||
@@ -200,7 +200,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Trainer: allow /me, /calls (filtered server-side), /dashboard/upload
-  const trainerBlocked = ['/team-command-center', '/marketing-intelligence']
+  const trainerBlocked = ['/team-command-center', '/marketing-intelligence', '/intent-analysis']
   const trainerDashboardBlocked =
     rawPath.startsWith('/dashboard') && !rawPath.startsWith('/dashboard/upload')
   if (

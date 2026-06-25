@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { IntentSignal, IntentBreakdown } from '@/lib/types'
-import { computeIntentIndex } from '@/lib/utils/intentScore'
+import { computeIntentIndex, resolveIntentWeights } from '@/lib/utils/intentScore'
 
 interface IntentBreakdownProps {
   signals: IntentSignal[]
@@ -43,13 +43,8 @@ export function IntentBreakdownComponent({
   const signalOrder = ['financial', 'urgency', 'authority', 'engagement']
   const totalWeight = signals.reduce((sum, s) => sum + s.weight, 0)
 
-  // Build weights object for calculation
-  const weights = {
-    financial: signals.find((s) => s.id === 'financial')?.weight || 4,
-    urgency: signals.find((s) => s.id === 'urgency')?.weight || 3,
-    authority: signals.find((s) => s.id === 'authority')?.weight || 2,
-    engagement: signals.find((s) => s.id === 'engagement')?.weight || 1,
-  }
+  // Build weights object for calculation (base 100, fallback default 25/25/25/25)
+  const weights = resolveIntentWeights(signals)
 
   const intentIndex = computeIntentIndex(scores, weights)
   const displayScore = intentIndex.toFixed(1)
