@@ -1,6 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getSession, ok, unauthorized, forbidden, getOrgId } from '@/lib/auth'
 import { dbGetOrgGhlConfigByOrgId } from '@/lib/db/organizations'
 import { dbGetLinkedGhlUserIds } from '@/lib/db/trainers'
 import { fetchGhlUsers, GhlAuthError } from '@/lib/services/ghl-api'
@@ -48,20 +47,16 @@ export async function GET(request: NextRequest) {
   const orgIdParam = searchParams.get('orgId')?.trim() || null
   const includeGhlUserId = searchParams.get('includeGhlUserId')?.trim() || null
 
-  const admin = createAdminClient()
-
   // ─── Resolve a org alvo conforme o papel ────────────────────────────────
+  // Owner: contexto de org ativo memoizado (getOrgId — impersonation-aware,
+  // 1 RPC compartilhada). Admin: precisa de ?orgId.
   let orgId: string
   if (callerRole === 'owner') {
-    const { data: callerUser } = await admin
-      .from('users')
-      .select('active_org_id')
-      .eq('id', session.user.id)
-      .maybeSingle()
-    if (!callerUser?.active_org_id) {
+    const activeOrgId = await getOrgId()
+    if (!activeOrgId) {
       return serverError('Não foi possível identificar a organização do solicitante')
     }
-    orgId = callerUser.active_org_id
+    orgId = activeOrgId
     // Owner não pode listar usuários GHL de outra org.
     if (orgIdParam && orgIdParam !== orgId) return forbidden()
   } else {

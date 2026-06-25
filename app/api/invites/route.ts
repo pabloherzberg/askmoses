@@ -1,12 +1,16 @@
 import { type NextRequest } from 'next/server'
 import { Resend } from 'resend'
 import { getSession, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
+import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
-import { dbGetOrgGhlConfigByOrgId } from '@/lib/db/organizations'
-import { dbGetLinkedGhlUserIds, dbGetMemberGhlUserIdsByOrg } from '@/lib/db/trainers'
-import { fetchGhlUsers, GhlAuthError } from '@/lib/services/ghl-api'
+import { dbGetMemberGhlUserIdsByOrg } from '@/lib/db/trainers'
+import {
+  resolveGhlUserForOrg,
+  GhlLinkValidationError,
+  ghlLinkErrorResponse,
+} from '@/lib/services/ghl-user-link'
 import type { Role } from '@/lib/types'
 
 interface InviteBody {
@@ -39,15 +43,6 @@ function planLimitExceeded(message: string) {
   return Response.json(
     { data: null, error: { message, code: 403 } },
     { status: 403 }
-  )
-}
-
-// 502 — falha ao falar com o GHL (auth ou indisponibilidade). Distinto do
-// 500 interno: o problema é upstream, não no nosso código.
-function upstreamError(message: string) {
-  return Response.json(
-    { data: null, error: { message, code: 502 } },
-    { status: 502 }
   )
 }
 
@@ -88,6 +83,9 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
 //   TC-11: bloqueia trainer invite se org no plano starter/pro atingiu o
 //   max_sales_people. Conta memberships role='trainer' com status pending+accepted.
 export async function POST(request: NextRequest) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 
@@ -209,46 +207,26 @@ export async function POST(request: NextRequest) {
   // nome/email do GHL como fonte da verdade. Owner segue o fluxo manual.
   let resolvedGhlUserId: string | null = null
   if (targetRole === 'trainer') {
-    let config
-    try {
-      config = await dbGetOrgGhlConfigByOrgId(targetOrgId)
-    } catch (err) {
-      return serverError('Não foi possível carregar a config GHL da organização', err)
-    }
-    if (!config) {
-      return badRequest('Integração GHL não configurada para esta organização. Configure o GHL antes de adicionar vendedores.')
-    }
-
     const ghlUserId = body.ghlUserId?.trim()
     if (!ghlUserId) return badRequest('ghlUserId é obrigatório para adicionar um vendedor')
 
-    let linked: string[]
+    let match
     try {
-      linked = await dbGetLinkedGhlUserIds(targetOrgId)
+      match = await resolveGhlUserForOrg(targetOrgId, ghlUserId)
     } catch (err) {
-      return serverError('Não foi possível verificar vínculos GHL existentes', err)
+      if (err instanceof GhlLinkValidationError) return ghlLinkErrorResponse(err)
+      return serverError('Não foi possível validar o vínculo GHL', err)
     }
-    if (linked.includes(ghlUserId)) {
-      return conflict('Este usuário do GHL já está vinculado a um membro desta organização')
-    }
-
-    let ghlUsers
-    try {
-      ghlUsers = await fetchGhlUsers(config.locationId, config.accessToken)
-    } catch (err) {
-      if (err instanceof GhlAuthError) {
-        return upstreamError('Não foi possível autenticar no GHL — verifique o token da integração')
-      }
-      return upstreamError('Não foi possível carregar os usuários do GHL')
-    }
-
-    const match = ghlUsers.find((u) => u.id === ghlUserId)
-    if (!match) return badRequest('Usuário do GHL inválido para esta organização')
 
     // Fonte da verdade: nome/email vêm do GHL, não do que o cliente digitou.
+    // Revalida os valores do GHL com as mesmas regras do input manual — um
+    // usuário do GHL com nome/email malformado não pode furar as garantias
+    // que name/email tinham antes (senão geramos um auth user inválido).
     resolvedGhlUserId = ghlUserId
-    name = match.name
-    email = match.email.toLowerCase()
+    name = match.name.trim()
+    email = match.email.trim().toLowerCase()
+    if (!name) return badRequest('Usuário do GHL sem nome válido')
+    if (!EMAIL_RE.test(email)) return badRequest('Usuário do GHL com email inválido')
   }
 
   // ─── TC-11: Gate de seats (apenas trainer invite) ────────────────────────
@@ -756,14 +734,24 @@ export async function GET(request: NextRequest) {
   // Vínculo GHL por (org, user) — anexado a cada linha para a tabela de
   // membros ativos e o modal de edição. O mesmo user pode ter ghl_user_id
   // diferente por org, então a chave é (org_id, user_id).
+  // Resolve as orgs em paralelo (eram N round-trips serializados). Fail-soft:
+  // se a lookup de uma org falhar, logamos e seguimos sem o vínculo GHL dela —
+  // o badge some pra aquela org, mas a listagem de membros continua de pé (um
+  // erro transitório de DB não pode derrubar a página inteira).
   const orgIdsInRows = Array.from(new Set(rows.map((r) => r.org_id)))
   const ghlByOrg = new Map<string, Map<string, string | null>>()
-  for (const oid of orgIdsInRows) {
-    try {
-      ghlByOrg.set(oid, await dbGetMemberGhlUserIdsByOrg(oid))
-    } catch (err) {
-      return serverError('Não foi possível resolver vínculos GHL', err)
-    }
+  const ghlResults = await Promise.all(
+    orgIdsInRows.map(async (oid) => {
+      try {
+        return [oid, await dbGetMemberGhlUserIdsByOrg(oid)] as const
+      } catch (err) {
+        console.error(`[invites] Não foi possível resolver vínculos GHL da org ${oid}`, err)
+        return [oid, null] as const
+      }
+    }),
+  )
+  for (const [oid, map] of ghlResults) {
+    if (map) ghlByOrg.set(oid, map)
   }
 
   const items = rows.map((r) => ({
