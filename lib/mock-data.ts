@@ -1736,11 +1736,12 @@ export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
 
 // ─── Ask Moses Intent Index ───────────────────────────────────────────────────
 
+// Pesos base 100 (igual rubric), default 25/25/25/25.
 export const intentSignals: IntentSignal[] = [
-  { id: 'financial', weight: 4, color: 'red' },
-  { id: 'urgency', weight: 3, color: 'amber' },
-  { id: 'authority', weight: 2, color: 'blue' },
-  { id: 'engagement', weight: 1, color: 'accent2' },
+  { id: 'financial', weight: 25, color: 'red' },
+  { id: 'urgency', weight: 25, color: 'amber' },
+  { id: 'authority', weight: 25, color: 'blue' },
+  { id: 'engagement', weight: 25, color: 'accent2' },
 ]
 
 // ─── Billing mock data ────────────────────────────────────────────────────────

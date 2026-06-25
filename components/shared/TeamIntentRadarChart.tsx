@@ -13,7 +13,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { computeIntentIndex } from "@/lib/utils/intentScore";
+import { computeIntentIndex, resolveIntentWeights } from "@/lib/utils/intentScore";
 import { deriveIntentBreakdownForCall } from "@/lib/services/intent";
 import type { Call, IntentSignal } from "@/lib/types";
 
@@ -63,12 +63,7 @@ function avgBreakdown(calls: Call[], signals: IntentSignal[]): Record<string, nu
 }
 
 function intentIndex(bd: Record<string, number>, signals: IntentSignal[]): number {
-  return computeIntentIndex(bd, {
-    financial: signals.find((s) => s.id === "financial")?.weight ?? 4,
-    urgency: signals.find((s) => s.id === "urgency")?.weight ?? 3,
-    authority: signals.find((s) => s.id === "authority")?.weight ?? 2,
-    engagement: signals.find((s) => s.id === "engagement")?.weight ?? 1,
-  });
+  return computeIntentIndex(bd, resolveIntentWeights(signals));
 }
 
 const SIGNAL_LABELS: Record<string, string> = {

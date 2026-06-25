@@ -4,14 +4,19 @@
  * Configurações para o sistema de cálculo de Intent.
  * Intent é uma escala 0-5 que representa a probabilidade de conversão
  * baseada em 4 sinais ponderados: Financial, Urgency, Authority, Engagement.
+ *
+ * Metodologia igual ao Rubric: seções com pesos configuráveis que somam 100%.
+ * O índice é invariante à base dos pesos (computeIntentIndex normaliza por
+ * weightedSum / totalWeight), então snapshots antigos em base 10 seguem
+ * calculando o mesmo valor.
  */
 
-// Pesos padrão para cada sinal (somam 10)
+// Pesos padrão para cada sinal (somam 100 — igual rubric)
 export const DEFAULT_INTENT_WEIGHTS = {
-  financial: 4,
-  urgency: 3,
-  authority: 2,
-  engagement: 1,
+  financial: 25,
+  urgency: 25,
+  authority: 25,
+  engagement: 25,
 } as const;
 
 // IDs dos sinais de intent
@@ -22,11 +27,11 @@ export const INTENT_SIGNAL_IDS = [
   'engagement',
 ] as const;
 
-// Validação de peso individual
+// Validação de peso individual (base 100, mesma mecânica do rubric)
 export const INTENT_WEIGHT_CONSTRAINTS = {
-  MIN: 1, // Peso mínimo (não pode ser 0)
-  MAX: 10, // Peso máximo por sinal
-  TOTAL: 10, // Total de pesos deve ser exatamente este valor
+  MIN: 0, // Peso mínimo
+  MAX: 100, // Peso máximo por sinal
+  TOTAL: 100, // Total de pesos deve ser exatamente este valor
 } as const;
 
 // Validação de scores

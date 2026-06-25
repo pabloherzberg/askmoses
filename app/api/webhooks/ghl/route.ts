@@ -9,8 +9,12 @@ import {
   normalizeEmpty,
   normalizeSource,
   parseDuration,
+  normalizeWebhookType,
+  isAppointmentType,
   type GhlRawWebhookBody,
+  type GhlAppointmentPayload,
 } from "@/lib/services/ghl-helpers"
+import { dbUpsertGhlAppointment } from "@/lib/db/appointments"
 
 export const runtime = "nodejs"
 // Vercel Teams + Fluid Compute permitem até 800s. O download da gravação agora
@@ -88,10 +92,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Defensiva: já vimos no campo o Pepper salvar com aspas e whitespace.
-  const normalizedType =
-    typeof payload.type === "string"
-      ? payload.type.trim().replace(/^"+|"+$/g, "")
-      : ""
+  const normalizedType = normalizeWebhookType(payload.type)
+
+  // ── Evento de AGENDAMENTO (o "one"/agendamento — alimenta "agendados hoje").
+  //    NÃO é paying client (Stage 2). Persiste em appointments e retorna cedo.
+  if (isAppointmentType(normalizedType)) {
+    return handleAppointment(
+      rawBody.customData as GhlAppointmentPayload,
+      rawBody as unknown as Record<string, unknown>,
+      orgConfig.orgId,
+      locationId,
+    )
+  }
+
   if (normalizedType !== "callCompleted") {
     console.warn("[ghl-webhook] type-check failed", {
       receivedType: payload.type,
@@ -111,7 +124,9 @@ export async function POST(req: NextRequest) {
     })
     return jsonError(`Unsupported webhook type: ${payload.type}`, 400)
   }
-  const contactId = normalizeEmpty(payload.contactId)
+  // A partir daqui é garantidamente callCompleted — estreita o union.
+  const callPayload = payload as Extract<GhlRawWebhookBody['customData'], { callStatus?: unknown }>
+  const contactId = normalizeEmpty(callPayload.contactId)
   if (!contactId) {
     void notifyPipelineFailure("webhook_rejected", {
       callId: `rejected:no-contact:${locationId}`,
@@ -124,16 +139,16 @@ export async function POST(req: NextRequest) {
   }
 
   // 5. Idempotência via hash determinístico.
-  const externalCallId = buildExternalCallId(payload)
+  const externalCallId = buildExternalCallId(callPayload)
 
   const trainerName =
-    normalizeEmpty(payload.userName)
-    ?? normalizeEmpty(payload.userEmail)
+    normalizeEmpty(callPayload.userName)
+    ?? normalizeEmpty(callPayload.userEmail)
     ?? "Unknown trainer"
-  const trainerEmail = normalizeEmpty(payload.userEmail)
-  const clientName = normalizeEmpty(payload.contactName)
-  const leadSource = normalizeSource(payload.contactSource)
-  const durationSeconds = parseDuration(payload.duration)
+  const trainerEmail = normalizeEmpty(callPayload.userEmail)
+  const clientName = normalizeEmpty(callPayload.contactName)
+  const leadSource = normalizeSource(callPayload.contactSource)
+  const durationSeconds = parseDuration(callPayload.duration)
 
   let upsertResult
   try {
@@ -177,7 +192,7 @@ export async function POST(req: NextRequest) {
     try {
       await processGhlCall(
         callId,
-        { ...payload, contactId },
+        { ...callPayload, contactId },
         { accessToken, orgId: orgConfig.orgId },
       )
     } catch (err) {
@@ -207,6 +222,60 @@ export async function POST(req: NextRequest) {
     data: { callId, status: "received" },
     error: null,
   })
+}
+
+// Ingestão de AGENDAMENTO do GHL → tabela appointments (visão "agendados hoje").
+// Idempotente por (org, ghl_appointment_id). Sem pipeline async — agendamento
+// não tem áudio/transcrição. Resolução de trainer_id por email fica para depois;
+// guardamos trainer_name do payload.
+async function handleAppointment(
+  appt: GhlAppointmentPayload,
+  rawBody: Record<string, unknown>,
+  orgId: string,
+  locationId: string | null,
+) {
+  const apptId =
+    normalizeEmpty(appt.appointmentId) ??
+    // Fallback de idempotência: sem id explícito, deriva de contato+horário.
+    `${normalizeEmpty(appt.contactId) ?? "?"}:${normalizeEmpty(appt.startTime ?? appt.selectedSlot) ?? "?"}`
+
+  const scheduledAt = normalizeEmpty(appt.startTime ?? appt.selectedSlot)
+  if (!scheduledAt) {
+    return jsonError("appointment missing startTime/selectedSlot", 400)
+  }
+  // Valida ISO; GHL manda ISO 8601. Se vier inválido, rejeita (não inventa data).
+  const parsed = new Date(scheduledAt)
+  if (Number.isNaN(parsed.getTime())) {
+    return jsonError("appointment startTime is not a valid date", 400)
+  }
+
+  try {
+    const row = await dbUpsertGhlAppointment({
+      orgId,
+      ghlAppointmentId: apptId,
+      contactId: normalizeEmpty(appt.contactId),
+      contactName: normalizeEmpty(appt.contactName),
+      trainerName: normalizeEmpty(appt.userName) ?? normalizeEmpty(appt.userEmail),
+      scheduledAt: parsed.toISOString(),
+      status: normalizeEmpty(appt.appointmentStatus),
+      ghlPayload: rawBody,
+    })
+    return NextResponse.json({
+      data: { appointmentId: row.id, status: "received" },
+      error: null,
+    })
+  } catch (err) {
+    console.error("[ghl-webhook] appointment upsert failed", { err, locationId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:appointment:${apptId}`,
+      orgId,
+      error: err instanceof Error ? `[appointment] ${err.message}` : String(err),
+      stage: "webhook",
+      reason: "db_error",
+      meta: { operation: "dbUpsertGhlAppointment", locationId },
+    })
+    return jsonError("Failed to persist appointment", 500)
+  }
 }
 
 function safeEqual(received: string, expected: string): boolean {

@@ -115,10 +115,10 @@ Analyze the following sales call transcript and evaluate the prospect's buying i
    - 3–4: Prospect must check with decision-maker
    - 0–2: Prospect is gatekeeper with no buying authority
 
-4. **Engajamento (Engagement)** — How engaged and interested is the prospect?
-   - 10: Prospect asks clarifying questions, takes notes, shows high interest
-   - 7–9: Prospect engaged, few objections, clear interest
-   - 5–6: Prospect listens politely, moderate questions
+4. **Engajamento (Engagement / right questions)** — Is the prospect asking the questions of someone who is about to close (next steps, onboarding, "what happens after I sign")?
+   - 10: Prospect asks buying-signal questions (next steps, start date, onboarding), takes notes, drives toward the close
+   - 7–9: Prospect engaged, asks detailed questions, few objections, clear interest
+   - 5–6: Prospect listens politely, asks moderate/surface questions
    - 3–4: Prospect passive, few questions, mild resistance
    - 0–2: Prospect disengaged, dismissive, or defensive
 

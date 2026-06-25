@@ -26,26 +26,28 @@ export function getOrgIntentWeightsStore(): Map<string, OrgIntentWeights> {
   return orgIntentWeights
 }
 
-/** Fetch the most recent intent weights from org_intent_weight_history table */
+/** Fetch the most recent intent weights from org_intent_weight_history table.
+ *  Os pesos ficam no JSONB `new_weights` (não em colunas escalares). */
 export async function getLatestOrgIntentWeightsFromDb(orgId: string): Promise<OrgIntentWeights | null> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('org_intent_weight_history')
-    .select('financial, urgency, authority, engagement, created_at')
+    .select('new_weights, created_at')
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
-  if (error || !data) return null
+  if (error || !data?.new_weights) return null
 
+  const w = data.new_weights as Record<string, number>
   return {
     orgId,
-    financial: data.financial as number,
-    urgency: data.urgency as number,
-    authority: data.authority as number,
-    engagement: data.engagement as number,
+    financial: w.financial ?? DEFAULT_INTENT_WEIGHTS.financial,
+    urgency: w.urgency ?? DEFAULT_INTENT_WEIGHTS.urgency,
+    authority: w.authority ?? DEFAULT_INTENT_WEIGHTS.authority,
+    engagement: w.engagement ?? DEFAULT_INTENT_WEIGHTS.engagement,
     updatedAt: data.created_at as string,
   }
 }

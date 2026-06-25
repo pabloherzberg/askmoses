@@ -382,3 +382,60 @@ export async function downloadRecording(
     byteLength: arrayBuffer.byteLength,
   }
 }
+
+export interface GhlCalendarAppointment {
+  id: string
+  contactId?: string | null
+  contactName?: string | null
+  assignedUserId?: string | null
+  assignedUserName?: string | null
+  startTime?: string | null
+  appointmentStatus?: string | null
+}
+
+/**
+ * Busca os agendamentos (calendar events) da location num intervalo de tempo.
+ * Usado pelo sync/poll da visão "agendados hoje" — complementa o webhook de
+ * agendamento (que é o caminho push). Mesmo padrão de auth/erro do recording.
+ *
+ * NÃO confundir com paying client (Stage 2) — isto é o "one"/agendamento.
+ * Retorna [] quando não há eventos. 401/403 → GhlAuthError (PIT rotacionado).
+ */
+export async function fetchAppointments(
+  locationId: string,
+  accessToken: string,
+  startTimeMs: number,
+  endTimeMs: number,
+): Promise<GhlCalendarAppointment[]> {
+  const base = getApiBase()
+  const headers = buildAuthHeaders(accessToken)
+
+  const url =
+    `${base}/calendars/events?locationId=${encodeURIComponent(locationId)}` +
+    `&startTime=${startTimeMs}&endTime=${endTimeMs}`
+
+  const res = await fetch(url, { headers })
+  if (!res.ok) {
+    const body = await res.text()
+    if (res.status === 401 || res.status === 403) {
+      throw new GhlAuthError(res.status, `GHL calendar auth failed: ${body.slice(0, 200)}`)
+    }
+    throw new Error(`GHL calendar events failed (${res.status}): ${body.slice(0, 200)}`)
+  }
+
+  const json = (await res.json()) as { events?: unknown[] }
+  const events = Array.isArray(json.events) ? json.events : []
+
+  return events.map((e) => {
+    const ev = e as Record<string, unknown>
+    return {
+      id: String(ev.id ?? ev.appointmentId ?? ""),
+      contactId: (ev.contactId as string) ?? null,
+      contactName: (ev.contactName as string) ?? (ev.title as string) ?? null,
+      assignedUserId: (ev.assignedUserId as string) ?? null,
+      assignedUserName: (ev.assignedUserName as string) ?? null,
+      startTime: (ev.startTime as string) ?? null,
+      appointmentStatus: (ev.appointmentStatus as string) ?? (ev.status as string) ?? null,
+    }
+  })
+}

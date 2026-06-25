@@ -12,12 +12,13 @@ import {
 } from '@/components/ui/tooltip'
 import { RubricBar } from '@/components/shared/RubricBar'
 import { IntentBreakdownComponent } from '@/components/shared/IntentBreakdown'
+import { Stage2Marker } from '@/components/shared/Stage2Marker'
 import { formatDuration } from '@/lib/format'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
 import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
 import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
-import { computeIntentIndex, intentIndexToDisplay } from '@/lib/utils/intentScore'
+import { computeIntentIndex, intentIndexToDisplay, resolveIntentWeights } from '@/lib/utils/intentScore'
 import type { Call, Role, RubricColor, IntentSignal } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
@@ -60,14 +61,10 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
     ? call.intentBreakdown
     : deriveIntentBreakdownForCall(call.score, intentSignals)
 
-  // Use stored weights from analysis time, fallback to current org weights
+  // Use stored weights from analysis time, fallback to current org weights.
+  // O índice é invariante à base: snapshots antigos (base 10) seguem corretos.
   const storedWeights = call.intentWeights
-  const currentWeights = {
-    financial: intentSignals.find(s => s.id === 'financial')?.weight || 4,
-    urgency: intentSignals.find(s => s.id === 'urgency')?.weight || 3,
-    authority: intentSignals.find(s => s.id === 'authority')?.weight || 2,
-    engagement: intentSignals.find(s => s.id === 'engagement')?.weight || 1,
-  }
+  const currentWeights = resolveIntentWeights(intentSignals)
   const weights = storedWeights || currentWeights
 
   // If weights are from history, update signals to reflect them
@@ -167,6 +164,12 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
           </span>
         </div>
       </div>
+
+      {/* Stage 2 (Actual Close / paying client) — owner/admin only. Separado
+          do Initial Result (Stage 1, badge acima). */}
+      {(viewerRole === 'owner' || viewerRole === 'admin') && (
+        <Stage2Marker callId={call.id} initial={call.stage2Outcome ?? null} />
+      )}
 
       {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
