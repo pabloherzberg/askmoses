@@ -257,6 +257,33 @@
       "orgRequired": "Provide the organization ID",
       "ownerRequired": "Provide the owner ID for the sales person"
     },
+    "ghl": {
+      "label": "Sales Person (via GHL)",
+      "help": "Name and email are pulled from GHL. Select the matching user.",
+      "placeholder": "Select a GHL user",
+      "loading": "Loading GHL users...",
+      "searchPlaceholder": "Search by name or email",
+      "empty": "No GHL users available",
+      "previewLabel": "Selected",
+      "notConfigured": "GHL integration is not configured for this organization. Configure GHL before adding sales people.",
+      "selectRequired": "Select a GHL user to continue",
+      "selectOrgFirst": "Select the organization first to list GHL users",
+      "loadError": "Could not load GHL users",
+      "columnLabel": "GHL",
+      "actionsLabel": "Actions",
+      "unlinked": "Not linked",
+      "editButton": "Edit GHL link",
+      "editTitle": "Edit GHL link",
+      "editDescription": "Link this member to a GHL user so calls are attributed automatically.",
+      "currentLink": "Current link",
+      "clearLink": "Remove link",
+      "editSave": "Save link",
+      "editSaved": "GHL link updated.",
+      "editError": "Could not update the GHL link",
+      "ownerEditTitle": "Owner call profile",
+      "ownerEditDescription": "Activate this owner's call profile by linking them to a GHL user. Their calls get scored and they appear in the team ranking.",
+      "ownerClearLink": "Deactivate call profile"
+    },
     "resendButton": "Resend invitation"
   },
   "Shared": {

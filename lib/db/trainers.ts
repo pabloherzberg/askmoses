@@ -180,6 +180,145 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
   return (data ?? []).map((row) => toTrainer(row as DbTrainerRow))
 }
 
+// ─── Vínculo membro ↔ usuário GHL ────────────────────────────────────────
+// Toda ligação GHL vive em `trainers.ghl_user_id`. Um vendedor tem sua linha
+// criada no convite; um owner que também faz calls ganha uma linha em
+// `trainers` (perfil de calls, owner_id apontando pra si mesmo) — assim
+// scoring/ranking/coaching/`/me` são reaproveitados sem tocar no modelo de
+// papéis. Um mesmo usuário GHL não pode ser reusado por dois trainers da
+// mesma org (índice único trainers_org_ghl_user_id_uidx).
+
+/**
+ * Retorna os ghl_user_id já vinculados a trainers de uma org. Usado para
+ * filtrar a lista de candidatos do GHL (não oferecer um usuário já em uso)
+ * e para checar unicidade antes de gravar um vínculo.
+ *
+ * Inclui pending e accepted — um convite pendente já "reserva" o usuário
+ * GHL. `excludeUserId` deixa de fora o próprio membro (edição, para que ele
+ * mantenha o vínculo atual).
+ */
+export async function dbGetLinkedGhlUserIds(
+  orgId: string,
+  excludeUserId?: string,
+): Promise<string[]> {
+  const supabase = createAdminClient()
+
+  let query = supabase
+    .from('trainers')
+    .select('ghl_user_id, user_id')
+    .eq('org_id', orgId)
+    .not('ghl_user_id', 'is', null)
+  if (excludeUserId) query = query.neq('user_id', excludeUserId)
+
+  const { data, error } = await query
+  if (error) throw new Error(`dbGetLinkedGhlUserIds: ${error.message}`)
+  return Array.from(
+    new Set(
+      (data ?? [])
+        .map((r) => r.ghl_user_id as string | null)
+        .filter((v): v is string => !!v),
+    ),
+  )
+}
+
+/**
+ * Define (ou limpa, com null) o ghl_user_id de um trainer já existente
+ * identificado por (org_id, user_id). Retorna false se nenhuma linha foi
+ * afetada (trainer inexistente nessa org).
+ */
+export async function dbSetTrainerGhlUserId(
+  orgId: string,
+  userId: string,
+  ghlUserId: string | null,
+): Promise<boolean> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .update({ ghl_user_id: ghlUserId, updated_at: new Date().toISOString() })
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .select('id')
+
+  if (error) throw new Error(`dbSetTrainerGhlUserId: ${error.message}`)
+  return (data ?? []).length > 0
+}
+
+/**
+ * Ativa/atualiza o "perfil de calls" de um OWNER: garante uma linha em
+ * `trainers` para (org_id, user_id) — criando-a com owner_id apontando pro
+ * próprio owner — e grava o ghl_user_id. Idempotente: se já existir, só
+ * atualiza o ghl_user_id.
+ *
+ * Lança se o owner não tiver linha em `owners` nessa org (estado inválido).
+ */
+export async function dbUpsertOwnerCallProfile(
+  orgId: string,
+  userId: string,
+  ghlUserId: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+
+  // Já tem perfil? Só atualiza o ghl.
+  const { data: existing, error: existErr } = await supabase
+    .from('trainers')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (existErr) throw new Error(`dbUpsertOwnerCallProfile(lookup): ${existErr.message}`)
+
+  if (existing) {
+    const { error } = await supabase
+      .from('trainers')
+      .update({ ghl_user_id: ghlUserId, updated_at: new Date().toISOString() })
+      .eq('id', existing.id)
+    if (error) throw new Error(`dbUpsertOwnerCallProfile(update): ${error.message}`)
+    return
+  }
+
+  // owner_id = a própria linha de owner do usuário nessa org.
+  const { data: ownerRow, error: ownerErr } = await supabase
+    .from('owners')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (ownerErr) throw new Error(`dbUpsertOwnerCallProfile(owner): ${ownerErr.message}`)
+  if (!ownerRow) throw new Error('dbUpsertOwnerCallProfile: owner sem linha em owners nessa org')
+
+  const { error } = await supabase.from('trainers').insert({
+    user_id: userId,
+    owner_id: ownerRow.id,
+    org_id: orgId,
+    ghl_user_id: ghlUserId,
+  })
+  if (error) throw new Error(`dbUpsertOwnerCallProfile(insert): ${error.message}`)
+}
+
+/**
+ * Mapa user_id → ghl_user_id para os trainers de uma org (inclui o perfil de
+ * calls de owners ativados). Usado pelo GET /api/invites para anexar o
+ * vínculo GHL às linhas da tabela de membros.
+ */
+export async function dbGetMemberGhlUserIdsByOrg(
+  orgId: string,
+): Promise<Map<string, string | null>> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('user_id, ghl_user_id')
+    .eq('org_id', orgId)
+  if (error) throw new Error(`dbGetMemberGhlUserIdsByOrg: ${error.message}`)
+
+  const map = new Map<string, string | null>()
+  for (const r of data ?? []) {
+    map.set(r.user_id as string, (r.ghl_user_id as string | null) ?? null)
+  }
+  return map
+}
+
 export async function dbGetTrainerById(id: string): Promise<Trainer | null> {
   const supabase = createAdminClient()
 

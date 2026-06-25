@@ -257,6 +257,33 @@
       "orgRequired": "Indiquez l'ID de l'organisation",
       "ownerRequired": "Indiquez l'ID de l'owner pour le commercial"
     },
+    "ghl": {
+      "label": "Commercial (via GHL)",
+      "help": "Le nom et l'e-mail proviennent de GHL. Sélectionnez l'utilisateur correspondant.",
+      "placeholder": "Sélectionnez un utilisateur GHL",
+      "loading": "Chargement des utilisateurs GHL...",
+      "searchPlaceholder": "Rechercher par nom ou e-mail",
+      "empty": "Aucun utilisateur GHL disponible",
+      "previewLabel": "Sélectionné",
+      "notConfigured": "L'intégration GHL n'est pas configurée pour cette organisation. Configurez GHL avant d'ajouter des commerciaux.",
+      "selectRequired": "Sélectionnez un utilisateur GHL pour continuer",
+      "selectOrgFirst": "Sélectionnez d'abord l'organisation pour lister les utilisateurs GHL",
+      "loadError": "Impossible de charger les utilisateurs GHL",
+      "columnLabel": "GHL",
+      "actionsLabel": "Actions",
+      "unlinked": "Non lié",
+      "editButton": "Modifier le lien GHL",
+      "editTitle": "Modifier le lien GHL",
+      "editDescription": "Liez ce membre à un utilisateur GHL pour attribuer les appels automatiquement.",
+      "currentLink": "Lien actuel",
+      "clearLink": "Supprimer le lien",
+      "editSave": "Enregistrer le lien",
+      "editSaved": "Lien GHL mis à jour.",
+      "editError": "Impossible de mettre à jour le lien GHL",
+      "ownerEditTitle": "Profil d'appels du owner",
+      "ownerEditDescription": "Activez le profil d'appels de ce owner en le liant à un utilisateur GHL. Ses appels sont notés et il apparaît dans le classement de l'équipe.",
+      "ownerClearLink": "Désactiver le profil d'appels"
+    },
     "resendButton": "Renvoyer l'invitation"
   },
   "Shared": {

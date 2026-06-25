@@ -23,8 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, Send, MailPlus, Trash2, UserPlus, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, Send, MailPlus, Trash2, UserPlus, X, Link2 } from 'lucide-react'
 import type { Role } from '@/lib/types'
+import { GhlUserCombobox, type GhlUserOption } from '@/components/shared/ghl-user-combobox'
 
 type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
 type SortDir = 'asc' | 'desc'
@@ -85,6 +86,8 @@ interface InviteUser {
   created_at: string
   org: OrgRef | null
   invitedBy: UserRef | null
+  // ID do usuário GHL vinculado a este membro (trainer/owner), ou null.
+  ghlUserId: string | null
 }
 
 interface PaginatedResponse {
@@ -149,6 +152,16 @@ export function InvitePageClient({ role: callerRole }: Props) {
   const [resendingKey, setResendingKey] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null)
+
+  // Fluxo GHL (criação de vendedor): usuário GHL escolhido + flag de org sem
+  // integração configurada (bloqueia o submit).
+  const [selectedGhlUser, setSelectedGhlUser] = useState<GhlUserOption | null>(null)
+  const [ghlNotConfigured, setGhlNotConfigured] = useState(false)
+
+  // Edição do vínculo GHL de um membro ativo.
+  const [ghlEditTarget, setGhlEditTarget] = useState<InviteUser | null>(null)
+  const [ghlEditUser, setGhlEditUser] = useState<GhlUserOption | null>(null)
+  const [ghlEditSaving, setGhlEditSaving] = useState(false)
 
   const buildQuery = useCallback(
     (params: Record<string, string | number | undefined>) => {
@@ -248,14 +261,26 @@ export function InvitePageClient({ role: callerRole }: Props) {
       : <ArrowDown className="h-3 w-3" />
   }
 
-  // Trocar org limpa o owner selecionado (lista de owners muda)
+  // Trocar org limpa o owner selecionado (lista de owners muda) e o vínculo
+  // GHL (usuários do GHL são por org).
   const handleOrgChange = (orgId: string) => {
-    setForm((f) => ({ ...f, orgId, ownerId: '' }))
+    setForm((f) => ({ ...f, orgId, ownerId: '', name: '', email: '' }))
+    setSelectedGhlUser(null)
   }
 
-  // Trocar role limpa o owner (campo só faz sentido pra trainer)
+  // Trocar role limpa owner + identidade: trainer puxa nome/email do GHL,
+  // owner digita manualmente. O estado de um não vale para o outro.
   const handleRoleChange = (role: 'trainer' | 'owner') => {
-    setForm((f) => ({ ...f, role, ownerId: '' }))
+    setForm((f) => ({ ...f, role, ownerId: '', name: '', email: '' }))
+    setSelectedGhlUser(null)
+    setGhlNotConfigured(false)
+  }
+
+  // Vendedor escolhido no combobox do GHL: trava nome/email com os valores
+  // do GHL (fonte da verdade).
+  const handleGhlSelect = (user: GhlUserOption | null) => {
+    setSelectedGhlUser(user)
+    setForm((f) => ({ ...f, name: user?.name ?? '', email: user?.email ?? '' }))
   }
 
   const selectedOrg = orgs.find((o) => o.id === form.orgId)
@@ -268,31 +293,58 @@ export function InvitePageClient({ role: callerRole }: Props) {
       ? t('form.roleOwner')
       : role
 
+  // Trainer (vendedor) é sempre criado a partir de um usuário do GHL; owner
+  // segue o fluxo manual (nome/email digitados). Para owner-caller o role é
+  // sempre trainer.
+  const isTrainerFlow = form.role === 'trainer'
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFeedback(null)
 
-    const name = form.name.trim()
-    const email = form.email.trim()
-    if (!name || !email) {
-      setFeedback({ kind: 'error', message: t('feedback.fillFields') })
-      return
-    }
+    const body: Record<string, string> = { role: form.role, locale }
 
-    const body: Record<string, string> = { name, email, role: form.role, locale }
-    if (isAdmin) {
-      if (!form.orgId.trim()) {
-        setFeedback({ kind: 'error', message: t('feedback.orgRequired') })
-        return
-      }
-      body.orgId = form.orgId.trim()
-      if (form.role === 'trainer') {
+    if (isTrainerFlow) {
+      // Admin precisa escolher org + owner antes de listar/escolher o GHL user.
+      if (isAdmin) {
+        if (!form.orgId.trim()) {
+          setFeedback({ kind: 'error', message: t('feedback.orgRequired') })
+          return
+        }
         if (!form.ownerId.trim()) {
           setFeedback({ kind: 'error', message: t('feedback.ownerRequired') })
           return
         }
+        body.orgId = form.orgId.trim()
         body.ownerId = form.ownerId.trim()
       }
+      if (ghlNotConfigured) {
+        setFeedback({ kind: 'error', message: t('ghl.notConfigured') })
+        return
+      }
+      if (!selectedGhlUser) {
+        setFeedback({ kind: 'error', message: t('ghl.selectRequired') })
+        return
+      }
+      // Nome/email vão do GHL; o servidor revalida e usa os do GHL de qualquer forma.
+      body.name = selectedGhlUser.name
+      body.email = selectedGhlUser.email
+      body.ghlUserId = selectedGhlUser.id
+    } else {
+      // Owner manual (apenas admin chega aqui).
+      const name = form.name.trim()
+      const email = form.email.trim()
+      if (!name || !email) {
+        setFeedback({ kind: 'error', message: t('feedback.fillFields') })
+        return
+      }
+      if (!form.orgId.trim()) {
+        setFeedback({ kind: 'error', message: t('feedback.orgRequired') })
+        return
+      }
+      body.name = name
+      body.email = email
+      body.orgId = form.orgId.trim()
     }
 
     setSubmitting(true)
@@ -307,17 +359,47 @@ export function InvitePageClient({ role: callerRole }: Props) {
       if (!res.ok || json.error) {
         setFeedback({
           kind: 'error',
-          message: t('feedback.inviteError'),
+          message: json.error?.message ?? t('feedback.inviteError'),
         })
         return
       }
 
       setFeedback({ kind: 'success', message: t('feedback.invited') })
       setForm(INITIAL_FORM)
+      setSelectedGhlUser(null)
       void fetchPending()
       void fetchActive(activePage)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Salva o vínculo GHL editado de um membro ativo. `ghlUserId=null` limpa.
+  const saveGhlEdit = async (ghlUserId: string | null) => {
+    if (!ghlEditTarget) return
+    const orgId = ghlEditTarget.org?.id
+    if (isAdmin && !orgId) return
+
+    setGhlEditSaving(true)
+    setFeedback(null)
+    try {
+      const qs = isAdmin && orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+      const res = await fetch(`/api/memberships/${ghlEditTarget.id}${qs}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ghlUserId }),
+      })
+      const json = (await res.json()) as { data: unknown; error: { message: string } | null }
+      if (!res.ok || json.error) {
+        setFeedback({ kind: 'error', message: json.error?.message ?? t('ghl.editError') })
+        return
+      }
+      setFeedback({ kind: 'success', message: t('ghl.editSaved') })
+      setGhlEditTarget(null)
+      setGhlEditUser(null)
+      void fetchActive(activePage)
+    } finally {
+      setGhlEditSaving(false)
     }
   }
 
@@ -415,30 +497,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="invite-name">{t('form.nameLabel')}</Label>
-                <Input
-                  id="invite-name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder={t('form.namePlaceholder')}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invite-email">{t('form.emailLabel')}</Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder={t('form.emailPlaceholder')}
-                  required
-                />
-              </div>
-            </div>
-
+            {/* Admin escolhe o papel primeiro; owner-caller só cria vendedor. */}
             {isAdmin && (
               <>
                 <div className="space-y-2">
@@ -497,7 +556,71 @@ export function InvitePageClient({ role: callerRole }: Props) {
               </>
             )}
 
-            <Button type="submit" disabled={submitting}>
+            {/* ─── Identidade ─────────────────────────────────────────── */}
+            {isTrainerFlow ? (
+              // Vendedor: nome/email vêm do GHL (escolhidos no combobox).
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{t('ghl.label')}</Label>
+                  {isAdmin && !form.orgId ? (
+                    <p className="text-sm text-muted-foreground rounded-md border border-dashed p-3">
+                      {t('ghl.selectOrgFirst')}
+                    </p>
+                  ) : (
+                    <GhlUserCombobox
+                      orgId={isAdmin ? form.orgId || null : null}
+                      value={selectedGhlUser}
+                      onSelect={handleGhlSelect}
+                      onNotConfigured={setGhlNotConfigured}
+                    />
+                  )}
+                  <p className="text-xs text-muted-foreground">{t('ghl.help')}</p>
+                </div>
+
+                {selectedGhlUser && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-name">{t('form.nameLabel')}</Label>
+                      <Input id="invite-name" value={form.name} readOnly disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">{t('form.emailLabel')}</Label>
+                      <Input id="invite-email" value={form.email} readOnly disabled />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Owner: cadastro manual (sem integração GHL).
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-name">{t('form.nameLabel')}</Label>
+                  <Input
+                    id="invite-name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder={t('form.namePlaceholder')}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">{t('form.emailLabel')}</Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder={t('form.emailPlaceholder')}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={submitting || (isTrainerFlow && (ghlNotConfigured || !selectedGhlUser))}
+            >
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -720,6 +843,8 @@ export function InvitePageClient({ role: callerRole }: Props) {
                         />
                       </TableHead>
                     )}
+                    <TableHead>{t('ghl.columnLabel')}</TableHead>
+                    <TableHead className="text-right">{t('ghl.actionsLabel')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -735,6 +860,34 @@ export function InvitePageClient({ role: callerRole }: Props) {
                           {u.org?.name ?? '—'}
                         </TableCell>
                       )}
+                      <TableCell>
+                        {u.ghlUserId ? (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[11px] max-w-[160px] truncate inline-block"
+                            style={{ color: 'var(--am-green)', borderColor: 'var(--am-green)' }}
+                            title={u.ghlUserId}
+                          >
+                            {u.ghlUserId}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">{t('ghl.unlinked')}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setGhlEditTarget(u)
+                            setGhlEditUser(null)
+                          }}
+                          title={t('ghl.editButton')}
+                          aria-label={t('ghl.editButton')}
+                        >
+                          <Link2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -812,6 +965,78 @@ export function InvitePageClient({ role: callerRole }: Props) {
               ) : (
                 t('revokeDialog.confirm')
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Modal de edição do vínculo GHL ──────────────────────────── */}
+      <Dialog
+        open={ghlEditTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !ghlEditSaving) {
+            setGhlEditTarget(null)
+            setGhlEditUser(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {ghlEditTarget?.role === 'owner' ? t('ghl.ownerEditTitle') : t('ghl.editTitle')}
+            </DialogTitle>
+            <DialogDescription>
+              {ghlEditTarget?.role === 'owner' ? t('ghl.ownerEditDescription') : t('ghl.editDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          {ghlEditTarget && (
+            <div className="space-y-4">
+              <div className="rounded-md border border-border bg-secondary/30 p-3 text-sm">
+                <p className="font-medium">{ghlEditTarget.name}</p>
+                <p className="text-muted-foreground">{ghlEditTarget.email}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('ghl.currentLink')}:{' '}
+                  <span className="font-mono">{ghlEditTarget.ghlUserId ?? t('ghl.unlinked')}</span>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('ghl.label')}</Label>
+                <GhlUserCombobox
+                  orgId={isAdmin ? ghlEditTarget.org?.id ?? null : null}
+                  value={ghlEditUser}
+                  onSelect={setGhlEditUser}
+                  includeGhlUserId={ghlEditTarget.ghlUserId ?? undefined}
+                  modalPopover
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            {ghlEditTarget?.ghlUserId && (
+              <Button
+                variant="outline"
+                onClick={() => saveGhlEdit(null)}
+                disabled={ghlEditSaving}
+                style={{ color: 'var(--am-red)' }}
+              >
+                {ghlEditTarget.role === 'owner' ? t('ghl.ownerClearLink') : t('ghl.clearLink')}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGhlEditTarget(null)
+                setGhlEditUser(null)
+              }}
+              disabled={ghlEditSaving}
+            >
+              {t('revokeDialog.cancel')}
+            </Button>
+            <Button
+              onClick={() => ghlEditUser && saveGhlEdit(ghlEditUser.id)}
+              disabled={ghlEditSaving || !ghlEditUser}
+            >
+              {ghlEditSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('ghl.editSave')}
             </Button>
           </DialogFooter>
         </DialogContent>
