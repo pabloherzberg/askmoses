@@ -118,6 +118,25 @@ export async function chunkAudio(
 }
 
 /**
+ * Mede a duração real do áudio (ms) sem cortar: escreve um temp seekável e lê só
+ * o header via ffmpeg (barato). Usada no ingest para backfill de duração quando
+ * o GHL não a informou. Retorna 0 se não conseguir ler o header.
+ */
+export async function probeAudioDurationMs(input: Buffer): Promise<number> {
+  if (!FFMPEG_PATH) {
+    throw new Error('ffmpeg-static binary not found (FFMPEG_PATH vazio)')
+  }
+  const workDir = await mkdtemp(join(tmpdir(), 'amprobe-'))
+  const srcPath = join(workDir, `src-${randomUUID()}.input`)
+  try {
+    await writeFile(srcPath, input)
+    return await probeDurationMs(srcPath)
+  } finally {
+    await rm(workDir, { recursive: true, force: true }).catch(() => {})
+  }
+}
+
+/**
  * Descobre a duração em ms parseando o stderr do ffmpeg. `ffmpeg -i src` sem
  * output sai com código 1 mas imprime "Duration: HH:MM:SS.cc" — barato, não
  * decodifica o áudio inteiro.

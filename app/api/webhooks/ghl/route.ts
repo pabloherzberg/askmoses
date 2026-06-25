@@ -15,6 +15,7 @@ import {
   type GhlAppointmentPayload,
 } from "@/lib/services/ghl-helpers"
 import { dbUpsertGhlAppointment } from "@/lib/db/appointments"
+import { MIN_ANALYZABLE_CALL_SECONDS, isConfirmedShortCall } from "@/lib/constants/limits"
 
 export const runtime = "nodejs"
 // Vercel Teams + Fluid Compute permitem até 800s. O download da gravação agora
@@ -140,6 +141,24 @@ export async function POST(req: NextRequest) {
 
   // 5. Idempotência via hash determinístico.
   const externalCallId = buildExternalCallId(callPayload)
+  const durationSeconds = parseDuration(callPayload.duration)
+
+  // 5b. Pula calls confirmadamente curtas (< 30s) antes de persistir/processar —
+  //     sem linha no banco, sem custo de LLM. Duração nula NÃO corta: perder uma
+  //     call real pesa mais que o custo; no reenvio com duração o hash muda e ela
+  //     é analisada.
+  if (isConfirmedShortCall(durationSeconds)) {
+    console.info("[ghl-webhook] call too short — skipping analysis", {
+      orgId: orgConfig.orgId,
+      externalCallId,
+      durationSeconds,
+      minSeconds: MIN_ANALYZABLE_CALL_SECONDS,
+    })
+    return NextResponse.json({
+      data: { status: "skipped_too_short", durationSeconds },
+      error: null,
+    })
+  }
 
   const trainerName =
     normalizeEmpty(callPayload.userName)
@@ -148,7 +167,6 @@ export async function POST(req: NextRequest) {
   const trainerEmail = normalizeEmpty(callPayload.userEmail)
   const clientName = normalizeEmpty(callPayload.contactName)
   const leadSource = normalizeSource(callPayload.contactSource)
-  const durationSeconds = parseDuration(callPayload.duration)
 
   let upsertResult
   try {

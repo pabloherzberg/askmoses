@@ -441,6 +441,9 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
 export interface UpdateGhlPipelineInput {
   processingStatus?: ProcessingStatus
   recordingUrl?: string | null
+  /** Duração real medida do áudio (s). Backfill no ingest só quando o GHL não
+   *  informou — evita null distorcendo o billing. */
+  durationSeconds?: number | null
   transcript?: string | null
   transcriptSource?: 'whisper' | 'manual' | 'ghl'
   // Campos populados pela fase de scoring (após o transcribed).
@@ -480,6 +483,7 @@ export async function dbUpdateGhlCallPipeline(
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (input.processingStatus !== undefined) patch.processing_status = input.processingStatus
   if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
+  if (input.durationSeconds !== undefined) patch.duration_seconds = input.durationSeconds
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
   if (input.rubricId !== undefined) patch.rubric_id = input.rubricId

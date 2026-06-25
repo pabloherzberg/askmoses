@@ -1,5 +1,6 @@
 import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
+import { probeAudioDurationMs } from "@/lib/services/audio-chunker"
 import { putOriginalAudio } from "@/lib/services/call-audio-storage"
 import { triggerChunking } from "@/lib/services/chunk-pipeline"
 import {
@@ -9,7 +10,7 @@ import {
   GhlAuthError,
   GhlDownloadError,
 } from "@/lib/services/ghl-api"
-import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
+import { parseDuration, type GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { inferFailureReason, notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 
 /**
@@ -181,6 +182,29 @@ export async function processGhlCall(
       },
     })
     return
+  }
+
+  // ── 2b. Backfill de duração: só quando o GHL não a informou ────────────────
+  // O webhook já barrou as < 30s; aqui a duração do GHL é >= 30s ou nula. Não
+  // mexemos numa duração que o GHL mandou. Nula distorceria o billing, então
+  // medimos o arquivo real e gravamos. Best-effort — análise segue se falhar.
+  if (parseDuration(payload.duration) == null) {
+    try {
+      const measuredSeconds = Math.round((await probeAudioDurationMs(audio.buffer)) / 1000)
+      // probe retorna 0 com header ilegível — não gravamos 0 (duração falsa);
+      // o chunking falha adiante nesse caso.
+      if (measuredSeconds > 0) {
+        await dbUpdateGhlCallPipeline(callId, { durationSeconds: measuredSeconds })
+      } else {
+        console.warn("[ghl-pipeline] header de áudio ilegível; duração segue nula", { callId })
+      }
+    } catch (err) {
+      // Só falha de ambiente (ffmpeg/IO), não por call.
+      console.warn("[ghl-pipeline] backfill de duração falhou; análise segue sem ela", {
+        callId,
+        err: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
 
   // ── 3. Subir para Storage e disparar chunking ──────────────────────────────

@@ -14,6 +14,20 @@ export const MAX_MRR_USD = 10_000_000
 /** Máximo de orgIds num único POST /api/admin/scripts/send (bulk send). */
 export const MAX_BULK_ORG_IDS = 100
 
+/** Piso de duração (s) para uma call valer análise. Calls confirmadamente
+ *  abaixo disso são descartadas no ingest. Mesmo valor do piso de billing, mas
+ *  o tratamento de duração nula diverge — ver isConfirmedShortCall. */
+export const MIN_ANALYZABLE_CALL_SECONDS = 30
+
+/** True só com duração CONFIRMADA abaixo do piso — único caso em que o ingest
+ *  pula a análise. Nula → false de propósito (perder call real > custo de LLM),
+ *  divergindo do billing, que também não fatura duração nula. */
+export function isConfirmedShortCall(
+  durationSeconds: number | null | undefined,
+): boolean {
+  return durationSeconds != null && durationSeconds < MIN_ANALYZABLE_CALL_SECONDS
+}
+
 /** Rate limits — todos em (max, windowSeconds). Tweak por endpoint. */
 export const RATE_LIMITS = {
   /** Sweetheart deal flow — admin override de subscription. */
