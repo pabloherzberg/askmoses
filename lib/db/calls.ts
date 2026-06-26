@@ -54,6 +54,9 @@ export interface DbCall {
   ghl_payload?: Record<string, unknown> | null
   // GHL contactId promovido a coluna — added in migration 091.
   contact_id?: string | null
+  // Id da mensagem de call no GHL — added in migration 095. Identidade real da
+  // gravação; UNIQUE (org, ghl_message_id) deduplica reentregas do webhook.
+  ghl_message_id?: string | null
   // Stage 2 (Actual Close / paying client) — added in migration 092.
   // stage2_outcome: paying | not_paying | pending | null. became_paying_at:
   // quando virou pagante. intent_at_close: snapshot do intent previsto (loop).
@@ -337,6 +340,30 @@ export async function dbDeleteCall(id: string, scope?: CallMutationScope): Promi
 
   if (error) throw new Error(`dbDeleteCall: ${error.message}`)
   return (count ?? 0) > 0
+}
+
+/**
+ * Reivindica o ghl_message_id (identidade real da gravação) para esta call.
+ * Idempotência forte do pipeline: protegido pela UNIQUE (org_id, ghl_message_id)
+ * da migration 095. Reentregas do mesmo webhook (ex.: sem duração e depois com
+ * duração) resolvem para o mesmo messageId e a segunda perde o claim.
+ *
+ * Retorna:
+ *   - true  → claim feito (ou já era desta mesma call: re-set idempotente).
+ *   - false → outra call da org já reivindicou este messageId → é duplicata.
+ */
+export async function dbClaimGhlMessageId(callId: string, messageId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('calls')
+    .update({ ghl_message_id: messageId, updated_at: new Date().toISOString() })
+    .eq('id', callId)
+
+  if (!error) return true
+  // 23505 = unique_violation: outra linha da org já tem este messageId.
+  if (error.code === '23505') return false
+  throw new Error(`dbClaimGhlMessageId: ${error.message}`)
 }
 
 // ────────────────────────────────────────────────────────────────────────────

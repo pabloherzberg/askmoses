@@ -1,4 +1,4 @@
-import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbUpdateGhlCallPipeline, dbClaimGhlMessageId, dbDeleteCall } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
 import { probeAudioDurationMs } from "@/lib/services/audio-chunker"
 import { putOriginalAudio } from "@/lib/services/call-audio-storage"
@@ -146,6 +146,25 @@ export async function processGhlCall(
   }
 
   await dbUpdateGhlCallPipeline(callId, { recordingUrl: recording.url })
+
+  // ── 1b. Dedup pela identidade real da gravação (messageId do GHL) ──────────
+  // O external_call_id inclui a duração no hash, então o GHL reentregar a mesma
+  // call com a duração preenchida depois gera uma 2ª linha. O messageId é igual
+  // nas duas entregas: quem reivindicar primeiro vence; a duplicata é apagada
+  // AQUI, antes do download e do Whisper (zero custo extra de LLM). messageId
+  // vazio (não deveria ocorrer) → não trava, segue como antes.
+  if (recording.messageId) {
+    const claimed = await dbClaimGhlMessageId(callId, recording.messageId)
+    if (!claimed) {
+      console.info("[ghl-pipeline] duplicate recording (messageId já reivindicado) — descartando", {
+        callId,
+        orgId: options.orgId,
+        messageId: recording.messageId,
+      })
+      await dbDeleteCall(callId)
+      return
+    }
+  }
 
   // ── 2. Baixar o arquivo de áudio (com retry — GHL processa o áudio async) ──
   let audio
