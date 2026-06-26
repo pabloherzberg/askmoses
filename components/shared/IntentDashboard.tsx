@@ -38,11 +38,13 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
         if (Array.isArray(response?.data)) {
           const data: Call[] = response.data
           setCalls(data)
-          // Extract unique trainers from calls
+          // Extract unique trainers from calls.
+          // Calls GHL têm trainer_id null — usa trainerName como chave de fallback.
           const seen = new Map<string, string>()
           for (const c of data) {
-            if (c.trainerId && !seen.has(c.trainerId)) {
-              seen.set(c.trainerId, c.trainerName ?? c.trainerId)
+            const key = c.trainerId ?? c.trainerName
+            if (key && !seen.has(key)) {
+              seen.set(key, c.trainerName ?? key)
             }
           }
           const trainerList = Array.from(seen.entries()).map(([id, name]) => ({ id, name }))
@@ -56,10 +58,15 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
 
   const weights = resolveIntentWeights(signals)
 
-  // Filtra calls pelo período selecionado (client-side).
+  // Filtra calls pelo período selecionado (client-side) — usado só pelo radar.
   // Se não houver calls no período, usa todas as disponíveis (ex: dados de demo históricos).
   const periodFiltered = calls.filter((c) => new Date(c.date).getTime() >= startDate.getTime())
   const periodCalls = periodFiltered.length > 0 ? periodFiltered : calls
+
+  // Calls do dia atual — usadas exclusivamente pela lista de leads prioritários.
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const leadsPool = calls.filter((c) => new Date(c.date).getTime() >= todayStart.getTime())
 
   function intentScore(c: Call): number {
     if (c.result === 'closed') return 5
@@ -69,19 +76,21 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
     return computeIntentIndex(bd, weights)
   }
 
-  // Team view: calls with intent > 3.5 (includes closed if intent === 5)
-  const teamLeads = periodCalls
+  // Team view: leads do dia com intent > 3.5, ordenados por intent desc
+  const teamLeads = leadsPool
     .map((c) => ({ ...c, intentScore: intentScore(c) }))
     .filter((c) => c.intentScore > 3.5)
     .sort((a, b) => b.intentScore - a.intentScore)
     .slice(0, 5)
 
-  // Seller view
+  // Seller view — compara por trainerId quando disponível, senão por trainerName
+  const callKey = (c: Call) => c.trainerId ?? c.trainerName ?? ''
   const activeTrainer = trainers.find((t) => t.id === activeTrainerId)
-  const trainerCalls = periodCalls.filter((c) => c.trainerId === activeTrainerId)
-  const otherCalls = periodCalls.filter((c) => c.trainerId !== activeTrainerId)
+  const trainerCalls = periodCalls.filter((c) => callKey(c) === activeTrainerId)
+  const otherCalls = periodCalls.filter((c) => callKey(c) !== activeTrainerId)
+  const trainerLeadsPool = leadsPool.filter((c) => callKey(c) === activeTrainerId)
 
-  const sellerLeads = trainerCalls
+  const sellerLeads = trainerLeadsPool
     .map((c) => ({ ...c, intentScore: intentScore(c) }))
     .filter((c) => c.intentScore > 3.5)
     .sort((a, b) => b.intentScore - a.intentScore)
@@ -143,9 +152,9 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
           <LeadsList
             leads={teamLeads}
             locale={locale}
-            emptyLabel={t('noCallsFound')}
+            emptyLabel="No leads with intent above 3.5 today"
             title={t('highestIntentLeads', { defaultValue: 'Highest Priority Leads' })}
-            subtitle={`${teamLeads.length} open leads`}
+            subtitle={`Today · ${teamLeads.length} leads with intent > 3.5`}
           />
         </div>
       ) : (
@@ -188,7 +197,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
               locale={locale}
               emptyLabel={t('noCallsFound')}
               title={t('highestIntentLeads', { defaultValue: 'Highest Priority Leads' })}
-              subtitle={activeTrainer ? `${activeTrainer.name.split(' ')[0]}'s open leads` : ''}
+              subtitle={activeTrainer ? `Today · ${activeTrainer.name.split(' ')[0]} · ${sellerLeads.length} leads with intent > 3.5` : 'Today'}
             />
           </div>
         </div>
