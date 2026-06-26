@@ -103,25 +103,32 @@ export function IntentRadarChart({
   // radarData com chaves trainer/team enquanto o <Radar> lia "value" → zerava.
   const hasTeam = !!(teamCalls && teamCalls.length > 0);
 
-  // Calculate delta (first half vs. second half of period)
+  // Calculate delta (first half vs. second half) usando as datas reais das calls.
+  // Divide pelo ponto médio entre a call mais antiga e a mais recente — assim
+  // o trend só aparece quando há calls nas duas metades do intervalo real.
   let trendDelta = 0;
-  if (startDate && endDate) {
-    const midDate = new Date((startDate.getTime() + endDate.getTime()) / 2);
-    const firstHalf = calls.filter((c) => new Date(c.date) < midDate);
-    const secondHalf = calls.filter((c) => new Date(c.date) >= midDate);
+  if (calls.length >= 2) {
+    const timestamps = calls.map((c) => new Date(c.date).getTime()).sort((a, b) => a - b);
+    const realMid = (timestamps[0] + timestamps[timestamps.length - 1]) / 2;
 
-    const firstHalfBreakdown = calculateIntentBreakdown(firstHalf, signals);
-    const secondHalfBreakdown = calculateIntentBreakdown(secondHalf, signals);
+    const firstHalf = calls.filter((c) => new Date(c.date).getTime() <= realMid);
+    const secondHalf = calls.filter((c) => new Date(c.date).getTime() > realMid);
 
-    const firstHalfIndex = getIntentIndex(firstHalfBreakdown, signals);
-    const secondHalfIndex = getIntentIndex(secondHalfBreakdown, signals);
+    // Só calcula se houver calls nas duas metades
+    if (firstHalf.length > 0 && secondHalf.length > 0) {
+      const firstHalfBreakdown = calculateIntentBreakdown(firstHalf, signals);
+      const secondHalfBreakdown = calculateIntentBreakdown(secondHalf, signals);
 
-    trendDelta =
-      firstHalfIndex > 0
-        ? Math.round(
-            ((secondHalfIndex - firstHalfIndex) / firstHalfIndex) * 1000,
-          ) / 10
-        : 0;
+      const firstHalfIndex = getIntentIndex(firstHalfBreakdown, signals);
+      const secondHalfIndex = getIntentIndex(secondHalfBreakdown, signals);
+
+      trendDelta =
+        firstHalfIndex > 0
+          ? Math.round(
+              ((secondHalfIndex - firstHalfIndex) / firstHalfIndex) * 1000,
+            ) / 10
+          : 0;
+    }
   }
 
   // For team comparison (trainer view)
