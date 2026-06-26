@@ -116,7 +116,7 @@ function parseLeadSource(raw: string | null | undefined): LeadSource | null {
 //   - closed → sempre 5 (regra fixa);
 //   - valor numérico válido → usado como está, clampado a 0–5;
 //   - ausente (calls antigas sem backfill) → fallback por resultado/IA.
-function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
+export function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
   if (result === "closed") return 5;
   // Intent ausente → fallback por resultado. Trata null/""/undefined antes do
   // Number() porque `Number(null) === 0` (finito) mostraria 0 indevidamente.
@@ -162,6 +162,11 @@ function toCall(db: DbCall): Call {
     // Intent weights snapshot at time of analysis
     intentWeights,
     processingStatus: db.processing_status ?? null,
+    contactId: db.contact_id ?? null,
+    // Stage 2 (Actual Close) — separado do result (Stage 1 / Initial Result).
+    stage2Outcome: (db.stage2_outcome as Call['stage2Outcome']) ?? null,
+    becamePayingAt: db.became_paying_at ?? null,
+    intentAtClose: db.intent_at_close ?? null,
   };
 }
 

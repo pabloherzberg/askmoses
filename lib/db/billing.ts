@@ -22,7 +22,8 @@ import type {
 
 const PG_MAX_ROWS = 1000;
 
-/** Limite abaixo do qual a call não é faturada (segundos). Handoff §7. */
+/** Limite abaixo do qual a call não é faturada (segundos). Handoff §7.
+ *  Independente do piso de análise: aqui duração nula também não fatura. */
 const MIN_BILLABLE_SECONDS = 30;
 
 /** Tarifa default em micro-USD/min ($0,0667). Casa com a migration 082. */
@@ -74,7 +75,7 @@ function monthLabel(month: string): string {
 // ── Agregação de calls ───────────────────────────────────────────────────────
 
 interface CallAgg {
-  calls: number; // calls faturadas (>= MIN_BILLABLE_SECONDS)
+  calls: number; // calls faturadas (duração conhecida e >= 30s)
   minutes: number; // minutos faturáveis (ceil por call, arredondado)
   durationsSeconds: number[]; // p/ avg call length
 }

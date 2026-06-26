@@ -257,6 +257,33 @@
       "orgRequired": "Indica el ID de la organización",
       "ownerRequired": "Indica el ID del owner para el vendedor"
     },
+    "ghl": {
+      "label": "Vendedor (vía GHL)",
+      "help": "El nombre y el correo se obtienen de GHL. Seleccione el usuario correspondiente.",
+      "placeholder": "Seleccione un usuario de GHL",
+      "loading": "Cargando usuarios de GHL...",
+      "searchPlaceholder": "Buscar por nombre o correo",
+      "empty": "No hay usuarios de GHL disponibles",
+      "previewLabel": "Seleccionado",
+      "notConfigured": "La integración con GHL no está configurada para esta organización. Configure GHL antes de agregar vendedores.",
+      "selectRequired": "Seleccione un usuario de GHL para continuar",
+      "selectOrgFirst": "Seleccione la organización primero para listar los usuarios de GHL",
+      "loadError": "No se pudieron cargar los usuarios de GHL",
+      "columnLabel": "GHL",
+      "actionsLabel": "Acciones",
+      "unlinked": "Sin vincular",
+      "editButton": "Editar vínculo GHL",
+      "editTitle": "Editar vínculo GHL",
+      "editDescription": "Vincule este miembro a un usuario de GHL para atribuir las llamadas automáticamente.",
+      "currentLink": "Vínculo actual",
+      "clearLink": "Quitar vínculo",
+      "editSave": "Guardar vínculo",
+      "editSaved": "Vínculo GHL actualizado.",
+      "editError": "No se pudo actualizar el vínculo GHL",
+      "ownerEditTitle": "Perfil de llamadas del owner",
+      "ownerEditDescription": "Active el perfil de llamadas de este owner vinculándolo a un usuario de GHL. Sus llamadas se puntúan y aparece en el ranking del equipo.",
+      "ownerClearLink": "Desactivar perfil de llamadas"
+    },
     "resendButton": "Reenviar invitación"
   },
   "Shared": {
@@ -264,6 +291,7 @@
       "dashboard": "Dashboard",
       "teamCommandCenter": "Centro de Mando",
       "marketingIntelligence": "Marketing Intelligence",
+      "intentAnalysis": "Intent Analysis",
       "calls": "Llamadas",
       "myDashboard": "Mi panel",
       "myCalls": "Mis llamadas",
@@ -326,7 +354,7 @@
       "guide": "Cómo usar"
     },
     "outcomes": {
-      "all": "Todos los resultados",
+      "all": "Todos los Resultados Iniciales",
       "unknown": "Sin resultado",
       "short": {
         "closed": "Cerrada",
@@ -577,7 +605,7 @@
     "thProspect": "Prospecto",
     "thDate": "Fecha",
     "thScore": "Puntuación",
-    "thResult": "Resultado",
+    "thResult": "Resultado Inicial",
     "forbidden": "No tienes acceso a esta llamada.",
     "settings": {
       "label": "Configuración",
@@ -2820,9 +2848,9 @@
     "callTrainer": "Vendedor",
     "lastCalls": "Últimas llamadas con mayor intent",
     "configTitle": "Intent Index — Señales y Pesos",
-    "configSubtitle": "Configure el peso de cada señal en el cálculo de intent. Los pesos deben sumar exactamente 10.",
+    "configSubtitle": "Configure el peso de cada señal en el cálculo de intent. Los pesos deben sumar exactamente 100%.",
     "weightLabel": "Peso",
-    "weightHint": "Valor entero de 1 a 10",
+    "weightHint": "Valor entero de 0 a 100",
     "filterDays": "Días para analizar",
     "filterApply": "Aplicar",
     "buyingIntent": "Intención de compra",

@@ -257,6 +257,33 @@
       "orgRequired": "Provide the organization ID",
       "ownerRequired": "Provide the owner ID for the sales person"
     },
+    "ghl": {
+      "label": "Sales Person (via GHL)",
+      "help": "Name and email are pulled from GHL. Select the matching user.",
+      "placeholder": "Select a GHL user",
+      "loading": "Loading GHL users...",
+      "searchPlaceholder": "Search by name or email",
+      "empty": "No GHL users available",
+      "previewLabel": "Selected",
+      "notConfigured": "GHL integration is not configured for this organization. Configure GHL before adding sales people.",
+      "selectRequired": "Select a GHL user to continue",
+      "selectOrgFirst": "Select the organization first to list GHL users",
+      "loadError": "Could not load GHL users",
+      "columnLabel": "GHL",
+      "actionsLabel": "Actions",
+      "unlinked": "Not linked",
+      "editButton": "Edit GHL link",
+      "editTitle": "Edit GHL link",
+      "editDescription": "Link this member to a GHL user so calls are attributed automatically.",
+      "currentLink": "Current link",
+      "clearLink": "Remove link",
+      "editSave": "Save link",
+      "editSaved": "GHL link updated.",
+      "editError": "Could not update the GHL link",
+      "ownerEditTitle": "Owner call profile",
+      "ownerEditDescription": "Activate this owner's call profile by linking them to a GHL user. Their calls get scored and they appear in the team ranking.",
+      "ownerClearLink": "Deactivate call profile"
+    },
     "resendButton": "Resend invitation"
   },
   "Shared": {
@@ -264,6 +291,7 @@
       "dashboard": "Dashboard",
       "teamCommandCenter": "Team Command Center",
       "marketingIntelligence": "Marketing Intelligence",
+      "intentAnalysis": "Intent Analysis",
       "calls": "Calls",
       "myDashboard": "My Dashboard",
       "myCalls": "My Calls",
@@ -326,7 +354,7 @@
       "guide": "How to Use"
     },
     "outcomes": {
-      "all": "All Results",
+      "all": "All Initial Results",
       "unknown": "No Outcome",
       "short": {
         "closed": "Closed",
@@ -577,7 +605,7 @@
     "thProspect": "Prospect",
     "thDate": "Date",
     "thScore": "Score",
-    "thResult": "Result",
+    "thResult": "Initial Result",
     "forbidden": "You don't have access to this call.",
     "settings": {
       "label": "Settings",
@@ -2820,9 +2848,9 @@
     "callTrainer": "Trainer",
     "lastCalls": "Last calls with highest intent",
     "configTitle": "Intent Index — Signals & Weights",
-    "configSubtitle": "Configure the weight of each signal in calculating intent. Weights must sum to exactly 10.",
+    "configSubtitle": "Configure the weight of each signal in calculating intent. Weights must sum to exactly 100%.",
     "weightLabel": "Weight",
-    "weightHint": "Integer value from 1 to 10",
+    "weightHint": "Integer value from 0 to 100",
     "filterDays": "Days to analyze",
     "filterApply": "Apply",
     "buyingIntent": "Buying Intent",

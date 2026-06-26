@@ -1,9 +1,16 @@
 import { type NextRequest } from 'next/server'
 import { Resend } from 'resend'
 import { getSession, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
+import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
+import { dbGetMemberGhlUserIdsByOrg } from '@/lib/db/trainers'
+import {
+  resolveGhlUserForOrg,
+  GhlLinkValidationError,
+  ghlLinkErrorResponse,
+} from '@/lib/services/ghl-user-link'
 import type { Role } from '@/lib/types'
 
 interface InviteBody {
@@ -12,6 +19,7 @@ interface InviteBody {
   role?: 'trainer' | 'owner'
   orgId?: string  // required when caller is admin
   ownerId?: string // required when admin invites a trainer
+  ghlUserId?: string // required when inviting a trainer (vínculo GHL)
   locale?: string
 }
 
@@ -75,6 +83,9 @@ function pickAvatarColor(email: string): typeof AVATAR_COLORS[number] {
 //   TC-11: bloqueia trainer invite se org no plano starter/pro atingiu o
 //   max_sales_people. Conta memberships role='trainer' com status pending+accepted.
 export async function POST(request: NextRequest) {
+  const csrf = requireSameOrigin(request)
+  if (csrf) return csrf
+
   const session = await getSession()
   if (!session) return unauthorized()
 
@@ -106,8 +117,10 @@ export async function POST(request: NextRequest) {
     return badRequest('Body inválido')
   }
 
-  const name = body.name?.trim()
-  const email = body.email?.trim().toLowerCase()
+  // Mutáveis: para trainer vinculado ao GHL, nome/email são sobrescritos
+  // com os valores canônicos do GHL (fonte da verdade — evita divergência).
+  let name = body.name?.trim()
+  let email = body.email?.trim().toLowerCase()
   const targetRole = body.role
 
   if (!name) return badRequest('name é obrigatório')
@@ -187,6 +200,34 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
   if (orgErr) return serverError('Não foi possível validar a organização', orgErr)
   if (!org) return badRequest('org inválida')
+
+  // ─── Vínculo GHL (apenas trainer) ─────────────────────────────────────────
+  // Trainer é criado a partir de um usuário do GHL: bloqueia se a org não tem
+  // a integração habilitada, exige um ghlUserId válido e não duplicado, e usa
+  // nome/email do GHL como fonte da verdade. Owner segue o fluxo manual.
+  let resolvedGhlUserId: string | null = null
+  if (targetRole === 'trainer') {
+    const ghlUserId = body.ghlUserId?.trim()
+    if (!ghlUserId) return badRequest('ghlUserId é obrigatório para adicionar um vendedor')
+
+    let match
+    try {
+      match = await resolveGhlUserForOrg(targetOrgId, ghlUserId)
+    } catch (err) {
+      if (err instanceof GhlLinkValidationError) return ghlLinkErrorResponse(err)
+      return serverError('Não foi possível validar o vínculo GHL', err)
+    }
+
+    // Fonte da verdade: nome/email vêm do GHL, não do que o cliente digitou.
+    // Revalida os valores do GHL com as mesmas regras do input manual — um
+    // usuário do GHL com nome/email malformado não pode furar as garantias
+    // que name/email tinham antes (senão geramos um auth user inválido).
+    resolvedGhlUserId = ghlUserId
+    name = match.name.trim()
+    email = match.email.trim().toLowerCase()
+    if (!name) return badRequest('Usuário do GHL sem nome válido')
+    if (!EMAIL_RE.test(email)) return badRequest('Usuário do GHL com email inválido')
+  }
 
   // ─── TC-11: Gate de seats (apenas trainer invite) ────────────────────────
   // Pós-merge (migration 038), organizations tem plan_id direto — JOIN puxa
@@ -273,6 +314,7 @@ export async function POST(request: NextRequest) {
         user_id: existingUser.id,
         owner_id: targetOwnerId,
         org_id: targetOrgId,
+        ghl_user_id: resolvedGhlUserId,
       })
       if (error) {
         await admin.from('memberships').delete()
@@ -440,6 +482,7 @@ export async function POST(request: NextRequest) {
       user_id: newUserId,
       owner_id: targetOwnerId,
       org_id: targetOrgId,
+      ghl_user_id: resolvedGhlUserId,
     })
     if (trainerErr) {
       await rollback()
@@ -688,6 +731,29 @@ export async function GET(request: NextRequest) {
 
   const inviterById = new Map((invitersRes.data ?? []).map((u) => [u.id, u]))
 
+  // Vínculo GHL por (org, user) — anexado a cada linha para a tabela de
+  // membros ativos e o modal de edição. O mesmo user pode ter ghl_user_id
+  // diferente por org, então a chave é (org_id, user_id).
+  // Resolve as orgs em paralelo (eram N round-trips serializados). Fail-soft:
+  // se a lookup de uma org falhar, logamos e seguimos sem o vínculo GHL dela —
+  // o badge some pra aquela org, mas a listagem de membros continua de pé (um
+  // erro transitório de DB não pode derrubar a página inteira).
+  const orgIdsInRows = Array.from(new Set(rows.map((r) => r.org_id)))
+  const ghlByOrg = new Map<string, Map<string, string | null>>()
+  const ghlResults = await Promise.all(
+    orgIdsInRows.map(async (oid) => {
+      try {
+        return [oid, await dbGetMemberGhlUserIdsByOrg(oid)] as const
+      } catch (err) {
+        console.error(`[invites] Não foi possível resolver vínculos GHL da org ${oid}`, err)
+        return [oid, null] as const
+      }
+    }),
+  )
+  for (const [oid, map] of ghlResults) {
+    if (map) ghlByOrg.set(oid, map)
+  }
+
   const items = rows.map((r) => ({
     // `id` segue sendo o UUID do user — DELETE /api/invites/[id] espera UUID.
     // Em multi-org o mesmo user_id pode repetir; frontend deve usar
@@ -707,6 +773,7 @@ export async function GET(request: NextRequest) {
     created_at: r.created_at,
     org: r.organizations,
     invitedBy: r.invited_by ? inviterById.get(r.invited_by) ?? null : null,
+    ghlUserId: ghlByOrg.get(r.org_id)?.get(r.user_id) ?? null,
   }))
 
   return ok({ items, page, pageSize, total })

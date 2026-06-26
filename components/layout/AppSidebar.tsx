@@ -21,6 +21,7 @@ import {
   Brain,
   Sparkles,
   CreditCard,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type React from "react";
@@ -119,6 +120,11 @@ export function OwnerNavItems() {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",
       icon: Megaphone,
+    },
+    {
+      label: t("intentAnalysis"),
+      href: "/intent-analysis",
+      icon: Target,
     },
   ];
   const toolsNav = [
@@ -225,6 +231,11 @@ export function ImpersonateNavItems() {
       label: t("marketingIntelligence"),
       href: "/marketing-intelligence",
       icon: Megaphone,
+    },
+    {
+      label: t("intentAnalysis"),
+      href: "/intent-analysis",
+      icon: Target,
     },
   ];
   const toolsNav = [

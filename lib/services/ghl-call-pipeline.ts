@@ -1,5 +1,6 @@
-import { dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbUpdateGhlCallPipeline, dbClaimGhlMessageId, dbDeleteCall } from "@/lib/db/calls"
 import { dbMarkOrgGhlAuthError } from "@/lib/db/organizations"
+import { probeAudioDurationMs } from "@/lib/services/audio-chunker"
 import { putOriginalAudio } from "@/lib/services/call-audio-storage"
 import { triggerChunking } from "@/lib/services/chunk-pipeline"
 import {
@@ -9,7 +10,7 @@ import {
   GhlAuthError,
   GhlDownloadError,
 } from "@/lib/services/ghl-api"
-import type { GhlWebhookPayload } from "@/lib/services/ghl-helpers"
+import { parseDuration, type GhlWebhookPayload } from "@/lib/services/ghl-helpers"
 import { inferFailureReason, notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 
 /**
@@ -146,6 +147,25 @@ export async function processGhlCall(
 
   await dbUpdateGhlCallPipeline(callId, { recordingUrl: recording.url })
 
+  // ── 1b. Dedup pela identidade real da gravação (messageId do GHL) ──────────
+  // O external_call_id inclui a duração no hash, então o GHL reentregar a mesma
+  // call com a duração preenchida depois gera uma 2ª linha. O messageId é igual
+  // nas duas entregas: quem reivindicar primeiro vence; a duplicata é apagada
+  // AQUI, antes do download e do Whisper (zero custo extra de LLM). messageId
+  // vazio (não deveria ocorrer) → não trava, segue como antes.
+  if (recording.messageId) {
+    const claimed = await dbClaimGhlMessageId(callId, recording.messageId)
+    if (!claimed) {
+      console.info("[ghl-pipeline] duplicate recording (messageId já reivindicado) — descartando", {
+        callId,
+        orgId: options.orgId,
+        messageId: recording.messageId,
+      })
+      await dbDeleteCall(callId)
+      return
+    }
+  }
+
   // ── 2. Baixar o arquivo de áudio (com retry — GHL processa o áudio async) ──
   let audio
   try {
@@ -181,6 +201,29 @@ export async function processGhlCall(
       },
     })
     return
+  }
+
+  // ── 2b. Backfill de duração: só quando o GHL não a informou ────────────────
+  // O webhook já barrou as < 30s; aqui a duração do GHL é >= 30s ou nula. Não
+  // mexemos numa duração que o GHL mandou. Nula distorceria o billing, então
+  // medimos o arquivo real e gravamos.
+  if (parseDuration(payload.duration) == null) {
+    // Medição é best-effort: se o ffmpeg falhar, segue a análise sem duração.
+    const measuredSeconds = await probeAudioDurationMs(audio.buffer)
+      .then((ms) => Math.round(ms / 1000))
+      .catch((err) => {
+        console.warn("[ghl-pipeline] não foi possível medir a duração; análise segue sem ela", {
+          callId,
+          err: err instanceof Error ? err.message : String(err),
+        })
+        return 0
+      })
+    // 0 = header ilegível OU áudio < 1s: não gravamos (seria duração falsa). A
+    // persistência fica FORA do best-effort de propósito — se a gravação falhar,
+    // o erro sobe (vira webhook_failed, retentável) em vez de sub-faturar a call.
+    if (measuredSeconds > 0) {
+      await dbUpdateGhlCallPipeline(callId, { durationSeconds: measuredSeconds })
+    }
   }
 
   // ── 3. Subir para Storage e disparar chunking ──────────────────────────────

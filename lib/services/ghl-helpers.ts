@@ -21,9 +21,43 @@ export interface GhlWebhookPayload {
 // via "Custom Data" aninhados em `customData`. Persistir o envelope completo
 // em ghl_payload preserva contexto útil pra debug (location.id, workflow.name).
 export interface GhlRawWebhookBody {
-  customData?: GhlWebhookPayload
+  customData?: GhlWebhookPayload | GhlAppointmentPayload
   location?: { id?: string | null }
   workflow?: { id?: string; name?: string }
+}
+
+// Evento de AGENDAMENTO do GHL (o "one"/agendamento — Melinda agendou Jamila).
+// NÃO confundir com paying client (Stage 2). type discrimina do callCompleted.
+export interface GhlAppointmentPayload {
+  type: string // "appointmentScheduled" | "appointmentCreated" | "appointmentBooked"
+  appointmentId?: string | null
+  contactId?: string | null
+  contactName?: string | null
+  userId?: string | null
+  userName?: string | null
+  userEmail?: string | null
+  // ISO 8601 do horário agendado (GHL usa startTime/selectedSlot conforme fonte).
+  startTime?: string | null
+  selectedSlot?: string | null
+  appointmentStatus?: string | null
+  locationId?: string | null
+}
+
+// Tipos de evento de agendamento que aceitamos. O Pepper pode salvar com
+// aspas/whitespace, então normalizamos antes de comparar.
+const APPOINTMENT_TYPES = new Set([
+  'appointmentscheduled',
+  'appointmentcreated',
+  'appointmentbooked',
+  'appointment',
+])
+
+export function normalizeWebhookType(raw: unknown): string {
+  return typeof raw === 'string' ? raw.trim().replace(/^"+|"+$/g, '') : ''
+}
+
+export function isAppointmentType(type: string): boolean {
+  return APPOINTMENT_TYPES.has(type.toLowerCase())
 }
 
 export type CallType =

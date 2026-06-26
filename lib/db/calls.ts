@@ -52,6 +52,17 @@ export interface DbCall {
   processing_status?: ProcessingStatus | null
   recording_url?: string | null
   ghl_payload?: Record<string, unknown> | null
+  // GHL contactId promovido a coluna — added in migration 091.
+  contact_id?: string | null
+  // Id da mensagem de call no GHL — added in migration 095. Identidade real da
+  // gravação; UNIQUE (org, ghl_message_id) deduplica reentregas do webhook.
+  ghl_message_id?: string | null
+  // Stage 2 (Actual Close / paying client) — added in migration 092.
+  // stage2_outcome: paying | not_paying | pending | null. became_paying_at:
+  // quando virou pagante. intent_at_close: snapshot do intent previsto (loop).
+  stage2_outcome?: string | null
+  became_paying_at?: string | null
+  intent_at_close?: number | null
 }
 
 export interface CreateCallInput {
@@ -182,6 +193,54 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
   return call
 }
 
+export interface MarkStage2Input {
+  stage2Outcome: 'paying' | 'not_paying' | 'pending'
+  // Snapshot do Intent Index previsto no momento — comporta o loop de
+  // aprendizado (intent previsto × fechou de fato). Só gravado quando vira paying.
+  intentAtClose?: number | null
+}
+
+// Marca o Stage 2 (Actual Close / paying client) de uma call. Separado do
+// Stage 1 (call_outcome / Initial Result). became_paying_at é setado quando
+// stage2Outcome === 'paying'. Escopado por org para evitar cross-tenant write.
+export async function dbMarkStage2(
+  id: string,
+  orgId: string,
+  input: MarkStage2Input,
+): Promise<DbCall | null> {
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = {
+    stage2_outcome: input.stage2Outcome,
+    became_paying_at: input.stage2Outcome === 'paying' ? new Date().toISOString() : null,
+  }
+  // intent_at_close só faz sentido (e é gravado) quando vira pagante.
+  if (input.stage2Outcome === 'paying' && input.intentAtClose != null) {
+    patch.intent_at_close = input.intentAtClose
+  }
+
+  const { data, error } = await supabase
+    .from('calls')
+    .update(patch)
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbMarkStage2: ${error.message}`)
+  }
+  if (!data) return null
+
+  const { intent_breakdown, intent_weights, ...rest } = data as any
+  return {
+    ...rest,
+    intentBreakdown: intent_breakdown,
+    intentWeights: intent_weights,
+  } as unknown as DbCall
+}
+
 export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
   const supabase = createAdminClient()
 
@@ -281,6 +340,30 @@ export async function dbDeleteCall(id: string, scope?: CallMutationScope): Promi
 
   if (error) throw new Error(`dbDeleteCall: ${error.message}`)
   return (count ?? 0) > 0
+}
+
+/**
+ * Reivindica o ghl_message_id (identidade real da gravação) para esta call.
+ * Idempotência forte do pipeline: protegido pela UNIQUE (org_id, ghl_message_id)
+ * da migration 095. Reentregas do mesmo webhook (ex.: sem duração e depois com
+ * duração) resolvem para o mesmo messageId e a segunda perde o claim.
+ *
+ * Retorna:
+ *   - true  → claim feito (ou já era desta mesma call: re-set idempotente).
+ *   - false → outra call da org já reivindicou este messageId → é duplicata.
+ */
+export async function dbClaimGhlMessageId(callId: string, messageId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+
+  const { error } = await supabase
+    .from('calls')
+    .update({ ghl_message_id: messageId, updated_at: new Date().toISOString() })
+    .eq('id', callId)
+
+  if (!error) return true
+  // 23505 = unique_violation: outra linha da org já tem este messageId.
+  if (error.code === '23505') return false
+  throw new Error(`dbClaimGhlMessageId: ${error.message}`)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -385,6 +468,9 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
 export interface UpdateGhlPipelineInput {
   processingStatus?: ProcessingStatus
   recordingUrl?: string | null
+  /** Duração real medida do áudio (s). Backfill no ingest só quando o GHL não
+   *  informou — evita null distorcendo o billing. */
+  durationSeconds?: number | null
   transcript?: string | null
   transcriptSource?: 'whisper' | 'manual' | 'ghl'
   // Campos populados pela fase de scoring (após o transcribed).
@@ -424,6 +510,7 @@ export async function dbUpdateGhlCallPipeline(
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (input.processingStatus !== undefined) patch.processing_status = input.processingStatus
   if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
+  if (input.durationSeconds !== undefined) patch.duration_seconds = input.durationSeconds
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
   if (input.rubricId !== undefined) patch.rubric_id = input.rubricId
