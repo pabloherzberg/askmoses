@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { getSession, ok, unauthorized, forbidden, getOrgId } from '@/lib/auth'
-import { dbGetOrgGhlConfigByOrgId } from '@/lib/db/organizations'
+import { dbGetOrgGhlConfigByOrgId, dbMarkOrgGhlAuthError } from '@/lib/db/organizations'
 import { dbGetLinkedGhlUserIds } from '@/lib/db/trainers'
 import { fetchGhlUsers, GhlAuthError } from '@/lib/services/ghl-api'
 import type { Role } from '@/lib/types'
@@ -79,8 +79,13 @@ export async function GET(request: NextRequest) {
     ghlUsers = await fetchGhlUsers(config.locationId, config.accessToken)
   } catch (err) {
     if (err instanceof GhlAuthError) {
+      // PIT rotacionado/revogado: registra pra acender o banner do admin (como
+      // o pipeline faz) e loga — antes o 502 sumia sem rastro server-side.
+      console.error('[ghl-users] GHL auth rejeitou (PIT expirado?)', { orgId, status: err.status })
+      await dbMarkOrgGhlAuthError(orgId)
       return upstreamError('Não foi possível autenticar no GHL — verifique o token da integração')
     }
+    console.error('[ghl-users] falha ao carregar usuários do GHL', { orgId, err })
     return upstreamError('Não foi possível carregar os usuários do GHL')
   }
 
