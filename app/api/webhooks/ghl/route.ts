@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
-import { dbUpsertGhlCall, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbUpdateGhlOpportunity } from "@/lib/db/calls"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { dbGetTrainerByGhlUserId } from "@/lib/db/trainers"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
@@ -12,8 +12,10 @@ import {
   parseDuration,
   normalizeWebhookType,
   isAppointmentType,
+  isOpportunityType,
   type GhlRawWebhookBody,
   type GhlAppointmentPayload,
+  type GhlOpportunityPayload,
 } from "@/lib/services/ghl-helpers"
 import { dbUpsertGhlAppointment } from "@/lib/db/appointments"
 import { MIN_ANALYZABLE_CALL_SECONDS, isConfirmedShortCall } from "@/lib/constants/limits"
@@ -104,6 +106,15 @@ export async function POST(req: NextRequest) {
       rawBody as unknown as Record<string, unknown>,
       orgConfig.orgId,
       locationId,
+    )
+  }
+
+  // ── Evento de OPORTUNIDADE (OpportunityStageChanged / OpportunityStatusChanged).
+  //    Atualiza ghl_won_status em todas as calls do contato na org.
+  if (isOpportunityType(normalizedType)) {
+    return handleOpportunity(
+      rawBody.customData as GhlOpportunityPayload,
+      orgConfig.orgId,
     )
   }
 
@@ -364,6 +375,38 @@ async function handleAppointment(
       meta: { operation: "dbUpsertGhlAppointment", locationId },
     })
     return jsonError("Failed to persist appointment", 500)
+  }
+}
+
+async function handleOpportunity(
+  opp: GhlOpportunityPayload,
+  orgId: string,
+) {
+  const contactId = normalizeEmpty(opp.contactId)
+  const opportunityId = normalizeEmpty(opp.opportunityId)
+  const status = normalizeEmpty(opp.status)
+
+  if (!contactId || !opportunityId || !status) {
+    return jsonError("opportunity missing contactId, opportunityId or status", 400)
+  }
+
+  try {
+    await dbUpdateGhlOpportunity(orgId, contactId, opportunityId, status)
+    return NextResponse.json({
+      data: { opportunityId, status, contactId },
+      error: null,
+    })
+  } catch (err) {
+    console.error("[ghl-webhook] opportunity update failed", { err, opportunityId, contactId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:opportunity:${opportunityId}`,
+      orgId,
+      error: err instanceof Error ? `[opportunity] ${err.message}` : String(err),
+      stage: "webhook",
+      reason: "db_error",
+      meta: { operation: "dbUpdateGhlOpportunity", contactId, opportunityId },
+    })
+    return jsonError("Failed to update opportunity", 500)
   }
 }
 
