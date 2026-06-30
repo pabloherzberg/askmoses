@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Bell, ChevronRight, Sparkles } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 interface NotificationItem {
   id: string
@@ -40,6 +40,7 @@ export function NotificationBell() {
   const t = useTranslations('Shared.notifications')
   const locale = useLocale()
   const router = useRouter()
+  const pathname = usePathname()
   const [isRecipient, setIsRecipient] = useState(false)
   const [items, setItems] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -60,11 +61,12 @@ export function NotificationBell() {
     }
   }, [])
 
+  // Sem polling: recarrega só no mount (hard refresh remonta o componente) e a
+  // cada mudança de rota (pathname muda em navegação client-side). Evita o
+  // fluxo contínuo de requests que inflava o log do servidor.
   useEffect(() => {
     void load()
-    const id = window.setInterval(() => void load(), 30000)
-    return () => window.clearInterval(id)
-  }, [load])
+  }, [load, pathname])
 
   const goToDetail = (n: NotificationItem) => {
     setOpen(false)
