@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
 import { dbUpsertGhlCall, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
+import { dbGetTrainerByGhlUserId } from "@/lib/db/trainers"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
 import {
@@ -168,6 +169,34 @@ export async function POST(req: NextRequest) {
   const clientName = normalizeEmpty(callPayload.contactName)
   const leadSource = normalizeSource(callPayload.contactSource)
 
+  // 5c. Gate de vínculo: só analisamos calls de um vendedor (GHLUSERID) que
+  //     esteja vinculado a um membro E com invite aceito. Sem vínculo ou invite
+  //     pendente → a call entra BLOQUEADA (processing_status='unlinked_trainer'),
+  //     sem disparar download/Whisper/LLM (zero custo). O GHLUSERID é guardado
+  //     sempre, pra atribuição e pra recuperação automática quando o vínculo
+  //     for resolvido. Resolvido só após o skip de calls curtas — não vale
+  //     consultar membro de uma call que seria descartada.
+  const ghlUserId = normalizeEmpty(callPayload.userId)
+  let trainerLink
+  try {
+    trainerLink = ghlUserId
+      ? await dbGetTrainerByGhlUserId(orgConfig.orgId, ghlUserId)
+      : null
+  } catch (err) {
+    console.error("[ghl-webhook] trainer lookup failed", { err, ghlUserId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:trainer-lookup:${externalCallId}`,
+      orgId: orgConfig.orgId,
+      contactId,
+      error: err instanceof Error ? `[trainer-lookup] ${err.message}` : String(err),
+      stage: "webhook",
+      reason: "db_error",
+      meta: { ghlUserId: ghlUserId ?? "—", operation: "dbGetTrainerByGhlUserId" },
+    })
+    return jsonError("Server error", 500)
+  }
+  const isLinkedActive = trainerLink?.inviteAccepted === true
+
   let upsertResult
   try {
     upsertResult = await dbUpsertGhlCall({
@@ -176,6 +205,11 @@ export async function POST(req: NextRequest) {
       ghlPayload: rawBody as unknown as Record<string, unknown>,
       trainerName,
       trainerEmail,
+      // Atribui o membro só quando ativo; bloqueada fica sem trainer_id (a
+      // recuperação o seta ao reprocessar).
+      trainerId: isLinkedActive ? trainerLink?.trainerId : null,
+      ghlUserId,
+      processingStatus: isLinkedActive ? "pending" : "unlinked_trainer",
       clientName,
       leadName: clientName,
       leadSource,
@@ -203,6 +237,43 @@ export async function POST(req: NextRequest) {
   }
 
   const callId = upsertResult.call.id
+
+  // 5d. Call BLOQUEADA: vendedor não vinculado a membro ativo. Não dispara
+  //     pipeline (sem custo). Alerta "CALL FEITA POR X" + status na própria
+  //     call; é reanalisada automaticamente quando o vínculo + invite forem
+  //     resolvidos (recoverUnlinkedCalls).
+  if (!isLinkedActive) {
+    const reason = trainerLink ? "ghl_user_invite_pending" : "ghl_user_not_linked"
+    console.info("[ghl-webhook] call de vendedor não vinculado — bloqueada", {
+      callId,
+      orgId: orgConfig.orgId,
+      salesperson: trainerName,
+      ghlUserId: ghlUserId ?? "—",
+      reason,
+    })
+    void notifyPipelineFailure("unlinked_trainer", {
+      callId,
+      orgId: orgConfig.orgId,
+      contactId,
+      stage: "webhook",
+      reason,
+      meta: {
+        salesperson: trainerName,
+        ghlUserId: ghlUserId ?? "—",
+        inviteStatus: trainerLink ? "pending" : "não vinculado",
+      },
+    })
+    return NextResponse.json({
+      data: {
+        callId,
+        status: "unlinked_trainer",
+        salesperson: trainerName,
+        ghlUserId,
+      },
+      error: null,
+    })
+  }
+
   const accessToken = orgConfig.accessToken
 
   // 6. Dispara pipeline async com o token específico da org.

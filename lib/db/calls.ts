@@ -385,6 +385,8 @@ export type ProcessingStatus =
   | 'chunking'
   | 'awaiting_chunks'
   | 'consolidating'
+  // Call bloqueada: GHLUSERID sem vínculo a membro ativo — added in migration 096.
+  | 'unlinked_trainer'
 
 export interface CreateGhlCallInput {
   orgId: string
@@ -392,6 +394,13 @@ export interface CreateGhlCallInput {
   ghlPayload: Record<string, unknown>
   trainerName: string
   trainerEmail?: string | null
+  /** Membro resolvido pelo GHLUSERID (só quando vinculado + invite aceito). */
+  trainerId?: string | null
+  /** GHLUSERID (payload.userId) que fez a call — guardado sempre. */
+  ghlUserId?: string | null
+  /** Estado inicial do pipeline. Default 'pending'. 'unlinked_trainer' bloqueia
+   *  a análise quando o GHLUSERID não está vinculado a um membro ativo. */
+  processingStatus?: ProcessingStatus
   clientName?: string | null
   leadName?: string | null
   leadSource?: string | null
@@ -432,10 +441,12 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
       external_call_id: input.externalCallId,
       ghl_payload: input.ghlPayload,
       ingest_source: 'ghl',
-      processing_status: 'pending',
+      processing_status: input.processingStatus ?? 'pending',
       transcript_source: 'whisper',
       trainer_name: input.trainerName,
       trainer_email: input.trainerEmail ?? '',
+      trainer_id: input.trainerId ?? null,
+      ghl_user_id: input.ghlUserId ?? null,
       client_name: input.clientName ?? null,
       lead_name: input.leadName ?? null,
       lead_source: input.leadSource ?? null,
@@ -467,6 +478,8 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
 
 export interface UpdateGhlPipelineInput {
   processingStatus?: ProcessingStatus
+  /** Atribui a call a um membro — usado na recuperação de calls bloqueadas. */
+  trainerId?: string | null
   recordingUrl?: string | null
   /** Duração real medida do áudio (s). Backfill no ingest só quando o GHL não
    *  informou — evita null distorcendo o billing. */
@@ -509,6 +522,7 @@ export async function dbUpdateGhlCallPipeline(
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (input.processingStatus !== undefined) patch.processing_status = input.processingStatus
+  if (input.trainerId !== undefined) patch.trainer_id = input.trainerId
   if (input.recordingUrl !== undefined) patch.recording_url = input.recordingUrl
   if (input.durationSeconds !== undefined) patch.duration_seconds = input.durationSeconds
   if (input.transcript !== undefined) patch.transcript = input.transcript
@@ -535,4 +549,32 @@ export async function dbUpdateGhlCallPipeline(
 
   const { error } = await supabase.from('calls').update(patch).eq('id', id)
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
+}
+
+/** Call bloqueada por falta de vínculo — o mínimo pra reprocessar (id + payload). */
+export interface UnlinkedCallRow {
+  id: string
+  ghl_payload: Record<string, unknown> | null
+}
+
+/**
+ * Calls de uma org que entraram BLOQUEADAS (processing_status='unlinked_trainer')
+ * por terem sido feitas por um determinado GHLUSERID. A recuperação automática
+ * usa isso pra reprocessar quando o GHLUSERID vira um membro ativo.
+ */
+export async function dbGetUnlinkedCallsByGhlUser(
+  orgId: string,
+  ghlUserId: string,
+): Promise<UnlinkedCallRow[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('calls')
+    .select('id, ghl_payload')
+    .eq('org_id', orgId)
+    .eq('ghl_user_id', ghlUserId)
+    .eq('processing_status', 'unlinked_trainer')
+
+  if (error) throw new Error(`dbGetUnlinkedCallsByGhlUser: ${error.message}`)
+  return (data ?? []) as UnlinkedCallRow[]
 }

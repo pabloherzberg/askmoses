@@ -188,6 +188,53 @@ export async function dbGetTrainers(filters?: GetTrainersFilters): Promise<Train
 // papéis. Um mesmo usuário GHL não pode ser reusado por dois trainers da
 // mesma org (índice único trainers_org_ghl_user_id_uidx).
 
+/** Vínculo GHL resolvido de uma call: o trainer dono do ghl_user_id e se o
+ *  invite dele já foi aceito (= membro ativo, calls analisáveis). */
+export interface GhlTrainerLink {
+  trainerId: string
+  userId: string
+  name: string
+  /** invite aceito → membro ativo. Pendente/sem linha → call fica bloqueada. */
+  inviteAccepted: boolean
+}
+
+/**
+ * Resolve o membro responsável por uma call da GHL a partir do ghl_user_id
+ * (GHLUSERID do payload). Retorna null quando NENHUM trainer da org está
+ * vinculado a esse GHLUSERID — nesse caso a call não pode ser atribuída.
+ *
+ * `inviteAccepted` distingue o vínculo ativo (invite aceito → pode analisar)
+ * do pendente (linha existe, mas o membro ainda não aceitou → bloqueia). O
+ * gate do webhook usa esse flag pra decidir entre analisar e bloquear a call.
+ */
+export async function dbGetTrainerByGhlUserId(
+  orgId: string,
+  ghlUserId: string,
+): Promise<GhlTrainerLink | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('id, user_id, users!inner(name, invite_status)')
+    .eq('org_id', orgId)
+    .eq('ghl_user_id', ghlUserId)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw new Error(`dbGetTrainerByGhlUserId: ${error.message}`)
+  }
+  if (!data) return null
+
+  const user = data.users as { name?: string; invite_status?: string } | null
+  return {
+    trainerId: data.id as string,
+    userId: data.user_id as string,
+    name: user?.name ?? '—',
+    inviteAccepted: user?.invite_status === 'accepted',
+  }
+}
+
 /**
  * Retorna os ghl_user_id já vinculados a trainers de uma org. Usado para
  * filtrar a lista de candidatos do GHL (não oferecer um usuário já em uso)
