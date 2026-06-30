@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
 import {
   getSession,
   ok,
@@ -11,12 +11,18 @@ import {
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbSetTrainerGhlUserId, dbUpsertOwnerCallProfile } from '@/lib/db/trainers'
+import { recoverUnlinkedCalls } from '@/lib/services/ghl-call-recovery'
 import {
   resolveGhlUserForOrg,
   GhlLinkValidationError,
   ghlLinkErrorResponse,
 } from '@/lib/services/ghl-user-link'
 import type { Role } from '@/lib/types'
+
+// nodejs + folga de tempo: ao vincular um GHLUSERID já ativo, a recuperação
+// roda em after() e reexecuta o pipeline das calls bloqueadas (download GHL).
+export const runtime = 'nodejs'
+export const maxDuration = 800
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -142,6 +148,18 @@ export async function PATCH(
       return conflict('Este usuário do GHL já está vinculado a outro membro desta organização')
     }
     return serverError('Não foi possível atualizar o vínculo GHL', err)
+  }
+
+  // Vínculo gravado: se esse GHLUSERID já é um membro ativo, reprocessa em
+  // background as calls que entraram bloqueadas por falta dele. No-op se o
+  // invite ainda estiver pendente (a recuperação refaz a checagem). Não roda
+  // ao limpar o vínculo (ghlUserId === null).
+  if (ghlUserId !== null) {
+    after(() =>
+      recoverUnlinkedCalls(orgId, ghlUserId).catch((err) =>
+        console.error('[memberships] recuperação de calls bloqueadas falhou', err),
+      ),
+    )
   }
 
   return ok({ userId, orgId, role: memberRole, ghlUserId })
