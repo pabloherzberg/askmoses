@@ -220,8 +220,35 @@ export async function dbGetScriptById(id: string, orgId: string): Promise<DbScri
   return (data ?? null) as DbScript | null
 }
 
+/**
+ * Monta um `full_script` legível a partir das sections. Usado como fallback
+ * quando um caller não fornece o texto completo (ex.: fluxo de save do admin),
+ * pra nenhum script ser persistido com full_script vazio. Mesmo formato do
+ * backfill SQL (migration 097).
+ */
+export function buildFullScriptFromSections(sections: ScriptSection[]): string {
+  return sections
+    .map((s, i) => {
+      const head = `${i + 1}. ${s.name}`
+      const body = s.instructions?.trim() ?? ''
+      const tip = s.tips?.trim() ? `\nTip: ${s.tips.trim()}` : ''
+      return `${head}\n${body}${tip}`
+    })
+    .join('\n\n')
+}
+
 export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript> {
   const supabase = createAdminClient()
+
+  // Defesa central: se o caller não mandou full_script, deriva das sections
+  // em vez de gravar null. Cobre todos os caminhos de criação (admin save,
+  // POST /api/scripts, etc.) sem cada um reimplementar a concatenação.
+  const fullScript =
+    input.full_script?.trim()
+      ? input.full_script
+      : input.sections.length > 0
+        ? buildFullScriptFromSections(input.sections)
+        : null
 
   const { data, error } = await supabase
     .from('scripts')
@@ -231,7 +258,7 @@ export async function dbCreateScript(input: CreateScriptInput): Promise<DbScript
       name: input.name,
       description: input.description ?? null,
       sections: input.sections,
-      full_script: input.full_script ?? null,
+      full_script: fullScript,
       criteria: input.criteria,
       is_active: input.isActive ?? true,
     })

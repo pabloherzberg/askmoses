@@ -69,6 +69,7 @@ export function ScriptReviewDetailClient({ review }: Props) {
           critical: s.critical,
         })),
         criteria,
+        full_script: review.fullScript,
       }),
     })
     const json = await res.json()
