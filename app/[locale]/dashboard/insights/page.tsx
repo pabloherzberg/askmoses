@@ -1066,7 +1066,7 @@ export default function InsightsPage() {
       )}
 
       {/* ── Script Intelligence — sempre visível quando há script ativo ── */}
-      {(intelligence || intelligenceLoading || intelligenceError) && (
+      {(intelligence || intelligenceLoading || (intelligenceError && !intelligenceError.includes("No calls"))) && (
         <div className="pt-2">
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
@@ -1098,6 +1098,76 @@ export default function InsightsPage() {
             resolution={resolution}
             t={t}
           />
+        </div>
+      )}
+
+      {/* ── Script ativo sem análise — quando há script mas sem calls suficientes ── */}
+      {!intelligenceLoading && !intelligence && (!intelligenceError || intelligenceError.includes("No calls")) && !firstApproval && script && script.sections.length > 0 && (
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+            <p className="text-xs font-medium uppercase tracking-widest shrink-0" style={{ color: "var(--am-muted)" }}>
+              Active Script
+            </p>
+            <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
+          </div>
+          {/* Column headers — mirrors ScriptIntelligencePanel layout */}
+          <div className="grid gap-6 lg:grid-cols-2 mb-1">
+            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
+              {t("sectionAnalysis.title")}
+            </p>
+            <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--am-muted)" }}>
+              {t("aiSuggestions.title")}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {script.sections.map((section, index) => (
+              <div key={index} className="grid gap-4 lg:grid-cols-2">
+                {/* Left: section content */}
+                <div className="rounded-xl border overflow-hidden" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+                  <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: "var(--am-bg4)" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>{section.name}</span>
+                      {section.weight !== undefined && (
+                        <span className="text-xs font-mono" style={{ color: "var(--am-muted)" }}>{section.weight}%</span>
+                      )}
+                      {section.critical && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: "rgba(255,94,94,0.15)", color: "var(--am-red)" }}>
+                          {t("myScript.critical")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="px-5 py-4 space-y-3">
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--am-muted)" }}>
+                        {t("myScript.instructions")}
+                      </p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--am-text)" }}>
+                        {section.instructions || <span style={{ color: "var(--am-muted)" }}>—</span>}
+                      </p>
+                    </div>
+                    {section.tips && (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--am-muted)" }}>
+                          {t("myScript.tips")}
+                        </p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--am-muted)" }}>
+                          {section.tips}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: no suggestion yet */}
+                <div className="rounded-xl border p-5 flex items-center justify-center" style={{ background: "var(--am-bg2)", borderColor: "var(--am-bg4)" }}>
+                  <span className="text-2xl font-mono" style={{ color: "var(--am-bg4)" }}>—</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

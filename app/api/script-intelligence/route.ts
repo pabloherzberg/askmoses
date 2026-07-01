@@ -29,16 +29,37 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Load active script of the org as fallback
+  // Load active script of the org — source of truth is org_scripts.status='active',
+  // fallback to scripts.is_active=true filtered by org_id for legacy orgs.
   async function loadActiveScript(): Promise<{ id: string; name: string; description: string | null; sections: ScriptSection[] } | null> {
-    const { data } = await admin
-      .from('scripts')
-      .select('id, name, description, sections')
+    const { data: orgScriptRow } = await admin
+      .from('org_scripts')
+      .select('script_id')
       .eq('org_id', ctx!.activeOrgId!)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .eq('status', 'active')
+      .is('ended_at', null)
+      .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    const scriptId = orgScriptRow?.script_id as string | null | undefined
+
+    const query = scriptId
+      ? admin
+          .from('scripts')
+          .select('id, name, description, sections')
+          .eq('id', scriptId)
+          .maybeSingle()
+      : admin
+          .from('scripts')
+          .select('id, name, description, sections')
+          .eq('org_id', ctx!.activeOrgId!)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+    const { data } = await query
     return data as { id: string; name: string; description: string | null; sections: ScriptSection[] } | null
   }
 
