@@ -489,23 +489,19 @@ function LeadsList({
                     </td>
                     {/* Won (GHL Opportunity) */}
                     <td className="py-2.5 whitespace-nowrap">
-                      {call.ghlWonStatus ? (
+                      {call.ghlWonStatus === 'won' ? (
                         <span
                           className="px-2 py-0.5 rounded-full text-[11px] font-medium"
-                          style={{
-                            background: call.ghlWonStatus === 'won'
-                              ? 'rgba(34,217,160,0.12)'
-                              : call.ghlWonStatus === 'lost'
-                                ? 'rgba(255,94,94,0.12)'
-                                : 'rgba(122,132,154,0.12)',
-                            color: call.ghlWonStatus === 'won'
-                              ? 'var(--am-green)'
-                              : call.ghlWonStatus === 'lost'
-                                ? 'var(--am-red)'
-                                : 'var(--am-muted)',
-                          }}
+                          style={{ background: 'rgba(34,217,160,0.12)', color: 'var(--am-green)' }}
                         >
-                          {call.ghlWonStatus.charAt(0).toUpperCase() + call.ghlWonStatus.slice(1)}
+                          Yes
+                        </span>
+                      ) : call.ghlWonStatus === 'lost' ? (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+                          style={{ background: 'rgba(255,94,94,0.12)', color: 'var(--am-red)' }}
+                        >
+                          No
                         </span>
                       ) : (
                         <span style={{ color: 'var(--am-muted)' }}>—</span>
