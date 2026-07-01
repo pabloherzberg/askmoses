@@ -23,6 +23,7 @@ export type PipelineFailureStatus =
   | "email_failed"       // score OK, mas coaching email não foi enviado
   | "worker_failed"      // run do worker de chunks crashou inteiro
   | "stale_call"         // call presa em status intermediário além do tolerável
+  | "unlinked_trainer"   // call de GHLUSERID sem vínculo a membro ativo (espelha o DB)
 
 /** Etapa onde o erro foi detectado — aparece no campo Stage do Slack. */
 export type PipelineFailureStage =
@@ -77,6 +78,9 @@ export type PipelineFailureReason =
   | "scoring_error"                // LLM de scoring falhou — call sem nota
   | "email_error"                  // Envio do coaching email falhou
   | "pipeline_stalled"             // Call presa em status intermediário (after() morto)
+  // ── Vínculo de membro (GHLUSERID) ─────────────────────────────────────────
+  | "ghl_user_not_linked"          // GHLUSERID da call não vinculado a nenhum membro
+  | "ghl_user_invite_pending"      // GHLUSERID vinculado, mas invite ainda não aceito
   // ── Fallback ──────────────────────────────────────────────────────────────
   | "unknown"                      // Erro não classificado — ver stack trace
 
@@ -159,6 +163,12 @@ const STATUS_DISPLAY: Record<PipelineFailureStatus, StatusDisplay> = {
     hint: "Call parada em status intermediário além do tolerável — o pipeline morreu sem marcar erro. Ver campo Status atual e considerar re-processar.",
     color: "#ECB22E",
   },
+  unlinked_trainer: {
+    emoji: "🔗",
+    title: "Call de vendedor não vinculado",
+    hint: "A call foi recebida mas o vendedor (GHLUSERID) não está vinculado a um membro ativo do AskMoses. Ver o campo *Causa* — a call fica bloqueada (sem análise/custo) e é reprocessada automaticamente quando o vínculo + invite forem resolvidos.",
+    color: "#ECB22E",
+  },
 }
 
 /** Dica de ação específica por causa — substitui a dica genérica do status. */
@@ -221,6 +231,10 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "Coaching email não foi enviado (call já tem transcript + score). Verificar RESEND_API_KEY e se o trainer tem email válido na call.",
   pipeline_stalled:
     "Call presa em status intermediário há mais tempo que o tolerável — provavelmente o processo serverless morreu sem marcar erro. Verificar a call no admin e re-processar.",
+  ghl_user_not_linked:
+    "O GHLUSERID que fez a call NÃO está vinculado a nenhum membro desta org. Verificar se o vendedor existe no AskMoses e vincular o GHLUSERID a ele (gestão de membros). A call fica bloqueada até o vínculo + invite aceito — aí é reanalisada automaticamente.",
+  ghl_user_invite_pending:
+    "O GHLUSERID está vinculado a um membro, mas o invite ainda NÃO foi aceito. Assim que o membro aceitar o convite, a call bloqueada é reanalisada automaticamente.",
   unknown:
     "Erro não classificado. Ver campo *Erro* para stack trace completo e buscar no Vercel logs pelos prefixos [ghl-webhook], [ghl-pipeline], [chunk-pipeline].",
 }
@@ -256,6 +270,8 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   scoring_error: "📊",
   email_error: "📧",
   pipeline_stalled: "🐌",
+  ghl_user_not_linked: "🔗",
+  ghl_user_invite_pending: "✉️",
   unknown: "❓",
 }
 

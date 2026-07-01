@@ -438,10 +438,17 @@ export function InvitePageClient({ role: callerRole }: Props) {
     if (!revokeTarget) return
     const id = revokeTarget.id
 
+    // Admin precisa mandar orgId no querystring pra desambiguar multi-org
+    // (mesma regra do resend). Owner sempre age na própria active_org —
+    // o endpoint ignora orgId nesse caso.
+    const orgId = revokeTarget.org?.id
+    if (isAdmin && !orgId) return
+
     setRevokingId(id)
     setFeedback(null)
     try {
-      const res = await fetch(`/api/invites/${id}`, { method: 'DELETE' })
+      const qs = isAdmin && orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+      const res = await fetch(`/api/invites/${id}${qs}`, { method: 'DELETE' })
       const json = (await res.json()) as { data: unknown; error: { message: string } | null }
 
       if (!res.ok || json.error) {
