@@ -29,6 +29,9 @@ export interface DbCall {
   closed: boolean | null
   call_date: string | null
   duration_seconds: number | null
+  // Como a call chegou no sistema — added in migration 044. 'ghl' (webhook)
+  // é fonte primária confiável para call_date; 'manual' (upload) é fallback.
+  ingest_source?: string | null
   // GHL/Pepper CRM lead enrichment — added in migration 043
   lead_name: string | null
   lead_source: string | null
@@ -63,6 +66,11 @@ export interface DbCall {
   stage2_outcome?: string | null
   became_paying_at?: string | null
   intent_at_close?: number | null
+  // GHL Opportunity — added in migration 096.
+  // Preenchido via webhook OpportunityStageChanged (contact_id como chave).
+  ghl_opportunity_id?: string | null
+  ghl_won_status?: string | null
+  ghl_won_at?: string | null
 }
 
 export interface CreateCallInput {
@@ -191,6 +199,30 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
   } as unknown as DbCall
 
   return call
+}
+
+// Atualiza o status de oportunidade GHL em todas as calls do contato na org.
+// Chamado pelo webhook OpportunityStageChanged via contact_id.
+export async function dbUpdateGhlOpportunity(
+  orgId: string,
+  contactId: string,
+  opportunityId: string,
+  status: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const normalizedStatus = status.trim().toLowerCase()
+  const patch: Record<string, unknown> = {
+    ghl_opportunity_id: opportunityId,
+    ghl_won_status: normalizedStatus,
+    ghl_won_at: normalizedStatus === 'won' ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  }
+  const { error } = await supabase
+    .from('calls')
+    .update(patch)
+    .eq('org_id', orgId)
+    .eq('contact_id', contactId)
+  if (error) throw new Error(`dbUpdateGhlOpportunity: ${error.message}`)
 }
 
 export interface MarkStage2Input {

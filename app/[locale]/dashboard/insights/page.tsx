@@ -1151,7 +1151,7 @@ export default function InsightsPage() {
       )}
 
       {/* ── Script Intelligence — sempre visível quando há script ativo ── */}
-      {(intelligence || intelligenceLoading || intelligenceError) && (
+      {(intelligence || intelligenceLoading || (intelligenceError && !intelligenceError.includes("No calls"))) && (
         <div className="pt-2">
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1" style={{ background: "var(--am-bg4)" }} />
