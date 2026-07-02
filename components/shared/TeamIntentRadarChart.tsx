@@ -90,17 +90,26 @@ export function TeamIntentRadarChart({
 
   const hasTeam = teamCalls.length > 0;
 
-  // Calcular tendência (primeira metade vs segunda metade do período)
+  // Calcular tendência (primeira metade vs segunda metade do período).
+  // Usa o ponto médio entre a call mais antiga e a mais recente do conjunto
+  // real — não o mid do filtro de datas, que pode deixar uma metade vazia
+  // quando os dados são históricos e caem fora da janela atual.
+  // Só calcula se ambas as metades tiverem calls; caso contrário fica 0.
   let trendDelta = 0;
-  const mid = new Date((startDate.getTime() + endDate.getTime()) / 2);
-  const firstHalf = trainerCalls.filter((c) => new Date(c.date) < mid);
-  const secondHalf = trainerCalls.filter((c) => new Date(c.date) >= mid);
-  const firstBd = avgBreakdown(firstHalf, signals);
-  const secondBd = avgBreakdown(secondHalf, signals);
-  const firstIdx = intentIndex(firstBd, signals);
-  const secondIdx = intentIndex(secondBd, signals);
-  if (firstIdx > 0) {
-    trendDelta = Math.round(((secondIdx - firstIdx) / firstIdx) * 1000) / 10;
+  if (trainerCalls.length >= 2) {
+    const timestamps = trainerCalls.map((c) => new Date(c.date).getTime()).sort((a, b) => a - b);
+    const realMid = (timestamps[0] + timestamps[timestamps.length - 1]) / 2;
+    const firstHalf = trainerCalls.filter((c) => new Date(c.date).getTime() <= realMid);
+    const secondHalf = trainerCalls.filter((c) => new Date(c.date).getTime() > realMid);
+    if (firstHalf.length > 0 && secondHalf.length > 0) {
+      const firstBd = avgBreakdown(firstHalf, signals);
+      const secondBd = avgBreakdown(secondHalf, signals);
+      const firstIdx = intentIndex(firstBd, signals);
+      const secondIdx = intentIndex(secondBd, signals);
+      if (firstIdx > 0) {
+        trendDelta = Math.round(((secondIdx - firstIdx) / firstIdx) * 1000) / 10;
+      }
+    }
   }
 
   const radarData = signals.map((signal) => {

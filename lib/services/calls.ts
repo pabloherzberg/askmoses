@@ -167,6 +167,14 @@ function toCall(db: DbCall): Call {
     stage2Outcome: (db.stage2_outcome as Call['stage2Outcome']) ?? null,
     becamePayingAt: db.became_paying_at ?? null,
     intentAtClose: db.intent_at_close ?? null,
+    ghlOpportunityId: db.ghl_opportunity_id ?? null,
+    ghlWonStatus: db.ghl_won_status ?? null,
+    ghlWonAt: db.ghl_won_at ?? null,
+    // Data da eval: call_date (migration 036) é a data real da call. GHL
+    // (webhook) é fonte primária confiável; upload manual é fallback do LLM
+    // (call_date extraído/estimado do transcript) — sinalizado na UI.
+    callDate: db.call_date ?? null,
+    evalDateSource: db.ingest_source === "ghl" ? "ghl" : "llm",
   };
 }
 

@@ -1,8 +1,15 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { after, type NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveDestination } from '@/lib/auth/post-verify'
+import { recoverUnlinkedCalls } from '@/lib/services/ghl-call-recovery'
 import type { Role } from '@/lib/types'
+
+// nodejs + folga de tempo: ao aceitar o invite, se o membro já tem GHLUSERID
+// vinculado, a recuperação roda em after() e reexecuta o pipeline das calls
+// que estavam bloqueadas (download GHL).
+export const runtime = 'nodejs'
+export const maxDuration = 800
 
 // GET /api/auth/verify-invite-token?token=…&next=…
 //
@@ -87,6 +94,25 @@ export async function GET(request: NextRequest) {
     .from('users')
     .update({ active_org_id: orgId })
     .eq('id', userId)
+
+  // ─── 3b. Recupera calls bloqueadas do membro (se já tem GHLUSERID) ─────
+  // O owner pode ter vinculado o GHLUSERID enquanto o invite estava pendente —
+  // as calls desse vendedor entraram bloqueadas. Agora que aceitou, reprocessa
+  // em background. No-op se o membro não tiver vínculo GHL.
+  after(async () => {
+    try {
+      const { data: trainerRow } = await admin
+        .from('trainers')
+        .select('ghl_user_id')
+        .eq('org_id', orgId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      const linkedGhlUserId = trainerRow?.ghl_user_id as string | null
+      if (linkedGhlUserId) await recoverUnlinkedCalls(orgId, linkedGhlUserId)
+    } catch (err) {
+      console.error('[verify-invite-token] recuperação de calls bloqueadas falhou', err)
+    }
+  })
 
   // ─── 4. Resolve email pra gerar magic link ─────────────────────────────
   const { data: userRow, error: userErr } = await admin

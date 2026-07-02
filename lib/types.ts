@@ -119,6 +119,17 @@ export interface Call {
   stage2Outcome?: 'paying' | 'not_paying' | 'pending' | null;
   becamePayingAt?: string | null;
   intentAtClose?: number | null;
+  // GHL Opportunity (migration 096)
+  ghlOpportunityId?: string | null;
+  ghlWonStatus?: string | null;
+  ghlWonAt?: string | null;
+  // Data em que a call de fato aconteceu (migration 036), distinta de `date`
+  // (created_at = upload/ingestão). Usada como "data da eval" no Intent dashboard.
+  callDate?: string | null;
+  // Origem da data da eval: 'ghl' quando ingest_source é webhook (confiável),
+  // 'llm' quando veio de upload manual (call_date é estimado/extraído do
+  // transcript) — sinalizado na UI como fallback.
+  evalDateSource?: "ghl" | "llm";
 }
 
 export interface TrainerScore {
@@ -380,6 +391,11 @@ export interface OrgIntentWeights {
 export type BillingStatus = "PAID" | "PILOT" | "DEMO" | "DISABLED";
 
 export type BillingPeriodRange = "1w" | "2w" | "3w" | "1m";
+
+// ─── Intent dashboard ───────────────────────────────────────────────────────
+// Range de tempo da lista de "Highest Priority Leads". Independente de
+// BillingPeriodRange (não é faturamento) — usa "15 dias" em vez de "3 semanas".
+export type IntentDateRange = "1w" | "2w" | "15d" | "1m";
 
 export type BillingScope = "admin" | "owner";
 

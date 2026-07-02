@@ -21,7 +21,7 @@ export interface GhlWebhookPayload {
 // via "Custom Data" aninhados em `customData`. Persistir o envelope completo
 // em ghl_payload preserva contexto útil pra debug (location.id, workflow.name).
 export interface GhlRawWebhookBody {
-  customData?: GhlWebhookPayload | GhlAppointmentPayload
+  customData?: GhlWebhookPayload | GhlAppointmentPayload | GhlOpportunityPayload
   location?: { id?: string | null }
   workflow?: { id?: string; name?: string }
 }
@@ -43,6 +43,19 @@ export interface GhlAppointmentPayload {
   locationId?: string | null
 }
 
+// Payload do webhook OpportunityStageChanged / OpportunityStatusChanged do GHL.
+export interface GhlOpportunityPayload {
+  type: string
+  opportunityId?: string | null
+  contactId?: string | null
+  contactName?: string | null
+  status?: string | null          // 'won' | 'lost' | 'open' | 'abandoned'
+  pipelineStageId?: string | null
+  pipelineStageName?: string | null
+  monetaryValue?: number | null
+  locationId?: string | null
+}
+
 // Tipos de evento de agendamento que aceitamos. O Pepper pode salvar com
 // aspas/whitespace, então normalizamos antes de comparar.
 const APPOINTMENT_TYPES = new Set([
@@ -58,6 +71,17 @@ export function normalizeWebhookType(raw: unknown): string {
 
 export function isAppointmentType(type: string): boolean {
   return APPOINTMENT_TYPES.has(type.toLowerCase())
+}
+
+const OPPORTUNITY_TYPES = new Set([
+  'opportunitystagechanged',
+  'opportunitystatuschanged',
+  'opportunitycreated',
+  'opportunitymoneyvaluechanged',
+])
+
+export function isOpportunityType(type: string): boolean {
+  return OPPORTUNITY_TYPES.has(type.toLowerCase())
 }
 
 export type CallType =

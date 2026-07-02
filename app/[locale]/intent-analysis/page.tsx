@@ -41,10 +41,6 @@ export default async function IntentAnalysisPage() {
       {/* Config dos pesos (igual rubric) + sucesso por stage — abaixo do radar */}
       {canConfig && initialWeights && (
         <div className="mt-8">
-          <SectionLabel>{t('configTitle')}</SectionLabel>
-          <p className="text-sm mb-6" style={{ color: 'var(--am-muted)' }}>
-            {t('configSubtitle')}
-          </p>
           <IntentWeightsManager orgId={orgId!} initialWeights={initialWeights} scope="owner" />
         </div>
       )}

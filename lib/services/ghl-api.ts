@@ -247,27 +247,28 @@ interface RawGhlUser {
   email?: string
 }
 
-// Paginação do endpoint /users/ do GHL. Buscamos páginas de USERS_PAGE_LIMIT
-// até a API devolver uma página incompleta (ou vazia), com um teto de páginas
-// como trava de segurança caso o endpoint ignore `skip` (evita loop infinito).
-const USERS_PAGE_LIMIT = 100
-const MAX_USERS_PAGES = 50
-
 // Cache curto por location. A lista de usuários do GHL é refetchada em vários
 // pontos próximos no tempo (combobox abrindo + validação no invite/PATCH); sem
 // cache cada um vira um round-trip externo que pode esbarrar em rate limit.
 const USERS_CACHE_TTL_MS = 60_000
 const usersCache = new Map<string, { at: number; users: GhlUser[] }>()
 
+// Timeout da chamada. Sem ele, uma GHL travada deixa a request pendurada até a
+// função estourar o limite da Vercel → 502 de plataforma opaco. Com Abort-
+// Controller a falha vira um Error tratável (→ 502 da rota, com log).
+const USERS_FETCH_TIMEOUT_MS = 10_000
+
 /**
  * Lista os usuários de uma location do GHL. Usado para vincular um trainer
  * (vendedor) ao seu usuário no GHL na criação/edição de membros — escolher
  * da lista evita erros de digitação do ghl_user_id.
  *
- * Pagina a API (uma location pode ter mais usuários do que cabe numa página)
- * e cacheia o resultado por location por USERS_CACHE_TTL_MS. Requer um token
- * (PIT) com escopo `users.readonly`. Em 401/403 lança GhlAuthError (token
- * rotacionado/sem escopo); o caller traduz para uma resposta amigável.
+ * O endpoint `/users/?locationId=` da API v2 retorna TODOS os usuários da
+ * location numa resposta só — não aceita `limit`/`skip` (responde 422
+ * "property should not exist" se forem passados). Cacheia por location por
+ * USERS_CACHE_TTL_MS. Requer um token (PIT) com escopo `users.readonly`. Em
+ * 401/403 lança GhlAuthError (token rotacionado/sem escopo); o caller traduz
+ * para uma resposta amigável.
  */
 export async function fetchGhlUsers(
   locationId: string,
@@ -281,42 +282,39 @@ export async function fetchGhlUsers(
   const base = getApiBase()
   const headers = buildAuthHeaders(accessToken)
 
-  // Dedup por id: defesa caso a API ignore `skip` e repita páginas, e contra
-  // duplicatas eventuais no próprio retorno do GHL.
-  const byId = new Map<string, GhlUser>()
-  let skip = 0
-
-  for (let page = 0; page < MAX_USERS_PAGES; page++) {
-    const res = await fetch(
-      `${base}/users/?locationId=${encodeURIComponent(locationId)}&limit=${USERS_PAGE_LIMIT}&skip=${skip}`,
-      { headers },
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), USERS_FETCH_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(
+      `${base}/users/?locationId=${encodeURIComponent(locationId)}`,
+      { headers, signal: controller.signal },
     )
-    if (!res.ok) {
-      const body = await res.text()
-      if (res.status === 401 || res.status === 403) {
-        throw new GhlAuthError(
-          res.status,
-          `GHL users list auth failed (${res.status}): ${body}`,
-        )
-      }
-      throw new Error(`GHL users list failed ${res.status}: ${body}`)
+  } finally {
+    clearTimeout(timer)
+  }
+  if (!res.ok) {
+    const body = await res.text()
+    if (res.status === 401 || res.status === 403) {
+      throw new GhlAuthError(
+        res.status,
+        `GHL users list auth failed (${res.status}): ${body}`,
+      )
     }
+    throw new Error(`GHL users list failed ${res.status}: ${body}`)
+  }
 
-    const data = (await res.json()) as { users?: RawGhlUser[] }
-    const batch = data.users ?? []
+  const data = (await res.json()) as { users?: RawGhlUser[] }
 
-    for (const u of batch) {
-      if (!u.id || !u.email) continue
-      const name =
-        u.name?.trim() ||
-        [u.firstName, u.lastName].filter(Boolean).join(' ').trim() ||
-        u.email
-      byId.set(u.id, { id: u.id, name, email: u.email })
-    }
-
-    // Página incompleta = última página.
-    if (batch.length < USERS_PAGE_LIMIT) break
-    skip += batch.length
+  // Dedup por id: defesa contra duplicatas eventuais no retorno do GHL.
+  const byId = new Map<string, GhlUser>()
+  for (const u of data.users ?? []) {
+    if (!u.id || !u.email) continue
+    const name =
+      u.name?.trim() ||
+      [u.firstName, u.lastName].filter(Boolean).join(' ').trim() ||
+      u.email
+    byId.set(u.id, { id: u.id, name, email: u.email })
   }
 
   const users = Array.from(byId.values())
