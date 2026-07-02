@@ -390,6 +390,9 @@ export interface CreateGhlCallInput {
   orgId: string
   externalCallId: string
   ghlPayload: Record<string, unknown>
+  /** Trainer resolvido pelo webhook via (org, ghl_user_id). Ligado já na
+   *  ingestão para o scoring/ranking/`/me` acharem a call sem passo extra. */
+  trainerId?: string | null
   trainerName: string
   trainerEmail?: string | null
   clientName?: string | null
@@ -434,6 +437,7 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
       ingest_source: 'ghl',
       processing_status: 'pending',
       transcript_source: 'whisper',
+      trainer_id: input.trainerId ?? null,
       trainer_name: input.trainerName,
       trainer_email: input.trainerEmail ?? '',
       client_name: input.clientName ?? null,

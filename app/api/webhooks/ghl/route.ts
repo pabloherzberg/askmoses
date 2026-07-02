@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
 import { dbUpsertGhlCall, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbResolveTrainerForGhlCall, type GhlCallTrainerLink } from "@/lib/db/trainers"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
@@ -168,12 +169,53 @@ export async function POST(req: NextRequest) {
   const clientName = normalizeEmpty(callPayload.contactName)
   const leadSource = normalizeSource(callPayload.contactSource)
 
+  // 5c. Gate de vínculo do trainer. Só ingerimos calls de quem está na
+  //     plataforma: um trainer vinculado a este usuário do GHL
+  //     (trainers.ghl_user_id) — com convite PENDENTE ou ACEITO. Se o usuário
+  //     do GHL não é membro nenhum da org (nem pendente, nem aceito), a call é
+  //     IGNORADA aqui: nada no banco, sem custo de LLM, sem alerta. É o corte
+  //     que impede o pipeline de ser inundado por calls que não devem ser
+  //     analisadas. Sem userId no payload não há como confirmar o vínculo →
+  //     mesmo tratamento (ignora).
+  const ghlUserId = normalizeEmpty(callPayload.userId)
+  let trainerLink: GhlCallTrainerLink | null = null
+  if (ghlUserId) {
+    try {
+      trainerLink = await dbResolveTrainerForGhlCall(orgConfig.orgId, ghlUserId)
+    } catch (err) {
+      console.error("[ghl-webhook] trainer link lookup failed", { err, externalCallId })
+      void notifyPipelineFailure("webhook_failed", {
+        callId: `sync-error:trainer-link:${externalCallId}`,
+        orgId: orgConfig.orgId,
+        contactId,
+        error: err instanceof Error ? `[trainer-link] ${err.message}` : String(err),
+        stage: "webhook",
+        reason: "db_error",
+        meta: { externalCallId, ghlUserId, operation: "dbResolveTrainerForGhlCall" },
+      })
+      return jsonError("Server error", 500)
+    }
+  }
+
+  if (!trainerLink) {
+    console.info("[ghl-webhook] call de trainer não vinculado — ignorando", {
+      orgId: orgConfig.orgId,
+      ghlUserId,
+      externalCallId,
+    })
+    return NextResponse.json({
+      data: { status: "skipped_unlinked_trainer" },
+      error: null,
+    })
+  }
+
   let upsertResult
   try {
     upsertResult = await dbUpsertGhlCall({
       orgId: orgConfig.orgId,
       externalCallId,
       ghlPayload: rawBody as unknown as Record<string, unknown>,
+      trainerId: trainerLink.trainerId,
       trainerName,
       trainerEmail,
       clientName,
@@ -204,6 +246,22 @@ export async function POST(req: NextRequest) {
 
   const callId = upsertResult.call.id
   const accessToken = orgConfig.accessToken
+
+  // 5d. Trainer vinculado mas com convite ainda PENDENTE: a call segue o fluxo
+  //     normal (é analisada e salva — trainer_id já ligado), mas logamos na
+  //     pipeline pra dar visibilidade de que esse trainer ainda não aceitou o
+  //     convite. É o único log adicional do gate — o caso "não vinculado" acima
+  //     sai em silêncio.
+  if (trainerLink.inviteStatus === "pending") {
+    void notifyPipelineFailure("trainer_invite_pending", {
+      callId,
+      orgId: orgConfig.orgId,
+      contactId,
+      stage: "webhook",
+      reason: "trainer_invite_pending",
+      meta: { ghlUserId, trainerId: trainerLink.trainerId },
+    })
+  }
 
   // 6. Dispara pipeline async com o token específico da org.
   after(async () => {

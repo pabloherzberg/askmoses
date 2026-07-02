@@ -23,6 +23,7 @@ export type PipelineFailureStatus =
   | "email_failed"       // score OK, mas coaching email não foi enviado
   | "worker_failed"      // run do worker de chunks crashou inteiro
   | "stale_call"         // call presa em status intermediário além do tolerável
+  | "trainer_invite_pending" // call ingerida de trainer com convite ainda pendente (não é falha)
 
 /** Etapa onde o erro foi detectado — aparece no campo Stage do Slack. */
 export type PipelineFailureStage =
@@ -77,6 +78,8 @@ export type PipelineFailureReason =
   | "scoring_error"                // LLM de scoring falhou — call sem nota
   | "email_error"                  // Envio do coaching email falhou
   | "pipeline_stalled"             // Call presa em status intermediário (after() morto)
+  // ── Vínculo de trainer ────────────────────────────────────────────────────
+  | "trainer_invite_pending"       // Trainer vinculado ao GHL mas convite ainda não aceito
   // ── Fallback ──────────────────────────────────────────────────────────────
   | "unknown"                      // Erro não classificado — ver stack trace
 
@@ -159,6 +162,12 @@ const STATUS_DISPLAY: Record<PipelineFailureStatus, StatusDisplay> = {
     hint: "Call parada em status intermediário além do tolerável — o pipeline morreu sem marcar erro. Ver campo Status atual e considerar re-processar.",
     color: "#ECB22E",
   },
+  trainer_invite_pending: {
+    emoji: "✉️",
+    title: "Call de trainer com convite pendente",
+    hint: "A call foi analisada e salva normalmente (trainer já vinculado). Só falta o trainer aceitar o convite para ver o próprio dashboard — reenviar/cobrar o aceite se necessário.",
+    color: "#ECB22E",
+  },
 }
 
 /** Dica de ação específica por causa — substitui a dica genérica do status. */
@@ -221,6 +230,8 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "Coaching email não foi enviado (call já tem transcript + score). Verificar RESEND_API_KEY e se o trainer tem email válido na call.",
   pipeline_stalled:
     "Call presa em status intermediário há mais tempo que o tolerável — provavelmente o processo serverless morreu sem marcar erro. Verificar a call no admin e re-processar.",
+  trainer_invite_pending:
+    "A call veio de um trainer vinculado a um usuário do GHL, mas cujo convite ainda está pendente. Foi analisada e salva normalmente; só falta o trainer aceitar o convite para acessar o próprio dashboard. Reenviar o convite em /dashboard/settings/invite se necessário.",
   unknown:
     "Erro não classificado. Ver campo *Erro* para stack trace completo e buscar no Vercel logs pelos prefixos [ghl-webhook], [ghl-pipeline], [chunk-pipeline].",
 }
@@ -256,6 +267,7 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   scoring_error: "📊",
   email_error: "📧",
   pipeline_stalled: "🐌",
+  trainer_invite_pending: "✉️",
   unknown: "❓",
 }
 
