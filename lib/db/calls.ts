@@ -424,10 +424,11 @@ export interface CreateGhlCallInput {
   orgId: string
   externalCallId: string
   ghlPayload: Record<string, unknown>
+  /** Trainer resolvido pelo webhook via (org, ghl_user_id). Ligado já na
+   *  ingestão para o scoring/ranking/`/me` acharem a call sem passo extra. */
+  trainerId?: string | null
   trainerName: string
   trainerEmail?: string | null
-  /** Membro resolvido pelo GHLUSERID (só quando vinculado + invite aceito). */
-  trainerId?: string | null
   /** GHLUSERID (payload.userId) que fez a call — guardado sempre. */
   ghlUserId?: string | null
   /** Estado inicial do pipeline. Default 'pending'. 'unlinked_trainer' bloqueia
