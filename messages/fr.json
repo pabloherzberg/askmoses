@@ -1585,6 +1585,12 @@
         "title": "Première suggestion de script",
         "body": "Ceci est la première suggestion de script pour votre organisation. Il n'y a pas de base antérieure pour une analyse comparative — utilisez le panneau ci-dessus pour examiner le contenu et approuver ou rejeter."
       },
+      "activeScript": {
+        "title": "Script actif",
+        "versionLabel": "v{version}",
+        "expandHint": "Cliquez pour voir le script complet",
+        "empty": "Ce script n'a pas encore de texte complet enregistré."
+      },
       "suggestion": {
         "noPending": "Aucune suggestion de script en attente. Quand l'admin envoie une nouvelle version, elle apparaîtra ici.",
         "bannerTitle": "Suggestion de Script de l'Admin",

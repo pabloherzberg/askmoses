@@ -36,15 +36,17 @@ export async function GET() {
   const scriptId = orgScriptRow?.script_id as string | null | undefined
 
   // Fallback: org sem linha em org_scripts ainda usa scripts.is_active=true
+  const cols =
+    'id, name, description, sections, full_script, criteria, is_active, created_at, updated_at, rubric_version_snapshot, minor_version'
   const query = scriptId
     ? admin
         .from('scripts')
-        .select('id, name, description, sections, full_script, criteria, is_active, created_at, updated_at')
+        .select(cols)
         .eq('id', scriptId)
         .maybeSingle()
     : admin
         .from('scripts')
-        .select('id, name, description, sections, full_script, criteria, is_active, created_at, updated_at')
+        .select(cols)
         .eq('org_id', ctx.activeOrgId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -61,5 +63,10 @@ export async function GET() {
     )
   }
 
-  return ok({ script: script ?? null })
+  // Versão derivada igual ao /api/scripts/pending: rubric_version_snapshot.minor_version.
+  const withVersion = script
+    ? { ...script, version: `${script.rubric_version_snapshot}.${script.minor_version}` }
+    : null
+
+  return ok({ script: withVersion })
 }

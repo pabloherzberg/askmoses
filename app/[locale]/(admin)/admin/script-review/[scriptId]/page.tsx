@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type {
-  DbScript,
-  ScriptSection,
-  ScriptCriterion,
+import {
+  buildFullScriptFromSections,
+  type DbScript,
+  type ScriptSection,
+  type ScriptCriterion,
 } from "@/lib/db/scripts";
 import type {
   ScriptReviewData,
@@ -92,6 +93,9 @@ function buildReviewData(
     newVersion: bumpMinor(baseVersion),
     callsAnalyzed: aiResult.callsAnalyzed,
     expectedImpact: changesSummary.length,
+    fullScript: aiResult.full_script?.trim()
+      ? aiResult.full_script
+      : buildFullScriptFromSections(reviewSections),
     sections: reviewSections,
     changesSummary,
     metadata: {
