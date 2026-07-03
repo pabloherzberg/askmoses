@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle } from 'lucide-react'
+import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle, History, X, Clock } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { IntentCell } from '@/components/shared/IntentCell'
@@ -134,6 +134,14 @@ interface CallsTableProps {
 
 const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
 
+// Uma "conta" na tabela: todas as calls de um mesmo contactId. Calls sem
+// contactId viram grupos de 1 (chaveadas pelo próprio id da call).
+type CallGroup = {
+  key: string
+  calls: Call[] // ordenadas por data desc — [0] é a mais recente
+  latest: Call
+}
+
 export function CallsTable({
   calls,
   showTrainerColumn = true,
@@ -184,6 +192,35 @@ export function CallsTable({
     [calls, resultFilter, trainerFilter, scriptFilter]
   )
 
+  // Agrupa as calls filtradas por contactId — um registro por cliente. Dentro
+  // do grupo as calls ficam em ordem temporal (mais nova primeiro) e os grupos
+  // são ordenados pela call mais recente de cada cliente.
+  const groups = useMemo<CallGroup[]>(() => {
+    const byContact = new Map<string, Call[]>()
+    const result: CallGroup[] = []
+    for (const call of filtered) {
+      if (call.contactId) {
+        const arr = byContact.get(call.contactId)
+        if (arr) arr.push(call)
+        else byContact.set(call.contactId, [call])
+      } else {
+        result.push({ key: call.id, calls: [call], latest: call })
+      }
+    }
+    for (const [contactId, arr] of byContact) {
+      const sorted = [...arr].sort((a, b) => b.date.localeCompare(a.date))
+      result.push({ key: contactId, calls: sorted, latest: sorted[0] })
+    }
+    return result.sort((a, b) => b.latest.date.localeCompare(a.latest.date))
+  }, [filtered])
+
+  // Cliente selecionado para o modal de histórico. Guardamos só a chave e
+  // derivamos o grupo dos `groups` recalculados — assim, quando uma call é
+  // reanalisada (router.refresh recarrega os dados), o modal reflete o status
+  // novo em vez de um snapshot congelado no momento da abertura.
+  const [historyKey, setHistoryKey] = useState<string | null>(null)
+  const historyGroup = historyKey ? groups.find((g) => g.key === historyKey) ?? null : null
+
   const selectClass = 'text-sm rounded-lg px-3 py-1.5 border outline-none transition-colors cursor-pointer'
   const selectStyle = { background: 'var(--card)', borderColor: 'var(--am-border2)', color: 'var(--am-text)' }
 
@@ -197,6 +234,110 @@ export function CallsTable({
   const countLabel = filtered.length === 1
     ? t('callsAnalyzedOne', { count: filtered.length })
     : t('callsAnalyzedOther', { count: filtered.length })
+
+  // Renderiza a linha do cliente (call mais recente do contactId). Quando o
+  // cliente tem histórico (>1 call), um botão abre o modal com todas as calls.
+  const renderRow = (call: Call, group: CallGroup) => {
+    const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
+    const outcomeLabel = call.result in RESULT_STYLES
+      ? tOutcomes(`short.${call.result}`)
+      : tOutcomes('unknown')
+    const hasHistory = group.calls.length > 1
+    return (
+      <tr
+        key={call.id}
+        className="cursor-pointer transition-colors"
+        style={{ borderBottom: '1px solid var(--am-border)' }}
+        onClick={() => router.push(`/${locale}/calls/${call.id}`)}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--am-bg3)')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        {showTrainerColumn && (
+          <td className="px-4 py-3">
+            <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: 'var(--am-text)' }}>
+              {call.trainerName}
+            </span>
+          </td>
+        )}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px]" style={{ color: 'var(--am-text)' }}>{call.prospect}</span>
+            {call.lead_source && (
+              <span
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
+              >
+                {LEAD_SOURCE_LABELS[call.lead_source]}
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
+            {new Date(call.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        </td>
+        {hasScripts && (
+          <td className="px-4 py-3">
+            {call.scriptName ? (
+              <span
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                style={
+                  call.scriptIsActive
+                    ? { background: GREEN_BG, color: 'var(--am-green)' }
+                    : { background: 'var(--am-bg4)', color: 'var(--am-muted)' }
+                }
+              >
+                <FileText size={11} />
+                {call.scriptName}
+              </span>
+            ) : (
+              <span className="text-xs" style={{ color: 'var(--am-muted)' }}>—</span>
+            )}
+          </td>
+        )}
+        {/* Duração real da call (ex.: "1m30s") — Owner vê só a
+            duração, nunca o custo (visível apenas pro Admin). */}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span className="text-[13px] font-mono" style={{ color: 'var(--am-muted)' }}>
+            {formatDuration(call.durationSeconds)}
+          </span>
+        </td>
+        {/* Intent (1–5): só o número + tooltip com a mensagem fixa.
+            Sem estrelas, sem badge colorido (decisão Task C). */}
+        <td className="px-4 py-3">
+          <IntentCell score={call.intent} />
+        </td>
+        <td className="px-4 py-3"><ScorePill score={call.score} /></td>
+        <td className="px-4 py-3">
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
+            {outcomeLabel}
+          </span>
+        </td>
+        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-2">
+            {hasHistory && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setHistoryKey(group.key) }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border transition-opacity hover:opacity-80 whitespace-nowrap"
+                style={{ color: 'var(--am-accent2)', borderColor: 'var(--am-border2)', background: 'var(--am-bg3)' }}
+                title={t('groupViewAll', { count: group.calls.length })}
+              >
+                <History size={12} />
+                {t('groupViewAll', { count: group.calls.length })}
+              </button>
+            )}
+            {canReprocess && shouldShowReprocessButton(call) ? (
+              <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
+            ) : (
+              <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
+            )}
+          </div>
+        </td>
+      </tr>
+    )
+  }
 
   return (
     <div>
@@ -264,97 +405,133 @@ export function CallsTable({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((call) => {
-                  const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
-                  const outcomeLabel = call.result in RESULT_STYLES
-                    ? tOutcomes(`short.${call.result}`)
-                    : tOutcomes('unknown')
-                  return (
-                    <tr
-                      key={call.id}
-                      className="cursor-pointer transition-colors"
-                      style={{ borderBottom: '1px solid var(--am-border)' }}
-                      onClick={() => router.push(`/${locale}/calls/${call.id}`)}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--am-bg3)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      {showTrainerColumn && (
-                        <td className="px-4 py-3">
-                          <span className="text-[13px] font-medium whitespace-nowrap" style={{ color: 'var(--am-text)' }}>
-                            {call.trainerName}
-                          </span>
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[13px]" style={{ color: 'var(--am-text)' }}>{call.prospect}</span>
-                          {call.lead_source && (
-                            <span
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-                              style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
-                            >
-                              {LEAD_SOURCE_LABELS[call.lead_source]}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
-                          {new Date(call.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </td>
-                      {hasScripts && (
-                        <td className="px-4 py-3">
-                          {call.scriptName ? (
-                            <span
-                              className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
-                              style={
-                                call.scriptIsActive
-                                  ? { background: GREEN_BG, color: 'var(--am-green)' }
-                                  : { background: 'var(--am-bg4)', color: 'var(--am-muted)' }
-                              }
-                            >
-                              <FileText size={11} />
-                              {call.scriptName}
-                            </span>
-                          ) : (
-                            <span className="text-xs" style={{ color: 'var(--am-muted)' }}>—</span>
-                          )}
-                        </td>
-                      )}
-                      {/* Duração real da call (ex.: "1m30s") — Owner vê só a
-                          duração, nunca o custo (visível apenas pro Admin). */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-[13px] font-mono" style={{ color: 'var(--am-muted)' }}>
-                          {formatDuration(call.durationSeconds)}
-                        </span>
-                      </td>
-                      {/* Intent (1–5): só o número + tooltip com a mensagem fixa.
-                          Sem estrelas, sem badge colorido (decisão Task C). */}
-                      <td className="px-4 py-3">
-                        <IntentCell score={call.intent} />
-                      </td>
-                      <td className="px-4 py-3"><ScorePill score={call.score} /></td>
-                      <td className="px-4 py-3">
-                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
-                          {outcomeLabel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        {canReprocess && shouldShowReprocessButton(call) ? (
-                          <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
-                        ) : (
-                          <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
+                {groups.map((group) => renderRow(group.latest, group))}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Modal de histórico do cliente — todas as calls do mesmo contactId */}
+      {historyGroup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setHistoryKey(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl border shadow-xl max-h-[80vh] flex flex-col overflow-hidden"
+            style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 p-5 border-b" style={{ borderColor: 'var(--am-border)' }}>
+              <div>
+                <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--am-text)' }}>
+                  <History size={16} />
+                  {t('clientHistoryTitle')}
+                </h2>
+                <p className="text-xs mt-1" style={{ color: 'var(--am-muted)' }}>
+                  {t('clientHistorySubtitle', { count: historyGroup.calls.length, prospect: historyGroup.latest.prospect })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryKey(null)}
+                aria-label={t('groupHide')}
+                className="rounded-md p-1 transition-opacity hover:opacity-70"
+                style={{ color: 'var(--am-muted)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-3 overflow-y-auto space-y-2">
+              {historyGroup.calls.map((call) => {
+                const r = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
+                const label = call.result in RESULT_STYLES
+                  ? tOutcomes(`short.${call.result}`)
+                  : tOutcomes('unknown')
+                const showReprocess = canReprocess && shouldShowReprocessButton(call)
+                const goToDetail = () => router.push(`/${locale}/calls/${call.id}`)
+                return (
+                  // Linha como <div> (não <button>) para permitir aninhar o
+                  // botão de reanálise sem violar HTML. A navegação para o
+                  // detalhe fica no onClick da linha; o ReprocessButton faz
+                  // stopPropagation internamente e não dispara a navegação.
+                  <div
+                    key={call.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={goToDetail}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        goToDetail()
+                      }
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left cursor-pointer transition-opacity hover:opacity-90"
+                    style={{ background: 'var(--am-bg3)', borderColor: 'var(--am-border)' }}
+                  >
+                    <div className="flex flex-col gap-1.5 min-w-0">
+                      {/* Linha 1: data + resultado + origem */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
+                          {new Date(call.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: r.bg, color: r.color }}>
+                          {label}
+                        </span>
+                        {call.lead_source && (
+                          <span
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                            style={{ background: 'var(--am-bg4)', color: 'var(--am-accent2)' }}
+                          >
+                            {LEAD_SOURCE_LABELS[call.lead_source]}
+                          </span>
+                        )}
+                      </div>
+                      {/* Linha 2: metadados — vendedor, script, duração, intent */}
+                      <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                        {showTrainerColumn && (
+                          <span className="font-medium" style={{ color: 'var(--am-text)' }}>{call.trainerName}</span>
+                        )}
+                        {call.scriptName && (
+                          <span
+                            className="inline-flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-full"
+                            style={
+                              call.scriptIsActive
+                                ? { background: GREEN_BG, color: 'var(--am-green)' }
+                                : { background: 'var(--am-bg4)', color: 'var(--am-muted)' }
+                            }
+                          >
+                            <FileText size={10} />
+                            {call.scriptName}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1 font-mono">
+                          <Clock size={11} />
+                          {formatDuration(call.durationSeconds)}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          {t('thIntent')}
+                          <IntentCell score={call.intent} />
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <ScorePill score={call.score} />
+                      {showReprocess ? (
+                        <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
+                      ) : (
+                        <ChevronRight size={15} style={{ color: 'var(--am-muted)' }} />
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
