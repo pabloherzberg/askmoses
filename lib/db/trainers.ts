@@ -268,6 +268,47 @@ export async function dbGetLinkedGhlUserIds(
   )
 }
 
+export interface GhlCallTrainerLink {
+  trainerId: string
+  /** invite_status do user do trainer — 'pending' | 'accepted' (ou o que
+   *  estiver na coluna). Decide se emitimos o alerta informativo de pendência. */
+  inviteStatus: string
+}
+
+/**
+ * Resolve o trainer de uma call GHL pelo par (org_id, ghl_user_id) — a fonte
+ * da verdade do vínculo membro ↔ usuário do GHL. Retorna o trainer com o
+ * invite_status do seu user, ou null quando NENHUM membro da org está vinculado
+ * a esse usuário do GHL.
+ *
+ * O webhook usa isso como gate: sem vínculo (null) → a call é ignorada (não é
+ * de um membro da plataforma). Com vínculo (pending OU accepted) → a call é
+ * ingerida e analisada. Índice único (org_id, ghl_user_id) garante ≤ 1 linha.
+ */
+export async function dbResolveTrainerForGhlCall(
+  orgId: string,
+  ghlUserId: string,
+): Promise<GhlCallTrainerLink | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('id, users!inner(invite_status)')
+    .eq('org_id', orgId)
+    .eq('ghl_user_id', ghlUserId)
+    .maybeSingle()
+
+  if (error) throw new Error(`dbResolveTrainerForGhlCall: ${error.message}`)
+  if (!data) return null
+
+  const row = data as {
+    id: string
+    users: { invite_status: string | null } | { invite_status: string | null }[] | null
+  }
+  const users = Array.isArray(row.users) ? row.users[0] : row.users
+  return { trainerId: row.id, inviteStatus: users?.invite_status ?? 'accepted' }
+}
+
 /**
  * Define (ou limpa, com null) o ghl_user_id de um trainer já existente
  * identificado por (org_id, user_id). Retorna false se nenhuma linha foi

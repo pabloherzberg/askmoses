@@ -751,6 +751,14 @@
       "callsAnalyzedOne": "{count} llamada analizada",
       "callsAnalyzedOther": "{count} llamadas analizadas",
       "noCallsFound": "No se encontraron llamadas.",
+      "groupExpand": "Ver llamadas anteriores de este cliente",
+      "groupCollapse": "Ocultar llamadas anteriores",
+      "groupCallsOne": "{count} llamada",
+      "groupCallsOther": "{count} llamadas",
+      "groupViewAll": "Ver todas las llamadas ({count})",
+      "groupHide": "Contraer llamadas",
+      "clientHistoryTitle": "Historial del cliente",
+      "clientHistorySubtitle": "{count} llamadas con {prospect}",
       "filterAllSalesPeople": "Todos los vendedores",
       "filterAllSources": "Todas las fuentes",
       "thTrainer": "Vendedor",
@@ -1281,7 +1289,15 @@
       "summary": "Resumen",
       "strengths": "Fortalezas",
       "areasToImprove": "Áreas a mejorar",
-      "sectionBreakdown": "Desglose por sección"
+      "sectionBreakdown": "Desglose por sección",
+      "groupExpand": "Ver llamadas anteriores",
+      "groupCollapse": "Ocultar llamadas anteriores",
+      "groupCallsOne": "{count} llamada",
+      "groupCallsOther": "{count} llamadas",
+      "groupViewAll": "Ver todas las llamadas ({count})",
+      "groupHide": "Contraer llamadas",
+      "clientHistoryTitle": "Historial del cliente",
+      "clientHistorySubtitle": "{count} llamadas con {prospect}"
     },
     "analytics": {
       "title": "Analytics e Insights",
@@ -1584,6 +1600,12 @@
       "firstApproval": {
         "title": "Primera sugerencia de script",
         "body": "Esta es la primera sugerencia de script de tu organización. No hay base anterior para análisis comparativo — usa el panel de arriba para revisar el contenido y aprobar o rechazar."
+      },
+      "activeScript": {
+        "title": "Script activo",
+        "versionLabel": "v{version}",
+        "expandHint": "Haz clic para ver el script completo",
+        "empty": "Este script aún no tiene texto completo guardado."
       },
       "suggestion": {
         "noPending": "Sin sugerencia de script pendiente. Cuando el admin envíe una nueva versión, aparecerá aquí.",

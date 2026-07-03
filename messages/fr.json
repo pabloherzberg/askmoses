@@ -751,6 +751,14 @@
       "callsAnalyzedOne": "{count} appel analysé",
       "callsAnalyzedOther": "{count} appels analysés",
       "noCallsFound": "Aucun appel trouvé.",
+      "groupExpand": "Voir les appels précédents de ce client",
+      "groupCollapse": "Masquer les appels précédents",
+      "groupCallsOne": "{count} appel",
+      "groupCallsOther": "{count} appels",
+      "groupViewAll": "Voir tous les appels ({count})",
+      "groupHide": "Réduire les appels",
+      "clientHistoryTitle": "Historique du client",
+      "clientHistorySubtitle": "{count} appels avec {prospect}",
       "filterAllSalesPeople": "Tous les commerciaux",
       "filterAllSources": "Toutes les sources",
       "thTrainer": "Commercial",
@@ -1281,7 +1289,15 @@
       "summary": "Résumé",
       "strengths": "Points forts",
       "areasToImprove": "Axes d'amélioration",
-      "sectionBreakdown": "Détail par section"
+      "sectionBreakdown": "Détail par section",
+      "groupExpand": "Voir les appels précédents",
+      "groupCollapse": "Masquer les appels précédents",
+      "groupCallsOne": "{count} appel",
+      "groupCallsOther": "{count} appels",
+      "groupViewAll": "Voir tous les appels ({count})",
+      "groupHide": "Réduire les appels",
+      "clientHistoryTitle": "Historique du client",
+      "clientHistorySubtitle": "{count} appels avec {prospect}"
     },
     "analytics": {
       "title": "Analytics et Insights",
@@ -1584,6 +1600,12 @@
       "firstApproval": {
         "title": "Première suggestion de script",
         "body": "Ceci est la première suggestion de script pour votre organisation. Il n'y a pas de base antérieure pour une analyse comparative — utilisez le panneau ci-dessus pour examiner le contenu et approuver ou rejeter."
+      },
+      "activeScript": {
+        "title": "Script actif",
+        "versionLabel": "v{version}",
+        "expandHint": "Cliquez pour voir le script complet",
+        "empty": "Ce script n'a pas encore de texte complet enregistré."
       },
       "suggestion": {
         "noPending": "Aucune suggestion de script en attente. Quand l'admin envoie une nouvelle version, elle apparaîtra ici.",

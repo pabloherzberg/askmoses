@@ -124,12 +124,20 @@ const PENDING_PAGE_SIZE = 100 // pendentes costumam ser lista pequena; trazemos 
 
 interface Props {
   role: Role
+  // Admin impersonando um owner. Nesse caso a página é escopada à org
+  // impersonada: sem controles de "todas as orgs" (filtro/coluna) nem
+  // formulário de convite (mutação bloqueada durante impersonação).
+  isImpersonating?: boolean
 }
 
-export function InvitePageClient({ role: callerRole }: Props) {
+export function InvitePageClient({ role: callerRole, isImpersonating = false }: Props) {
   const t = useTranslations('Invite')
   const locale = useLocale()
   const isAdmin = callerRole === 'admin'
+  // Controles admin de multi-org (filtro por org, coluna "Org", formulário de
+  // convite) só aparecem para o admin FORA de impersonação. Impersonando, a
+  // visão é a do owner daquela org: uma única org, somente leitura.
+  const showAdminOrgControls = isAdmin && !isImpersonating
 
   const [pending, setPending] = useState<InviteUser[]>([])
   const [active, setActive] = useState<InviteUser[]>([])
@@ -225,8 +233,8 @@ export function InvitePageClient({ role: callerRole }: Props) {
   }, [])
 
   useEffect(() => {
-    if (isAdmin) void fetchOrgs()
-  }, [fetchOrgs, isAdmin])
+    if (showAdminOrgControls) void fetchOrgs()
+  }, [fetchOrgs, showAdminOrgControls])
 
   // Debounce do search input — 300ms é o sweet spot entre responsividade
   // perceptível e poupar requests enquanto o user ainda está digitando.
@@ -492,6 +500,9 @@ export function InvitePageClient({ role: callerRole }: Props) {
       )}
 
       {/* ─── Formulário de convite ─────────────────────────────────── */}
+      {/* Escondido durante impersonação: convidar é mutação e o backend
+          bloqueia (requireOwnerWrite ADMIN_IMPERSONATING_READ_ONLY). */}
+      {!isImpersonating && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -643,6 +654,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
           </form>
         </CardContent>
       </Card>
+      )}
 
       {/* ─── Filtros: busca (sempre) + org (admin) ─────────────────── */}
       <div className="flex flex-col md:flex-row md:items-end gap-3">
@@ -675,7 +687,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
             )}
           </div>
         </div>
-        {isAdmin && (
+        {showAdminOrgControls && (
           <div className="space-y-2 max-w-xs flex-1">
             <Label htmlFor="filter-org">{t('filterOrgLabel')}</Label>
             <select
@@ -839,7 +851,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                         icon={sortIcon('role')}
                       />
                     </TableHead>
-                    {isAdmin && (
+                    {showAdminOrgControls && (
                       <TableHead>
                         <SortableHeader
                           label={t('orgLabel')}
@@ -862,7 +874,7 @@ export function InvitePageClient({ role: callerRole }: Props) {
                       <TableCell>
                         <Badge variant="secondary">{roleLabel(u.role)}</Badge>
                       </TableCell>
-                      {isAdmin && (
+                      {showAdminOrgControls && (
                         <TableCell className="text-muted-foreground">
                           {u.org?.name ?? '—'}
                         </TableCell>
