@@ -1,5 +1,5 @@
 -- ============================================================
--- 097_llm_provider_settings.sql
+-- 099_llm_provider_settings.sql
 --
 -- Tabela de configuração GLOBAL do provider de LLM ativo (OpenAI ou Gemini)
 -- usado pelo pipeline real de análise de calls (/api/analyze). Editável pela
@@ -23,7 +23,7 @@
 -- is_active=true, o pipeline cai no comportamento hardcoded anterior
 -- (OPENAI_API_KEY do .env) — nunca quebra por falta de configuração.
 --
--- Idempotente. Rode após 096.
+-- Idempotente. Rode após 098.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.llm_provider_settings (

@@ -1192,7 +1192,7 @@
         "title": "Proveedor activo",
         "subtitle": "Define qué proveedor real usa el pipeline de análisis (/api/analyze).",
         "previewBadge": "Vista previa — aún no funcional. El análisis de llamadas sigue usando OpenAI vía variable de entorno.",
-        "notMigrated": "La tabla de configuración de proveedor aún no existe — ejecuta la migration 097.",
+        "notMigrated": "La tabla de configuración de proveedor aún no existe — ejecuta la migration 099.",
         "providerOpenAI": "OpenAI",
         "providerGemini": "Google Gemini",
         "modelLabel": "Modelo predeterminado",

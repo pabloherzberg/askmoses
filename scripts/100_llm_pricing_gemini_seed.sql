@@ -1,10 +1,10 @@
 -- ============================================================
--- 098_llm_pricing_gemini_seed.sql
+-- 100_llm_pricing_gemini_seed.sql
 --
 -- Semeia linhas de preço do Gemini na tabela llm_pricing (088). Sem mudança
 -- de schema — llm_pricing já suporta qualquer valor de `provider`, só
 -- faltavam linhas 'gemini'. Necessário para lib/services/llm-usage.ts
--- calcular cost_usd corretamente quando o provider ativo (097) é Gemini —
+-- calcular cost_usd corretamente quando o provider ativo (099) é Gemini —
 -- sem uma linha de pricing correspondente, o custo é gravado como 0
 -- (ver getPricing() em lib/services/llm-usage.ts).
 --
@@ -18,7 +18,7 @@
 -- O admin deve validar e ajustar pela tela /admin/llm-config antes de confiar
 -- no COGS calculado a partir destes valores.
 --
--- Idempotente. Rode após 097.
+-- Idempotente. Rode após 099.
 -- ============================================================
 
 INSERT INTO public.llm_pricing
@@ -35,7 +35,7 @@ COMMENT ON TABLE public.llm_pricing IS
   'Preços de LLM versionados (effective_from + active). Fonte de verdade do '
   'custo por modelo p/ lib/services/llm-usage.ts. Mudar preço = inserir linha '
   'nova active e desativar a antiga; custo histórico em llm_usage_events não muda. '
-  'Inclui OpenAI (seed 089) e Gemini (seed 098, valores de referência a validar).';
+  'Inclui OpenAI (seed 089) e Gemini (seed 100, valores de referência a validar).';
 
 -- Rollback (manual):
 -- DELETE FROM public.llm_pricing WHERE provider = 'gemini';

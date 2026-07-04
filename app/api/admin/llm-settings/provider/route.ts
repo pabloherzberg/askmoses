@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest) {
     .maybeSingle()
 
   if (updateErr) return serverError('Não foi possível atualizar o provider', updateErr)
-  if (!updated) return badRequest(`provider "${provider}" não encontrado — rode a migration 097`)
+  if (!updated) return badRequest(`provider "${provider}" não encontrado — rode a migration 099`)
 
   if (setActive) {
     // Duas atualizações sequenciais (Supabase JS não faz swap atômico

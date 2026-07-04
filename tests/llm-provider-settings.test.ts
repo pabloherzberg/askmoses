@@ -3,7 +3,7 @@
  *
  * IMPORTANTE — estado atual (ver messages/pt.json providerSection.previewBadge):
  * a tela /admin/llm-config é só PREVIEW VISUAL. lib/llm-provider.ts,
- * app/api/admin/llm-settings/* e as migrations 097/098 existem no repo mas
+ * app/api/admin/llm-settings/* e as migrations 099/100 existem no repo mas
  * NÃO estão conectados a /api/analyze nem foram rodados em produção — o
  * pipeline real de análise continua 100% hardcoded em OpenAI via
  * OPENAI_API_KEY do .env (lib/openai.ts), exatamente como antes desta feature.
@@ -14,7 +14,7 @@
  *   - Regressão: /api/analyze NÃO foi tocado — continua hardcoded OpenAI/env.
  *   - Contrato: rotas admin novas existem e têm os guards de auth/CSRF corretos
  *     (código morto por enquanto — nenhuma UI as chama ainda).
- *   - Migrations 097/098 existem, são idempotentes (IF NOT EXISTS) e têm RLS.
+ *   - Migrations 099/100 existem, são idempotentes (IF NOT EXISTS) e têm RLS.
  *   - getActiveLlmModel: lógica de fallback replicada inline (sem tocar Supabase).
  *   - resolveGeminiModelId: normalização de sufixo "-001" e fallback pro default.
  *
@@ -33,8 +33,8 @@ const providerRouteSource = readFileSync(resolve(ROOT, 'app/api/admin/llm-settin
 const pricingRouteSource = readFileSync(resolve(ROOT, 'app/api/admin/llm-settings/pricing/route.ts'), 'utf-8')
 const settingsRouteSource = readFileSync(resolve(ROOT, 'app/api/admin/llm-settings/route.ts'), 'utf-8')
 const analyzeRouteSource = readFileSync(resolve(ROOT, 'app/api/analyze/route.ts'), 'utf-8')
-const migration097Source = readFileSync(resolve(ROOT, 'scripts/097_llm_provider_settings.sql'), 'utf-8')
-const migration098Source = readFileSync(resolve(ROOT, 'scripts/098_llm_pricing_gemini_seed.sql'), 'utf-8')
+const migration099Source = readFileSync(resolve(ROOT, 'scripts/099_llm_provider_settings.sql'), 'utf-8')
+const migration100Source = readFileSync(resolve(ROOT, 'scripts/100_llm_pricing_gemini_seed.sql'), 'utf-8')
 
 // ─── Contrato: rotas admin ──────────────────────────────────────────────────
 
@@ -109,38 +109,38 @@ describe('Regressão › /api/analyze continua hardcoded OpenAI/env (não usa o 
 
 // ─── Migrations ──────────────────────────────────────────────────────────────
 
-describe('Migrations › 097 e 098', () => {
-  it('097 cria llm_provider_settings de forma idempotente', () => {
-    expect(migration097Source).toMatch(/CREATE TABLE IF NOT EXISTS public\.llm_provider_settings/)
+describe('Migrations › 099 e 100', () => {
+  it('099 cria llm_provider_settings de forma idempotente', () => {
+    expect(migration099Source).toMatch(/CREATE TABLE IF NOT EXISTS public\.llm_provider_settings/)
   })
 
-  it('097 habilita RLS sem nenhuma policy (só service-role)', () => {
-    expect(migration097Source).toMatch(/ENABLE ROW LEVEL SECURITY/)
-    expect(migration097Source).not.toMatch(/CREATE POLICY/)
+  it('099 habilita RLS sem nenhuma policy (só service-role)', () => {
+    expect(migration099Source).toMatch(/ENABLE ROW LEVEL SECURITY/)
+    expect(migration099Source).not.toMatch(/CREATE POLICY/)
   })
 
-  it('097 garante no máximo um provider ativo por vez (índice único parcial)', () => {
-    expect(migration097Source).toMatch(/CREATE UNIQUE INDEX[\s\S]*llm_provider_settings_single_active_idx/)
-    expect(migration097Source).toContain('WHERE is_active')
+  it('099 garante no máximo um provider ativo por vez (índice único parcial)', () => {
+    expect(migration099Source).toMatch(/CREATE UNIQUE INDEX[\s\S]*llm_provider_settings_single_active_idx/)
+    expect(migration099Source).toContain('WHERE is_active')
   })
 
-  it('097 documenta que api_key é texto simples (sem criptografia)', () => {
-    expect(migration097Source.toLowerCase()).toMatch(/texto simples/)
+  it('099 documenta que api_key é texto simples (sem criptografia)', () => {
+    expect(migration099Source.toLowerCase()).toMatch(/texto simples/)
   })
 
-  it('098 semeia modelos gemini em llm_pricing sem alterar schema', () => {
-    expect(migration098Source).toMatch(/INSERT INTO public\.llm_pricing/)
-    expect(migration098Source).toContain("'gemini'")
-    expect(migration098Source).not.toMatch(/CREATE TABLE/)
+  it('100 semeia modelos gemini em llm_pricing sem alterar schema', () => {
+    expect(migration100Source).toMatch(/INSERT INTO public\.llm_pricing/)
+    expect(migration100Source).toContain("'gemini'")
+    expect(migration100Source).not.toMatch(/CREATE TABLE/)
   })
 
-  it('098 flags que os preços são placeholders a validar', () => {
-    expect(migration098Source).toMatch(/placeholder|refer[eê]ncia/i)
+  it('100 flags que os preços são placeholders a validar', () => {
+    expect(migration100Source).toMatch(/placeholder|refer[eê]ncia/i)
   })
 
   it('arquivos de migration existem no caminho esperado', () => {
-    expect(existsSync(resolve(ROOT, 'scripts/097_llm_provider_settings.sql'))).toBe(true)
-    expect(existsSync(resolve(ROOT, 'scripts/098_llm_pricing_gemini_seed.sql'))).toBe(true)
+    expect(existsSync(resolve(ROOT, 'scripts/099_llm_provider_settings.sql'))).toBe(true)
+    expect(existsSync(resolve(ROOT, 'scripts/100_llm_pricing_gemini_seed.sql'))).toBe(true)
   })
 })
 

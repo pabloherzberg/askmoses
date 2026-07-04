@@ -1192,7 +1192,7 @@
         "title": "Active provider",
         "subtitle": "Determines which real provider the analysis pipeline (/api/analyze) uses.",
         "previewBadge": "Preview — not functional yet. Call analysis still uses OpenAI via environment variable.",
-        "notMigrated": "Provider settings table doesn't exist yet — run migration 097.",
+        "notMigrated": "Provider settings table doesn't exist yet — run migration 099.",
         "providerOpenAI": "OpenAI",
         "providerGemini": "Google Gemini",
         "modelLabel": "Default model",
