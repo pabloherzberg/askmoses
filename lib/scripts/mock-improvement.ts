@@ -1,4 +1,4 @@
-import type { DbScript, ScriptSection } from '@/lib/db/scripts'
+import { buildFullScriptFromSections, type DbScript, type ScriptSection } from '@/lib/db/scripts'
 
 // ════════════════════════════════════════════════════════════════════════
 // Mock de "Script Intelligence improvement" pra Fase 1 (demo navegável).
@@ -49,6 +49,8 @@ export interface ScriptReviewData {
   newVersion: string
   callsAnalyzed: number
   expectedImpact: number
+  /** Texto completo do script melhorado — persistido ao salvar. */
+  fullScript: string
   sections: ReviewSection[]
   changesSummary: ChangeSummaryItem[]
   metadata: {
@@ -278,6 +280,9 @@ export function buildMockImprovement(
     // 47 = número fixo plausível pra demo (igual screenshot de referência).
     callsAnalyzed: 47,
     expectedImpact: modifiedCount,
+    fullScript: script.full_script?.trim()
+      ? script.full_script
+      : buildFullScriptFromSections(reviewSections),
     sections: reviewSections,
     changesSummary,
     metadata: {

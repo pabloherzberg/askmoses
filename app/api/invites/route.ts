@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server'
 import { Resend } from 'resend'
-import { getSession, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
+import { getSession, getActiveOrgContext, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildInviteEmail } from '@/lib/email/invite-template'
@@ -562,7 +562,8 @@ export async function POST(request: NextRequest) {
 
 // ─── GET /api/invites — lista usuários convidados (pendentes + aceitos) ────
 //   Owner: vê todos da própria org ativa
-//   Admin: vê todos; pode filtrar por org via ?orgId=…
+//   Admin impersonando: escopado à org impersonada (visão do owner)
+//   Admin (sem impersonate): vê todos; pode filtrar por org via ?orgId=…
 //   Filtros opcionais: ?status=pending|accepted, ?role=trainer|owner
 //   Busca:     ?q=texto  → ilike em users.name OR users.email
 //   Ordenação: ?sort=name|email|role|org|invited_at  &  ?dir=asc|desc
@@ -673,7 +674,13 @@ export async function GET(request: NextRequest) {
     `)
     .limit(1000)
 
-  if (callerRole === 'owner') {
+  // Admin impersonando age como owner da org impersonada: escopa a listagem
+  // à activeOrgId (visão daquele owner), em vez da visão admin global. Fora de
+  // impersonação, o admin continua vendo todas as orgs (ou filtrando ?orgId).
+  const orgCtx = await getActiveOrgContext()
+  if (orgCtx?.isImpersonating && orgCtx.activeOrgId) {
+    query = query.eq('org_id', orgCtx.activeOrgId)
+  } else if (callerRole === 'owner') {
     const { data: callerUser } = await admin
       .from('users').select('active_org_id').eq('id', callerId).maybeSingle()
     if (!callerUser?.active_org_id) {

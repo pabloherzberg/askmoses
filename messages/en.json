@@ -751,6 +751,14 @@
       "callsAnalyzedOne": "{count} call analyzed",
       "callsAnalyzedOther": "{count} calls analyzed",
       "noCallsFound": "No calls found.",
+      "groupExpand": "View this client's previous calls",
+      "groupCollapse": "Hide previous calls",
+      "groupCallsOne": "{count} call",
+      "groupCallsOther": "{count} calls",
+      "groupViewAll": "View all calls ({count})",
+      "groupHide": "Collapse calls",
+      "clientHistoryTitle": "Client call history",
+      "clientHistorySubtitle": "{count} calls with {prospect}",
       "filterAllSalesPeople": "All Sales People",
       "filterAllSources": "All Sources",
       "thTrainer": "Sales Person",
@@ -1337,7 +1345,15 @@
       "summary": "Summary",
       "strengths": "Strengths",
       "areasToImprove": "Areas to Improve",
-      "sectionBreakdown": "Section Breakdown"
+      "sectionBreakdown": "Section Breakdown",
+      "groupExpand": "View previous calls",
+      "groupCollapse": "Hide previous calls",
+      "groupCallsOne": "{count} call",
+      "groupCallsOther": "{count} calls",
+      "groupViewAll": "View all calls ({count})",
+      "groupHide": "Collapse calls",
+      "clientHistoryTitle": "Client call history",
+      "clientHistorySubtitle": "{count} calls with {prospect}"
     },
     "analytics": {
       "title": "Analytics & Insights",
@@ -1640,6 +1656,12 @@
       "firstApproval": {
         "title": "First script suggestion",
         "body": "This is the first script suggestion for your organization. There is no prior baseline to compare against — use the panel above to review the content and approve or reject it."
+      },
+      "activeScript": {
+        "title": "Active script",
+        "versionLabel": "v{version}",
+        "expandHint": "Click to view the full script",
+        "empty": "This script has no full text saved yet."
       },
       "suggestion": {
         "noPending": "No pending script suggestion. When the admin sends a new version, it will appear here.",

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
+import { getSession, isImpersonating } from '@/lib/auth'
 import type { Role } from '@/lib/types'
 import { InvitePageClient } from './InvitePageClient'
 
@@ -15,5 +15,9 @@ export default async function InvitePage(
     redirect(`/${locale}/me`)
   }
 
-  return <InvitePageClient role={role} />
+  // Admin impersonando um owner: a página escopa à org impersonada (esconde
+  // filtro/coluna de org e o formulário de convite, que é mutação bloqueada).
+  const impersonating = await isImpersonating()
+
+  return <InvitePageClient role={role} isImpersonating={impersonating} />
 }

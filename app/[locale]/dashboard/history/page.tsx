@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import type { Call } from "@/lib/types"
 import { formatDuration } from "@/lib/format"
@@ -37,10 +37,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Search, CheckCircle, XCircle, Eye, Loader2 } from "lucide-react"
+import { Search, CheckCircle, XCircle, Eye, Loader2, History } from "lucide-react"
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES } from "@/lib/constants"
 
 const RUBRIC_KEYS = ['discovery', 'problemAgitation', 'offerPresentation', 'objectionHandling', 'closeAndNextSteps'] as const
+
+// Uma "conta" no histórico: todas as calls de um mesmo contactId agrupadas.
+// Calls sem contactId viram grupos de 1 (chaveadas pelo próprio id da call).
+type CallGroup = {
+  key: string
+  calls: Call[] // ordenadas por data desc — [0] é a mais recente
+  latest: Call
+}
 
 
 export default function HistoryPage() {
@@ -54,6 +62,7 @@ export default function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all")
   const [selectedCall, setSelectedCall] = useState<Call | null>(null)
+  const [historyGroup, setHistoryGroup] = useState<CallGroup | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
 
@@ -85,11 +94,33 @@ export default function HistoryPage() {
     return matchesSearch && matchesOutcome
   })
 
-  const paginatedCalls = filteredCalls.slice(
+  // Agrupa as calls filtradas por contactId. Cada grupo mantém suas calls em
+  // ordem temporal (mais nova primeiro) e os grupos são ordenados pela call
+  // mais recente de cada conta — preservando a mesma ordenação por data.
+  const groups = useMemo<CallGroup[]>(() => {
+    const byContact = new Map<string, Call[]>()
+    const result: CallGroup[] = []
+    for (const call of filteredCalls) {
+      if (call.contactId) {
+        const arr = byContact.get(call.contactId)
+        if (arr) arr.push(call)
+        else byContact.set(call.contactId, [call])
+      } else {
+        result.push({ key: call.id, calls: [call], latest: call })
+      }
+    }
+    for (const [contactId, arr] of byContact) {
+      const sorted = [...arr].sort((a, b) => b.date.localeCompare(a.date))
+      result.push({ key: contactId, calls: sorted, latest: sorted[0] })
+    }
+    return result.sort((a, b) => b.latest.date.localeCompare(a.latest.date))
+  }, [filteredCalls])
+
+  const paginatedGroups = groups.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   )
-  const totalPages = Math.ceil(filteredCalls.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(groups.length / ITEMS_PER_PAGE)
 
   function outcomeLabel(result: string) {
     return result in RESULT_STYLES ? tOutcomes(`short.${result}`) : tOutcomes('unknown')
@@ -182,40 +213,55 @@ export default function HistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedCalls.map((call) => (
-                      <TableRow key={call.id}>
-                        <TableCell>
-                          <p className="font-medium">{call.trainerName}</p>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{call.prospect}</span>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(call.date).toLocaleDateString(locale)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
-                            {outcomeLabel(call.result)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold tabular-nums">{toDisplay5(call.score)}</span>
-                            <span className="text-muted-foreground text-sm">/5</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedCall(call)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            {t('view')}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {paginatedGroups.map((group) => {
+                      const hasHistory = group.calls.length > 1
+                      const latest = group.latest
+                      return (
+                        <TableRow key={group.key}>
+                          <TableCell className="font-medium">{latest.trainerName}</TableCell>
+                          <TableCell>
+                            <span className="font-medium">{latest.prospect}</span>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {new Date(latest.date).toLocaleDateString(locale)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge style={{ background: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                              {outcomeLabel(latest.result)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold tabular-nums">{toDisplay5(latest.score)}</span>
+                              <span className="text-muted-foreground text-sm">/5</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {hasHistory && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 text-xs"
+                                  onClick={() => setHistoryGroup(group)}
+                                >
+                                  <History className="h-3.5 w-3.5" />
+                                  {t('groupViewAll', { count: group.calls.length })}
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedCall(latest)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                {t('view')}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -225,8 +271,8 @@ export default function HistoryPage() {
                   <p className="text-sm text-muted-foreground">
                     {t('showingRange', {
                       from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
-                      to: Math.min(currentPage * ITEMS_PER_PAGE, filteredCalls.length),
-                      total: filteredCalls.length,
+                      to: Math.min(currentPage * ITEMS_PER_PAGE, groups.length),
+                      total: groups.length,
                     })}
                   </p>
                   <div className="flex gap-2">
@@ -375,6 +421,57 @@ export default function HistoryPage() {
                     })}
                   </div>
                 </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Client call-history Modal — todas as calls de um mesmo contactId */}
+      <Dialog open={!!historyGroup} onOpenChange={(open) => !open && setHistoryGroup(null)}>
+        <DialogContent className="max-w-lg">
+          {historyGroup && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  {t('clientHistoryTitle')}
+                </DialogTitle>
+                <DialogDescription>
+                  {t('clientHistorySubtitle', {
+                    count: historyGroup.calls.length,
+                    prospect: historyGroup.latest.prospect,
+                  })}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {historyGroup.calls.map((call) => (
+                  <button
+                    key={call.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCall(call)
+                      setHistoryGroup(null)
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {new Date(call.date).toLocaleDateString(locale)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{call.trainerName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                        {outcomeLabel(call.result)}
+                      </Badge>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {toDisplay5(call.score)}/5
+                      </span>
+                    </div>
+                  </button>
+                ))}
               </div>
             </>
           )}

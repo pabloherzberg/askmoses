@@ -751,6 +751,14 @@
       "callsAnalyzedOne": "{count} chamada analisada",
       "callsAnalyzedOther": "{count} chamadas analisadas",
       "noCallsFound": "Nenhuma chamada encontrada.",
+      "groupExpand": "Ver chamadas anteriores deste cliente",
+      "groupCollapse": "Ocultar chamadas anteriores",
+      "groupCallsOne": "{count} chamada",
+      "groupCallsOther": "{count} chamadas",
+      "groupViewAll": "Ver todas as chamadas ({count})",
+      "groupHide": "Recolher chamadas",
+      "clientHistoryTitle": "Histórico do cliente",
+      "clientHistorySubtitle": "{count} chamadas com {prospect}",
       "filterAllSalesPeople": "Todos os vendedores",
       "filterAllSources": "Todas as origens",
       "thTrainer": "Vendedor",
@@ -1337,7 +1345,15 @@
       "summary": "Resumo",
       "strengths": "Pontos fortes",
       "areasToImprove": "Pontos a melhorar",
-      "sectionBreakdown": "Detalhamento por seção"
+      "sectionBreakdown": "Detalhamento por seção",
+      "groupExpand": "Ver chamadas anteriores",
+      "groupCollapse": "Ocultar chamadas anteriores",
+      "groupCallsOne": "{count} chamada",
+      "groupCallsOther": "{count} chamadas",
+      "groupViewAll": "Ver todas as chamadas ({count})",
+      "groupHide": "Recolher chamadas",
+      "clientHistoryTitle": "Histórico do cliente",
+      "clientHistorySubtitle": "{count} chamadas com {prospect}"
     },
     "analytics": {
       "title": "Analytics e Insights",
@@ -1640,6 +1656,12 @@
       "firstApproval": {
         "title": "Primeira sugestão de script",
         "body": "Esta é a primeira sugestão de script da sua organização. Não há base anterior para análise comparativa — use o painel acima para revisar o conteúdo e aprovar ou rejeitar."
+      },
+      "activeScript": {
+        "title": "Script ativo",
+        "versionLabel": "v{version}",
+        "expandHint": "Clique para ver o script completo",
+        "empty": "Este script ainda não tem texto completo salvo."
       },
       "suggestion": {
         "noPending": "Nenhuma sugestão de script pendente. Quando o admin enviar uma nova versão, ela aparecerá aqui.",
