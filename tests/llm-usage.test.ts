@@ -62,3 +62,31 @@ describe('computeCostFromPricing', () => {
     expect(v).toBe(0.000001)
   })
 })
+
+// ─── Preços Gemini (seed da migration 100) ──────────────────────────────────
+// computeCostFromPricing é agnóstico de provider — os mesmos testes acima já
+// provam a matemática. Aqui só confirmamos que os valores do seed 100 (usados
+// quando o provider ativo em llm_provider_settings é 'gemini') produzem o
+// mesmo tipo de cálculo linear, sem nenhum tratamento especial por provider.
+describe('computeCostFromPricing › preços Gemini (seed 100)', () => {
+  it('gemini-2.5-flash-lite: input 0.10, output 0.40 USD/1M', () => {
+    // 500k input → 0.05; 200k output → 0.08; total 0.13
+    expect(
+      computeCostFromPricing(
+        { input_usd_per_1m: 0.10, output_usd_per_1m: 0.40 },
+        500_000,
+        200_000,
+      ),
+    ).toBe(0.13)
+  })
+
+  it('gemini-2.5-pro: input 1.25, output 10 USD/1M', () => {
+    expect(
+      computeCostFromPricing(
+        { input_usd_per_1m: 1.25, output_usd_per_1m: 10 },
+        1_000_000,
+        1_000_000,
+      ),
+    ).toBe(11.25)
+  })
+})

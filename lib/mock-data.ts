@@ -13,6 +13,8 @@ import type {
   PerformanceTrendPoint,
   AiModuleConfig,
   AiModuleConfigLogEntry,
+  LlmProviderSetting,
+  LlmPricingRow,
   IntentSignal,
   BillingUsage,
   BillingCycle,
@@ -1673,6 +1675,41 @@ export const aiModuleConfigLog: AiModuleConfigLogEntry[] = [
   { id: 'log-001', module_id: 'scoring_engine',         field: 'temperature', previous_value: 0.7, new_value: 0.2, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
   { id: 'log-002', module_id: 'marketing_intelligence', field: 'max_tokens',  previous_value: 1000, new_value: 2000, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-10T14:23:00Z' },
   { id: 'log-003', module_id: 'correlation_engine',     field: 'temperature', previous_value: 0.7, new_value: 0.5, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-09T09:11:00Z' },
+]
+
+// ─── LLM provider / pricing (preview visual — /admin/llm-config) ──────────────
+// AINDA NÃO FUNCIONAL: puramente ilustrativo pra tela mostrar como vai ficar.
+// Não lê/escreve Supabase — /api/analyze continua 100% hardcoded em OpenAI/env
+// (lib/openai.ts). Sem tabela llm_provider_settings em produção ainda; quando
+// a feature for finalizada, isso é substituído por fetch real na página.
+export const llmProviderSettingsMock: LlmProviderSetting[] = [
+  {
+    id: 'mock-openai',
+    provider: 'openai',
+    hasKey: true,
+    keyHint: 'env (.env)',
+    model: 'gpt-4o',
+    is_active: true,
+    updated_by: 'system',
+    updated_at: '2026-05-10T14:23:00Z',
+  },
+  {
+    id: 'mock-gemini',
+    provider: 'gemini',
+    hasKey: false,
+    keyHint: null,
+    model: 'gemini-2.5-flash-lite',
+    is_active: false,
+    updated_by: null,
+    updated_at: '2026-05-10T14:23:00Z',
+  },
+]
+
+export const llmPricingMock: LlmPricingRow[] = [
+  { id: 'mock-price-1', provider: 'openai', model: 'gpt-4o',               unit: 'per_1m_tokens', input_usd_per_1m: 2.5,  output_usd_per_1m: 10,   usd_per_minute: null, effective_from: '2026-01-01T00:00:00Z', active: true },
+  { id: 'mock-price-2', provider: 'openai', model: 'gpt-4o-mini',          unit: 'per_1m_tokens', input_usd_per_1m: 0.15, output_usd_per_1m: 0.6,  usd_per_minute: null, effective_from: '2026-01-01T00:00:00Z', active: true },
+  { id: 'mock-price-3', provider: 'gemini', model: 'gemini-2.5-flash',     unit: 'per_1m_tokens', input_usd_per_1m: 0.30, output_usd_per_1m: 2.50, usd_per_minute: null, effective_from: '2026-01-01T00:00:00Z', active: true },
+  { id: 'mock-price-4', provider: 'gemini', model: 'gemini-2.5-flash-lite', unit: 'per_1m_tokens', input_usd_per_1m: 0.10, output_usd_per_1m: 0.40, usd_per_minute: null, effective_from: '2026-01-01T00:00:00Z', active: true },
 ]
 
 // ─── Section Feedback Fallbacks ───────────────────────────────────────────────

@@ -31,8 +31,8 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-export function AiControlsClient({ initialConfigs, initialLog }: Props) {
-  const t = useTranslations('Admin.aiControls')
+export function LlmConfigClient({ initialConfigs, initialLog }: Props) {
+  const t = useTranslations('Admin.llmConfig')
   const { toast } = useToast()
 
   const [configs, setConfigs] = useState<AiModuleConfig[]>(initialConfigs)

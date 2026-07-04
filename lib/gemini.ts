@@ -11,7 +11,7 @@ export function getGeminiClient(): GoogleGenerativeAI {
   return _client
 }
 
-const VALID_MODELS = new Set([
+export const VALID_MODELS = new Set([
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
   'gemini-2.5-pro',

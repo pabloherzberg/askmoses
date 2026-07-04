@@ -172,8 +172,8 @@ export function AdminNavItems({
     },
     { label: t("coachingSettings"), href: "/admin/settings", icon: Cog },
     {
-      label: t("aiControls"),
-      href: "/admin/ai-controls",
+      label: t("llmConfig"),
+      href: "/admin/llm-config",
       icon: SlidersHorizontal,
     },
     {
