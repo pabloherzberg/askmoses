@@ -11,7 +11,7 @@ export function getOpenAIProvider() {
   return _provider
 }
 
-const VALID_MODELS = new Set([
+export const VALID_MODELS = new Set([
   'gpt-4o',
   'gpt-4o-mini',
   'gpt-4-turbo',

@@ -364,6 +364,36 @@ export interface AiModuleConfigLogEntry {
   updated_at: string;
 }
 
+// ─── LLM provider / pricing (admin/llm-config) ─────────────────────────────
+// Distinto de AiModuleConfig acima (tuning de temperature/max_tokens por
+// módulo demo). Estes tipos cobrem a config REAL de provider+chave+preço que
+// /api/analyze usa via lib/llm-provider.ts.
+
+export type LlmProvider = "openai" | "gemini";
+
+export interface LlmProviderSetting {
+  id: string;
+  provider: LlmProvider;
+  hasKey: boolean;
+  keyHint: string | null; // ex. "sk-...ab12" — nunca a chave real
+  model: string;
+  is_active: boolean;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export interface LlmPricingRow {
+  id: string;
+  provider: LlmProvider;
+  model: string;
+  unit: "per_1m_tokens" | "per_minute";
+  input_usd_per_1m: number | null;
+  output_usd_per_1m: number | null;
+  usd_per_minute: number | null;
+  effective_from: string;
+  active: boolean;
+}
+
 export interface IntentSignal {
   id: "financial" | "urgency" | "authority" | "engagement";
   weight: number;

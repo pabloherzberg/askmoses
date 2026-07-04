@@ -50,8 +50,12 @@ export async function GET(request: NextRequest) {
   // Primeiro acesso após invite aceito: redireciona pra /password?welcome=1
   // com next=<home original>. Página mostra banner "definir senha agora ou
   // pular" — decisão Victor 2026-05-13: magic link continua funcionando, a
-  // senha é opcional. Apenas pro fluxo invite — magiclink vai direto.
-  if (typeRaw === 'invite') {
+  // senha é opcional.
+  // Cobre tanto type=invite (fluxo legado OTP) quanto type=magiclink gerado
+  // pelo verify-invite-token — ambos chegam aqui com password_set=false quando
+  // é o primeiro acesso do owner.
+  const passwordNotSet = data.session.user.app_metadata?.password_set === false
+  if (typeRaw === 'invite' || (typeRaw === 'magiclink' && passwordNotSet)) {
     return NextResponse.redirect(
       `${origin}/password?welcome=1&next=${encodeURIComponent(homePath)}`,
     )

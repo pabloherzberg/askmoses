@@ -147,19 +147,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectByRole(role, locale, request.url))
   }
 
-  // ── Owner sem senha definida: trava em /password ─────────────────────────
+  // ── Usuário sem senha definida: trava em /password ──────────────────────
   // app_metadata.password_set é setado em POST /api/me/password após save OK.
-  // Default false pra owners criados via admin invite — a senha é exigida
-  // antes de qualquer rota protegida. Trainer continua opcional (decisão
-  // 2026-05-13). Recovery (?recovery=1) cai aqui também — owner sobrescreve
-  // senha e o flag fica true depois do POST.
-  if (role === 'owner' && user.app_metadata?.password_set !== true) {
+  // password_set: false é gravado pelo admin ao criar/convidar owners e trainers.
+  // Recovery (?recovery=1) cai aqui também.
+  if ((role === 'owner' || role === 'trainer') && user.app_metadata?.password_set === false) {
     const onPasswordPage = rawPath === '/password' || rawPath.startsWith('/password/')
     if (!onPasswordPage) {
       const target = new URL(`/${locale}/password`, request.url)
       target.searchParams.set('welcome', '1')
       target.searchParams.set('forced', '1')
-      target.searchParams.set('next', '/dashboard')
+      target.searchParams.set('next', role === 'trainer' ? '/me' : '/dashboard')
       return NextResponse.redirect(target)
     }
   }

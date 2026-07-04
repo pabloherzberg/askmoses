@@ -66,7 +66,7 @@ function pricingMapKey(provider: string, model: string): string {
 }
 
 /** Carrega (com cache de 5min) o preço ativo mais recente por (provider, model). */
-async function getPricing(): Promise<Map<string, PricingRow>> {
+export async function getPricing(): Promise<Map<string, PricingRow>> {
   const cached = gp[pricingKey_]
   if (cached && cached.expiresAt > Date.now()) return cached.byKey
 
@@ -102,6 +102,28 @@ export function computeCostFromPricing(
   const inUsd = (inputTokens * (price.input_usd_per_1m ?? 0)) / 1_000_000
   const outUsd = (outputTokens * (price.output_usd_per_1m ?? 0)) / 1_000_000
   return Number((inUsd + outUsd).toFixed(6))
+}
+
+/**
+ * Custo provider-aware a partir da tabela llm_pricing (mesmo cache de
+ * getPricing()). Usado por /api/analyze para computar calls.cost_usd sem
+ * manter uma segunda fonte de preço (o antigo computeCostUsd só cobria
+ * OpenAI). Sem linha de pricing pro (provider, model) → retorna 0 e loga —
+ * mesmo comportamento de recordLlmUsage quando falta preço.
+ */
+export async function computeCostForModel(
+  provider: string,
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+): Promise<number> {
+  const pricing = await getPricing()
+  const price = pricing.get(pricingMapKey(provider, model))
+  if (!price) {
+    console.warn(`[llm-usage] no pricing for ${provider}/${model} — cost_usd=0`)
+    return 0
+  }
+  return computeCostFromPricing(price, inputTokens, outputTokens)
 }
 
 /**

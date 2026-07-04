@@ -1,7 +1,7 @@
 /**
- * TC-AI-CONTROLS — Painel de AI Controls
+ * TC-LLM-CONFIG — Painel de LLM Config
  *
- * Cobre os 10 TCs definidos para a feature de AI Controls:
+ * Cobre os 10 TCs definidos para a feature de LLM Config:
  *   TC-01  Owner não acessa o painel (acesso restrito a admin)
  *   TC-02  Admin acessa o painel com 3 módulos + campos + hints
  *   TC-03  Admin salva temperature dentro do range válido
@@ -32,7 +32,7 @@ const apiRouteSource      = readFileSync(resolve(ROOT, 'app/api/ai-module-config
 const mswHandlerSource    = readFileSync(resolve(ROOT, 'lib/mocks/handlers.ts'), 'utf-8')
 const mockDataSource      = readFileSync(resolve(ROOT, 'lib/mock-data.ts'), 'utf-8')
 const typesSource         = readFileSync(resolve(ROOT, 'lib/types.ts'), 'utf-8')
-const clientPageSource    = readFileSync(resolve(ROOT, 'app/[locale]/(admin)/admin/ai-controls/AiControlsClient.tsx'), 'utf-8')
+const clientPageSource    = readFileSync(resolve(ROOT, 'app/[locale]/(admin)/admin/llm-config/LlmConfigClient.tsx'), 'utf-8')
 const sidebarSource       = readFileSync(resolve(ROOT, 'components/layout/AppSidebar.tsx'), 'utf-8')
 const ptMessages          = JSON.parse(readFileSync(resolve(ROOT, 'messages/pt.json'), 'utf-8'))
 const enMessages          = JSON.parse(readFileSync(resolve(ROOT, 'messages/en.json'), 'utf-8'))
@@ -164,10 +164,10 @@ function makeLog(): AiModuleConfigLogEntry[] {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// TC-01 — Owner não acessa o painel de AI Controls
+// TC-01 — Owner não acessa o painel de LLM Config
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('TC-01 › Owner não acessa o painel de AI Controls', () => {
+describe('TC-01 › Owner não acessa o painel de LLM Config', () => {
   it('API route guarda com role !== admin → retorna 403', () => {
     // A route usa forbidden() quando role !== 'admin'
     expect(apiRouteSource).toMatch(/role\s*!==\s*['"]admin['"]/)
@@ -179,19 +179,19 @@ describe('TC-01 › Owner não acessa o painel de AI Controls', () => {
     expect(apiRouteSource).toMatch(/unauthorized\(\)/)
   })
 
-  it('AdminNavItems inclui o link /admin/ai-controls (não acessível a owner/trainer)', () => {
+  it('AdminNavItems inclui o link /admin/llm-config (não acessível a owner/trainer)', () => {
     // O link só aparece no AdminNavItems, não no OwnerNavItems nem TrainerNavItems
     const adminBlock  = sidebarSource.slice(sidebarSource.indexOf('export function AdminNavItems'))
     const ownerBlock  = sidebarSource.slice(sidebarSource.indexOf('export function OwnerNavItems'),   sidebarSource.indexOf('export function AdminNavItems'))
     const trainerBlock = sidebarSource.slice(sidebarSource.indexOf('export function TrainerNavItems'), sidebarSource.indexOf('export function OwnerNavItems'))
 
-    expect(adminBlock).toContain('/admin/ai-controls')
-    expect(ownerBlock).not.toContain('/admin/ai-controls')
-    expect(trainerBlock).not.toContain('/admin/ai-controls')
+    expect(adminBlock).toContain('/admin/llm-config')
+    expect(ownerBlock).not.toContain('/admin/llm-config')
+    expect(trainerBlock).not.toContain('/admin/llm-config')
   })
 
   it('página existe no grupo de rotas (admin)', () => {
-    const pagePath = resolve(ROOT, 'app/[locale]/(admin)/admin/ai-controls/page.tsx')
+    const pagePath = resolve(ROOT, 'app/[locale]/(admin)/admin/llm-config/page.tsx')
     expect(existsSync(pagePath)).toBe(true)
   })
 })
@@ -418,13 +418,13 @@ describe('TC-06 › Hints de range recomendado por módulo', () => {
   })
 
   it('translations pt.json contém hints.temperatureRange e hints.maxTokensRange', () => {
-    expect(ptMessages.Admin.aiControls.hints.temperatureRange).toBeTruthy()
-    expect(ptMessages.Admin.aiControls.hints.maxTokensRange).toBeTruthy()
+    expect(ptMessages.Admin.llmConfig.hints.temperatureRange).toBeTruthy()
+    expect(ptMessages.Admin.llmConfig.hints.maxTokensRange).toBeTruthy()
   })
 
   it('translations en.json contém hints de range', () => {
-    expect(enMessages.Admin.aiControls.hints.temperatureRange).toBeTruthy()
-    expect(enMessages.Admin.aiControls.hints.maxTokensRange).toBeTruthy()
+    expect(enMessages.Admin.llmConfig.hints.temperatureRange).toBeTruthy()
+    expect(enMessages.Admin.llmConfig.hints.maxTokensRange).toBeTruthy()
   })
 })
 
@@ -675,19 +675,19 @@ describe('Contrato › Tipos e traduções', () => {
     expect(typesSource).toContain('new_value')
   })
 
-  it('pt.json tem chave Admin.aiControls.title', () => {
-    expect(ptMessages.Admin.aiControls.title).toBeTruthy()
+  it('pt.json tem chave Admin.llmConfig.title', () => {
+    expect(ptMessages.Admin.llmConfig.title).toBeTruthy()
   })
 
-  it('pt.json tem chave Shared.sidebar.aiControls', () => {
-    expect(ptMessages.Shared.sidebar.aiControls).toBeTruthy()
+  it('pt.json tem chave Shared.sidebar.llmConfig', () => {
+    expect(ptMessages.Shared.sidebar.llmConfig).toBeTruthy()
   })
 
-  it('en.json tem chave Admin.aiControls.title', () => {
-    expect(enMessages.Admin.aiControls.title).toBeTruthy()
+  it('en.json tem chave Admin.llmConfig.title', () => {
+    expect(enMessages.Admin.llmConfig.title).toBeTruthy()
   })
 
-  it('en.json tem chave Shared.sidebar.aiControls', () => {
-    expect(enMessages.Shared.sidebar.aiControls).toBeTruthy()
+  it('en.json tem chave Shared.sidebar.llmConfig', () => {
+    expect(enMessages.Shared.sidebar.llmConfig).toBeTruthy()
   })
 })
