@@ -264,7 +264,7 @@ export default function ScriptBuilderPage() {
                 <Label>{t("preview.fullScript")}</Label>
                 <div className="p-4 rounded-lg border bg-muted text-foreground max-h-64 overflow-y-auto">
                   <pre className="text-xs font-mono whitespace-pre-wrap">
-                    {generatedScript.full_script}
+                    {textInput}
                   </pre>
                 </div>
               </div>
