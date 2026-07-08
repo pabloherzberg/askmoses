@@ -73,12 +73,16 @@ export function IntentBreakdownComponent({
           if (!signal) return null
 
           const rawScore = scores[signalId as keyof IntentBreakdown]
-          // Formula: (score × weight) / 10 / 2
-          const contribution = (rawScore * signal.weight) / 10 / 2
+          // Formula real do Intent Index (lib/utils/intentScore.ts computeIntentIndex):
+          // contribuição = (score × weight) / totalWeight / 2 — mesma normalização
+          // usada no índice agregado, então a soma das 4 contribuições bate com o
+          // Intent Index exibido no card.
+          const contribution = (rawScore * signal.weight) / totalWeight / 2
           // Max possible for this signal
-          const maxValue = (10 * signal.weight) / 10 / 2
+          const maxValue = (10 * signal.weight) / totalWeight / 2
           // Bar fill percentage
           const percentage = (contribution / maxValue) * 100
+          const weightPercent = Math.round((signal.weight / totalWeight) * 100)
 
           // Display value with max 2 decimals, remove trailing zeros
           const displayValue = contribution.toLocaleString('en-US', {
@@ -89,8 +93,12 @@ export function IntentBreakdownComponent({
             minimumFractionDigits: 1,
             maximumFractionDigits: 2
           })
-          const formulaExplanation = `(${rawScore} × ${signal.weight}) / 10 / 2 = ${displayValue}`
           const scoreWithMax = `${displayValue}/${maxValueDisplay}`
+          // Explicação em linguagem simples: nota bruta (0-10) × peso da
+          // categoria (%), normalizado pra escala 0-5 do Intent Index — sem
+          // exigir que o usuário decodifique a fórmula matemática crua.
+          const plainExplanation = `Raw score ${rawScore.toLocaleString('en-US', { maximumFractionDigits: 1 })}/10 × ${weightPercent}% weight`
+          const formulaExplanation = `(${rawScore} × ${signal.weight}) / ${totalWeight} / 2 = ${displayValue}`
 
           const signalName = t(`signals.${signalId}.name`)
           const signalQuestion = t(`signals.${signalId}.question`)
@@ -122,14 +130,17 @@ export function IntentBreakdownComponent({
                         <TooltipContent side="top" sideOffset={5} className="max-w-xs">
                           <div className="space-y-2">
                             <p className="font-semibold text-sm">{signalName}</p>
-                            <p className="text-xs font-medium" style={{ color: 'var(--am-green)' }}>
+                            <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
+                              {plainExplanation}, then scaled to the 0–5 Intent Index.
+                            </p>
+                            <p className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
                               {formulaExplanation}
                             </p>
                             <p className="text-xs font-mono font-semibold" style={{ color: 'var(--am-green)' }}>
-                              {scoreWithMax}
+                              Contribution: {scoreWithMax} points
                             </p>
                             <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
-                              Weight: {signal.weight} ({((signal.weight / totalWeight) * 100).toFixed(0)}%)
+                              This category counts for {weightPercent}% of the total Intent Index.
                             </p>
                           </div>
                         </TooltipContent>
@@ -189,14 +200,17 @@ export function IntentBreakdownComponent({
                     <TooltipContent side="top" sideOffset={5} className="max-w-xs">
                       <div className="space-y-2">
                         <p className="font-semibold text-sm">{signalName}</p>
-                        <p className="text-xs font-medium" style={{ color: 'var(--am-green)' }}>
+                        <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
+                          {plainExplanation}, then scaled to the 0–5 Intent Index.
+                        </p>
+                        <p className="text-xs font-mono" style={{ color: 'var(--am-muted)' }}>
                           {formulaExplanation}
                         </p>
                         <p className="text-xs font-mono font-semibold" style={{ color: 'var(--am-green)' }}>
-                          {scoreWithMax}
+                          Contribution: {scoreWithMax} points
                         </p>
                         <p className="text-xs" style={{ color: 'var(--am-muted)' }}>
-                          Weight: {signal.weight} ({((signal.weight / totalWeight) * 100).toFixed(0)}%)
+                          This category counts for {weightPercent}% of the total Intent Index.
                         </p>
                       </div>
                     </TooltipContent>

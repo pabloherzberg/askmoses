@@ -4,7 +4,23 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "loading": "Chargement...",
-    "error": "Une erreur est survenue"
+    "error": "Une erreur est survenue",
+    "errors": {
+      "invalidBody": "Requête invalide.",
+      "invalidOrgScriptId": "Identifiant de script invalide.",
+      "invalidOrgId": "Identifiant d'organisation invalide.",
+      "invalidRate": "Le tarif doit être un nombre entier entre 0 et 100 000 000 (micro-USD).",
+      "missingOrgId": "L'ID de l'organisation est requis.",
+      "missingFields": "Le destinataire, le titre et le message sont requis.",
+      "rpcFailed": "Une erreur est survenue lors du traitement de cette demande. Veuillez réessayer.",
+      "pendingNotFound": "Cette suggestion est introuvable ou a déjà été traitée.",
+      "trainerNotFound": "Vendeur introuvable dans cette organisation.",
+      "orgNotFound": "Organisation introuvable.",
+      "ghlNotConfigured": "L'intégration GHL n'est pas configurée pour cette organisation.",
+      "ghlAuthFailed": "Impossible de s'authentifier auprès de GHL — vérifiez le jeton d'intégration.",
+      "ghlFetchFailed": "Impossible de charger les utilisateurs GHL.",
+      "internalError": "Une erreur est survenue. Veuillez réessayer."
+    }
   },
   "Billing": {
     "title": "Facturation",
@@ -1965,6 +1981,15 @@
       "finalIntentIndex": "Intent Index final",
       "dealClosed": "Affaire conclue"
     }
+  },
+  "MarketingIntelligence": {
+    "loadError": "Impossible de charger Marketing Intelligence.",
+    "runFailedTitle": "Échec de l'exécution",
+    "runFailedDescription": "Impossible de générer de nouveaux textes.",
+    "runSuccessTitle": "Nouvelle analyse prête",
+    "runSuccessDescription": "Titres et textes principaux actualisés.",
+    "copiedToClipboard": "Copié dans le presse-papiers",
+    "copyFailed": "Échec de la copie"
   },
   "Landing": {
     "Nav": {

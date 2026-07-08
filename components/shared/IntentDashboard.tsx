@@ -109,7 +109,6 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
   })
 
   function intentScore(c: Call): number {
-    if (c.result === 'closed') return 5
     const bd = c.intentBreakdown && typeof c.intentBreakdown === 'object'
       ? c.intentBreakdown
       : deriveIntentBreakdownForCall(c.score, signals)
@@ -121,6 +120,11 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
   function dedupeByLead(pool: Call[]) {
     const byLead = new Map<string, Call & { intentScore: number }>()
     for (const c of pool) {
+      // Só exibe leads com breakdown de intent real — sem isso a tabela mostra
+      // "—" nas 4 colunas (Financial/Urgency/Authority/Engagement) porque o
+      // fallback sintético (5,5,5,5) usado só pra calcular o score não é
+      // persistido em call.intentBreakdown.
+      if (!c.intentBreakdown || typeof c.intentBreakdown !== 'object') continue
       const score = intentScore(c)
       if (score <= 3.5) continue
       const key = c.contactId ?? c.prospect ?? c.id

@@ -32,6 +32,22 @@ interface PendingScriptInfo {
 // e estado interativo (modal). Pode rodar na página server-side mas o
 // banner em si só renderiza após o fetch — evita layout shift exigindo
 // que o consumidor reserve espaço (overview ja tem padding-top suficiente).
+// Mapeia o `reason` estável retornado pela API pra uma mensagem traduzida.
+// Nunca usa error.message direto — vem em português cru da API.
+function errorMessageFromReason(
+  reason: string | undefined,
+  tCommon: (key: string) => string,
+  fallback: string,
+): string {
+  switch (reason) {
+    case 'INVALID_BODY': return tCommon('errors.invalidBody')
+    case 'INVALID_ORG_SCRIPT_ID': return tCommon('errors.invalidOrgScriptId')
+    case 'RPC_FAILED': return tCommon('errors.rpcFailed')
+    case 'PENDING_NOT_FOUND': return tCommon('errors.pendingNotFound')
+    default: return fallback
+  }
+}
+
 export function PendingScriptBanner() {
   const t = useTranslations('Owner.pendingScript')
   const locale = useLocale()
@@ -176,6 +192,7 @@ function PendingScriptModal({
   onRejected: (restoredVersion: string | null) => void
 }) {
   const t = useTranslations('Owner.pendingScript')
+  const tCommon = useTranslations('Common')
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -210,7 +227,7 @@ function PendingScriptModal({
       })
       const json = await res.json()
       if (!res.ok) {
-        setError(json?.error?.message ?? t('genericError'))
+        setError(errorMessageFromReason(json?.error?.reason, tCommon, t('genericError')))
         setBusy(null)
         return
       }
@@ -233,7 +250,7 @@ function PendingScriptModal({
       })
       const json = await res.json()
       if (!res.ok) {
-        setError(json?.error?.message ?? t('genericError'))
+        setError(errorMessageFromReason(json?.error?.reason, tCommon, t('genericError')))
         setBusy(null)
         return
       }

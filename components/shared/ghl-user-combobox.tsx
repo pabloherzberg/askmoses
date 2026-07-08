@@ -57,6 +57,7 @@ export function GhlUserCombobox({
   modalPopover,
 }: Props) {
   const t = useTranslations("Invite");
+  const tCommon = useTranslations("Common");
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<LoadState>({ kind: "idle" });
   // ID do item destacado (teclado OU hover do mouse) — dirige o preview.
@@ -71,7 +72,7 @@ export function GhlUserCombobox({
       const res = await fetch(`/api/ghl-users?${qs.toString()}`);
       const json = (await res.json()) as {
         data: { users: GhlUserOption[] } | null;
-        error: { message: string; code: number } | null;
+        error: { message: string; code: number; reason?: string } | null;
       };
       if (res.status === 409) {
         setState({ kind: "not_configured" });
@@ -79,10 +80,13 @@ export function GhlUserCombobox({
         return;
       }
       if (!res.ok || !json.data) {
-        setState({
-          kind: "error",
-          message: json.error?.message ?? t("ghl.loadError"),
-        });
+        const reason = json.error?.reason;
+        const message =
+          reason === "MISSING_ORG_ID" ? tCommon("errors.missingOrgId")
+          : reason === "GHL_AUTH_FAILED" ? tCommon("errors.ghlAuthFailed")
+          : reason === "GHL_FETCH_FAILED" ? tCommon("errors.ghlFetchFailed")
+          : t("ghl.loadError");
+        setState({ kind: "error", message });
         return;
       }
       onNotConfigured?.(false);
@@ -90,7 +94,7 @@ export function GhlUserCombobox({
     } catch {
       setState({ kind: "error", message: t("ghl.loadError") });
     }
-  }, [orgId, includeGhlUserId, onNotConfigured, t]);
+  }, [orgId, includeGhlUserId, onNotConfigured, t, tCommon]);
 
   // Recarrega quando a org muda. Limpa a seleção: um usuário GHL de outra org
   // não vale para a org nova.

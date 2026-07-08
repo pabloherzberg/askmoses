@@ -4,7 +4,23 @@
     "cancel": "Cancelar",
     "save": "Salvar",
     "loading": "Carregando...",
-    "error": "Algo deu errado"
+    "error": "Algo deu errado",
+    "errors": {
+      "invalidBody": "Requisição inválida.",
+      "invalidOrgScriptId": "Identificador de script inválido.",
+      "invalidOrgId": "Identificador de organização inválido.",
+      "invalidRate": "A tarifa deve ser um número inteiro entre 0 e 100.000.000 (micro-USD).",
+      "missingOrgId": "O ID da organização é obrigatório.",
+      "missingFields": "Destinatário, título e mensagem são obrigatórios.",
+      "rpcFailed": "Algo deu errado ao processar esta solicitação. Tente novamente.",
+      "pendingNotFound": "Esta sugestão não foi encontrada ou já foi resolvida.",
+      "trainerNotFound": "Vendedor não encontrado nesta organização.",
+      "orgNotFound": "Organização não encontrada.",
+      "ghlNotConfigured": "A integração com o GHL não está configurada para esta organização.",
+      "ghlAuthFailed": "Não foi possível autenticar com o GHL — verifique o token da integração.",
+      "ghlFetchFailed": "Não foi possível carregar os usuários do GHL.",
+      "internalError": "Algo deu errado. Tente novamente."
+    }
   },
   "Billing": {
     "title": "Faturamento",
@@ -1965,6 +1981,15 @@
       "finalIntentIndex": "Intent Index final",
       "dealClosed": "Negócio fechado"
     }
+  },
+  "MarketingIntelligence": {
+    "loadError": "Não foi possível carregar o Marketing Intelligence.",
+    "runFailedTitle": "Falha na execução",
+    "runFailedDescription": "Não foi possível gerar novos textos.",
+    "runSuccessTitle": "Nova análise pronta",
+    "runSuccessDescription": "Títulos e textos principais atualizados.",
+    "copiedToClipboard": "Copiado para a área de transferência",
+    "copyFailed": "Falha ao copiar"
   },
   "Landing": {
     "Nav": {

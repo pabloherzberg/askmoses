@@ -4,7 +4,23 @@
     "cancel": "Cancel",
     "save": "Save",
     "loading": "Loading...",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "errors": {
+      "invalidBody": "Invalid request.",
+      "invalidOrgScriptId": "Invalid script identifier.",
+      "invalidOrgId": "Invalid organization identifier.",
+      "invalidRate": "Rate must be a whole number between 0 and 100,000,000 (micro-USD).",
+      "missingOrgId": "Organization ID is required.",
+      "missingFields": "Recipient, title and message are required.",
+      "rpcFailed": "Something went wrong processing this request. Please try again.",
+      "pendingNotFound": "This suggestion was not found or has already been resolved.",
+      "trainerNotFound": "Trainer not found in this organization.",
+      "orgNotFound": "Organization not found.",
+      "ghlNotConfigured": "GHL integration is not configured for this organization.",
+      "ghlAuthFailed": "Could not authenticate with GHL — check the integration token.",
+      "ghlFetchFailed": "Could not load GHL users.",
+      "internalError": "Something went wrong. Please try again."
+    }
   },
   "Billing": {
     "title": "Billing",
@@ -1965,6 +1981,15 @@
       "finalIntentIndex": "Final Intent Index",
       "dealClosed": "Deal Closed"
     }
+  },
+  "MarketingIntelligence": {
+    "loadError": "Failed to load Marketing Intelligence.",
+    "runFailedTitle": "Run failed",
+    "runFailedDescription": "Could not generate fresh copy.",
+    "runSuccessTitle": "New analysis ready",
+    "runSuccessDescription": "Headlines and primary texts refreshed.",
+    "copiedToClipboard": "Copied to clipboard",
+    "copyFailed": "Failed to copy"
   },
   "Landing": {
     "Nav": {

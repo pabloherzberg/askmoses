@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { getSession, ok, unauthorized, forbidden, notFound } from '@/lib/auth'
+import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import type { Role } from '@/lib/types'
@@ -15,13 +15,22 @@ interface PatchBody {
   ratePerMinuteMicros?: number
 }
 
-function badRequest(message: string) {
-  return Response.json({ data: null, error: { message, code: 400 } }, { status: 400 })
+function badRequest(message: string, reason: string) {
+  return Response.json({ data: null, error: { message, code: 400, reason } }, { status: 400 })
 }
 
 function serverError(context: string, err?: unknown) {
   console.error(`[admin/organizations/billing-rate] ${context}`, err)
-  return Response.json({ data: null, error: { message: 'Erro interno', code: 500 } }, { status: 500 })
+  return Response.json({ data: null, error: { message: 'Erro interno', code: 500, reason: 'INTERNAL_ERROR' } }, { status: 500 })
+}
+
+// notFound com `reason` — evita alterar a assinatura do helper compartilhado
+// de lib/auth.ts (usado por dezenas de rotas fora do escopo desta correção).
+function orgNotFound() {
+  return Response.json(
+    { data: null, error: { message: 'Organização não encontrada', code: 404, reason: 'ORG_NOT_FOUND' } },
+    { status: 404 },
+  )
 }
 
 // PATCH /api/admin/organizations/[id]/billing-rate
@@ -42,13 +51,13 @@ export async function PATCH(
   if (role !== 'admin') return forbidden()
 
   const { id: orgId } = await params
-  if (!orgId || !UUID_RE.test(orgId)) return badRequest('orgId inválido')
+  if (!orgId || !UUID_RE.test(orgId)) return badRequest('orgId inválido', 'INVALID_ORG_ID')
 
   let body: PatchBody
   try {
     body = (await request.json()) as PatchBody
   } catch {
-    return badRequest('Body inválido')
+    return badRequest('Body inválido', 'INVALID_BODY')
   }
 
   const micros = body.ratePerMinuteMicros
@@ -58,7 +67,7 @@ export async function PATCH(
     micros < 0 ||
     micros > MAX_RATE_MICROS
   ) {
-    return badRequest('ratePerMinuteMicros deve ser um inteiro entre 0 e 100000000 (micro-USD)')
+    return badRequest('ratePerMinuteMicros deve ser um inteiro entre 0 e 100000000 (micro-USD)', 'INVALID_RATE')
   }
 
   const admin = createAdminClient()
@@ -71,7 +80,7 @@ export async function PATCH(
     .maybeSingle()
 
   if (updateErr) return serverError('Não foi possível atualizar a tarifa', updateErr)
-  if (!updated) return notFound('Organização')
+  if (!updated) return orgNotFound()
 
   return ok({
     id: updated.id,

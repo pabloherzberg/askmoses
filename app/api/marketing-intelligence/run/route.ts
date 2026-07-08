@@ -53,7 +53,14 @@ export async function POST(request: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unexpected error'
     console.error('[marketing-intelligence/run] POST failed:', message)
     return Response.json(
-      { data: null, error: { message: 'Failed to run Marketing Intelligence analysis.', code: 500 } },
+      {
+        data: null,
+        error: {
+          message: 'Failed to run Marketing Intelligence analysis.',
+          code: 500,
+          reason: 'INTERNAL_ERROR',
+        },
+      },
       { status: 500 },
     )
   }

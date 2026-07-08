@@ -17,16 +17,16 @@ import {
 } from '@/lib/db/notifications'
 import { sendCoachingRecEmail } from '@/lib/email/send-coaching-rec'
 
-function badRequest(message: string) {
-  return Response.json({ data: null, error: { message, code: 400 } }, { status: 400 })
+function badRequest(message: string, reason?: string) {
+  return Response.json({ data: null, error: { message, code: 400, reason } }, { status: 400 })
 }
 
-function notFound(message: string) {
-  return Response.json({ data: null, error: { message, code: 404 } }, { status: 404 })
+function notFound(message: string, reason?: string) {
+  return Response.json({ data: null, error: { message, code: 404, reason } }, { status: 404 })
 }
 
-function serverError(message: string) {
-  return Response.json({ data: null, error: { message, code: 500 } }, { status: 500 })
+function serverError(message: string, reason = 'INTERNAL_ERROR') {
+  return Response.json({ data: null, error: { message, code: 500, reason } }, { status: 500 })
 }
 
 // ── GET — sales person lista as próprias notificações (sino do header) ──────
@@ -87,19 +87,19 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json()
     } catch {
-      return badRequest('JSON inválido')
+      return badRequest('JSON inválido', 'INVALID_JSON')
     }
 
     const recipientId = typeof body.recipientId === 'string' ? body.recipientId.trim() : ''
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     const text = typeof body.body === 'string' ? body.body.trim() : ''
     if (!recipientId || !title || !text) {
-      return badRequest('recipientId, title e body são obrigatórios')
+      return badRequest('recipientId, title e body são obrigatórios', 'MISSING_FIELDS')
     }
 
     // Resolve por ID + valida que o trainer pertence à org do Owner.
     const trainer = await dbResolveTrainerById(ctx.activeOrgId, recipientId)
-    if (!trainer) return notFound('Trainer não encontrado nesta organização')
+    if (!trainer) return notFound('Trainer não encontrado nesta organização', 'TRAINER_NOT_FOUND')
 
     // Canais ativos do destinatário (in-app / email).
     const prefs = await dbGetChannelPrefs(trainer.id)

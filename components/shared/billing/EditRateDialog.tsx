@@ -64,7 +64,9 @@ export function EditRateDialog({ org, onClose, onSaved, labels }: Props) {
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || json?.error) {
-        setError(json?.error?.message ?? labels.invalid);
+        // Nunca usar json.error.message diretamente — vem em português cru
+        // da API. labels.invalid já cobre o caso genérico traduzido.
+        setError(labels.invalid);
         setSaving(false);
         return;
       }
