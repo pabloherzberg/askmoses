@@ -1,6 +1,11 @@
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
-import { computeCostUsd, LLM_TEMPERATURE_PRIMARY } from '@/lib/constants/llm'
+// scoring_engine — o intent scoring faz parte do módulo scoring_engine (ver
+// lib/constants/ai-modules.ts). Provider/chave do provider ativo; tuning de
+// scoring_engine. Passa 'gpt-4o-mini' como override pra preferir o modelo
+// barato quando OpenAI está ativo (fallback pro default do provider ativo).
+import { getActiveLlmModel } from '@/lib/llm-provider'
+import { getModuleTuning } from '@/lib/db/ai-module-configs'
+import { computeCostForModel } from '@/lib/services/llm-usage'
 import type { IntentBreakdown } from '@/lib/types'
 
 export interface IntentScoringInput {
@@ -17,6 +22,7 @@ export interface IntentScoringInput {
 
 export interface IntentScoringResult {
   breakdown: IntentBreakdown
+  provider: string
   modelUsed: string
   inputTokens: number
   outputTokens: number
@@ -33,11 +39,13 @@ export async function scoreIntentFromTranscript(
     weights: input.weights,
   })
 
-  const model = getOpenAIModel(null)
+  const { model, provider, modelId } = await getActiveLlmModel('gpt-4o-mini')
+  const tuning = await getModuleTuning('scoring_engine')
   const llmResult = await generateText({
     model,
     prompt,
-    temperature: LLM_TEMPERATURE_PRIMARY,
+    temperature: tuning.temperature,
+    maxOutputTokens: tuning.max_tokens,
   })
 
   let parsed: IntentBreakdown
@@ -53,11 +61,17 @@ export async function scoreIntentFromTranscript(
     parsed = { financial: 5, urgency: 5, authority: 5, engagement: 5 }
   }
 
-  const modelUsed = 'gpt-4o-mini'
-  const costUsd = computeCostUsd(modelUsed, llmResult.usage?.inputTokens ?? 0, llmResult.usage?.outputTokens ?? 0)
+  const modelUsed = modelId
+  const costUsd = await computeCostForModel(
+    provider,
+    modelUsed,
+    llmResult.usage?.inputTokens ?? 0,
+    llmResult.usage?.outputTokens ?? 0,
+  )
 
   return {
     breakdown: parsed,
+    provider,
     modelUsed,
     inputTokens: llmResult.usage?.inputTokens ?? 0,
     outputTokens: llmResult.usage?.outputTokens ?? 0,

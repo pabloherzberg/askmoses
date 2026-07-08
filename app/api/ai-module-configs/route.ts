@@ -1,8 +1,9 @@
-import { ok, unauthorized, forbidden } from '@/lib/auth'
-import { getSession, getRole } from '@/lib/auth'
-import { aiModuleConfigs, aiModuleConfigLog } from '@/lib/mock-data'
-import type { AiModuleId } from '@/lib/types'
+import { ok, unauthorized, forbidden, getSession, getRole } from '@/lib/auth'
+import { getAllModuleConfigs, updateModuleConfig } from '@/lib/db/ai-module-configs'
 
+// GET /api/ai-module-configs
+//   Config atual de tuning por módulo + log de alterações. Admin only.
+//   Lê de ai_module_configs (migration 101) via createAdminClient (service-role).
 export async function GET() {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -10,9 +11,22 @@ export async function GET() {
   const role = await getRole()
   if (role !== 'admin') return forbidden()
 
-  return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
+  try {
+    const { configs, log } = await getAllModuleConfigs()
+    return ok({ configs, log })
+  } catch (err) {
+    console.error('[ai-module-configs] GET failed', err)
+    return Response.json(
+      { data: null, error: { message: 'Erro interno', code: 500 } },
+      { status: 500 },
+    )
+  }
 }
 
+// PUT /api/ai-module-configs
+//   Body: { module_id, temperature, max_tokens }. Valida range server-side,
+//   persiste em ai_module_configs e registra as alterações em
+//   ai_module_config_log. Invalida o cache de tuning do pipeline. Admin only.
 export async function PUT(request: Request) {
   const session = await getSession()
   if (!session) return unauthorized()
@@ -20,46 +34,46 @@ export async function PUT(request: Request) {
   const role = await getRole()
   if (role !== 'admin') return forbidden()
 
-  const body = await request.json() as { module_id: AiModuleId; temperature: number; max_tokens: number }
-  const idx = aiModuleConfigs.findIndex((c) => c.module_id === body.module_id)
-  if (idx === -1) {
-    return Response.json({ data: null, error: { message: 'Module not found', code: 404 } }, { status: 404 })
+  let body: { module_id?: string; temperature?: number; max_tokens?: number }
+  try {
+    body = (await request.json()) as typeof body
+  } catch {
+    return Response.json(
+      { data: null, error: { message: 'Body inválido', code: 400 } },
+      { status: 400 },
+    )
   }
 
-  const prev = aiModuleConfigs[idx]
-  const now = new Date().toISOString()
-  const updatedBy = session.user.email ?? 'admin'
+  if (
+    typeof body.module_id !== 'string' ||
+    typeof body.temperature !== 'number' ||
+    typeof body.max_tokens !== 'number'
+  ) {
+    return Response.json(
+      { data: null, error: { message: 'module_id, temperature e max_tokens são obrigatórios', code: 400 } },
+      { status: 400 },
+    )
+  }
 
-  if (prev.temperature !== body.temperature) {
-    aiModuleConfigLog.unshift({
-      id: `log-${Date.now()}-t`,
+  try {
+    const result = await updateModuleConfig({
       module_id: body.module_id,
-      field: 'temperature',
-      previous_value: prev.temperature,
-      new_value: body.temperature,
-      updated_by: updatedBy,
-      updated_at: now,
+      temperature: body.temperature,
+      max_tokens: body.max_tokens,
+      updated_by: session.user.email ?? 'admin',
     })
+    if ('error' in result) {
+      return Response.json(
+        { data: null, error: { message: result.error, code: result.code } },
+        { status: result.code },
+      )
+    }
+    return ok({ config: result.config, log: result.log })
+  } catch (err) {
+    console.error('[ai-module-configs] PUT failed', err)
+    return Response.json(
+      { data: null, error: { message: 'Erro interno', code: 500 } },
+      { status: 500 },
+    )
   }
-  if (prev.max_tokens !== body.max_tokens) {
-    aiModuleConfigLog.unshift({
-      id: `log-${Date.now()}-m`,
-      module_id: body.module_id,
-      field: 'max_tokens',
-      previous_value: prev.max_tokens,
-      new_value: body.max_tokens,
-      updated_by: updatedBy,
-      updated_at: now,
-    })
-  }
-
-  aiModuleConfigs[idx] = {
-    ...prev,
-    temperature: body.temperature,
-    max_tokens: body.max_tokens,
-    updated_by: updatedBy,
-    updated_at: now,
-  }
-
-  return ok({ config: aiModuleConfigs[idx], log: aiModuleConfigLog })
 }

@@ -2,11 +2,10 @@ import { type NextRequest } from 'next/server'
 import { getSession, getRole, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireSameOrigin } from '@/lib/auth/csrf'
-import { resolveOpenAIModelId, VALID_MODELS as OPENAI_VALID_MODELS } from '@/lib/openai'
-import { VALID_MODELS as GEMINI_VALID_MODELS } from '@/lib/gemini'
+import { getProviderDef, isValidProvider, PROVIDER_LIST } from '@/lib/llm/registry'
 
 interface PatchBody {
-  provider?: 'openai' | 'gemini'
+  provider?: string
   apiKey?: string
   model?: string
   setActive?: boolean
@@ -23,9 +22,14 @@ function serverError(context: string, err?: unknown) {
 
 // PATCH /api/admin/llm-settings/provider
 //   Body: { provider, apiKey?, model?, setActive? }
-//   Atualiza chave/modelo de um provider e, opcionalmente, troca qual está
-//   ativo (desativa o outro). Persiste em llm_provider_settings (097).
-//   Admin only. Nunca retorna a api_key gravada.
+//   Atualiza chave/modelo de um provider e, opcionalmente, o torna o ativo
+//   (desativa os demais). Persiste em llm_provider_settings (099). Admin only.
+//   Nunca retorna a api_key gravada.
+//
+//   Provider/modelo são validados contra o registry (lib/llm/registry.ts) —
+//   adicionar um provider novo lá basta pra esta rota aceitá-lo.
+//   Guard: só permite ATIVAR um provider que tenha chave utilizável (no banco
+//   ou na env) — sem chave, o pipeline cairia calado no fallback.
 export async function PATCH(request: NextRequest) {
   const csrf = requireSameOrigin(request)
   if (csrf) return csrf
@@ -44,17 +48,13 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { provider, apiKey, model, setActive } = body
-  if (provider !== 'openai' && provider !== 'gemini') {
-    return badRequest("provider deve ser 'openai' ou 'gemini'")
+  if (typeof provider !== 'string' || !isValidProvider(provider)) {
+    return badRequest(`provider inválido — suportados: ${PROVIDER_LIST.map((p) => p.id).join(', ')}`)
   }
+  const def = getProviderDef(provider)!
 
-  if (model !== undefined) {
-    const whitelist = provider === 'openai' ? OPENAI_VALID_MODELS : GEMINI_VALID_MODELS
-    // resolveOpenAIModelId aceita prefixo "openai/"; normaliza antes de checar.
-    const sanitized = provider === 'openai' ? resolveOpenAIModelId(model) : model.replace(/^(google\/|models\/)/, '').trim()
-    if (!whitelist.has(sanitized)) {
-      return badRequest(`model "${model}" não é um modelo válido para ${provider}`)
-    }
+  if (model !== undefined && !def.isValidModel(model)) {
+    return badRequest(`model "${model}" não é um modelo válido para ${provider}`)
   }
 
   const admin = createAdminClient()
@@ -70,23 +70,31 @@ export async function PATCH(request: NextRequest) {
     .from('llm_provider_settings')
     .update(patch)
     .eq('provider', provider)
-    .select('id, provider, model, is_active')
+    .select('id, provider, model, is_active, api_key')
     .maybeSingle()
 
   if (updateErr) return serverError('Não foi possível atualizar o provider', updateErr)
   if (!updated) return badRequest(`provider "${provider}" não encontrado — rode a migration 099`)
 
   if (setActive) {
-    // Duas atualizações sequenciais (Supabase JS não faz swap atômico
-    // multi-row) — a linha alvo é ativada por último. Janela estreita de
-    // "nenhum provider ativo" entre as duas chamadas, documentada e aceita
-    // pro escopo desta feature.
-    const otherProvider = provider === 'openai' ? 'gemini' : 'openai'
+    // Guard: exige chave utilizável (banco OU env) antes de ativar.
+    const effectiveKey = (updated.api_key as string | null) ?? process.env[def.envKey] ?? null
+    if (!effectiveKey) {
+      return badRequest(
+        `configure a chave de API de ${def.label} antes de defini-lo como ativo`,
+      )
+    }
+
+    // O índice único parcial (is_active WHERE is_active) proíbe dois ativos ao
+    // mesmo tempo, então NÃO dá pra ativar o alvo antes de desativar os demais.
+    // Ordem obrigatória: desativar todos os outros, depois ativar o alvo. A
+    // janela curta de "zero ativos" entre as duas queries cai no fallback env
+    // (getActiveLlmModel nunca quebra), então é aceitável sem transação.
     const { error: deactivateErr } = await admin
       .from('llm_provider_settings')
       .update({ is_active: false })
-      .eq('provider', otherProvider)
-    if (deactivateErr) return serverError('Não foi possível desativar o outro provider', deactivateErr)
+      .neq('provider', provider)
+    if (deactivateErr) return serverError('Não foi possível desativar os outros providers', deactivateErr)
 
     const { error: activateErr } = await admin
       .from('llm_provider_settings')
@@ -95,5 +103,5 @@ export async function PATCH(request: NextRequest) {
     if (activateErr) return serverError('Não foi possível ativar o provider', activateErr)
   }
 
-  return ok({ provider, model: updated.model, isActive: setActive ?? updated.is_active })
+  return ok({ provider, model: updated.model, isActive: setActive ? true : updated.is_active })
 }

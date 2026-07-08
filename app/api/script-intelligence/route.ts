@@ -2,7 +2,18 @@ import { type NextRequest } from 'next/server'
 import { getActiveOrgContext, ok, unauthorized } from '@/lib/auth'
 import { runScriptIntelligence } from '@/lib/script-intelligence/analyze'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { translateScriptIntelligence } from '@/lib/i18n/translate-coaching'
+import { routing } from '@/i18n/routing'
+import type { Locale } from '@/i18n/routing'
 import type { ScriptSection } from '@/lib/db/scripts'
+
+// A UI manda o idioma atual no x-locale. Traduzimos a resposta AI-generated pra
+// exibição; o client só cacheia (POST /cache) quando locale==='en', mantendo o
+// cache canônico em inglês (ver comentário no client).
+function resolveLocale(raw: string | null): Locale {
+  if (raw && (routing.locales as readonly string[]).includes(raw)) return raw as Locale
+  return 'en'
+}
 
 // POST /api/script-intelligence
 // Body: { scriptId?: string, currentScriptId?: string }
@@ -89,5 +100,12 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  return ok(analysis.result)
+  const locale = resolveLocale(request.headers.get('x-locale'))
+  if (locale === 'en') return ok(analysis.result)
+  try {
+    return ok(await translateScriptIntelligence(analysis.result, locale))
+  } catch (err) {
+    console.error('[script-intelligence] translation failed (serving English):', err)
+    return ok(analysis.result)
+  }
 }

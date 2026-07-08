@@ -1,5 +1,9 @@
 import { generateText } from "ai";
-import { getOpenAIModel } from "@/lib/openai";
+// Transcrição de áudio (Whisper STT) é OpenAI-only — resolve a chave OpenAI do
+// banco (getProviderApiKey), com fallback pro .env. A diarização (limpeza de
+// texto) segue o provider ATIVO como o resto do pipeline. Ver
+// lib/constants/ai-modules.ts (diarização fica fora do tuning por módulo).
+import { getActiveLlmModel, getProviderApiKey } from "@/lib/llm-provider";
 import { recordLlmUsage } from "@/lib/services/llm-usage";
 
 // Translations endpoint sempre devolve transcript em inglês,
@@ -121,8 +125,11 @@ async function callWhisperTranslate(
   mimeType: string,
   options: TranscribeOptions,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured in .env");
+  // Chave OpenAI do banco (llm_provider_settings) com fallback pro .env — assim
+  // uma chave OpenAI configurada na tela /admin/llm-config vale inclusive pra
+  // transcrição, que é OpenAI-only (Whisper).
+  const apiKey = await getProviderApiKey("openai");
+  if (!apiKey) throw new Error("Nenhuma chave OpenAI configurada (banco ou OPENAI_API_KEY)");
 
   const ext = mimeToExt(mimeType);
   const filename = options.filename ?? `audio.${ext}`;
@@ -280,7 +287,7 @@ Raw transcript:
 ${rawTranscript}
 <<<TRANSCRIPT_END>>>`;
 
-  const model = getOpenAIModel("openai/gpt-4o-mini");
+  const { model, provider, modelId } = await getActiveLlmModel("gpt-4o-mini");
   const result = await generateText({ model, prompt, temperature: 0 });
 
   // Telemetria de custo p/ COGS (best-effort). orgId/callId só chegam quando o
@@ -288,7 +295,8 @@ ${rawTranscript}
   void recordLlmUsage({
     orgId: options.orgId ?? null,
     surface: "diarization",
-    model: "gpt-4o-mini",
+    provider,
+    model: modelId,
     inputTokens: result.usage?.inputTokens ?? 0,
     outputTokens: result.usage?.outputTokens ?? 0,
     callId: options.callId ?? null,

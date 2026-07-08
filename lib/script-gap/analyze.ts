@@ -1,5 +1,9 @@
 import { generateText } from 'ai'
-import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
+// correlation_engine — Script Gap Detection é um dos serviços do módulo
+// correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
+// provider ativo; tuning (temperature/max_tokens) de correlation_engine.
+import { getActiveLlmModel } from '@/lib/llm-provider'
+import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbGetActiveOrgScript } from '@/lib/db/scripts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
@@ -131,19 +135,27 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
   const prompt = buildPrompt({ name: script.name, sections: script.sections }, calls)
 
   let text: string
+  let usageProvider = 'openai'
+  let usageModel: string = MODEL
   try {
+    const { model, provider, modelId } = await getActiveLlmModel(MODEL)
+    const tuning = await getModuleTuning('correlation_engine')
+    usageProvider = provider
+    usageModel = modelId
     const aiResult = await generateText({
-      model: getOpenAIModel(MODEL),
+      model,
       system: SYSTEM_PROMPT,
       prompt,
-      temperature: 0.3,
+      temperature: tuning.temperature,
+      maxOutputTokens: tuning.max_tokens,
     })
     text = aiResult.text
     // Telemetria de custo p/ COGS (best-effort).
     void recordLlmUsage({
       orgId,
       surface: 'script_gap',
-      model: MODEL,
+      provider: usageProvider,
+      model: usageModel,
       inputTokens: aiResult.usage?.inputTokens ?? 0,
       outputTokens: aiResult.usage?.outputTokens ?? 0,
       ref: script.id,
@@ -219,5 +231,5 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
       }]
     })
 
-  return { ok: true, gaps, callIds, modelUsed: resolveOpenAIModelId(MODEL) }
+  return { ok: true, gaps, callIds, modelUsed: usageModel }
 }

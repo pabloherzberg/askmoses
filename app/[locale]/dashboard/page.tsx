@@ -38,7 +38,7 @@ export default async function DashboardPage() {
     getRubric(),
     getTeamHealth(),
     getActiveOrgContext(),
-    getScriptGaps(),
+    getScriptGaps(locale),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),

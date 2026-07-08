@@ -320,8 +320,10 @@ describe('TC-04 › Admin salva max_tokens dentro do range válido', () => {
     expect(payload.max_tokens).toBe(600)
   })
 
-  it('MSW handler contém PUT /api/ai-module-configs', () => {
-    expect(mswHandlerSource).toContain("http.put('/api/ai-module-configs'")
+  it('rota real PUT persiste no banco via updateModuleConfig (não é mais mock MSW)', () => {
+    expect(apiRouteSource).toContain('updateModuleConfig')
+    // O handler MSW foi removido — a rota real (Supabase) não pode ser sombreada em dev.
+    expect(mswHandlerSource).not.toContain("http.put('/api/ai-module-configs'")
   })
 })
 
@@ -601,9 +603,10 @@ describe('TC-09 › Sistema lê configuração mais recente antes de cada execu�
     expect(updatedAt).toBeGreaterThan(before)
   })
 
-  it('MSW handler lê configuração mais recente ao responder GET', () => {
-    expect(mswHandlerSource).toContain("http.get('/api/ai-module-configs'")
-    expect(mswHandlerSource).toContain('aiModuleConfigs')
+  it('rota real GET lê a configuração mais recente do banco (getAllModuleConfigs)', () => {
+    expect(apiRouteSource).toContain('getAllModuleConfigs')
+    // Sem cache antigo de MSW sombreando o GET real.
+    expect(mswHandlerSource).not.toContain("http.get('/api/ai-module-configs'")
   })
 })
 

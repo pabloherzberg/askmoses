@@ -1,19 +1,17 @@
 /**
  * TC-LLM-PROVIDER-SETTINGS — Provider/chave/custo de LLM em /admin/llm-config
  *
- * IMPORTANTE — estado atual (ver messages/pt.json providerSection.previewBadge):
- * a tela /admin/llm-config é só PREVIEW VISUAL. lib/llm-provider.ts,
- * app/api/admin/llm-settings/* e as migrations 099/100 existem no repo mas
- * NÃO estão conectados a /api/analyze nem foram rodados em produção — o
- * pipeline real de análise continua 100% hardcoded em OpenAI via
- * OPENAI_API_KEY do .env (lib/openai.ts), exatamente como antes desta feature.
- * Isso foi deliberado: subir a UI sem terminar a integração real, sem risco
- * pro pipeline de produção.
+ * ESTADO ATUAL: a feature está FINALIZADA e ligada ao pipeline. /api/analyze
+ * (e todos os serviços de LLM) resolvem provider+modelo+chave via
+ * getActiveLlmModel (provider ATIVO em llm_provider_settings, com fallback pro
+ * .env quando não configurado) e o custo via computeCostForModel (pricing por
+ * provider). Trocar o provider/chave na tela reflete em toda a plataforma.
  *
  * Cobre:
- *   - Regressão: /api/analyze NÃO foi tocado — continua hardcoded OpenAI/env.
- *   - Contrato: rotas admin novas existem e têm os guards de auth/CSRF corretos
- *     (código morto por enquanto — nenhuma UI as chama ainda).
+ *   - Contrato: rotas admin (/api/admin/llm-settings/*) com guards de auth/CSRF,
+ *     validação de provider via registry, guard de "ativar só com chave".
+ *   - Regressão inversa: /api/analyze usa o provider switch (não volta pro
+ *     getOpenAIModel/computeCostUsd hardcoded) e aplica o tuning por módulo.
  *   - Migrations 099/100 existem, são idempotentes (IF NOT EXISTS) e têm RLS.
  *   - getActiveLlmModel: lógica de fallback replicada inline (sem tocar Supabase).
  *   - resolveGeminiModelId: normalização de sufixo "-001" e fallback pro default.
@@ -47,9 +45,13 @@ describe('Contrato › app/api/admin/llm-settings/*', () => {
     expect(settingsRouteSource).toMatch(/forbidden\(\)/)
   })
 
-  it('GET nunca retorna a api_key crua — sempre mascara', () => {
-    expect(settingsRouteSource).toContain('maskKey')
+  it('GET nunca retorna a api_key crua — delega p/ getAdminLlmSettings (que mascara)', () => {
+    // maskKey vive agora em lib/db/llm-settings.ts (compartilhado com a página SSR).
+    expect(settingsRouteSource).toContain('getAdminLlmSettings')
     expect(settingsRouteSource).not.toMatch(/apiKey:\s*r\.api_key/)
+    const dbSettingsSource = readFileSync(resolve(ROOT, 'lib/db/llm-settings.ts'), 'utf-8')
+    expect(dbSettingsSource).toContain('maskKey')
+    expect(dbSettingsSource).not.toMatch(/apiKey:\s*r\.api_key/)
   })
 
   it('PATCH /api/admin/llm-settings/provider tem guard de CSRF + sessão + role admin', () => {
@@ -59,8 +61,14 @@ describe('Contrato › app/api/admin/llm-settings/*', () => {
     expect(providerRouteSource).toMatch(/role\s*!==\s*['"]admin['"]/)
   })
 
-  it('PATCH valida provider contra whitelist (openai|gemini)', () => {
-    expect(providerRouteSource).toMatch(/provider !== 'openai' && provider !== 'gemini'/)
+  it('PATCH valida provider contra o registry (isValidProvider)', () => {
+    expect(providerRouteSource).toMatch(/isValidProvider\(provider\)/)
+  })
+
+  it('PATCH só ativa um provider que tenha chave utilizável (banco ou env)', () => {
+    // Guard: setActive exige effectiveKey (api_key do banco ?? env do registry).
+    expect(providerRouteSource).toContain('effectiveKey')
+    expect(providerRouteSource).toMatch(/process\.env\[def\.envKey\]/)
   })
 
   it('POST /api/admin/llm-settings/pricing tem guard de CSRF + sessão + role admin', () => {
@@ -80,30 +88,33 @@ describe('Contrato › app/api/admin/llm-settings/*', () => {
   })
 })
 
-// ─── Regressão: /api/analyze NÃO foi conectado ao provider switch ───────────
-// Decisão deliberada (ver header do arquivo): a tela /admin/llm-config sobe
-// como preview visual, mas o pipeline real de análise continua hardcoded em
-// OpenAI/env — sem esse comportamento, subir a UI incompleta arriscaria
-// produção. Estes testes travam a regressão caso alguém reconecte
-// /api/analyze a getActiveLlmModel antes da feature estar pronta pra prod.
+// ─── /api/analyze AGORA usa o switch de provider (feature finalizada) ────────
+// A feature LLM Config foi ligada ao pipeline: /api/analyze resolve
+// provider+modelo+chave via getActiveLlmModel (provider ativo em
+// llm_provider_settings, fallback pro .env) e o custo via computeCostForModel
+// (pricing por provider). Estes testes travam a REGRESSÃO INVERSA — impedem
+// que alguém volte pro getOpenAIModel/computeCostUsd hardcoded.
 
-describe('Regressão › /api/analyze continua hardcoded OpenAI/env (não usa o provider switch ainda)', () => {
-  it('usa getOpenAIModel/resolveOpenAIModelId/computeCostUsd — igual ao comportamento anterior a esta feature', () => {
-    expect(analyzeRouteSource).toContain('getOpenAIModel(')
-    expect(analyzeRouteSource).toContain('resolveOpenAIModelId(')
-    expect(analyzeRouteSource).toContain('computeCostUsd(')
+describe('/api/analyze › usa o provider switch (getActiveLlmModel + computeCostForModel)', () => {
+  it('importa e usa getActiveLlmModel/computeCostForModel de lib/llm-provider + llm-usage', () => {
+    expect(analyzeRouteSource).toContain('getActiveLlmModel')
+    expect(analyzeRouteSource).toContain('computeCostForModel')
+    expect(analyzeRouteSource).toContain('@/lib/llm-provider')
   })
 
-  it('NÃO importa getActiveLlmModel/computeCostForModel — o pipeline real não depende de lib/llm-provider.ts ainda', () => {
-    expect(analyzeRouteSource).not.toContain('getActiveLlmModel')
-    expect(analyzeRouteSource).not.toContain('computeCostForModel')
-    expect(analyzeRouteSource).not.toContain('llm-provider')
+  it('NÃO usa mais o caminho hardcoded getOpenAIModel/computeCostUsd', () => {
+    expect(analyzeRouteSource).not.toContain('getOpenAIModel(')
+    expect(analyzeRouteSource).not.toContain('computeCostUsd(')
   })
 
-  it('recordLlmUsage não recebe provider explícito — cai no default "openai" de lib/services/llm-usage.ts', () => {
+  it('recordLlmUsage recebe provider explícito (custo por provider correto)', () => {
     const call = analyzeRouteSource.match(/recordLlmUsage\(\{[\s\S]*?\}\);/)?.[0] ?? ''
-    expect(call).not.toContain('provider,')
-    expect(call).not.toContain('provider:')
+    expect(call).toContain('provider')
+  })
+
+  it('aplica o tuning por módulo (scoring_engine) — temperature + maxOutputTokens', () => {
+    expect(analyzeRouteSource).toContain("getModuleTuning(\"scoring_engine\")")
+    expect(analyzeRouteSource).toContain('maxOutputTokens')
   })
 })
 

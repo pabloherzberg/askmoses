@@ -3,6 +3,7 @@ import { forbidden, getOrgId, getRole, getSession, ok, requireOwnerWrite, unauth
 import { getScripts } from '@/lib/services/scripts'
 import { dbCreateScript, type ScriptSection } from '@/lib/db/scripts'
 import { dbGetRubricById } from '@/lib/db/rubric'
+import { routing, type Locale } from '@/i18n/routing'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -12,7 +13,14 @@ export async function GET(request: NextRequest) {
   const active = searchParams.get('active') === 'true' ? true : undefined
   const rubricId = searchParams.get('rubricId') ?? undefined
 
-  const data = await getScripts({ active, rubricId })
+  // Critérios são salvos em inglês; traduzidos na leitura conforme o locale
+  // da interface (header x-locale). Sem header válido → sem tradução.
+  const rawLocale = request.headers.get('x-locale')
+  const locale = (routing.locales as readonly string[]).includes(rawLocale ?? '')
+    ? (rawLocale as Locale)
+    : undefined
+
+  const data = await getScripts({ active, rubricId, locale })
   return ok(data)
 }
 

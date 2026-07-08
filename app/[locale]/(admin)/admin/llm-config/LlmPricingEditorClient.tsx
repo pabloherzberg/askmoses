@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import { SectionLabel } from '@/components/shared/SectionLabel'
@@ -12,6 +13,11 @@ interface Props {
 
 type EditDraft = { input: string; output: string; perMinute: string }
 
+interface ApiResp {
+  data?: { history?: LlmPricingRow[]; pricing?: LlmPricingRow } | null
+  error?: { message?: string } | null
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
@@ -19,6 +25,7 @@ function formatDate(iso: string) {
 export function LlmPricingEditorClient({ initialPricing }: Props) {
   const t = useTranslations('Admin.llmConfig.pricingSection')
   const { toast } = useToast()
+  const router = useRouter()
 
   const [pricing, setPricing] = useState<LlmPricingRow[]>(initialPricing)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -37,36 +44,75 @@ export function LlmPricingEditorClient({ initialPricing }: Props) {
     })
   }
 
-  // PREVIEW VISUAL — ainda não funcional. Sem fetch, sem persistência real:
-  // atualiza só o estado local (não cria versão de fato, não grava no
-  // Supabase). /api/analyze continua 100% hardcoded em OpenAI/env.
+  // Cria uma NOVA VERSÃO de preço (POST desativa a anterior e insere a nova
+  // com effective_from=now). Nunca faz UPDATE in-place — custo histórico em
+  // llm_usage_events fica intacto (ver header de scripts/088).
   const handleSave = async (row: LlmPricingRow) => {
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 300))
-    setPricing((prev) =>
-      prev.map((p) =>
-        p.id === row.id
-          ? row.unit === 'per_1m_tokens'
-            ? { ...p, input_usd_per_1m: Number(draft.input), output_usd_per_1m: Number(draft.output) }
-            : { ...p, usd_per_minute: Number(draft.perMinute) }
-          : p,
-      ),
-    )
-    setEditingId(null)
-    toast({ title: t('toastPreviewTitle'), description: t('toastPreviewBody', { model: row.model }) })
-    setSaving(false)
+    try {
+      const payload =
+        row.unit === 'per_1m_tokens'
+          ? {
+              provider: row.provider,
+              model: row.model,
+              unit: row.unit,
+              input_usd_per_1m: Number(draft.input),
+              output_usd_per_1m: Number(draft.output),
+            }
+          : {
+              provider: row.provider,
+              model: row.model,
+              unit: row.unit,
+              usd_per_minute: Number(draft.perMinute),
+            }
+      const res = await fetch('/api/admin/llm-settings/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const json = (await res.json().catch(() => ({}))) as ApiResp
+      if (!res.ok || json.error) throw new Error(json.error?.message ?? 'Falha ao salvar')
+
+      const inserted = json.data?.pricing
+      if (inserted) {
+        setPricing((prev) => prev.map((p) => (p.id === row.id ? inserted : p)))
+      }
+      setEditingId(null)
+      // Se o histórico deste modelo estava aberto, recarrega pra incluir a nova versão.
+      if (historyFor === row.id) setHistoryFor(null)
+      toast({ title: t('toastSavedTitle'), description: t('toastSavedBody', { model: row.model }) })
+      router.refresh()
+    } catch (err) {
+      toast({
+        title: t('toastErrorTitle'),
+        description: err instanceof Error ? err.message : t('toastErrorBody'),
+        variant: 'destructive',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const toggleHistory = (row: LlmPricingRow) => {
+  const toggleHistory = async (row: LlmPricingRow) => {
     if (historyFor === row.id) {
       setHistoryFor(null)
       return
     }
     setHistoryFor(row.id)
     setLoadingHistory(true)
-    // Sem tabela real ainda — histórico é só a própria linha atual (preview).
-    setHistory([row])
-    setLoadingHistory(false)
+    setHistory([])
+    try {
+      const res = await fetch(
+        `/api/admin/llm-settings/pricing?provider=${encodeURIComponent(row.provider)}&model=${encodeURIComponent(row.model)}`,
+      )
+      const json = (await res.json().catch(() => ({}))) as ApiResp
+      if (!res.ok || json.error) throw new Error(json.error?.message ?? 'Falha ao carregar histórico')
+      setHistory(json.data?.history ?? [])
+    } catch {
+      setHistory([])
+    } finally {
+      setLoadingHistory(false)
+    }
   }
 
   if (pricing.length === 0) {
@@ -89,14 +135,8 @@ export function LlmPricingEditorClient({ initialPricing }: Props) {
       <h2 className="text-base font-semibold mb-0.5" style={{ color: 'var(--am-text)' }}>
         {t('title')}
       </h2>
-      <p className="text-sm mb-2" style={{ color: 'var(--am-muted)' }}>
+      <p className="text-sm mb-4" style={{ color: 'var(--am-muted)' }}>
         {t('subtitle')}
-      </p>
-      <p
-        className="text-xs mb-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-        style={{ background: 'var(--am-bg4)', color: 'var(--am-amber)' }}
-      >
-        {t('previewBadge')}
       </p>
 
       <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--am-bg2)', borderColor: 'var(--am-border)' }}>
@@ -180,7 +220,7 @@ export function LlmPricingEditorClient({ initialPricing }: Props) {
                               className="font-semibold px-3 py-1 rounded-lg disabled:opacity-40"
                               style={{ background: 'var(--am-accent)', color: 'white' }}
                             >
-                              {saving ? t('newVersion') + '...' : t('newVersion')}
+                              {saving ? `${t('newVersion')}…` : t('newVersion')}
                             </button>
                           ) : (
                             <button

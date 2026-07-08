@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 // Seletor de mês do Bloco 2 (mês-calendário). Controla SÓ o Bloco 2.
 export function MonthSelector({ monthLabel, onPrev, onNext, disabled }: Props) {
+  const t = useTranslations("Billing");
   return (
     <div
       className="inline-flex items-center gap-2 rounded-xl px-3 py-2"
@@ -20,7 +22,7 @@ export function MonthSelector({ monthLabel, onPrev, onNext, disabled }: Props) {
         type="button"
         onClick={onPrev}
         disabled={disabled}
-        aria-label="Previous month"
+        aria-label={t("prevMonth")}
         className="inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors disabled:opacity-40 hover:opacity-80"
         style={{ color: "var(--am-muted)" }}
       >
@@ -36,7 +38,7 @@ export function MonthSelector({ monthLabel, onPrev, onNext, disabled }: Props) {
         type="button"
         onClick={onNext}
         disabled={disabled}
-        aria-label="Next month"
+        aria-label={t("nextMonth")}
         className="inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors disabled:opacity-40 hover:opacity-80"
         style={{ color: "var(--am-muted)" }}
       >

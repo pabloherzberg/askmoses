@@ -1,5 +1,8 @@
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
+// Provider/chave do provider ATIVO (getActiveLlmModel) — coaching NÃO está no
+// tuning por módulo (mantém temperatura padrão do SDK), mas segue o provider
+// global como todo o resto. Ver lib/constants/ai-modules.ts.
+import { getActiveLlmModel } from '@/lib/llm-provider'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { normaliseOutcome } from '@/lib/constants'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
@@ -338,15 +341,17 @@ Exactly 3 items.`.trim()
 
   let parsed: { recommendations?: { title?: string; text?: string }[] } | null
   try {
+    const { model, provider, modelId } = await getActiveLlmModel('gpt-4o')
     const result = await generateText({
-      model: getOpenAIModel('gpt-4o'),
+      model,
       prompt,
     })
     // Telemetria de custo p/ COGS (best-effort).
     void recordLlmUsage({
       orgId: orgId ?? null,
       surface: 'coaching',
-      model: 'gpt-4o',
+      provider,
+      model: modelId,
       inputTokens: result.usage?.inputTokens ?? 0,
       outputTokens: result.usage?.outputTokens ?? 0,
     })
