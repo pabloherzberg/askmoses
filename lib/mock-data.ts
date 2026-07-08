@@ -1677,11 +1677,12 @@ export const aiModuleConfigLog: AiModuleConfigLogEntry[] = [
   { id: 'log-003', module_id: 'correlation_engine',     field: 'temperature', previous_value: 0.7, new_value: 0.5, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-09T09:11:00Z' },
 ]
 
-// ─── LLM provider / pricing (preview visual — /admin/llm-config) ──────────────
-// AINDA NÃO FUNCIONAL: puramente ilustrativo pra tela mostrar como vai ficar.
-// Não lê/escreve Supabase — /api/analyze continua 100% hardcoded em OpenAI/env
-// (lib/openai.ts). Sem tabela llm_provider_settings em produção ainda; quando
-// a feature for finalizada, isso é substituído por fetch real na página.
+// ─── LLM provider / pricing — REFERÊNCIA (a feature está finalizada) ──────────
+// NÃO são mais consumidos pela UI: /admin/llm-config lê provider/pricing DIRETO
+// do Supabase (llm_provider_settings / llm_pricing) via lib/db/llm-settings.ts,
+// e /api/analyze usa getActiveLlmModel. Estes exports ficam só como referência
+// do formato/seed. Idem aiModuleConfigs/aiModuleConfigLog acima — a fonte de
+// verdade agora é a tabela ai_module_configs (migration 101).
 export const llmProviderSettingsMock: LlmProviderSetting[] = [
   {
     id: 'mock-openai',

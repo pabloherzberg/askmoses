@@ -8,8 +8,12 @@
   },
   "Billing": {
     "title": "Billing",
-    "block1": { "title": "Usage in period" },
-    "block2": { "title": "Billing cycle" },
+    "block1": {
+      "title": "Usage in period"
+    },
+    "block2": {
+      "title": "Billing cycle"
+    },
     "cards": {
       "callsAnalyzed": "Calls analyzed",
       "billableMinutes": "Billable minutes",
@@ -81,7 +85,9 @@
       "colAmount": "Amount",
       "payTitle": "Billing is handled directly with the AskMoses team",
       "payBody": "This page shows your usage and amount due for reference. Payment is arranged outside the platform — there's nothing to pay here."
-    }
+    },
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "Navigation": {
     "overview": "Overview",
@@ -155,7 +161,8 @@
     "genericError": "Could not create the account. Please try again.",
     "verifyEmailTitle": "Confirm your email",
     "verifyEmailBody": "We've sent a confirmation link to {email}. Click the link to activate your account and continue.",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "stripeBanner": "Plan <b>{plan}</b> purchased ✓ — create your account to access."
   },
   "Onboarding": {
     "stepLabel": "Step {current} of {total}",
@@ -393,15 +400,13 @@
       "legacyScriptHint": "legacy"
     },
     "performanceTrend": {
-      "title": "Overall Performance Trend",
-      "myTrend": "My Trend",
-      "mockBadge": "mock data only",
+      "noCalls": "No calls",
+      "title": "Conversion Rate Trend",
       "team": "Team",
-      "closeRate": "Close Rate %",
-      "avgScore": "Avg Score",
-      "tooltipCloseRate": "Close Rate",
-      "tooltipAvgScore": "Avg Score",
-      "mockFooter": "↑ values sourced from mock-data.ts · Recharts LineChart · no real calculation"
+      "teamAvg": "Team avg",
+      "closeRateLegend": "Close Rate",
+      "weekLabel": "Week {n}",
+      "callLabel": "Call {n}"
     },
     "upsell": {
       "defaultCta": "Compare plans",
@@ -470,15 +475,6 @@
       "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Close rate",
       "teamPill": "Team"
-    },
-    "performanceTrend": {
-      "noCalls": "No calls",
-      "title": "Conversion Rate Trend",
-      "team": "Team",
-      "teamAvg": "Team avg",
-      "closeRateLegend": "Close Rate",
-      "weekLabel": "Week {n}",
-      "callLabel": "Call {n}"
     },
     "rubricGapDetection": {
       "title": "Script Gap Detection",
@@ -938,7 +934,8 @@
       "criteriaWeight": "{count} criteria · Weight: {weight}%",
       "current": "Current",
       "proposed": "Proposed",
-      "noChanges": "No changes to show."
+      "noChanges": "No changes to show.",
+      "saveFailed": "Failed to save script"
     },
     "health": {
       "healthy": "Healthy",
@@ -1190,11 +1187,10 @@
       "providerSection": {
         "label": "LLM Provider",
         "title": "Active provider",
-        "subtitle": "Determines which real provider the analysis pipeline (/api/analyze) uses.",
-        "previewBadge": "Preview — not functional yet. Call analysis still uses OpenAI via environment variable.",
+        "subtitle": "Determines which provider the analysis pipeline uses. Changing it here applies across the whole platform (audio transcription always uses OpenAI).",
         "notMigrated": "Provider settings table doesn't exist yet — run migration 099.",
-        "providerOpenAI": "OpenAI",
-        "providerGemini": "Google Gemini",
+        "selectorHint": "More than one provider has a key configured — pick which one is active.",
+        "setActiveNeedsKey": "Configure the API key before activating this provider.",
         "modelLabel": "Default model",
         "apiKeyLabel": "API key",
         "apiKeyPlaceholder": "Paste the API key",
@@ -1208,16 +1204,15 @@
         "saving": "Saving...",
         "toastSavedTitle": "Saved",
         "toastSavedBody": "Provider configuration updated.",
+        "toastActivatedTitle": "Provider activated",
+        "toastActivatedBody": "The pipeline now uses this provider.",
         "toastErrorTitle": "Error",
-        "toastErrorBody": "Failed to save. Try again.",
-        "toastPreviewTitle": "Preview",
-        "toastPreviewBody": "This is still just a visual preview — nothing was actually saved."
+        "toastErrorBody": "Failed to save. Try again."
       },
       "pricingSection": {
         "label": "LLM Costs",
         "title": "Pricing table (COGS)",
         "subtitle": "Editing creates a new version — already-recorded cost history is not changed.",
-        "previewBadge": "Preview — not functional yet.",
         "th": {
           "provider": "Provider",
           "model": "Model",
@@ -1238,9 +1233,7 @@
         "toastSavedTitle": "Price updated",
         "toastSavedBody": "New price version created for {model}.",
         "toastErrorTitle": "Error",
-        "toastErrorBody": "Failed to save price.",
-        "toastPreviewTitle": "Preview",
-        "toastPreviewBody": "This is still just a visual preview — no price version was actually created."
+        "toastErrorBody": "Failed to save price."
       }
     }
   },
@@ -1610,7 +1603,12 @@
       "tipEmoji": "💡 {tip}",
       "autoGeneratedCriteria": "Auto-Generated Criteria",
       "deleteScript": "Delete Script",
-      "emptyScripts": "No scripts created yet. Create your first sales script to get started."
+      "emptyScripts": "No scripts created yet. Create your first sales script to get started.",
+      "weightLabel": "Weight (%)",
+      "critical": "Critical",
+      "criticalHint": "(score ≤ 4 triggers alert)",
+      "weightsSumInvalid": "⚠ Weights sum to {total}% — must equal 100% before saving.",
+      "weightsSumValid": "✓ Weights sum to 100%"
     },
     "insights": {
       "title": "Script Intelligence",
@@ -1833,7 +1831,12 @@
         "gpt4oMini": "OpenAI GPT-4o Mini (Fast & Cheap)",
         "gemini25Flash": "Google Gemini 2.5 Flash (Balanced)",
         "gemini25Pro": "Google Gemini 2.5 Pro (Powerful)"
-      }
+      },
+      "weightLabel": "Weight (%)",
+      "critical": "Critical",
+      "criticalHint": "(score ≤ 4 triggers alert)",
+      "weightsSumInvalid": "⚠ Weights sum to {total}% — must equal 100% before saving.",
+      "weightsSumValid": "✓ Weights sum to 100%"
     },
     "upload": {
       "title": "Upload Call",
@@ -1956,7 +1959,11 @@
         "browseFiles": "Browse Files",
         "transcriptPlaceholder": "Paste the call transcript here...",
         "charactersCount": "{count} characters"
-      }
+      },
+      "intentIndexTitle": "Ask Moses Intent Index",
+      "intentIndexSubtitle": "Buying intent assessment (0-5 scale)",
+      "finalIntentIndex": "Final Intent Index",
+      "dealClosed": "Deal Closed"
     }
   },
   "Landing": {
@@ -2935,6 +2942,57 @@
     "teamAverage": "Team Avg",
     "breakdownLabel": "Breakdown",
     "radarLabel": "Intent Index",
-    "highestIntentLeads": "Highest Priority Leads"
+    "highestIntentLeads": "Highest Priority Leads",
+    "period1w": "1 week",
+    "period2w": "2 weeks",
+    "period15d": "15 days",
+    "period1m": "1 month"
+  },
+  "Success": {
+    "title": "Payment confirmed!",
+    "description": "Your <b>{plan}</b> plan is active. Now create your account to access the platform.",
+    "defaultPlan": "your plan",
+    "createAccount": "Create my account →",
+    "backToSite": "Back to the site",
+    "haveAccount": "Already have an account?",
+    "login": "Sign in"
+  },
+  "Marketing": {
+    "sectionLabel": "Marketing Intelligence",
+    "subtitle": "AI-generated copy insights based on your closed calls · Runs weekly · Analyzes 3–5 calls",
+    "copyToClipboard": "Copied to clipboard",
+    "copyFailed": "Failed to copy",
+    "copied": "Copied",
+    "copy": "COPY",
+    "confidenceBadge": "{value}% · {level}",
+    "confidenceLevelHigh": "HIGH CONFIDENCE",
+    "confidenceLevelMedium": "MEDIUM CONFIDENCE",
+    "confidenceLevelLow": "LOW CONFIDENCE",
+    "lastRun": "Last run:",
+    "basedOn": "Based on <b>{count} closed calls</b>",
+    "nextRun": "Next run:",
+    "disclaimer": "Copy suggestions are AI-generated. Review before publishing.",
+    "headlinesTitle": "🔥 Suggested Ad Headlines",
+    "primaryTextTitle": "✏️ Suggested Primary Text",
+    "aiGenerated": "AI Generated",
+    "sourceCalls": "Source Calls",
+    "analyzedCount": "{count} of 5 analyzed · Closed only",
+    "closed": "CLOSED",
+    "scoreLabel": "Score:",
+    "frequency": "Frequency",
+    "frequencyValue": "Weekly",
+    "autoNote": "(auto)",
+    "sampleSize": "Sample size",
+    "sampleSizeValue": "3–5 closed calls",
+    "randomNote": "(random)",
+    "tokenCost": "Token cost",
+    "tokenCostValue": "Controlled by AskMoses admin",
+    "runNow": "RUN NOW",
+    "running": "RUNNING…",
+    "runFailed": "Run failed",
+    "runFailedDesc": "Could not generate fresh copy.",
+    "runSuccess": "New analysis ready",
+    "runSuccessDesc": "Headlines and primary texts refreshed.",
+    "loadFailed": "Failed to load Marketing Intelligence"
   }
 }

@@ -1,6 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
+// Provider/chave do provider ATIVO (getActiveLlmModel) — geração de script
+// segue o provider global. Fora do tuning por módulo. Ver lib/constants/ai-modules.ts.
+import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getSession, getOrgId, requireOwnerWrite, unauthorized } from '@/lib/auth'
 import { getRubricConfig } from '@/lib/services/rubric'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
@@ -77,8 +79,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Provide at least one transcript or text input.' }, { status: 400 })
   }
 
+  const { model, provider, modelId } = await getActiveLlmModel('gpt-4o-mini')
   const { text, usage } = await generateText({
-    model: getOpenAIModel('gpt-4o-mini'),
+    model,
     system: SYSTEM_PROMPT,
     prompt: buildUserPrompt(transcripts, textInput),
   })
@@ -87,7 +90,8 @@ export async function POST(request: NextRequest) {
   void recordLlmUsage({
     orgId: await getOrgId(),
     surface: 'script_generation',
-    model: 'gpt-4o-mini',
+    provider,
+    model: modelId,
     inputTokens: usage?.inputTokens ?? 0,
     outputTokens: usage?.outputTokens ?? 0,
   })

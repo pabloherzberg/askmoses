@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TrendingUp } from "lucide-react";
 import {
   RadarChart,
@@ -81,6 +82,7 @@ export function TeamIntentRadarChart({
   startDate,
   endDate,
 }: TeamIntentRadarChartProps) {
+  const t = useTranslations("Intent");
   const trainerBd = avgBreakdown(trainerCalls, signals);
   const teamBd = avgBreakdown(teamCalls, signals);
 
@@ -125,7 +127,7 @@ export function TeamIntentRadarChart({
 
   const chartConfig: ChartConfig = {
     trainer: { label: trainerName, color: "var(--am-accent)" },
-    team: { label: "Team avg", color: "var(--am-amber)" },
+    team: { label: t("teamAverage"), color: "var(--am-amber)" },
   };
 
   return (
@@ -209,7 +211,7 @@ export function TeamIntentRadarChart({
             />
             {hasTeam && (
               <Radar
-                name="Team avg"
+                name={t("teamAverage")}
                 dataKey="team"
                 fill="var(--color-team)"
                 fillOpacity={0.15}

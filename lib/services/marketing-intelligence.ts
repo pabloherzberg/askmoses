@@ -1,7 +1,10 @@
 import { generateText } from 'ai'
-import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
-import { computeCostUsd, LLM_TEMPERATURE_PRIMARY } from '@/lib/constants/llm'
-import { recordLlmUsage } from '@/lib/services/llm-usage'
+// marketing_intelligence — este é o serviço do módulo marketing_intelligence
+// (ver lib/constants/ai-modules.ts). Provider/chave do provider ativo; tuning
+// (temperature/max_tokens) de marketing_intelligence.
+import { getActiveLlmModel } from '@/lib/llm-provider'
+import { getModuleTuning } from '@/lib/db/ai-module-configs'
+import { recordLlmUsage, computeCostForModel } from '@/lib/services/llm-usage'
 import { dbGetCalls } from '@/lib/db/calls'
 import {
   dbGetLatestMarketingRun,
@@ -288,10 +291,13 @@ export async function executeMarketingRun(params: {
   const sample = await selectSample(params.orgId)
 
   const prompt = buildPrompt(sample)
+  const { model, provider, modelId } = await getActiveLlmModel(MODEL)
+  const tuning = await getModuleTuning('marketing_intelligence')
   const llmResult = await generateText({
-    model: getOpenAIModel(MODEL),
+    model,
     prompt,
-    temperature: LLM_TEMPERATURE_PRIMARY,
+    temperature: tuning.temperature,
+    maxOutputTokens: tuning.max_tokens,
   })
 
   const parsed = validateResponse(tryParseJson(llmResult.text))
@@ -302,10 +308,10 @@ export async function executeMarketingRun(params: {
   const headlines = toCopyItems(parsed.headlines, 'h')
   const primaryTexts = toCopyItems(parsed.primary_texts, 'p')
 
-  const modelUsed = resolveOpenAIModelId(MODEL)
+  const modelUsed = modelId
   const inputTokens = llmResult.usage?.inputTokens ?? 0
   const outputTokens = llmResult.usage?.outputTokens ?? 0
-  const costUsd = computeCostUsd(modelUsed, inputTokens, outputTokens)
+  const costUsd = await computeCostForModel(provider, modelUsed, inputTokens, outputTokens)
 
   const run = await dbInsertMarketingRun({
     orgId: params.orgId,
@@ -324,6 +330,7 @@ export async function executeMarketingRun(params: {
   void recordLlmUsage({
     orgId: params.orgId,
     surface: 'marketing',
+    provider,
     model: modelUsed,
     inputTokens,
     outputTokens,

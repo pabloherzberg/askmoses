@@ -1,12 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { IntentDateRange } from "@/lib/types";
 
-const RANGES: { value: IntentDateRange; label: string }[] = [
-  { value: "1w", label: "1 week" },
-  { value: "2w", label: "2 weeks" },
-  { value: "15d", label: "15 days" },
-  { value: "1m", label: "1 month" },
+const RANGES: { value: IntentDateRange; labelKey: string }[] = [
+  { value: "1w", labelKey: "period1w" },
+  { value: "2w", labelKey: "period2w" },
+  { value: "15d", labelKey: "period15d" },
+  { value: "1m", labelKey: "period1m" },
 ];
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 // Seletor de range temporal da lista "Highest Priority Leads" do Intent
 // dashboard. Independente do PeriodTabs de billing (ranges diferentes).
 export function IntentPeriodTabs({ value, onChange, disabled }: Props) {
+  const t = useTranslations("Intent");
   return (
     <div
       className="inline-flex rounded-xl p-1 gap-1"
@@ -40,7 +42,7 @@ export function IntentPeriodTabs({ value, onChange, disabled }: Props) {
               color: active ? "var(--am-on-accent)" : "var(--am-muted)",
             }}
           >
-            {r.label}
+            {t(r.labelKey)}
           </button>
         );
       })}

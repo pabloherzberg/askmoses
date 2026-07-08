@@ -399,7 +399,7 @@ export default function ScriptBuilderPage() {
                   />
                   <div className="flex items-center gap-4 pt-1">
                     <div className="flex items-center gap-2 flex-1">
-                      <Label className="text-xs whitespace-nowrap">Weight (%)</Label>
+                      <Label className="text-xs whitespace-nowrap">{t('weightLabel')}</Label>
                       <Input
                         type="number"
                         min={0}
@@ -424,8 +424,8 @@ export default function ScriptBuilderPage() {
                         }}
                         className="rounded"
                       />
-                      <span className="font-medium text-destructive">Critical</span>
-                      <span className="text-muted-foreground">(score ≤ 4 triggers alert)</span>
+                      <span className="font-medium text-destructive">{t('critical')}</span>
+                      <span className="text-muted-foreground">{t('criticalHint')}</span>
                     </label>
                   </div>
                 </div>
@@ -434,10 +434,10 @@ export default function ScriptBuilderPage() {
                 const total = confirmSections.reduce((sum, s) => sum + (s.weight || 0), 0)
                 return total !== 100 ? (
                   <p className="text-xs text-destructive font-medium">
-                    ⚠ Weights sum to {total}% — must equal 100% before saving.
+                    {t('weightsSumInvalid', { total })}
                   </p>
                 ) : (
-                  <p className="text-xs text-green-500 font-medium">✓ Weights sum to 100%</p>
+                  <p className="text-xs text-green-500 font-medium">{t('weightsSumValid')}</p>
                 )
               })()}
             </CardContent>

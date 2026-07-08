@@ -251,6 +251,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   void recordLlmUsage({
     orgId: call.orgId ?? null,
     surface: "analyze",
+    provider: result.provider,
     model: result.modelUsed,
     inputTokens: result.inputTokens,
     outputTokens: result.outputTokens,

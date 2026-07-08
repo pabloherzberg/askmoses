@@ -74,7 +74,7 @@ export function ScriptReviewDetailClient({ review }: Props) {
     })
     const json = await res.json()
     if (!res.ok || json.error) {
-      alert(json.error?.message ?? 'Failed to save script')
+      alert(json.error?.message ?? t('saveFailed'))
       return
     }
     setSaved(true)

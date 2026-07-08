@@ -1,125 +1,155 @@
-import { createOpenAI } from '@ai-sdk/openai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import type { LanguageModel } from 'ai'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getOpenAIProvider, resolveOpenAIModelId } from '@/lib/openai'
-import { VALID_MODELS as GEMINI_VALID_MODELS } from '@/lib/gemini'
-
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite'
+import type { LlmProvider } from '@/lib/types'
+import {
+  DEFAULT_PROVIDER,
+  getProviderDef,
+  isValidProvider,
+  type ProviderDef,
+} from '@/lib/llm/registry'
 
 /**
- * Resolves a raw Gemini model name into a canonical id from VALID_MODELS,
- * stripping the "-001" pinned-version suffix (097/098 only seed pricing for
- * base names) and any "google/"/"models/" prefix. Falls back to
- * DEFAULT_GEMINI_MODEL when unset/unknown.
+ * Resolve um nome cru de modelo Gemini → id canônico (remove sufixo "-001" e
+ * prefixos google//models/). Mantido exportado por compatibilidade; delega ao
+ * registry (fonte única de verdade).
  */
 export function resolveGeminiModelId(modelName?: string | null): string {
-  const sanitized = (modelName ?? '')
-    .replace(/^(google\/|models\/)/, '')
-    .replace(/-001$/, '')
-    .trim()
-  if (GEMINI_VALID_MODELS.has(sanitized)) return sanitized
-  // Retry with -001 suffix in case caller passed an unpinned name that only
-  // exists pinned (defensive — current whitelist has both forms for 2.0).
-  if (GEMINI_VALID_MODELS.has(`${sanitized}-001`)) return sanitized
-  return DEFAULT_GEMINI_MODEL
+  return getProviderDef('gemini')!.resolveModelId(modelName)
 }
 
-interface ActiveProviderRow {
-  provider: 'openai' | 'gemini'
+interface ProviderRow {
+  provider: LlmProvider
   api_key: string | null
   model: string
+  is_active: boolean
 }
 
-interface ProviderSettingsCacheState {
-  active: ActiveProviderRow | null
+// ─── Cache das linhas de llm_provider_settings ────────────────────────────────
+// Sobrevive a HMR via Symbol no globalThis (mesmo padrão de llm-usage.ts).
+// TTL de 5min: trocar provider/chave na tela reflete no pipeline em até 5min.
+
+interface ProviderCacheState {
+  rows: ProviderRow[] | null // null = tabela não migrada / query falhou
   expiresAt: number
 }
 const CACHE_TTL_MS = 5 * 60 * 1000
 const cacheKey_ = Symbol.for('askmoses.llmprovider.settings')
-type GlobalWithCache = typeof globalThis & { [cacheKey_]?: ProviderSettingsCacheState }
+type GlobalWithCache = typeof globalThis & { [cacheKey_]?: ProviderCacheState }
 const gp = globalThis as GlobalWithCache
 
 /**
- * Loads (with 5min cache) the currently active row from
- * llm_provider_settings. Never throws — a query failure or missing table
- * (pre-migration) resolves to `null`, which callers treat as "no override,
- * use hardcoded OpenAI/env fallback".
+ * Carrega (com cache de 5min) TODAS as linhas de llm_provider_settings.
+ * Never throws — falha de query / tabela ausente (pré-migração) resolve p/
+ * `null`, que os callers tratam como "sem override, usa fallback env".
  */
-async function getActiveProviderRow(): Promise<ActiveProviderRow | null> {
+async function getProviderRows(): Promise<ProviderRow[] | null> {
   const cached = gp[cacheKey_]
-  if (cached && cached.expiresAt > Date.now()) return cached.active
+  if (cached && cached.expiresAt > Date.now()) return cached.rows
 
-  let active: ActiveProviderRow | null = null
+  let rows: ProviderRow[] | null = null
   try {
     const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('llm_provider_settings')
-      .select('provider, api_key, model')
-      .eq('is_active', true)
-      .maybeSingle()
+      .select('provider, api_key, model, is_active')
     if (error) throw error
-    active = (data as ActiveProviderRow | null) ?? null
+    rows = (data as ProviderRow[] | null) ?? []
   } catch (err) {
-    console.warn('[llm-provider] failed to load active provider settings (falling back to OpenAI/env):', err)
-    active = null
+    console.warn(
+      '[llm-provider] failed to load provider settings (falling back to env):',
+      err,
+    )
+    rows = null
   }
 
-  gp[cacheKey_] = { active, expiresAt: Date.now() + CACHE_TTL_MS }
-  return active
+  gp[cacheKey_] = { rows, expiresAt: Date.now() + CACHE_TTL_MS }
+  return rows
+}
+
+function getActiveRow(rows: ProviderRow[] | null): ProviderRow | null {
+  if (!rows) return null
+  return rows.find((r) => r.is_active && isValidProvider(r.provider)) ?? null
 }
 
 export interface ResolvedLlmModel {
   model: LanguageModel
-  provider: 'openai' | 'gemini'
+  provider: LlmProvider
   modelId: string
 }
 
 /**
- * Resolves which LLM provider+model+key /api/analyze should call this
- * request. `perOrgModelOverride` is the per-rubric `llm_model` string
- * (e.g. "openai/gpt-4o", "google/gemini-2.5-flash").
+ * Resolve QUAL provider+modelo+chave o pipeline deve chamar nesta request.
+ * `perOrgModelOverride` é o `rubrics.llm_model` (ex.: "openai/gpt-4o",
+ * "google/gemini-2.5-flash").
  *
- * Rule: the globally active provider (llm_provider_settings) always decides
- * WHICH PROVIDER is called. The per-rubric override only picks a specific
- * MODEL within that provider — and only when its prefix matches the active
- * provider; a mismatched override (e.g. rubric says google/... while OpenAI
- * is active) is ignored (logged) in favor of the active provider's default
- * model. This avoids breaking orgs when the admin flips the global switch.
+ * Regra: o provider ATIVO (llm_provider_settings.is_active) decide QUAL
+ * provider roda. O override por-rubrica só escolhe o MODELO dentro desse
+ * provider — e só quando pertence a ele; um override de outro provider é
+ * ignorado em favor do modelo configurado na linha ativa. Isso evita quebrar
+ * orgs quando o admin troca o provider global.
  *
- * No active row (table empty / not migrated / query failure) → falls back
- * byte-identical to the pre-existing hardcoded behavior: OpenAI via
- * getOpenAIProvider() (env var) + resolveOpenAIModelId(perOrgModelOverride).
+ * Sem linha ativa (tabela vazia / não migrada / query falhou) → fallback pro
+ * DEFAULT_PROVIDER usando a chave da env — byte-idêntico ao comportamento
+ * hardcoded anterior a esta feature.
  */
 export async function getActiveLlmModel(
   perOrgModelOverride?: string | null,
 ): Promise<ResolvedLlmModel> {
-  const active = await getActiveProviderRow()
+  const rows = await getProviderRows()
+  const active = getActiveRow(rows)
 
+  // Sem provider ativo → default provider via env.
   if (!active) {
-    const modelId = resolveOpenAIModelId(perOrgModelOverride)
-    return { model: getOpenAIProvider()(modelId), provider: 'openai', modelId }
+    return buildModel(getProviderDef(DEFAULT_PROVIDER)!, null, perOrgModelOverride)
   }
 
-  if (active.provider === 'openai') {
-    const overrideMatches = (perOrgModelOverride ?? '').replace(/^openai\//, '') !== (perOrgModelOverride ?? '')
-      || !/^google\/|^gemini\//.test(perOrgModelOverride ?? '')
-    const modelId = resolveOpenAIModelId(overrideMatches ? perOrgModelOverride : active.model)
-    const provider = active.api_key
-      ? createOpenAI({ apiKey: active.api_key })
-      : getOpenAIProvider()
-    return { model: provider(modelId), provider: 'openai', modelId }
+  const def = getProviderDef(active.provider)
+  // Provider ativo não está no registry (ex.: linha órfã após rollback) → default.
+  if (!def) {
+    return buildModel(getProviderDef(DEFAULT_PROVIDER)!, null, perOrgModelOverride)
   }
 
-  // provider === 'gemini'
-  if (!active.api_key) {
-    console.warn('[llm-provider] Gemini is the active provider but no api_key is configured — falling back to OpenAI/env.')
-    const modelId = resolveOpenAIModelId(perOrgModelOverride)
-    return { model: getOpenAIProvider()(modelId), provider: 'openai', modelId }
+  // Provider ativo sem chave (nem no banco, nem na env) → fallback pro default
+  // provider, pra nunca quebrar o pipeline por config incompleta.
+  const key = active.api_key ?? process.env[def.envKey] ?? null
+  if (!key) {
+    console.warn(
+      `[llm-provider] provider ativo "${def.id}" sem chave (banco/env) — fallback pro ${DEFAULT_PROVIDER}.`,
+    )
+    return buildModel(getProviderDef(DEFAULT_PROVIDER)!, null, perOrgModelOverride)
   }
 
-  const overrideIsGemini = /^google\/|^gemini\//.test(perOrgModelOverride ?? '')
-  const modelId = resolveGeminiModelId(overrideIsGemini ? perOrgModelOverride : active.model)
-  const gemini = createGoogleGenerativeAI({ apiKey: active.api_key })
-  return { model: gemini(modelId), provider: 'gemini', modelId }
+  return buildModel(def, active.api_key, perOrgModelOverride, active.model)
+}
+
+function buildModel(
+  def: ProviderDef,
+  apiKey: string | null,
+  perOrgModelOverride: string | null | undefined,
+  activeModel?: string,
+): ResolvedLlmModel {
+  // Override só vale se pertence a ESTE provider; senão usa o modelo
+  // configurado na linha ativa (ou o default do provider).
+  const preferred = def.ownsModel(perOrgModelOverride)
+    ? perOrgModelOverride
+    : (activeModel ?? def.defaultModel)
+  const modelId = def.resolveModelId(preferred)
+  return { model: def.makeModel(apiKey, modelId), provider: def.id, modelId }
+}
+
+/**
+ * Resolve a chave de API de um provider específico: a do banco
+ * (llm_provider_settings) OU a env (envKey do registry) como fallback.
+ *
+ * Usado por serviços presos a um provider (ex.: transcrição de áudio no
+ * Whisper, que é OpenAI-only) — assim, adicionar uma chave OpenAI no banco
+ * passa a valer inclusive fora do switch de provider ativo. Never throws:
+ * retorna null se não houver chave em lugar nenhum (caller decide o erro).
+ */
+export async function getProviderApiKey(provider: LlmProvider): Promise<string | null> {
+  const def = getProviderDef(provider)
+  const envKey = def?.envKey
+  const rows = await getProviderRows()
+  const row = rows?.find((r) => r.provider === provider) ?? null
+  return row?.api_key ?? (envKey ? process.env[envKey] ?? null : null)
 }
