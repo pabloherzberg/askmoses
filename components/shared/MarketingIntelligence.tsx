@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Copy, Check, Play, RefreshCw, Phone, Info } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { MarketingIntelligence as MarketingIntelligenceData, MarketingCopySuggestion, ConfidenceLevel } from '@/lib/types'
@@ -26,6 +27,7 @@ function ConfidenceBadge({ level, value }: { level: ConfidenceLevel; value: numb
 }
 
 function CopyButton({ text }: { text: string }) {
+  const t = useTranslations('MarketingIntelligence')
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
@@ -33,10 +35,10 @@ function CopyButton({ text }: { text: string }) {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      toast({ title: 'Copied to clipboard', duration: 2000 })
+      toast({ title: t('copiedToClipboard'), duration: 2000 })
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast({ title: 'Failed to copy', variant: 'destructive', duration: 2000 })
+      toast({ title: t('copyFailed'), variant: 'destructive', duration: 2000 })
     }
   }
 
@@ -91,6 +93,7 @@ function SuggestionCard({ item }: { item: MarketingCopySuggestion }) {
 }
 
 export function MarketingIntelligence() {
+  const t = useTranslations('MarketingIntelligence')
   const [data, setData] = useState<MarketingIntelligenceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -107,7 +110,9 @@ export function MarketingIntelligence() {
       if (json.data) {
         setData(json.data)
       } else {
-        setErrorMessage(json.error?.message ?? 'Failed to load Marketing Intelligence')
+        // json.error?.message vem em inglês da API mesmo, mas usamos a
+        // tradução local — nunca depender do texto cru da resposta.
+        setErrorMessage(t('loadError'))
       }
     } finally {
       setLoading(false)
@@ -132,8 +137,8 @@ export function MarketingIntelligence() {
       const json = await res.json()
       if (!res.ok || !json.data) {
         toast({
-          title: 'Run failed',
-          description: json.error?.message ?? 'Could not generate fresh copy.',
+          title: t('runFailedTitle'),
+          description: t('runFailedDescription'),
           variant: 'destructive',
           duration: 4000,
         })
@@ -142,8 +147,8 @@ export function MarketingIntelligence() {
       setData(json.data)
       setErrorMessage(null)
       toast({
-        title: 'New analysis ready',
-        description: 'Headlines and primary texts refreshed.',
+        title: t('runSuccessTitle'),
+        description: t('runSuccessDescription'),
         duration: 3000,
       })
     } finally {

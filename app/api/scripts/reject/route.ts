@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     body = (await request.json()) as RejectBody
   } catch {
     return Response.json(
-      { data: null, error: { message: 'Body inválido', code: 400 } },
+      { data: null, error: { message: 'Body inválido', code: 400, reason: 'INVALID_BODY' } },
       { status: 400 },
     )
   }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   const { orgScriptId } = body
   if (!orgScriptId || !UUID_RE.test(orgScriptId)) {
     return Response.json(
-      { data: null, error: { message: 'orgScriptId inválido', code: 400 } },
+      { data: null, error: { message: 'orgScriptId inválido', code: 400, reason: 'INVALID_ORG_SCRIPT_ID' } },
       { status: 400 },
     )
   }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error('[scripts/reject] rpc failed:', error)
     return Response.json(
-      { data: null, error: { message: 'Erro ao rejeitar script', code: 500 } },
+      { data: null, error: { message: 'Erro ao rejeitar script', code: 500, reason: 'RPC_FAILED' } },
       { status: 500 },
     )
   }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   }>
   if (rows.length === 0) {
     return Response.json(
-      { data: null, error: { message: 'Pending não encontrado ou já resolvido', code: 404 } },
+      { data: null, error: { message: 'Pending não encontrado ou já resolvido', code: 404, reason: 'PENDING_NOT_FOUND' } },
       { status: 404 },
     )
   }

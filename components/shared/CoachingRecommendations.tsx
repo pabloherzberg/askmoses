@@ -34,6 +34,7 @@ interface Delivery {
  */
 export function CoachingRecommendations({ recs, trainerId, trainerName }: CoachingRecommendationsProps) {
   const t = useTranslations("Coaching");
+  const tCommon = useTranslations("Common");
   const locale = useLocale();
   const firstName = trainerName.split(" ")[0];
 
@@ -72,7 +73,14 @@ export function CoachingRecommendations({ recs, trainerId, trainerName }: Coachi
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || json?.error) {
-        setError(json?.error?.message ?? t("recsError"));
+        // Nunca usa json.error.message direto — vem em português cru da API.
+        const reason = json?.error?.reason as string | undefined;
+        const message =
+          reason === "INVALID_JSON" ? tCommon("errors.invalidBody")
+          : reason === "MISSING_FIELDS" ? tCommon("errors.missingFields")
+          : reason === "TRAINER_NOT_FOUND" ? tCommon("errors.trainerNotFound")
+          : t("recsError");
+        setError(message);
         setPhase("edit");
         return;
       }

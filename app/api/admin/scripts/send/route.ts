@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { MAX_BULK_ORG_IDS, RATE_LIMITS } from '@/lib/constants/limits'
-import { selfBaseUrl } from '@/lib/internal-url'
+import { sendScriptToOrgs } from '@/lib/services/send-script'
 import type { Role } from '@/lib/types'
 
 interface SendBody {
@@ -136,20 +136,29 @@ export async function POST(request: NextRequest) {
     effectiveScriptId = script.id
   }
 
-  // RPC transacional (migration 050): fecha associações abertas + upsert
-  // pending numa única transação. Falha de qualquer parte = rollback completo,
-  // sem risco de deixar orgs sem script corrente.
-  const { data: rpcData, error: rpcErr } = await admin.rpc('send_script_to_orgs', {
-    p_script_id: effectiveScriptId,
-    p_org_ids: orgIds,
-    p_sent_by: session.user.id,
-  })
+  // RPC transacional (migration 050/069) + resolução de previous_script_id +
+  // enfileiramento do cache de Script Intelligence — lógica compartilhada com
+  // a automação semanal, extraída pra lib/services/send-script.ts.
+  try {
+    const result = await sendScriptToOrgs({
+      scriptId: effectiveScriptId,
+      orgIds,
+      orgIdsOrdered,
+      sentBy: session.user.id,
+    })
 
-  if (rpcErr) {
-    // 23505 = unique_violation no partial unique uniq_org_scripts_open_per_org.
+    return ok({
+      scriptId: result.scriptId,
+      rubricResolved: rubricId ? true : false,
+      sentTo: result.sentTo,
+      rows: result.rows,
+    })
+  } catch (err) {
+    // 23505 = unique_violation no partial unique uniq_org_scripts_open_*_per_org.
     // Race entre dois admins enviando simultaneamente pra mesma org — um ganha,
     // outro retorna 409 pro frontend reattempt.
-    if (rpcErr.code === '23505') {
+    const code = (err as { code?: string } | null)?.code
+    if (code === '23505') {
       return Response.json(
         {
           data: null,
@@ -161,110 +170,6 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       )
     }
-    return serverError('Não foi possível registrar o envio', rpcErr)
+    return serverError('Não foi possível registrar o envio', err)
   }
-
-  // Migration 053 renomeou as colunas do RETURNS TABLE pra out_* (evita
-  // colisão com nomes de variáveis OUT implícitas — bug 42702).
-  const rows = (rpcData ?? []) as Array<{
-    out_id: string
-    out_org_id: string
-    out_script_id: string
-    out_status: string
-    out_started_at: string
-  }>
-
-  // Monta mapa orgId → row para lookup rápido
-  const rowByOrgId = Object.fromEntries(rows.map((r) => [r.out_org_id, r]))
-
-  // Ordem de análise: segue orgIdsOrdered (ordem da tabela do admin) se
-  // fornecido, senão usa a ordem original de orgIds.
-  const analysisOrder = (orgIdsOrdered ?? orgIds).filter((id) => rowByOrgId[id])
-
-  // Para cada org na ordem: busca previous_script_id e prepara o cache.
-  // A primeira fica 'processing', as demais ficam 'queued'.
-  type QueueItem = { orgScriptId: string; orgId: string; currentScriptId: string }
-  const queue: QueueItem[] = []
-
-  for (const orgId of analysisOrder) {
-    const row = rowByOrgId[orgId]
-    if (!row) continue
-    const orgScriptId = row.out_id
-
-    const { data: orgScriptRow } = await admin
-      .from('org_scripts')
-      .select('previous_script_id')
-      .eq('id', orgScriptId)
-      .maybeSingle()
-
-    const currentScriptId = orgScriptRow?.previous_script_id as string | null | undefined
-    if (!currentScriptId) {
-      console.warn(`[send] org ${orgId} has no previous_script_id, skipping analysis`)
-      continue
-    }
-
-    queue.push({ orgScriptId, orgId, currentScriptId })
-  }
-
-  if (queue.length === 0) {
-    return ok({
-      scriptId: effectiveScriptId,
-      rubricResolved: rubricId ? true : false,
-      sentTo: orgIds.length,
-      rows: rows.map((r) => ({
-        id: r.out_id,
-        orgId: r.out_org_id,
-        scriptId: r.out_script_id,
-        status: r.out_status,
-        startedAt: r.out_started_at,
-      })),
-    })
-  }
-
-  // Insere todas as linhas de cache: primeira como 'processing', demais como 'queued'.
-  // Cada linha recebe um updated_at com 1ms de diferença para preservar a ordem
-  // de inserção na query ORDER BY updated_at ASC do process/route.ts.
-  const baseTime = Date.now()
-  for (let i = 0; i < queue.length; i++) {
-    const { orgScriptId, orgId } = queue[i]
-    await admin.from('script_intelligence_cache').upsert({
-      org_id: orgId,
-      org_script_id: orgScriptId,
-      result: {},
-      decisions: [],
-      analysis_status: i === 0 ? 'processing' : 'queued',
-      updated_at: new Date(baseTime + i).toISOString(),
-    }, { onConflict: 'org_id,org_script_id' })
-  }
-
-  // Dispara apenas a primeira da fila em background.
-  // O process/route.ts se encarrega de acionar a próxima quando terminar.
-  const baseUrl = selfBaseUrl()
-  const first = queue[0]
-  void fetch(`${baseUrl}/api/script-intelligence/process`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-internal-secret': process.env.INTERNAL_API_SECRET ?? '',
-    },
-    body: JSON.stringify({
-      orgScriptId: first.orgScriptId,
-      orgId: first.orgId,
-      suggestedScriptId: effectiveScriptId,
-      currentScriptId: first.currentScriptId,
-    }),
-  }).catch((err) => console.error('[send] background analysis dispatch failed:', err))
-
-  return ok({
-    scriptId: effectiveScriptId,
-    rubricResolved: rubricId ? true : false,
-    sentTo: orgIds.length,
-    rows: rows.map((r) => ({
-      id: r.out_id,
-      orgId: r.out_org_id,
-      scriptId: r.out_script_id,
-      status: r.out_status,
-      startedAt: r.out_started_at,
-    })),
-  })
 }
