@@ -113,11 +113,9 @@ function parseLeadSource(raw: string | null | undefined): LeadSource | null {
 // Lê o intent (0–5 decimal) JÁ persistido. O intent é definido na ANÁLISE como
 // o Intent Index ponderado do intent_breakdown (= o cálculo do CallDetail) e
 // gravado no banco — aqui apenas lemos, sem recalcular nem arredondar.
-//   - closed → sempre 5 (regra fixa);
 //   - valor numérico válido → usado como está, clampado a 0–5;
 //   - ausente (calls antigas sem backfill) → fallback por resultado/IA.
 export function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
-  if (result === "closed") return 5;
   // Intent ausente → fallback por resultado. Trata null/""/undefined antes do
   // Number() porque `Number(null) === 0` (finito) mostraria 0 indevidamente.
   if (raw === null || raw === undefined || raw === "") {
