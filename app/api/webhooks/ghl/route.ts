@@ -180,13 +180,14 @@ export async function POST(req: NextRequest) {
   const clientName = normalizeEmpty(callPayload.contactName)
   const leadSource = normalizeSource(callPayload.contactSource)
 
-  // 5c. Gate de vínculo do trainer. Só ingerimos calls de quem está na
-  //     plataforma: um trainer vinculado a este usuário do GHL
-  //     (trainers.ghl_user_id) — com convite PENDENTE ou ACEITO. Se o usuário
-  //     do GHL não é membro nenhum da org (nem pendente, nem aceito), a call é
-  //     IGNORADA aqui: nada no banco, sem custo de LLM, sem alerta. É o corte
-  //     que impede o pipeline de ser inundado por calls que não devem ser
-  //     analisadas. Sem userId no payload não há como confirmar o vínculo →
+  // 5c. Gate de vínculo + convite do trainer. Só ingerimos calls de quem está
+  //     DE FATO ativo na plataforma: um trainer vinculado a este usuário do
+  //     GHL (trainers.ghl_user_id) E com convite ACEITO. Se o usuário do GHL
+  //     não é membro nenhum da org, OU é membro mas o convite ainda está
+  //     pendente, a call é IGNORADA aqui: nada no banco, sem custo de LLM,
+  //     sem alerta — é o corte que impede o pipeline de gastar
+  //     download/Whisper/LLM com calls de gente que ainda não faz parte da
+  //     plataforma. Sem userId no payload não há como confirmar o vínculo →
   //     mesmo tratamento (ignora).
   const ghlUserId = normalizeEmpty(callPayload.userId)
   let trainerLink: GhlCallTrainerLink | null = null
@@ -216,6 +217,20 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({
       data: { status: "skipped_unlinked_trainer" },
+      error: null,
+    })
+  }
+
+  if (trainerLink.inviteStatus !== "accepted") {
+    console.info("[ghl-webhook] call de trainer com convite pendente — ignorando", {
+      orgId: orgConfig.orgId,
+      ghlUserId,
+      trainerId: trainerLink.trainerId,
+      inviteStatus: trainerLink.inviteStatus,
+      externalCallId,
+    })
+    return NextResponse.json({
+      data: { status: "skipped_trainer_invite_pending" },
       error: null,
     })
   }
@@ -257,22 +272,6 @@ export async function POST(req: NextRequest) {
 
   const callId = upsertResult.call.id
   const accessToken = orgConfig.accessToken
-
-  // 5d. Trainer vinculado mas com convite ainda PENDENTE: a call segue o fluxo
-  //     normal (é analisada e salva — trainer_id já ligado), mas logamos na
-  //     pipeline pra dar visibilidade de que esse trainer ainda não aceitou o
-  //     convite. É o único log adicional do gate — o caso "não vinculado" acima
-  //     sai em silêncio.
-  if (trainerLink.inviteStatus === "pending") {
-    void notifyPipelineFailure("trainer_invite_pending", {
-      callId,
-      orgId: orgConfig.orgId,
-      contactId,
-      stage: "webhook",
-      reason: "trainer_invite_pending",
-      meta: { ghlUserId, trainerId: trainerLink.trainerId },
-    })
-  }
 
   // 6. Dispara pipeline async com o token específico da org.
   after(async () => {

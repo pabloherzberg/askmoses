@@ -33,7 +33,14 @@ export async function GET() {
     const message = err instanceof Error ? err.message : 'Unexpected error'
     console.error('[marketing-intelligence] GET failed:', message)
     return Response.json(
-      { data: null, error: { message: 'Marketing Intelligence is temporarily unavailable.', code: 500 } },
+      {
+        data: null,
+        error: {
+          message: 'Marketing Intelligence is temporarily unavailable.',
+          code: 500,
+          reason: 'INTERNAL_ERROR',
+        },
+      },
       { status: 500 },
     )
   }

@@ -4,7 +4,23 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "loading": "Cargando...",
-    "error": "Algo salió mal"
+    "error": "Algo salió mal",
+    "errors": {
+      "invalidBody": "Solicitud inválida.",
+      "invalidOrgScriptId": "Identificador de script inválido.",
+      "invalidOrgId": "Identificador de organización inválido.",
+      "invalidRate": "La tarifa debe ser un número entero entre 0 y 100.000.000 (micro-USD).",
+      "missingOrgId": "El ID de la organización es obligatorio.",
+      "missingFields": "Destinatario, título y mensaje son obligatorios.",
+      "rpcFailed": "Algo salió mal al procesar esta solicitud. Inténtalo de nuevo.",
+      "pendingNotFound": "Esta sugerencia no se encontró o ya fue resuelta.",
+      "trainerNotFound": "Vendedor no encontrado en esta organización.",
+      "orgNotFound": "Organización no encontrada.",
+      "ghlNotConfigured": "La integración con GHL no está configurada para esta organización.",
+      "ghlAuthFailed": "No se pudo autenticar con GHL — verifica el token de la integración.",
+      "ghlFetchFailed": "No se pudieron cargar los usuarios de GHL.",
+      "internalError": "Algo salió mal. Inténtalo de nuevo."
+    }
   },
   "Billing": {
     "title": "Facturación",
@@ -1958,6 +1974,15 @@
         "charactersCount": "{count} caracteres"
       }
     }
+  },
+  "MarketingIntelligence": {
+    "loadError": "No se pudo cargar Marketing Intelligence.",
+    "runFailedTitle": "Error en la ejecución",
+    "runFailedDescription": "No se pudieron generar nuevos textos.",
+    "runSuccessTitle": "Nuevo análisis listo",
+    "runSuccessDescription": "Títulos y textos principales actualizados.",
+    "copiedToClipboard": "Copiado al portapapeles",
+    "copyFailed": "Error al copiar"
   },
   "Landing": {
     "Nav": {

@@ -74,7 +74,7 @@ const GHL_LINK_ERROR_MAP: Record<GhlLinkErrorKind, { code: number; message: stri
   invalid_user: { code: 400, message: 'Usuário do GHL inválido para esta organização' },
   ghl_auth: {
     code: 502,
-    message: 'Não foi possível autenticar no GHL — verifique o token da integração',
+    message: 'Could not authenticate with GHL — check the integration token',
   },
   ghl_unavailable: { code: 502, message: 'Não foi possível carregar os usuários do GHL' },
 }

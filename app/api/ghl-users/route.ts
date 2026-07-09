@@ -7,26 +7,26 @@ import type { Role } from '@/lib/types'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function badRequest(message: string) {
-  return Response.json({ data: null, error: { message, code: 400 } }, { status: 400 })
+function badRequest(message: string, reason: string) {
+  return Response.json({ data: null, error: { message, code: 400, reason } }, { status: 400 })
 }
 
 // 409 = a org existe mas não tem a integração GHL habilitada. A UI usa esse
 // código pra bloquear a criação de vendedor e pedir pra configurar o GHL.
 function ghlNotConfigured() {
   return Response.json(
-    { data: null, error: { message: 'Integração GHL não configurada para esta organização', code: 409 } },
+    { data: null, error: { message: 'Integração GHL não configurada para esta organização', code: 409, reason: 'GHL_NOT_CONFIGURED' } },
     { status: 409 },
   )
 }
 
-function upstreamError(message: string) {
-  return Response.json({ data: null, error: { message, code: 502 } }, { status: 502 })
+function upstreamError(message: string, reason: string) {
+  return Response.json({ data: null, error: { message, code: 502, reason } }, { status: 502 })
 }
 
 function serverError(context: string, err?: unknown) {
   console.error(`[ghl-users] ${context}`, err)
-  return Response.json({ data: null, error: { message: 'Erro interno', code: 500 } }, { status: 500 })
+  return Response.json({ data: null, error: { message: 'Erro interno', code: 500, reason: 'INTERNAL_ERROR' } }, { status: 500 })
 }
 
 // GET /api/ghl-users?orgId=&includeGhlUserId=
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Owner não pode listar usuários GHL de outra org.
     if (orgIdParam && orgIdParam !== orgId) return forbidden()
   } else {
-    if (!orgIdParam || !UUID_RE.test(orgIdParam)) return badRequest('orgId é obrigatório')
+    if (!orgIdParam || !UUID_RE.test(orgIdParam)) return badRequest('orgId é obrigatório', 'MISSING_ORG_ID')
     orgId = orgIdParam
   }
 
@@ -83,10 +83,10 @@ export async function GET(request: NextRequest) {
       // o pipeline faz) e loga — antes o 502 sumia sem rastro server-side.
       console.error('[ghl-users] GHL auth rejeitou (PIT expirado?)', { orgId, status: err.status })
       await dbMarkOrgGhlAuthError(orgId)
-      return upstreamError('Não foi possível autenticar no GHL — verifique o token da integração')
+      return upstreamError('Não foi possível autenticar no GHL — verifique o token da integração', 'GHL_AUTH_FAILED')
     }
     console.error('[ghl-users] falha ao carregar usuários do GHL', { orgId, err })
-    return upstreamError('Não foi possível carregar os usuários do GHL')
+    return upstreamError('Não foi possível carregar os usuários do GHL', 'GHL_FETCH_FAILED')
   }
 
   let linked: Set<string>

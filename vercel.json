@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/recover-stale-analyses",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/weekly-script-suggestion",
+      "schedule": "0 8 * * 1"
     }
   ],
   "redirects": [
