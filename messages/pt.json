@@ -1012,11 +1012,11 @@
       "errorTitle": "Não foi possível concluir",
       "errorBody": "Algo deu errado. Tente novamente."
     },
-    "impersonateTooltip": "Entrar como {name} (visualização apenas leitura)",
+    "impersonateTooltip": "Entrar como {name} (atuando como owner)",
     "impersonateError": "Não foi possível entrar nessa organização. Tente novamente.",
     "impersonateBanner": {
       "label": "Visualizando como",
-      "readOnly": "Apenas leitura",
+      "readOnly": "Atuando como owner",
       "exit": "Voltar ao painel admin",
       "exiting": "Saindo…"
     },

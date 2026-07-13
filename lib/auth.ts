@@ -11,7 +11,8 @@ export interface ActiveOrgContext {
   isSuperAdmin: boolean
   // Admin impersonando: activeOrgId vira o orgId alvo (mesmo que admin não
   // tenha membership). `isImpersonating` distingue esse caso do Owner real
-  // — usado por requireOwnerWrite e UI pra esconder botões de mutação.
+  // — Admin impersonando tem as mesmas permissões de escrita que Owner
+  // (age como "owner efetivo" da org enquanto impersona).
   isImpersonating: boolean
   activeOrgId: string | null
   role: Role | null
@@ -78,9 +79,10 @@ async function loadOrgContext(
     }
 
     // Impersonando: lê plan/sub da org alvo direto (sem memberships) pra
-    // popular o contexto. Role continua 'admin' (não vira 'owner') — UI usa
-    // isImpersonating pra esconder controles de mutação, requireOwnerWrite
-    // bloqueia POST/PATCH/PUT/DELETE no API layer.
+    // popular o contexto. Role continua 'admin' (não vira 'owner'), mas o
+    // admin opera com as mesmas permissões de escrita que o Owner da org
+    // enquanto isImpersonating for true (ver checagens role !== 'owner'
+    // que tratam admin-impersonando como equivalente).
     const admin = createAdminClient()
     const { data: org } = await admin
       .from('organizations')
@@ -280,30 +282,11 @@ export async function requireActiveSubscription(): Promise<Response | null> {
   )
 }
 
-// Retorna 403 se o caller é Admin impersonando uma org. Admin é read-only
-// dentro de orgs (decisão Victor 2026-05-13) — deve barrar qualquer mutation
-// no API layer. Defesa em profundidade: as RLS policies de write usam
-// current_org_for_write() (migration 040) que também não aceita impersonate,
-// então mesmo se este helper for esquecido o DB rejeita.
-// Aplicar no topo de todo endpoint POST/PATCH/PUT/DELETE que modifica
-// dados da org (calls, rubrics, scripts, invites, marketing-intelligence/run,
-// trainers, etc.). NÃO aplicar em endpoints próprios do admin
-// (/api/admin/*, /api/organizations) — esses são opções dele.
+// Admin impersonando uma org tem as mesmas permissões de escrita que o Owner
+// daquela org (decisão revertendo Victor 2026-05-13) — atua como um "owner
+// efetivo" enquanto o impersonate estiver ativo. Este helper não bloqueia
+// mais nada; mantido por compat com os callers existentes.
 export async function requireOwnerWrite(): Promise<Response | null> {
-  const ctx = await getActiveOrgContext()
-  if (ctx?.isImpersonating) {
-    return Response.json(
-      {
-        data: null,
-        error: {
-          message: 'Modo visualização: ações de escrita estão desabilitadas. Saia do modo cliente para operar na sua própria org.',
-          code: 403,
-          reason: 'ADMIN_IMPERSONATING_READ_ONLY',
-        },
-      },
-      { status: 403 }
-    )
-  }
   return null
 }
 

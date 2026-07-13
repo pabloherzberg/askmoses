@@ -1012,11 +1012,11 @@
       "errorTitle": "Impossible de terminer",
       "errorBody": "Quelque chose s'est mal passé. Réessayez."
     },
-    "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
+    "impersonateTooltip": "Entrer dans {name} (en tant que propriétaire)",
     "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
     "impersonateBanner": {
       "label": "Vue en tant que",
-      "readOnly": "Lecture seule",
+      "readOnly": "Agit en tant que propriétaire",
       "exit": "Retour au panel admin",
       "exiting": "Sortie…"
     },

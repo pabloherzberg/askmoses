@@ -606,17 +606,14 @@ export async function POST(request: NextRequest) {
 
     // O IntentScore (0–5, decimal) da call É o Intent Index ponderado do
     // intent_breakdown (= o cálculo do CallDetail) — definido AQUI na análise e
-    // persistido, em vez de recalculado a cada leitura. closed → 5; sem
-    // breakdown (falha da IA), cai no fallback por resultado/IA.
-    const intent: IntentScore =
-      detectedOutcome === "closed"
-        ? 5
-        : intentBreakdown
-          ? Math.max(
-              0,
-              Math.min(5, computeIntentIndex(intentBreakdown, currentOrgWeights)),
-            )
-          : resolveIntent(parsed.intent, detectedOutcome);
+    // persistido, em vez de recalculado a cada leitura. Sem breakdown (falha
+    // da IA), cai no fallback por resultado/IA.
+    const intent: IntentScore = intentBreakdown
+      ? Math.max(
+          0,
+          Math.min(5, computeIntentIndex(intentBreakdown, currentOrgWeights)),
+        )
+      : resolveIntent(parsed.intent, detectedOutcome);
 
     // ── 5. Assemble sections + criteriaScores (back-compat) ──────────────
     // criteriaScores keys back to the original scored item's id when

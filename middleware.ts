@@ -162,27 +162,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── Admin impersonando: whitelist de paths read-only ─────────────────────
-  // Admin vê só /dashboard e /team-command-center (e drilldowns de call) quando
-  // está numa org cliente. Telas operacionais (upload, settings, marketing
-  // intelligence, etc.) redirecionam pra /admin pra não dar impressão de que
-  // ele pode operar a org. /admin continua acessível pra Admin sair do modo.
-  if (impersonatingOrgId) {
-    const IMPERSONATE_ALLOWED = ['/dashboard', '/team-command-center', '/calls', '/marketing-intelligence', '/intent-analysis']
-    const isAllowed =
-      rawPath === '/' ||
-      rawPath.startsWith('/admin') ||
-      IMPERSONATE_ALLOWED.some((p) => rawPath === p || rawPath.startsWith(p + '/'))
-    // Bloqueia drilldowns operacionais dentro das rotas permitidas.
-    // /dashboard/settings/invite é permitido (read-only: ver membros).
-    const isOperational =
-      rawPath.startsWith('/dashboard/upload') ||
-      rawPath.startsWith('/dashboard/script-builder') ||
-      (rawPath.startsWith('/dashboard/settings') && !rawPath.startsWith('/dashboard/settings/invite'))
-    if (!isAllowed || isOperational) {
-      return NextResponse.redirect(localized('/admin', locale, request.url))
-    }
-  }
+  // ── Admin impersonando: mesmas rotas que o Owner da org ──────────────────
+  // Admin impersonando opera a org como um "owner efetivo" — inclui telas
+  // operacionais (upload, settings, script-builder, etc.). /admin continua
+  // acessível pra Admin sair do modo impersonate.
 
   // Redirect legacy routes
   if (rawPath === '/overview' || rawPath.startsWith('/overview/')) {

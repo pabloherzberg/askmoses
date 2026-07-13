@@ -665,8 +665,7 @@ export default function UploadCallClient() {
               { id: 'authority', weight: weights.authority, color: 'blue' },
               { id: 'engagement', weight: weights.engagement, color: 'accent2' },
             ];
-            const intentIndex = computeIntentIndex(analysisResult.intentBreakdown, weights);
-            const finalIntentIndex = analysisResult.detectedOutcome === 'closed' ? 5.0 : intentIndex;
+            const finalIntentIndex = computeIntentIndex(analysisResult.intentBreakdown, weights);
 
             return (
               <Card>

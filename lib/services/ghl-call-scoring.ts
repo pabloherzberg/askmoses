@@ -207,17 +207,14 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
     throw new Error(`runGhlCallScoring: scoreTranscript returned empty for call ${callId}`)
   }
 
-  // Intent Index (0–5) ponderado, igual ao /api/analyze: closed → 5; sem
-  // breakdown → fallback por resultado.
-  const intent =
-    result.detectedOutcome === "closed"
-      ? 5
-      : intentBreakdown
-        ? Math.max(
-            0,
-            Math.min(5, computeIntentIndex(intentBreakdown, orgIntentWeights)),
-          )
-        : resolveIntent(null, result.detectedOutcome);
+  // Intent Index (0–5) ponderado, igual ao /api/analyze: sem breakdown →
+  // fallback por resultado.
+  const intent = intentBreakdown
+    ? Math.max(
+        0,
+        Math.min(5, computeIntentIndex(intentBreakdown, orgIntentWeights)),
+      )
+    : resolveIntent(null, result.detectedOutcome);
 
   await dbUpdateGhlCallPipeline(callId, {
     rubricId,
