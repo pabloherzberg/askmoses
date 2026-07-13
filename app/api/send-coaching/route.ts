@@ -23,10 +23,9 @@ interface SendCoachingBody {
 
 // POST /api/send-coaching
 //   Dispara email de coaching pro trainer após uma call ser analisada.
-//   Auth: logado + Owner/Admin (Admin NÃO impersonando — admin operando
-//   o próprio painel global, raro). Trainer é bloqueado explicitamente:
-//   não dispara coaching nem pra si mesmo, nem pra colegas. Admin
-//   impersonando uma org é read-only (bloqueado em requireOwnerWrite).
+//   Auth: logado + Owner/Admin (Admin impersonando age como owner efetivo
+//   da org e também pode disparar). Trainer é bloqueado explicitamente:
+//   não dispara coaching nem pra si mesmo, nem pra colegas.
 //   trainerEmail destinatário precisa pertencer à mesma org do caller.
 export async function POST(request: Request) {
   const session = await getSession()
@@ -114,10 +113,9 @@ export async function POST(request: Request) {
       feedback: s.feedback,
     }))
 
-    // Regra fixa: result === 'closed' → intent sempre 5 (sem análise). Demais
-    // resultados usam o intent calculado pela IA, recebido no body. Sem um valor
-    // válido (1–5), intentScore fica undefined e a seção é omitida no template.
-    const rawIntent = body.detectedOutcome === 'closed' ? 5 : body.intent
+    // Intent calculado pela IA, recebido no body. Sem um valor válido (1–5),
+    // intentScore fica undefined e a seção é omitida no template.
+    const rawIntent = body.intent
     const intentScore = typeof rawIntent === 'number' && rawIntent >= 1 && rawIntent <= 5
       ? rawIntent
       : undefined

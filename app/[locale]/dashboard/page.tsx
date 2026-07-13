@@ -44,9 +44,10 @@ export default async function DashboardPage() {
     getTranslations("Owner.teamHealth"),
   ]);
 
-  // Banner só pra Owner real — Admin impersonando não tem poder de
-  // accept/reject, então esconder evita CTA frustrante.
-  const showPendingBanner = ctx?.role === "owner" && !ctx.isImpersonating;
+  // Banner pra Owner real e também pra Admin impersonando — ele age como
+  // owner efetivo da org e pode aceitar/rejeitar o script pendente.
+  const showPendingBanner =
+    ctx?.role === "owner" || (ctx?.role === "admin" && ctx.isImpersonating);
 
   const coachingDrivers = buildCoachingDrivers(rubric);
 

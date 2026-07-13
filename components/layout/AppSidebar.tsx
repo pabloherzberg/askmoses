@@ -208,11 +208,14 @@ export function AdminNavItems({
   );
 }
 
-// Sidebar mostrado quando Admin está impersonando uma org. Whitelist
-// alinhada com middleware.ts (IMPERSONATE_ALLOWED): só read-only paths.
-// Operacionais (upload, script-builder, rubric-config) ficam fora —
-// banner global de impersonate cuida do exit.
-export function ImpersonateNavItems() {
+// Sidebar mostrado quando Admin está impersonando uma org. Espelha
+// OwnerNavItems — admin impersonando age como owner efetivo da org,
+// então vê as mesmas ferramentas (billing, upload, membros, guide).
+export function ImpersonateNavItems({
+  manualUploadEnabled = false,
+}: {
+  manualUploadEnabled?: boolean;
+} = {}) {
   const t = useTranslations("Shared.sidebar");
   const mainNav = [
     { label: t("dashboard"), href: "/dashboard", icon: Home },
@@ -239,7 +242,12 @@ export function ImpersonateNavItems() {
     },
   ];
   const toolsNav = [
+    { label: t("billing"), href: "/dashboard/billing", icon: CreditCard },
+    ...(manualUploadEnabled
+      ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
+      : []),
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
+    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -275,7 +283,8 @@ export function NavItemsForRole({
   isImpersonating?: boolean;
   manualUploadEnabled?: boolean;
 }) {
-  if (role === "admin" && isImpersonating) return <ImpersonateNavItems />;
+  if (role === "admin" && isImpersonating)
+    return <ImpersonateNavItems manualUploadEnabled={manualUploadEnabled} />;
   if (role === "admin") return <AdminNavItems manualUploadEnabled={manualUploadEnabled} />;
   if (role === "trainer") return <TrainerNavItems manualUploadEnabled={manualUploadEnabled} />;
   return <OwnerNavItems />;

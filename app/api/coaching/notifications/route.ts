@@ -77,11 +77,11 @@ export async function POST(request: NextRequest) {
     const ctx = await getActiveOrgContext()
     if (!ctx) return unauthorized()
 
-    // Admin impersonando é read-only dentro de orgs — bloqueia escrita.
     const blocked = await requireOwnerWrite()
     if (blocked) return blocked
 
-    if (ctx.role !== 'owner' || !ctx.activeOrgId) return forbidden()
+    const isEffectiveOwner = ctx.role === 'owner' || (ctx.role === 'admin' && ctx.isImpersonating)
+    if (!isEffectiveOwner || !ctx.activeOrgId) return forbidden()
 
     let body: { recipientId?: unknown; title?: unknown; body?: unknown }
     try {
