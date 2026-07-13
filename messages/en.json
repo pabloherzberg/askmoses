@@ -1015,11 +1015,11 @@
       "errorTitle": "Could not complete",
       "errorBody": "Something went wrong. Try again."
     },
-    "impersonateTooltip": "Enter {name} (read-only view)",
+    "impersonateTooltip": "Enter {name} (acting as owner)",
     "impersonateError": "Could not enter this organization. Try again.",
     "impersonateBanner": {
       "label": "Viewing as",
-      "readOnly": "Read only",
+      "readOnly": "Acting as owner",
       "exit": "Back to admin panel",
       "exiting": "Exiting…"
     },

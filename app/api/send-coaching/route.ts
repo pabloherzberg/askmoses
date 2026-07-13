@@ -23,10 +23,9 @@ interface SendCoachingBody {
 
 // POST /api/send-coaching
 //   Dispara email de coaching pro trainer após uma call ser analisada.
-//   Auth: logado + Owner/Admin (Admin NÃO impersonando — admin operando
-//   o próprio painel global, raro). Trainer é bloqueado explicitamente:
-//   não dispara coaching nem pra si mesmo, nem pra colegas. Admin
-//   impersonando uma org é read-only (bloqueado em requireOwnerWrite).
+//   Auth: logado + Owner/Admin (Admin impersonando age como owner efetivo
+//   da org e também pode disparar). Trainer é bloqueado explicitamente:
+//   não dispara coaching nem pra si mesmo, nem pra colegas.
 //   trainerEmail destinatário precisa pertencer à mesma org do caller.
 export async function POST(request: Request) {
   const session = await getSession()
