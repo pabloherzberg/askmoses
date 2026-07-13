@@ -3,6 +3,8 @@ import { dbGetScriptGaps, dbReplacePendingScriptGaps, type DbScriptGap } from '@
 import { dbGetLatestScriptGapRun, dbInsertScriptGapRun } from '@/lib/db/script-gap-runs'
 import { runScriptGapDetection } from '@/lib/script-gap/analyze'
 import type { ScriptGap, ScriptGapAnalysis } from '@/lib/types'
+import type { Locale } from '@/i18n/routing'
+import { translateScriptGaps } from '@/lib/i18n/translate-coaching'
 
 // Stale-while-serving: uma análise vale 7 dias. Ao visitar o dashboard, se a
 // última run for mais velha que isso (ou não existir), dispara uma nova análise
@@ -98,10 +100,15 @@ async function executeScriptGapRun(params: {
  * NUNCA propaga erro — o dashboard inteiro renderiza junto, então uma falha de
  * IA/rede cai graciosamente para o cache existente (ou null/empty state).
  */
-export async function getScriptGaps(): Promise<ScriptGapAnalysis | null> {
+// Os gaps são gerados/persistidos em INGLÊS. Passe `locale` pra traduzir o
+// conteúdo AI-generated na leitura (o dashboard passa o locale atual).
+export async function getScriptGaps(locale?: Locale): Promise<ScriptGapAnalysis | null> {
   const ctx = await getActiveOrgContext()
   if (!ctx?.activeOrgId) return null
   const orgId = ctx.activeOrgId
+
+  const localize = async (a: ScriptGapAnalysis | null): Promise<ScriptGapAnalysis | null> =>
+    a && locale && locale !== 'en' ? translateScriptGaps(a, locale) : a
 
   let latestRunAt: string | null = null
   try {
@@ -114,7 +121,7 @@ export async function getScriptGaps(): Promise<ScriptGapAnalysis | null> {
         trigger: 'auto',
         createdBy: ctx.userId ?? null,
       })
-      if (fresh) return fresh
+      if (fresh) return localize(fresh)
       // Pré-condição não satisfeita — cai pro cache existente (se houver).
     }
   } catch (err) {
@@ -125,5 +132,5 @@ export async function getScriptGaps(): Promise<ScriptGapAnalysis | null> {
     )
   }
 
-  return buildAnalysisFromDb(orgId, latestRunAt)
+  return localize(await buildAnalysisFromDb(orgId, latestRunAt))
 }

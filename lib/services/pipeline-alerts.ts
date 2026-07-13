@@ -97,6 +97,97 @@ export interface PipelineFailureContext {
   reason?: PipelineFailureReason
   /** Dados extras de diagnóstico (HTTP status, URL, tamanho do arquivo, etc.). */
   meta?: Record<string, unknown>
+  // ── Identidades legíveis ───────────────────────────────────────────────────
+  // O alerta antes só mostrava UUIDs, e quem estava de plantão tinha que ir ao
+  // banco pra saber de quem era a call. Quando não vêm preenchidas, o alerta as
+  // resolve sozinho a partir do callId (ver resolveIdentities).
+  /** Nome da org. O webhook passa direto (nas rejeições ainda não existe call). */
+  orgName?: string | null
+  /** Nome do lead/cliente da call (calls.client_name). */
+  clientName?: string | null
+  /** Nome do vendedor que fez a call (calls.trainer_name). */
+  trainerName?: string | null
+  /** GHLUSERID do vendedor (calls.ghl_user_id). */
+  ghlUserId?: string | null
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Preenche org/cliente/vendedor a partir do banco quando o caller não os passou.
+ *
+ * Best-effort e à prova de bala: qualquer falha aqui devolve o contexto original
+ * — um alerta com UUID cru é infinitamente melhor que um alerta que não sai.
+ *
+ * Só consulta quando `callId` é um UUID de verdade: o webhook usa callIds
+ * sintéticos (`rejected:secret-mismatch:<loc>`, `sync-error:lookup:<loc>`) para
+ * falhas que acontecem ANTES de a call existir — nesses casos quem tem os nomes
+ * é o caller.
+ */
+async function resolveIdentities(
+  context: PipelineFailureContext,
+): Promise<PipelineFailureContext> {
+  const needsCall =
+    !context.clientName || !context.trainerName || !context.ghlUserId || !context.contactId
+  const needsOrg = !context.orgName
+
+  if (!needsCall && !needsOrg) return context
+  if (!UUID_RE.test(context.callId) && !context.orgId) return context
+
+  const enriched = { ...context }
+
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin")
+    const supabase = createAdminClient()
+
+    if (needsCall && UUID_RE.test(context.callId)) {
+      const { data } = await supabase
+        .from("calls")
+        .select("org_id, client_name, trainer_name, ghl_user_id, contact_id")
+        .eq("id", context.callId)
+        .maybeSingle()
+
+      if (data) {
+        enriched.orgId ??= (data.org_id as string | null) ?? undefined
+        enriched.clientName ??= data.client_name as string | null
+        enriched.trainerName ??= data.trainer_name as string | null
+        enriched.ghlUserId ??= data.ghl_user_id as string | null
+        enriched.contactId ??= data.contact_id as string | null
+      }
+    }
+
+    if (!enriched.orgName && enriched.orgId) {
+      const { data } = await supabase
+        .from("organizations")
+        .select("name")
+        .eq("id", enriched.orgId)
+        .maybeSingle()
+
+      if (data) enriched.orgName = data.name as string | null
+    }
+  } catch (err) {
+    // Nunca deixar o enriquecimento derrubar o alerta.
+    console.warn("[pipeline-alerts] falha ao resolver identidades — alerta segue com IDs", {
+      callId: context.callId,
+      err: err instanceof Error ? err.message : String(err),
+    })
+    return context
+  }
+
+  return enriched
+}
+
+/** `Nome` + UUID embaixo. Sem nome, mostra só o ID (ou "—"). */
+function identityField(
+  emoji: string,
+  label: string,
+  name: string | null | undefined,
+  id: string | null | undefined,
+): { type: "mrkdwn"; text: string } {
+  const head = name?.trim() || (id ? "—" : "—")
+  const sub = id ? `\n\`${id}\`` : ""
+  return { type: "mrkdwn", text: `${emoji} *${label}*\n${head}${sub}` }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -372,10 +463,13 @@ export function inferFailureReason(err: unknown): PipelineFailureReason {
  */
 export async function notifyPipelineFailure(
   status: PipelineFailureStatus,
-  context: PipelineFailureContext,
+  rawContext: PipelineFailureContext,
 ): Promise<void> {
   const url = process.env.PIPELINE_ALERT_WEBHOOK_URL
   if (!url) return
+
+  // Troca UUID por nome (org / cliente / vendedor) sempre que der.
+  const context = await resolveIdentities(rawContext)
 
   const display = STATUS_DISPLAY[status]
 
@@ -395,16 +489,19 @@ export async function notifyPipelineFailure(
   const fallbackText = `${display.emoji} ${display.title} — ${status} (callId: ${context.callId})`
 
   // ── Campos principais ──────────────────────────────────────────────────────
+  // Nome primeiro, UUID embaixo: quem está de plantão precisa saber DE QUEM é a
+  // call sem abrir o banco.
   const fields: Array<{ type: "mrkdwn"; text: string }> = [
-    { type: "mrkdwn", text: `📞 *Call ID*\n\`${context.callId}\`` },
-    { type: "mrkdwn", text: `🏢 *Org ID*\n\`${context.orgId ?? "—"}\`` },
+    identityField("🏢", "Org", context.orgName, context.orgId),
+    identityField("🧑‍💼", "Vendedor", context.trainerName, context.ghlUserId),
   ]
 
-  if (context.contactId) {
-    fields.push({ type: "mrkdwn", text: `👤 *Contact ID*\n\`${context.contactId}\`` })
+  if (context.clientName || context.contactId) {
+    fields.push(identityField("👤", "Cliente", context.clientName, context.contactId))
   }
 
   fields.push(
+    { type: "mrkdwn", text: `📞 *Call ID*\n\`${context.callId}\`` },
     { type: "mrkdwn", text: `⚙️ *Status*\n\`${status}\`` },
     { type: "mrkdwn", text: `🗂️ *Stage*\n\`${context.stage ?? "—"}\`` },
     { type: "mrkdwn", text: `${reasonEmoji} *Causa*\n\`${reason}\`` },

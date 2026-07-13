@@ -1,6 +1,8 @@
 import type { Locale } from '@/i18n/routing'
-import type { Call, BestCall, Insight } from '@/lib/types'
+import type { ScriptCriterion } from '@/lib/db/scripts'
+import type { Call, BestCall, Insight, MarketingIntelligence, ScriptGapAnalysis } from '@/lib/types'
 import type { CoachingRec, BehavioralDimension } from '@/lib/mock-data'
+import type { ScriptIntelligenceResult } from '@/lib/mocks/data/script-intelligence'
 import { translateStrings } from '@/lib/i18n/translate'
 
 /**
@@ -34,6 +36,47 @@ export async function translateCall(call: Call, locale: Locale): Promise<Call> {
   cursor += sectionsCount
 
   return { ...call, feedback, strengths, improvements, sections }
+}
+
+/**
+ * Traduz os critérios AI-generated dos scripts para exibição. Os critérios
+ * são gerados e PERSISTIDOS em inglês (source of truth, via
+ * POST /api/generate-criteria → /api/scripts); a tradução acontece só na
+ * LEITURA, por locale — mesmo padrão de translateCall. Batcha name+description
+ * de TODOS os scripts numa única chamada de LLM (translateStrings tem cache).
+ * Só o texto dos critérios é traduzido; nomes de seção, script e demais campos
+ * ficam intactos.
+ */
+export async function translateScriptsCriteria<T extends { criteria?: ScriptCriterion[] | null }>(
+  scripts: T[],
+  locale: Locale,
+): Promise<T[]> {
+  if (locale === 'en' || scripts.length === 0) return scripts
+
+  const batch: string[] = []
+  for (const s of scripts) {
+    const crit = Array.isArray(s.criteria) ? s.criteria : []
+    batch.push(...crit.map((c) => c.name))
+    batch.push(...crit.map((c) => c.description))
+  }
+  if (batch.length === 0) return scripts
+
+  const tr = await translateStrings(batch, locale)
+
+  let cursor = 0
+  return scripts.map((s) => {
+    const crit = Array.isArray(s.criteria) ? s.criteria : []
+    const names = tr.slice(cursor, cursor + crit.length); cursor += crit.length
+    const descs = tr.slice(cursor, cursor + crit.length); cursor += crit.length
+    return {
+      ...s,
+      criteria: crit.map((c, i) => ({
+        ...c,
+        name: names[i] ?? c.name,
+        description: descs[i] ?? c.description,
+      })),
+    }
+  })
 }
 
 /**
@@ -311,4 +354,136 @@ export async function translateCoachingBundle(
   }
 
   return { bestCalls, worstCalls, trainerBehavioral, coachingRecs }
+}
+
+/**
+ * Traduz o conteúdo AI-generated de um Script Intelligence report. Mantém
+ * verbatim: nomes de seção, quotes do script do owner (sections[].quote,
+ * suggestions[].originalQuote), enums, scores e números. Traduz só a prosa
+ * gerada pela IA (revenueLeak, usageStat, rationale, suggestedQuote, uplift,
+ * closer quote). O cache (script_intelligence_cache) permanece em inglês — a
+ * tradução acontece na LEITURA, por locale.
+ */
+export async function translateScriptIntelligence(
+  result: ScriptIntelligenceResult,
+  locale: Locale,
+): Promise<ScriptIntelligenceResult> {
+  if (locale === 'en') return result
+
+  // Defensivo: análises antigas / com erro podem não ter todos os arrays.
+  const sec = Array.isArray(result.sections) ? result.sections : []
+  const sug = Array.isArray(result.suggestions) ? result.suggestions : []
+  const phr = Array.isArray(result.topCloserPhrases) ? result.topCloserPhrases : []
+
+  const batch: string[] = [
+    result.revenueLeak ?? '',
+    ...sec.map((s) => s.usageStat ?? ''),
+    ...sug.map((s) => s.rationale ?? ''),
+    ...sug.map((s) => s.suggestedQuote ?? ''),
+    ...phr.map((p) => p.uplift ?? ''),
+    ...phr.map((p) => p.quote ?? ''),
+  ]
+
+  const tr = await translateStrings(batch, locale)
+
+  let cursor = 0
+  const revenueLeak = tr[cursor++] ?? result.revenueLeak
+  const usageStats = tr.slice(cursor, cursor + sec.length); cursor += sec.length
+  const rationales = tr.slice(cursor, cursor + sug.length); cursor += sug.length
+  const suggestedQuotes = tr.slice(cursor, cursor + sug.length); cursor += sug.length
+  const uplifts = tr.slice(cursor, cursor + phr.length); cursor += phr.length
+  const quotes = tr.slice(cursor, cursor + phr.length); cursor += phr.length
+
+  return {
+    ...result,
+    revenueLeak,
+    sections: sec.map((s, i) => ({ ...s, usageStat: usageStats[i] ?? s.usageStat })),
+    suggestions: sug.map((s, i) => ({
+      ...s,
+      rationale: rationales[i] ?? s.rationale,
+      suggestedQuote: suggestedQuotes[i] ?? s.suggestedQuote,
+    })),
+    topCloserPhrases: phr.map((p, i) => ({
+      ...p,
+      uplift: uplifts[i] ?? p.uplift,
+      quote: quotes[i] ?? p.quote,
+    })),
+  }
+}
+
+/**
+ * Traduz o conteúdo AI-generated de um relatório de Marketing Intelligence
+ * (headlines/primaryTexts: text + basis). Mantém verbatim: nomes de calls,
+ * datas, tamanhos de amostra e níveis de confiança (labels fixos na UI). O
+ * marketing_runs permanece em inglês — tradução na LEITURA, por locale.
+ */
+export async function translateMarketingIntelligence(
+  mi: MarketingIntelligence,
+  locale: Locale,
+): Promise<MarketingIntelligence> {
+  if (locale === 'en') return mi
+
+  const h = mi.headlines
+  const p = mi.primaryTexts
+
+  const batch: string[] = [
+    ...h.map((x) => x.text),
+    ...h.map((x) => x.basis),
+    ...p.map((x) => x.text),
+    ...p.map((x) => x.basis),
+  ]
+
+  if (batch.length === 0) return mi
+
+  const tr = await translateStrings(batch, locale)
+
+  let cursor = 0
+  const hText = tr.slice(cursor, cursor + h.length); cursor += h.length
+  const hBasis = tr.slice(cursor, cursor + h.length); cursor += h.length
+  const pText = tr.slice(cursor, cursor + p.length); cursor += p.length
+  const pBasis = tr.slice(cursor, cursor + p.length); cursor += p.length
+
+  return {
+    ...mi,
+    headlines: h.map((x, i) => ({ ...x, text: hText[i] ?? x.text, basis: hBasis[i] ?? x.basis })),
+    primaryTexts: p.map((x, i) => ({ ...x, text: pText[i] ?? x.text, basis: pBasis[i] ?? x.basis })),
+  }
+}
+
+/**
+ * Traduz o conteúdo AI-generated de um Script Gap Analysis (scriptInstruction,
+ * observedPattern, suggestedFix por gap). Mantém verbatim: nome da seção,
+ * severity (label fixo na UI), frequência e ids. Os gaps ficam persistidos em
+ * inglês — tradução na LEITURA, por locale.
+ */
+export async function translateScriptGaps(
+  analysis: ScriptGapAnalysis,
+  locale: Locale,
+): Promise<ScriptGapAnalysis> {
+  if (locale === 'en') return analysis
+  const gaps = Array.isArray(analysis.gaps) ? analysis.gaps : []
+  if (gaps.length === 0) return analysis
+
+  const batch: string[] = [
+    ...gaps.map((g) => g.scriptInstruction ?? ''),
+    ...gaps.map((g) => g.observedPattern ?? ''),
+    ...gaps.map((g) => g.suggestedFix ?? ''),
+  ]
+
+  const tr = await translateStrings(batch, locale)
+
+  let cursor = 0
+  const instr = tr.slice(cursor, cursor + gaps.length); cursor += gaps.length
+  const obs = tr.slice(cursor, cursor + gaps.length); cursor += gaps.length
+  const fix = tr.slice(cursor, cursor + gaps.length); cursor += gaps.length
+
+  return {
+    ...analysis,
+    gaps: gaps.map((g, i) => ({
+      ...g,
+      scriptInstruction: instr[i] ?? g.scriptInstruction,
+      observedPattern: obs[i] ?? g.observedPattern,
+      suggestedFix: fix[i] ?? g.suggestedFix,
+    })),
+  }
 }

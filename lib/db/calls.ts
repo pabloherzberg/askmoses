@@ -203,12 +203,18 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
 
 // Atualiza o status de oportunidade GHL em todas as calls do contato na org.
 // Chamado pelo webhook OpportunityStageChanged via contact_id.
+//
+// Retorna quantas calls foram casadas. Casar ZERO é um resultado legítimo (o
+// contato pode não ter nenhuma call ingerida: lead que só agendou, call < 30s
+// cortada no webhook, call de vendedor não vinculado). Mas era exatamente assim
+// que o bug do contact_id NULL se escondia — o UPDATE não casava nada, ninguém
+// olhava, e o webhook respondia 200. Devolver o count força o caller a decidir.
 export async function dbUpdateGhlOpportunity(
   orgId: string,
   contactId: string,
   opportunityId: string,
   status: string,
-): Promise<void> {
+): Promise<number> {
   const supabase = createAdminClient()
   const normalizedStatus = status.trim().toLowerCase()
   const patch: Record<string, unknown> = {
@@ -217,12 +223,13 @@ export async function dbUpdateGhlOpportunity(
     ghl_won_at: normalizedStatus === 'won' ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   }
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('calls')
-    .update(patch)
+    .update(patch, { count: 'exact' })
     .eq('org_id', orgId)
     .eq('contact_id', contactId)
   if (error) throw new Error(`dbUpdateGhlOpportunity: ${error.message}`)
+  return count ?? 0
 }
 
 export interface MarkStage2Input {
@@ -431,6 +438,9 @@ export interface CreateGhlCallInput {
   trainerEmail?: string | null
   /** GHLUSERID (payload.userId) que fez a call — guardado sempre. */
   ghlUserId?: string | null
+  /** contactId do GHL — chave dos joins com appointments e com o webhook de
+   *  oportunidade (Stage 2 / paying client). Ver migration 091. */
+  contactId?: string | null
   /** Estado inicial do pipeline. Default 'pending'. 'unlinked_trainer' bloqueia
    *  a análise quando o GHLUSERID não está vinculado a um membro ativo. */
   processingStatus?: ProcessingStatus
@@ -480,6 +490,7 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
       trainer_email: input.trainerEmail ?? '',
       trainer_id: input.trainerId ?? null,
       ghl_user_id: input.ghlUserId ?? null,
+      contact_id: input.contactId ?? null,
       client_name: input.clientName ?? null,
       lead_name: input.leadName ?? null,
       lead_source: input.leadSource ?? null,

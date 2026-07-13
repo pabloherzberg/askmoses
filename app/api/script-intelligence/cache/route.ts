@@ -1,7 +1,18 @@
 import { type NextRequest } from 'next/server'
 import { getActiveOrgContext, ok, unauthorized } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { translateScriptIntelligence } from '@/lib/i18n/translate-coaching'
+import { routing } from '@/i18n/routing'
+import type { Locale } from '@/i18n/routing'
 import type { ScriptIntelligenceResult } from '@/lib/mocks/data/script-intelligence'
+
+// O resultado é gravado no cache em INGLÊS (canônico). A UI manda o idioma
+// atual no header x-locale; traduzimos o result na LEITURA por locale, sem
+// tocar o que está no banco.
+function resolveLocale(raw: string | null): Locale {
+  if (raw && (routing.locales as readonly string[]).includes(raw)) return raw as Locale
+  return 'en'
+}
 
 interface CacheRow {
   id: string
@@ -46,7 +57,25 @@ export async function GET(request: NextRequest) {
     return ok({ cache: null })
   }
 
-  return ok({ cache: data as CacheRow | null })
+  const cache = data as CacheRow | null
+  const locale = resolveLocale(request.headers.get('x-locale'))
+  // Traduz só resultados "ready" com shape completo (análises em erro gravam
+  // result={}). Nunca deixa a tradução derrubar a leitura do cache: em falha,
+  // devolve o inglês e loga o motivo.
+  if (
+    cache?.result &&
+    locale !== 'en' &&
+    cache.analysis_status !== 'error' &&
+    Array.isArray(cache.result.sections)
+  ) {
+    try {
+      cache.result = await translateScriptIntelligence(cache.result, locale)
+    } catch (err) {
+      console.error('[sic-cache] translation failed (serving English):', err)
+    }
+  }
+
+  return ok({ cache })
 }
 
 // POST /api/script-intelligence/cache

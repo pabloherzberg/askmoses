@@ -5,13 +5,10 @@ import {
   globalMetrics,
   supabaseCalls,
   demoCredentials,
-  aiModuleConfigs,
-  aiModuleConfigLog,
   intentSignals,
   mockBillingUsage,
   mockBillingCycle,
 } from '@/lib/mock-data'
-import type { AiModuleId } from '@/lib/types'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
@@ -87,10 +84,9 @@ const apiHandlers = [
     return ok({ clients, metrics: globalMetrics })
   }),
 
-  // GET /api/ai-module-configs
-  http.get('/api/ai-module-configs', () => {
-    return ok({ configs: aiModuleConfigs, log: aiModuleConfigLog })
-  }),
+  // /api/ai-module-configs — passthrough p/ a rota real (Supabase, admin-only).
+  // Antes havia mock GET/PUT aqui; foram removidos ao ligar a feature no banco,
+  // pois sombreavam a rota real em dev (onUnhandledRequest: 'bypass').
 
   // GET /api/billing/usage
   http.get('/api/billing/usage', ({ request }) => {
@@ -108,24 +104,7 @@ const apiHandlers = [
     return ok(mockBillingCycle(scope, month))
   }),
 
-  // PUT /api/ai-module-configs
-  http.put('/api/ai-module-configs', async ({ request }) => {
-    const body = await request.json() as { module_id: AiModuleId; temperature: number; max_tokens: number; updated_by: string }
-    const idx = aiModuleConfigs.findIndex((c) => c.module_id === body.module_id)
-    if (idx === -1) {
-      return HttpResponse.json({ data: null, error: { message: 'Module not found', code: 404 } }, { status: 404 })
-    }
-    const prev = aiModuleConfigs[idx]
-    const now = new Date().toISOString()
-    if (prev.temperature !== body.temperature) {
-      aiModuleConfigLog.unshift({ id: `log-${Date.now()}-t`, module_id: body.module_id, field: 'temperature', previous_value: prev.temperature, new_value: body.temperature, updated_by: body.updated_by, updated_at: now })
-    }
-    if (prev.max_tokens !== body.max_tokens) {
-      aiModuleConfigLog.unshift({ id: `log-${Date.now()}-m`, module_id: body.module_id, field: 'max_tokens', previous_value: prev.max_tokens, new_value: body.max_tokens, updated_by: body.updated_by, updated_at: now })
-    }
-    aiModuleConfigs[idx] = { ...prev, temperature: body.temperature, max_tokens: body.max_tokens, updated_by: body.updated_by, updated_at: now }
-    return ok({ config: aiModuleConfigs[idx], log: aiModuleConfigLog })
-  }),
+  // (PUT /api/ai-module-configs removido — ver nota acima; rota real persiste no banco)
 
   // GET /api/coaching — passthrough to real API route (server-side translation
   // of bestCalls/worstCalls.analysis, coachingRecs, and behavioral dimensions)
