@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface OrgGhlConfig {
   orgId: string
+  /** Nome da org — usado nos alertas do Slack, que antes só mostravam o UUID. */
+  orgName: string | null
   locationId: string
   accessToken: string
   webhookSecret: string
@@ -38,7 +40,7 @@ export async function dbGetOrgGhlConfigByLocation(
 
   const { data, error } = await supabase
     .from('organizations')
-    .select('id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
+    .select('id, name, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
     .eq('ghl_location_id', locationId)
     .maybeSingle()
 
@@ -60,6 +62,7 @@ export async function dbGetOrgGhlConfigByLocation(
 
   return {
     orgId: data.id as string,
+    orgName: (data.name as string | null) ?? null,
     locationId: dbLocation,
     accessToken,
     webhookSecret,
@@ -77,7 +80,7 @@ export async function dbListGhlEnabledOrgs(): Promise<OrgGhlConfig[]> {
 
   const { data, error } = await supabase
     .from('organizations')
-    .select('id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
+    .select('id, name, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
     .eq('ghl_integration_enabled', true)
 
   if (error) throw new Error(`dbListGhlEnabledOrgs: ${error.message}`)
@@ -89,6 +92,7 @@ export async function dbListGhlEnabledOrgs(): Promise<OrgGhlConfig[]> {
     if (!accessToken || !dbLocation) continue
     orgs.push({
       orgId: row.id as string,
+      orgName: (row.name as string | null) ?? null,
       locationId: dbLocation,
       accessToken,
       webhookSecret: (row.ghl_webhook_secret as string | null) ?? '',
@@ -109,7 +113,7 @@ export async function dbGetOrgGhlConfigByOrgId(
 
   const { data, error } = await supabase
     .from('organizations')
-    .select('id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
+    .select('id, name, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
     .eq('id', orgId)
     .maybeSingle()
 
@@ -128,6 +132,7 @@ export async function dbGetOrgGhlConfigByOrgId(
 
   return {
     orgId: data.id as string,
+    orgName: (data.name as string | null) ?? null,
     locationId: dbLocation,
     accessToken,
     webhookSecret: webhookSecret ?? '',

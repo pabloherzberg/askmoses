@@ -89,10 +89,6 @@ export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return unauthorized()
 
-  // Admin impersonando NÃO pode convidar trainer/owner pra org alheia —
-  // mesmo que app_metadata.role='admin' permita o caller passar o role
-  // check, requireOwnerWrite bloqueia o caminho impersonate. Admin operando
-  // do próprio painel (sem impersonate) continua passando.
   const writeErr = await requireOwnerWrite()
   if (writeErr) return writeErr
 

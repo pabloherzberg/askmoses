@@ -1,6 +1,7 @@
 import { getOrgId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { DbScript } from '@/lib/db/scripts'
+import type { Locale } from '@/i18n/routing'
 
 /**
  * Formata o versionamento de 3 partes do script (migration 063).
@@ -24,7 +25,23 @@ export function formatScriptVersion(
   return `v${rubric}.${minor ?? 0}.${ownerEdit ?? 0}`
 }
 
-export async function getScripts(filters?: { active?: boolean; rubricId?: string; orgId?: string }) {
+export async function getScripts(filters?: {
+  active?: boolean
+  rubricId?: string
+  orgId?: string
+  /** Traduz os critérios AI-generated para exibição. Scripts ficam salvos em
+   *  inglês; a tradução é só na leitura (store EN, translate on display). */
+  locale?: Locale
+}) {
+  const scripts = await getScriptsRaw(filters)
+  if (filters?.locale && filters.locale !== 'en') {
+    const { translateScriptsCriteria } = await import('@/lib/i18n/translate-coaching')
+    return translateScriptsCriteria(scripts, filters.locale)
+  }
+  return scripts
+}
+
+async function getScriptsRaw(filters?: { active?: boolean; rubricId?: string; orgId?: string }) {
   const { dbGetScripts } = await import('@/lib/db/scripts')
   // Resolve orgId from the session if the caller didn't pass one — without
   // it we'd return scripts from every tenant. Returning `[]` when the

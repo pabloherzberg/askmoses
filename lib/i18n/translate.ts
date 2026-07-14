@@ -2,7 +2,10 @@ import { createHash } from 'crypto'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Locale } from '@/i18n/routing'
-import { getOpenAIModel } from '@/lib/openai'
+// Provider/chave do provider ATIVO (getActiveLlmModel) — tradução i18n segue o
+// provider global. Fora do tuning por módulo (mantém temperature=0). Ver
+// lib/constants/ai-modules.ts.
+import { getActiveLlmModel } from '@/lib/llm-provider'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 
 const LOCALE_NAMES: Record<Locale, string> = {
@@ -145,8 +148,9 @@ export async function translateStrings(
     // for large batches of coaching text (~100+ strings). On any failure we
     // return the source payload so pages never break.
     try {
+      const { model, provider, modelId } = await getActiveLlmModel('gpt-4o-mini')
       const { object, usage } = await generateObject({
-        model: getOpenAIModel('gpt-4o-mini'),
+        model,
         system,
         prompt: JSON.stringify(payload),
         schema: TranslatedSchema,
@@ -158,7 +162,8 @@ export async function translateStrings(
       void recordLlmUsage({
         orgId: null,
         surface: 'translation',
-        model: 'gpt-4o-mini',
+        provider,
+        model: modelId,
         inputTokens: usage?.inputTokens ?? 0,
         outputTokens: usage?.outputTokens ?? 0,
       })

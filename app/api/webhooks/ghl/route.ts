@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     void notifyPipelineFailure("webhook_rejected", {
       callId: `rejected:secret-mismatch:${locationId}`,
       orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
       stage: "webhook",
       reason: "webhook_secret_mismatch",
       meta: { locationId, secretHeaderPresent: secretHeader.length > 0, httpStatus: 401 },
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
       rawBody.customData as GhlAppointmentPayload,
       rawBody as unknown as Record<string, unknown>,
       orgConfig.orgId,
+      orgConfig.orgName,
       locationId,
     )
   }
@@ -115,6 +117,7 @@ export async function POST(req: NextRequest) {
     return handleOpportunity(
       rawBody.customData as GhlOpportunityPayload,
       orgConfig.orgId,
+      orgConfig.orgName,
     )
   }
 
@@ -127,6 +130,7 @@ export async function POST(req: NextRequest) {
     void notifyPipelineFailure("webhook_rejected", {
       callId: `rejected:bad-type:${locationId}`,
       orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
       stage: "webhook",
       reason: "webhook_invalid_payload",
       meta: {
@@ -144,6 +148,7 @@ export async function POST(req: NextRequest) {
     void notifyPipelineFailure("webhook_rejected", {
       callId: `rejected:no-contact:${locationId}`,
       orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
       stage: "webhook",
       reason: "webhook_invalid_payload",
       meta: { missingField: "contactId", httpStatus: 400 },
@@ -199,11 +204,15 @@ export async function POST(req: NextRequest) {
       void notifyPipelineFailure("webhook_failed", {
         callId: `sync-error:trainer-link:${externalCallId}`,
         orgId: orgConfig.orgId,
+        orgName: orgConfig.orgName,
         contactId,
+        clientName,
+        trainerName,
+        ghlUserId,
         error: err instanceof Error ? `[trainer-link] ${err.message}` : String(err),
         stage: "webhook",
         reason: "db_error",
-        meta: { externalCallId, ghlUserId, operation: "dbResolveTrainerForGhlCall" },
+        meta: { externalCallId, operation: "dbResolveTrainerForGhlCall" },
       })
       return jsonError("Server error", 500)
     }
@@ -244,6 +253,7 @@ export async function POST(req: NextRequest) {
       trainerId: trainerLink.trainerId,
       trainerName,
       trainerEmail,
+      ghlUserId,
       contactId,
       clientName,
       leadName: clientName,
@@ -255,7 +265,11 @@ export async function POST(req: NextRequest) {
     void notifyPipelineFailure("webhook_failed", {
       callId: `sync-error:upsert:${externalCallId}`,
       orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
       contactId,
+      clientName,
+      trainerName,
+      ghlUserId,
       error: err instanceof Error ? `[upsert] ${err.message}` : String(err),
       stage: "webhook",
       reason: "db_error",
@@ -297,7 +311,11 @@ export async function POST(req: NextRequest) {
       await notifyPipelineFailure("webhook_failed", {
         callId,
         orgId: orgConfig.orgId,
+        orgName: orgConfig.orgName,
         contactId,
+        clientName,
+        trainerName,
+        ghlUserId,
         error: err,
         stage: "webhook",
         meta: { note: "Crash não previsto em processGhlCall — ver stack trace acima." },
@@ -319,6 +337,7 @@ async function handleAppointment(
   appt: GhlAppointmentPayload,
   rawBody: Record<string, unknown>,
   orgId: string,
+  orgName: string | null,
   locationId: string | null,
 ) {
   const apptId =
@@ -356,6 +375,11 @@ async function handleAppointment(
     void notifyPipelineFailure("webhook_failed", {
       callId: `sync-error:appointment:${apptId}`,
       orgId,
+      orgName,
+      contactId: normalizeEmpty(appt.contactId),
+      clientName: normalizeEmpty(appt.contactName),
+      trainerName: normalizeEmpty(appt.userName) ?? normalizeEmpty(appt.userEmail),
+      ghlUserId: normalizeEmpty(appt.userId),
       error: err instanceof Error ? `[appointment] ${err.message}` : String(err),
       stage: "webhook",
       reason: "db_error",
@@ -368,6 +392,7 @@ async function handleAppointment(
 async function handleOpportunity(
   opp: GhlOpportunityPayload,
   orgId: string,
+  orgName: string | null,
 ) {
   const contactId = normalizeEmpty(opp.contactId)
   const opportunityId = normalizeEmpty(opp.opportunityId)
@@ -378,9 +403,22 @@ async function handleOpportunity(
   }
 
   try {
-    await dbUpdateGhlOpportunity(orgId, contactId, opportunityId, status)
+    const matched = await dbUpdateGhlOpportunity(orgId, contactId, opportunityId, status)
+
+    // Zero calls casadas é legítimo (contato sem call ingerida), mas é também a
+    // assinatura exata do bug do contact_id NULL — que passou despercebido porque
+    // o webhook respondia 200 sem gravar nada. Fica no log e na resposta.
+    if (matched === 0) {
+      console.warn("[ghl-webhook] oportunidade sem call correspondente — nada atualizado", {
+        orgId,
+        contactId,
+        opportunityId,
+        status,
+      })
+    }
+
     return NextResponse.json({
-      data: { opportunityId, status, contactId },
+      data: { opportunityId, status, contactId, callsUpdated: matched },
       error: null,
     })
   } catch (err) {
@@ -388,6 +426,9 @@ async function handleOpportunity(
     void notifyPipelineFailure("webhook_failed", {
       callId: `sync-error:opportunity:${opportunityId}`,
       orgId,
+      orgName,
+      contactId,
+      clientName: normalizeEmpty(opp.contactName),
       error: err instanceof Error ? `[opportunity] ${err.message}` : String(err),
       stage: "webhook",
       reason: "db_error",

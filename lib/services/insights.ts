@@ -1,7 +1,11 @@
 import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
 import { getCalls, avgRubricScores } from "@/lib/services/calls";
 import { generateText } from "ai";
-import { getOpenAIModel } from "@/lib/openai";
+// correlation_engine — o motor de insights faz parte do módulo
+// correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
+// provider ativo; tuning (temperature/max_tokens) de correlation_engine.
+import { getActiveLlmModel } from "@/lib/llm-provider";
+import { getModuleTuning } from "@/lib/db/ai-module-configs";
 import { getOrgId } from "@/lib/auth";
 import { recordLlmUsage } from "@/lib/services/llm-usage";
 import { translateInsightCards } from "@/lib/i18n/translate-coaching";
@@ -266,9 +270,13 @@ Analyse the patterns across these calls and return ONLY valid JSON (no markdown)
 Each array should have 4–8 items. Be specific and actionable — reference actual patterns from the calls when transcripts are available.
 `.trim();
 
+  const { model, provider, modelId } = await getActiveLlmModel("gpt-4o");
+  const tuning = await getModuleTuning("correlation_engine");
   const result = await generateText({
-    model: getOpenAIModel("gpt-4o"),
+    model,
     prompt,
+    temperature: tuning.temperature,
+    maxOutputTokens: tuning.max_tokens,
   });
   const text = result.text.trim();
 
@@ -276,7 +284,8 @@ Each array should have 4–8 items. Be specific and actionable — reference act
   void recordLlmUsage({
     orgId: orgId ?? null,
     surface: "insights",
-    model: "gpt-4o",
+    provider,
+    model: modelId,
     inputTokens: result.usage?.inputTokens ?? 0,
     outputTokens: result.usage?.outputTokens ?? 0,
     ref: scriptId ?? null,

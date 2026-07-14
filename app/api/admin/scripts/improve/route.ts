@@ -1,6 +1,8 @@
 import { type NextRequest } from 'next/server'
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
+// Provider/chave do provider ATIVO (getActiveLlmModel) — melhoria de script
+// segue o provider global. Fora do tuning por módulo. Ver lib/constants/ai-modules.ts.
+import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
@@ -138,8 +140,9 @@ export async function POST(request: NextRequest) {
     rubric_id: string
   }
 
+  const { model, provider, modelId } = await getActiveLlmModel('gpt-4o-mini')
   const { text, usage } = await generateText({
-    model: getOpenAIModel('gpt-4o-mini'),
+    model,
     system: SYSTEM_PROMPT,
     prompt: buildImprovePrompt(currentScript, recentCalls),
   })
@@ -149,7 +152,8 @@ export async function POST(request: NextRequest) {
   void recordLlmUsage({
     orgId: body.orgId ?? null,
     surface: 'script_improve',
-    model: 'gpt-4o-mini',
+    provider,
+    model: modelId,
     inputTokens: usage?.inputTokens ?? 0,
     outputTokens: usage?.outputTokens ?? 0,
     ref: scriptId,

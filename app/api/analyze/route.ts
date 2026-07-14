@@ -1,13 +1,17 @@
 import { type NextRequest } from "next/server";
 import { generateText } from "ai";
-import { getOpenAIModel, resolveOpenAIModelId } from "@/lib/openai";
+// scoring_engine — este pipeline é o principal serviço do módulo scoring_engine
+// (ver lib/constants/ai-modules.ts). Provider/modelo/chave vêm do provider ativo
+// (getActiveLlmModel), e temperature/max_tokens do tuning de scoring_engine.
+import { getActiveLlmModel } from "@/lib/llm-provider";
+import { getModuleTuning } from "@/lib/db/ai-module-configs";
 import {
   dbGetDefaultRubricWithCriteria,
   dbGetRubricById,
   dbGetCriteriaByRubric,
 } from "@/lib/db/rubric";
 import { dbCreateCall } from "@/lib/db/calls";
-import { recordLlmUsage } from "@/lib/services/llm-usage";
+import { recordLlmUsage, computeCostForModel } from "@/lib/services/llm-usage";
 import { dbGetActiveOrgScript } from "@/lib/db/scripts";
 import { dbGetTrainerById, syncTrainerStats } from "@/lib/db/trainers";
 import {
@@ -34,12 +38,19 @@ import {
   scoreIntentFromTranscript,
 } from "@/lib/services/intent-scoring";
 import { getOrgIntentWeightsForScoring } from "@/lib/services/intent";
-import {
-  LLM_TEMPERATURE_PRIMARY,
-  LLM_TEMPERATURE_RETRY,
-  PROMPT_VERSION,
-  computeCostUsd,
-} from "@/lib/constants/llm";
+import { LLM_TEMPERATURE_RETRY, PROMPT_VERSION } from "@/lib/constants/llm";
+import { translateStrings } from "@/lib/i18n/translate";
+import { routing, type Locale } from "@/i18n/routing";
+
+// A call é SEMPRE persistida em inglês (source of truth). Só a RESPOSTA
+// devolvida pra UI é traduzida quando a interface não está em inglês — mesmo
+// padrão de translateCall no read path de /calls e /me/calls. O locale chega
+// pelo header x-locale, enviado pelo cliente que dispara o /api/analyze.
+function resolveLocale(raw: string | null): Locale {
+  return (routing.locales as readonly string[]).includes(raw ?? "")
+    ? (raw as Locale)
+    : "en";
+}
 
 interface AnalyzeRequestBody {
   transcript: string;
@@ -492,14 +503,23 @@ export async function POST(request: NextRequest) {
     // Token usage accumulates across BOTH calls — otherwise the cost ledger
     // hides the wasted retry tokens and finance can't tell why the average
     // cost-per-call drifts up.
-    const model = getOpenAIModel(llmModel);
+    //
+    // Provider/modelo/chave vêm do provider ATIVO (llm_provider_settings), com
+    // fallback pro .env quando não configurado — trocar o provider na tela
+    // /admin/llm-config reflete aqui em até 5min. temperature/max_tokens saem
+    // do tuning do módulo scoring_engine (ai_module_configs), com default
+    // hardcoded quando não migrado. O retry mantém temperature=0 (determinístico)
+    // pra maximizar recuperação de JSON válido.
+    const { model, provider, modelId } = await getActiveLlmModel(llmModel);
+    const tuning = await getModuleTuning("scoring_engine");
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
 
     let llmResult = await generateText({
       model,
       prompt,
-      temperature: LLM_TEMPERATURE_PRIMARY,
+      temperature: tuning.temperature,
+      maxOutputTokens: tuning.max_tokens,
     });
     totalInputTokens += llmResult.usage?.inputTokens ?? 0;
     totalOutputTokens += llmResult.usage?.outputTokens ?? 0;
@@ -516,6 +536,7 @@ export async function POST(request: NextRequest) {
         model,
         prompt: `${prompt}\n\n## RETRY\nThe previous response was invalid: ${validation.reason}. Reply with strictly valid JSON, no prose, no markdown.`,
         temperature: LLM_TEMPERATURE_RETRY,
+        maxOutputTokens: tuning.max_tokens,
       });
       totalInputTokens += llmResult.usage?.inputTokens ?? 0;
       totalOutputTokens += llmResult.usage?.outputTokens ?? 0;
@@ -523,8 +544,9 @@ export async function POST(request: NextRequest) {
       validation = validateAnalysis(parsedRaw, allowedSections);
     }
 
-    const modelUsed = resolveOpenAIModelId(llmModel);
-    const costUsd = computeCostUsd(
+    const modelUsed = modelId;
+    const costUsd = await computeCostForModel(
+      provider,
       modelUsed,
       totalInputTokens,
       totalOutputTokens,
@@ -584,17 +606,14 @@ export async function POST(request: NextRequest) {
 
     // O IntentScore (0–5, decimal) da call É o Intent Index ponderado do
     // intent_breakdown (= o cálculo do CallDetail) — definido AQUI na análise e
-    // persistido, em vez de recalculado a cada leitura. closed → 5; sem
-    // breakdown (falha da IA), cai no fallback por resultado/IA.
-    const intent: IntentScore =
-      detectedOutcome === "closed"
-        ? 5
-        : intentBreakdown
-          ? Math.max(
-              0,
-              Math.min(5, computeIntentIndex(intentBreakdown, currentOrgWeights)),
-            )
-          : resolveIntent(parsed.intent, detectedOutcome);
+    // persistido, em vez de recalculado a cada leitura. Sem breakdown (falha
+    // da IA), cai no fallback por resultado/IA.
+    const intent: IntentScore = intentBreakdown
+      ? Math.max(
+          0,
+          Math.min(5, computeIntentIndex(intentBreakdown, currentOrgWeights)),
+        )
+      : resolveIntent(parsed.intent, detectedOutcome);
 
     // ── 5. Assemble sections + criteriaScores (back-compat) ──────────────
     // criteriaScores keys back to the original scored item's id when
@@ -686,6 +705,7 @@ export async function POST(request: NextRequest) {
     void recordLlmUsage({
       orgId,
       surface: "analyze",
+      provider,
       model: modelUsed,
       inputTokens: totalInputTokens,
       outputTokens: totalOutputTokens,
@@ -699,6 +719,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── 7. Traduz a RESPOSTA pra exibição (persistência acima fica em EN) ──
+    // Só campos human-facing: summary, strengths, improvements, feedback das
+    // seções e justification dos critérios. Nomes de seção, scores, outcome,
+    // intent e transcript ficam intactos. translateStrings tem cache + faz
+    // no-op quando locale==='en' / sem OPENAI_API_KEY / TRANSLATE_COACHING=false.
+    const locale = resolveLocale(request.headers.get("x-locale"));
+    let outSummary = parsed.summary;
+    let outStrengths = parsed.strengths;
+    let outImprovements = parsed.improvements;
+    let outSections = normalisedSections;
+    let outCriteria = criteriaScores;
+    if (locale !== "en") {
+      try {
+        const batch = [
+          parsed.summary,
+          ...parsed.strengths,
+          ...parsed.improvements,
+          ...normalisedSections.map((s) => s.feedback),
+          ...criteriaScores.map((c) => c.justification),
+        ];
+        const tr = await translateStrings(batch, locale);
+        let cur = 0;
+        outSummary = tr[cur++] ?? parsed.summary;
+        outStrengths = parsed.strengths.map((s) => tr[cur++] ?? s);
+        outImprovements = parsed.improvements.map((s) => tr[cur++] ?? s);
+        outSections = normalisedSections.map((s) => ({
+          ...s,
+          feedback: tr[cur++] ?? s.feedback,
+        }));
+        outCriteria = criteriaScores.map((c) => ({
+          ...c,
+          justification: tr[cur++] ?? c.justification,
+        }));
+      } catch (e) {
+        console.error("[analyze] translate response failed — returning EN", e);
+      }
+    }
+
     return Response.json({
       id: savedCall.id,
       overallScore,
@@ -706,11 +764,11 @@ export async function POST(request: NextRequest) {
       intent,
       intentBreakdown,
       intentWeights: currentOrgWeights,
-      summary: parsed.summary,
-      strengths: parsed.strengths,
-      improvements: parsed.improvements,
-      criteriaScores,
-      sections: normalisedSections,
+      summary: outSummary,
+      strengths: outStrengths,
+      improvements: outImprovements,
+      criteriaScores: outCriteria,
+      sections: outSections,
       transcript,
       cost: {
         modelUsed,

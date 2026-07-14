@@ -481,13 +481,19 @@ Painel exclusivo para admin configurar temperatura e limite de tokens por módul
 - [x] Três módulos configuráveis: `scoring_engine`, `correlation_engine`, `marketing_intelligence`
 - [x] Campos configuráveis por módulo: `temperature` (0.0–1.0) e `max_tokens` (100–4000)
 - [x] Hint de range recomendado exibido ao lado de cada campo
-- [x] Valores salvos via `PUT /api/ai-module-configs` (MSW mock)
-- [x] Configuração mais recente lida antes de cada execução do módulo (mock data)
+- [x] Valores salvos via `PUT /api/ai-module-configs` (Supabase — tabela `ai_module_configs`)
+- [x] Configuração mais recente lida antes de cada execução do módulo (cache 5min + invalidação no save)
 - [x] Log de alterações com: módulo, campo, valor anterior, novo valor, usuário e timestamp
 - [x] Owners não visualizam nem acessam essas configurações (acesso protegido pelo middleware + auth)
 - [x] Link "LLM Config" adicionado ao `AdminNavItems` no sidebar
 
-> **STATUS: ✅ CONCLUÍDA** — 3 cards de módulo com sliders de temperature e max_tokens, hints de range recomendado, botão save por módulo, log de alterações em tabela. Rota `/api/ai-module-configs` GET/PUT criada. MSW handler registra mudanças em memória durante a demo. Dados mock em `lib/mock-data.ts` com 3 configs e 3 entradas de log.
+> **STATUS: ✅ CONCLUÍDA (100% funcional — não é mais mock)** — Feature totalmente ligada ao backend real:
+> - **Módulos IA** persistem em `ai_module_configs`/`ai_module_config_log` (migration 101), com validação de range server-side e log append-only. `lib/db/ai-module-configs.ts` lê com cache de 5min; os engines (`scoring_engine`, `correlation_engine`, `marketing_intelligence`) aplicam `temperature` + `maxOutputTokens` de verdade. Mapa módulo→serviços em `lib/constants/ai-modules.ts`.
+> - **Provider** (`llm_provider_settings`, migration 099): seção salva chave/modelo via `PATCH /api/admin/llm-settings/provider` e um **seletor** escolhe o provider ativo (guard: só ativa com chave). Chave mascarada no GET.
+> - **Pricing** (`llm_pricing`, 088/100): edição cria nova versão via `POST /api/admin/llm-settings/pricing`, com histórico real.
+> - **Consumo global**: TODO serviço de LLM (analyze, scoring, intent, script-intelligence, script-gap, insights, marketing, coaching, diarização, tradução, generate/improve-script) resolve provider+modelo+chave via `getActiveLlmModel` (provider ativo → fallback `.env`) e custo via `computeCostForModel`. Trocar provider/chave reflete em toda a plataforma. Transcrição de áudio (Whisper STT) é OpenAI-only e resolve a chave OpenAI do banco→`.env`.
+> - **Arquitetura extensível**: `lib/llm/registry.ts` + `lib/llm/catalog.ts` — adicionar Claude/Qwen = instalar `@ai-sdk/*` + 1 entrada no registry + relaxar CHECK + seed de pricing.
+> - ⚠️ Requer rodar as migrations 088/099/100/101 no Supabase. `api_key` em texto simples (sem KMS — limitação documentada).
 
 ---
 

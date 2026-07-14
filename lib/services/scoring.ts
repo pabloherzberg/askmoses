@@ -11,13 +11,13 @@
 // ────────────────────────────────────────────────────────────────────────
 
 import { generateText } from "ai"
-import { getOpenAIModel, resolveOpenAIModelId } from "@/lib/openai"
-import {
-  LLM_TEMPERATURE_PRIMARY,
-  LLM_TEMPERATURE_RETRY,
-  PROMPT_VERSION,
-  computeCostUsd,
-} from "@/lib/constants/llm"
+// scoring_engine — serviço compartilhado do módulo scoring_engine (ver
+// lib/constants/ai-modules.ts). Provider/chave do provider ativo; tuning
+// (temperature/max_tokens) de scoring_engine.
+import { getActiveLlmModel } from "@/lib/llm-provider"
+import { getModuleTuning } from "@/lib/db/ai-module-configs"
+import { computeCostForModel } from "@/lib/services/llm-usage"
+import { LLM_TEMPERATURE_RETRY, PROMPT_VERSION } from "@/lib/constants/llm"
 import { normaliseOutcome, type CallOutcome } from "@/lib/constants"
 
 // ── Tipos ──────────────────────────────────────────────────────────────
@@ -91,6 +91,7 @@ export interface ScoreTranscriptResult {
     authority: number
     engagement: number
   }
+  provider: string
   modelUsed: string
   inputTokens: number
   outputTokens: number
@@ -451,14 +452,16 @@ export async function scoreTranscript(
     clientName: input.clientName ?? "not provided",
   })
 
-  const model = getOpenAIModel(input.llmModel)
+  const { model, provider, modelId } = await getActiveLlmModel(input.llmModel)
+  const tuning = await getModuleTuning("scoring_engine")
   let totalInputTokens = 0
   let totalOutputTokens = 0
 
   let llmResult = await generateText({
     model,
     prompt,
-    temperature: LLM_TEMPERATURE_PRIMARY,
+    temperature: tuning.temperature,
+    maxOutputTokens: tuning.max_tokens,
   })
   totalInputTokens += llmResult.usage?.inputTokens ?? 0
   totalOutputTokens += llmResult.usage?.outputTokens ?? 0
@@ -475,6 +478,7 @@ export async function scoreTranscript(
       model,
       prompt: `${prompt}\n\n## RETRY\nThe previous response was invalid: ${validation.reason}. Reply with strictly valid JSON, no prose, no markdown.`,
       temperature: LLM_TEMPERATURE_RETRY,
+      maxOutputTokens: tuning.max_tokens,
     })
     totalInputTokens += llmResult.usage?.inputTokens ?? 0
     totalOutputTokens += llmResult.usage?.outputTokens ?? 0
@@ -482,8 +486,8 @@ export async function scoreTranscript(
     validation = validateAnalysis(parsedRaw, allowedSections)
   }
 
-  const modelUsed = resolveOpenAIModelId(input.llmModel)
-  const costUsd = computeCostUsd(modelUsed, totalInputTokens, totalOutputTokens)
+  const modelUsed = modelId
+  const costUsd = await computeCostForModel(provider, modelUsed, totalInputTokens, totalOutputTokens)
 
   if (!validation.ok || !validation.data) {
     throw new Error(
@@ -527,6 +531,7 @@ export async function scoreTranscript(
     improvements: parsed.improvements,
     sections: normalisedSections,
     ...(parsed.intent && { intent: parsed.intent }),
+    provider,
     modelUsed,
     inputTokens: totalInputTokens,
     outputTokens: totalOutputTokens,

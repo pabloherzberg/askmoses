@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import {
   Sparkles,
   Check,
@@ -662,6 +662,9 @@ function ActiveScriptPanel({
 export default function InsightsPage() {
   const t = useTranslations("Dashboard.insights")
   const tUpsell = useTranslations("Shared.upsell.insightsRag")
+  // Idioma atual — mandado no header x-locale pras rotas de script intelligence
+  // traduzirem o conteúdo AI-generated na leitura (cache fica canônico em inglês).
+  const locale = useLocale()
 
   const [script, setScript] = useState<ActiveScript | null>(null)
   const [pending, setPending] = useState<PendingScriptInfo | null>(null)
@@ -723,7 +726,7 @@ export default function InsightsPage() {
           const saved = localStorage.getItem("sic_resolution")
           if (saved) {
             const parsed = JSON.parse(saved) as { orgScriptId: string; resolution: "accepted" | "rejected"; scriptName: string }
-            const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${parsed.orgScriptId}`)
+            const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${parsed.orgScriptId}`, { headers: { "x-locale": locale }, cache: "no-store" })
             const cacheJson = await cacheRes.json()
             const cached = cacheJson?.data?.cache
             if (cached?.resolution && cached?.result) {
@@ -868,7 +871,7 @@ export default function InsightsPage() {
     try {
       // 1. Verificar cache primeiro
       if (orgScriptId) {
-        const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`)
+        const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`, { headers: { "x-locale": locale }, cache: "no-store" })
         const cacheJson = await cacheRes.json()
         if (cacheJson?.data?.cache) {
           const cached = cacheJson.data.cache
@@ -877,7 +880,7 @@ export default function InsightsPage() {
             setIntelligenceLoadingSync(true)
             setIntelligenceError("")
             analysisPollRef.current = setInterval(async () => {
-              const pollRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`)
+              const pollRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${orgScriptId}`, { headers: { "x-locale": locale }, cache: "no-store" })
               const pollJson = await pollRes.json()
               const pollCache = pollJson?.data?.cache
               if (pollCache?.analysis_status === 'ready') {
@@ -916,10 +919,11 @@ export default function InsightsPage() {
         }
       }
 
-      // 2. Cache vazio — chamar IA diretamente
+      // 2. Cache vazio — chamar IA diretamente. Manda x-locale pra rota traduzir
+      //    a resposta AI-generated por idioma (o cache do server fica em inglês).
       const res = await fetch("/api/script-intelligence", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-locale": locale },
         body: JSON.stringify({ scriptId, currentScriptId }),
       })
       const json = await res.json()
@@ -934,11 +938,14 @@ export default function InsightsPage() {
         return
       }
 
+      // A rota já traduziu json.data conforme o x-locale.
       setIntelligence(json.data)
       setOrgScriptIdCache(orgScriptId ?? null)
 
-      // 3. Salvar no cache
-      if (orgScriptId) {
+      // 3. Salvar no cache SOMENTE em inglês (canônico). Em outros idiomas NÃO
+      //    cacheia (json.data está traduzido) — evita poluir o cache; o próximo
+      //    load re-traduz (translateStrings tem cache) ou lê do cache do server.
+      if (orgScriptId && locale === "en") {
         void fetch("/api/script-intelligence/cache", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -950,7 +957,7 @@ export default function InsightsPage() {
     } finally {
       setIntelligenceLoadingSync(false)
     }
-  }, [t])
+  }, [t, locale])
 
   const persistDecisions = useCallback((decisions: typeof suggestionDecisions) => {
     if (!orgScriptIdCache) return

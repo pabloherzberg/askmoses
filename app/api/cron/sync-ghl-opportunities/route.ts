@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
       await notifyPipelineFailure('webhook_failed', {
         callId: `sync-error:opportunities-cron:${org.orgId}`,
         orgId: org.orgId,
+        orgName: org.orgName,
         error: err,
         stage: 'webhook',
         reason: err instanceof GhlAuthError ? 'ghl_auth_expired' : 'ghl_api_error',

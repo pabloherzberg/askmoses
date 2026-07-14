@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Copy, Check, Play, RefreshCw, Phone, Info } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { MarketingIntelligence as MarketingIntelligenceData, MarketingCopySuggestion, ConfidenceLevel } from '@/lib/types'
@@ -13,21 +13,23 @@ const CONFIDENCE_STYLES: Record<ConfidenceLevel, { color: string; bg: string }> 
 }
 
 function ConfidenceBadge({ level, value }: { level: ConfidenceLevel; value: number }) {
+  const t = useTranslations('Marketing')
   const { color, bg } = CONFIDENCE_STYLES[level]
-  const label = level === 'high' ? 'HIGH' : level === 'medium' ? 'MEDIUM' : 'LOW'
+  const levelKey =
+    level === 'high' ? 'confidenceLevelHigh' : level === 'medium' ? 'confidenceLevelMedium' : 'confidenceLevelLow'
 
   return (
     <span
       className="text-[10px] font-mono font-medium px-2 py-0.5 rounded"
       style={{ color, background: bg }}
     >
-      {value}% · {label} CONFIDENCE
+      {t('confidenceBadge', { value, level: t(levelKey) })}
     </span>
   )
 }
 
 function CopyButton({ text }: { text: string }) {
-  const t = useTranslations('MarketingIntelligence')
+  const t = useTranslations('Marketing')
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
@@ -35,7 +37,7 @@ function CopyButton({ text }: { text: string }) {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      toast({ title: t('copiedToClipboard'), duration: 2000 })
+      toast({ title: t('copyToClipboard'), duration: 2000 })
       setTimeout(() => setCopied(false), 2000)
     } catch {
       toast({ title: t('copyFailed'), variant: 'destructive', duration: 2000 })
@@ -54,7 +56,7 @@ function CopyButton({ text }: { text: string }) {
       }}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? 'Copied' : 'COPY'}
+      {copied ? t('copied') : t('copy')}
     </button>
   )
 }
@@ -93,26 +95,25 @@ function SuggestionCard({ item }: { item: MarketingCopySuggestion }) {
 }
 
 export function MarketingIntelligence() {
-  const t = useTranslations('MarketingIntelligence')
   const [data, setData] = useState<MarketingIntelligenceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [running, setRunning] = useState(false)
   const { toast } = useToast()
+  const locale = useLocale()
+  const t = useTranslations('Marketing')
 
   const loadData = async () => {
     setLoading(true)
     setErrorMessage(null)
     try {
-      const res = await fetch('/api/marketing-intelligence')
+      const res = await fetch('/api/marketing-intelligence', { headers: { 'x-locale': locale } })
       const json = await res.json()
       if (json.data) {
         setData(json.data)
       } else {
-        // json.error?.message vem em inglês da API mesmo, mas usamos a
-        // tradução local — nunca depender do texto cru da resposta.
-        setErrorMessage(t('loadError'))
+        setErrorMessage(json.error?.message ?? t('loadFailed'))
       }
     } finally {
       setLoading(false)
@@ -133,12 +134,12 @@ export function MarketingIntelligence() {
     if (running) return
     setRunning(true)
     try {
-      const res = await fetch('/api/marketing-intelligence/run', { method: 'POST' })
+      const res = await fetch('/api/marketing-intelligence/run', { method: 'POST', headers: { 'x-locale': locale } })
       const json = await res.json()
       if (!res.ok || !json.data) {
         toast({
-          title: t('runFailedTitle'),
-          description: t('runFailedDescription'),
+          title: t('runFailed'),
+          description: json.error?.message ?? t('runFailedDesc'),
           variant: 'destructive',
           duration: 4000,
         })
@@ -147,8 +148,8 @@ export function MarketingIntelligence() {
       setData(json.data)
       setErrorMessage(null)
       toast({
-        title: t('runSuccessTitle'),
-        description: t('runSuccessDescription'),
+        title: t('runSuccess'),
+        description: t('runSuccessDesc'),
         duration: 3000,
       })
     } finally {
@@ -194,21 +195,24 @@ export function MarketingIntelligence() {
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full" style={{ background: 'var(--am-green)' }} />
-            <span style={{ color: 'var(--am-muted)' }}>Last run:</span>
+            <span style={{ color: 'var(--am-muted)' }}>{t('lastRun')}</span>
             <span className="font-medium" style={{ color: 'var(--am-text)' }}>{data.lastRun}</span>
           </span>
           <span style={{ color: 'var(--am-border)' }}>·</span>
           <span style={{ color: 'var(--am-muted)' }}>
-            Based on <span className="font-medium" style={{ color: 'var(--am-text)' }}>{data.sampleSize} closed calls</span>
+            {t.rich('basedOn', {
+              count: data.sampleSize,
+              b: (chunks) => <span className="font-medium" style={{ color: 'var(--am-text)' }}>{chunks}</span>,
+            })}
           </span>
           <span style={{ color: 'var(--am-border)' }}>·</span>
           <span style={{ color: 'var(--am-muted)' }}>
-            Next run: <span className="font-medium" style={{ color: 'var(--am-text)' }}>{data.nextRun}</span>
+            {t('nextRun')} <span className="font-medium" style={{ color: 'var(--am-text)' }}>{data.nextRun}</span>
           </span>
         </div>
         <p className="flex items-center gap-1.5 text-[11px] italic" style={{ color: 'var(--am-muted)' }}>
           <Info size={12} />
-          Copy suggestions are AI-generated. Review before publishing.
+          {t('disclaimer')}
         </p>
       </div>
 
@@ -221,13 +225,13 @@ export function MarketingIntelligence() {
         >
           <div className="flex items-center justify-between mb-4 gap-3">
             <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-              🔥 Suggested Ad Headlines
+              {t('headlinesTitle')}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: 'var(--am-accent2)', borderColor: 'rgba(155,135,255,0.35)', background: 'rgba(155,135,255,0.08)' }}
             >
-              AI Generated
+              {t('aiGenerated')}
             </span>
           </div>
           <div className="flex flex-col gap-3">
@@ -244,13 +248,13 @@ export function MarketingIntelligence() {
         >
           <div className="flex items-center justify-between mb-4 gap-3">
             <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-              ✏️ Suggested Primary Text
+              {t('primaryTextTitle')}
             </p>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded border"
               style={{ color: 'var(--am-accent2)', borderColor: 'rgba(155,135,255,0.35)', background: 'rgba(155,135,255,0.08)' }}
             >
-              AI Generated
+              {t('aiGenerated')}
             </span>
           </div>
           <div className="flex flex-col gap-3">
@@ -269,10 +273,10 @@ export function MarketingIntelligence() {
         <div className="flex items-center justify-between mb-4 gap-3">
           <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
             <Phone size={13} className="inline mr-1.5 mb-0.5" />
-            Source Calls
+            {t('sourceCalls')}
           </p>
           <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-            {data.sampleSize} of 5 analyzed · Closed only
+            {t('analyzedCount', { count: data.sampleSize })}
           </span>
         </div>
         <div className="flex flex-col gap-0">
@@ -296,13 +300,13 @@ export function MarketingIntelligence() {
                 className="text-[10px] font-mono px-2 py-0.5 rounded border font-medium"
                 style={{ color: 'var(--am-green)', borderColor: 'rgba(34,217,160,0.35)', background: 'rgba(34,217,160,0.06)' }}
               >
-                CLOSED
+                {t('closed')}
               </span>
               <span className="text-[11px] font-mono" style={{ color: 'var(--am-muted)' }}>
                 {call.duration}
               </span>
               <span className="text-[12px] font-mono font-semibold" style={{ color: 'var(--am-text)' }}>
-                Score: {call.score.toFixed(1)}
+                {t('scoreLabel')} {call.score.toFixed(1)}
               </span>
             </div>
           ))}
@@ -315,16 +319,16 @@ export function MarketingIntelligence() {
         style={{ background: 'var(--card)', borderColor: 'var(--am-border)' }}
       >
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>Frequency</span>
-          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>Weekly <span className="text-[10px]" style={{ color: 'var(--am-muted)' }}>(auto)</span></span>
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>{t('frequency')}</span>
+          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>{t('frequencyValue')} <span className="text-[10px]" style={{ color: 'var(--am-muted)' }}>{t('autoNote')}</span></span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>Sample size</span>
-          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>3–5 closed calls <span className="text-[10px]" style={{ color: 'var(--am-muted)' }}>(random)</span></span>
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>{t('sampleSize')}</span>
+          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>{t('sampleSizeValue')} <span className="text-[10px]" style={{ color: 'var(--am-muted)' }}>{t('randomNote')}</span></span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>Token cost</span>
-          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>Controlled by AskMoses admin</span>
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: 'var(--am-muted)' }}>{t('tokenCost')}</span>
+          <span className="text-[12px] font-medium" style={{ color: 'var(--am-text)' }}>{t('tokenCostValue')}</span>
         </div>
         {isSuperAdmin && (
           <button
@@ -335,7 +339,7 @@ export function MarketingIntelligence() {
             style={{ background: 'var(--am-accent)', color: '#fff' }}
           >
             <RefreshCw size={13} className={running ? 'animate-spin' : ''} />
-            {running ? 'RUNNING…' : 'RUN NOW'}
+            {running ? t('running') : t('runNow')}
           </button>
         )}
       </div>

@@ -24,8 +24,12 @@
   },
   "Billing": {
     "title": "Facturación",
-    "block1": { "title": "Uso en el período" },
-    "block2": { "title": "Ciclo de facturación" },
+    "block1": {
+      "title": "Uso en el período"
+    },
+    "block2": {
+      "title": "Ciclo de facturación"
+    },
     "cards": {
       "callsAnalyzed": "Llamadas analizadas",
       "billableMinutes": "Minutos facturables",
@@ -97,7 +101,9 @@
       "colAmount": "Importe",
       "payTitle": "La facturación se gestiona directamente con el equipo de AskMoses",
       "payBody": "Esta página muestra tu uso e importe a pagar como referencia. El pago se acuerda fuera de la plataforma — aquí no hay nada que pagar."
-    }
+    },
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
   },
   "Navigation": {
     "overview": "Visión general",
@@ -171,7 +177,8 @@
     "genericError": "No se pudo crear la cuenta. Inténtalo de nuevo.",
     "verifyEmailTitle": "Confirma tu correo",
     "verifyEmailBody": "Enviamos un enlace de confirmación a {email}. Haz clic en el enlace para activar tu cuenta y continuar.",
-    "backToLogin": "Volver al inicio de sesión"
+    "backToLogin": "Volver al inicio de sesión",
+    "stripeBanner": "Plan <b>{plan}</b> adquirido ✓ — crea tu cuenta para acceder."
   },
   "Onboarding": {
     "stepLabel": "Paso {current} de {total}",
@@ -409,15 +416,13 @@
       "legacyScriptHint": "legado"
     },
     "performanceTrend": {
-      "title": "Tendencia de rendimiento",
-      "myTrend": "Mi tendencia",
-      "mockBadge": "solo datos mock",
+      "noCalls": "Sin llamadas",
+      "title": "Tendencia de tasa de conversión",
       "team": "Equipo",
-      "closeRate": "Tasa de cierre %",
-      "avgScore": "Puntuación media",
-      "tooltipCloseRate": "Tasa de cierre",
-      "tooltipAvgScore": "Puntuación media",
-      "mockFooter": "↑ valores desde mock-data.ts · Recharts LineChart · sin cálculo real"
+      "teamAvg": "Promedio del equipo",
+      "closeRateLegend": "Tasa de cierre",
+      "weekLabel": "Semana {n}",
+      "callLabel": "Llamada {n}"
     },
     "upsell": {
       "defaultCta": "Comparar planes",
@@ -486,15 +491,6 @@
       "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Tasa de cierre",
       "teamPill": "Equipo"
-    },
-    "performanceTrend": {
-      "noCalls": "Sin llamadas",
-      "title": "Tendencia de tasa de conversión",
-      "team": "Equipo",
-      "teamAvg": "Promedio del equipo",
-      "closeRateLegend": "Tasa de cierre",
-      "weekLabel": "Semana {n}",
-      "callLabel": "Llamada {n}"
     },
     "rubricGapDetection": {
       "title": "Detección de gaps en el script",
@@ -954,7 +950,8 @@
       "criteriaWeight": "{count} criterios · Peso: {weight}%",
       "current": "Actual",
       "proposed": "Propuesto",
-      "noChanges": "Ningún cambio para mostrar."
+      "noChanges": "Ningún cambio para mostrar.",
+      "saveFailed": "Error al guardar el script"
     },
     "health": {
       "healthy": "Saludable",
@@ -1015,11 +1012,11 @@
       "errorTitle": "No se pudo completar",
       "errorBody": "Algo salió mal. Intenta de nuevo."
     },
-    "impersonateTooltip": "Entrar como {name} (vista de solo lectura)",
+    "impersonateTooltip": "Entrar como {name} (actuando como owner)",
     "impersonateError": "No se pudo entrar en esta organización. Inténtalo de nuevo.",
     "impersonateBanner": {
       "label": "Viendo como",
-      "readOnly": "Solo lectura",
+      "readOnly": "Actuando como owner",
       "exit": "Volver al panel admin",
       "exiting": "Saliendo…"
     },
@@ -1206,11 +1203,10 @@
       "providerSection": {
         "label": "Proveedor de LLM",
         "title": "Proveedor activo",
-        "subtitle": "Define qué proveedor real usa el pipeline de análisis (/api/analyze).",
-        "previewBadge": "Vista previa — aún no funcional. El análisis de llamadas sigue usando OpenAI vía variable de entorno.",
+        "subtitle": "Define qué proveedor usa el pipeline de análisis. Cambiarlo aquí aplica a toda la plataforma (la transcripción de audio siempre usa OpenAI).",
         "notMigrated": "La tabla de configuración de proveedor aún no existe — ejecuta la migration 099.",
-        "providerOpenAI": "OpenAI",
-        "providerGemini": "Google Gemini",
+        "selectorHint": "Más de un proveedor tiene clave configurada — elige cuál queda activo.",
+        "setActiveNeedsKey": "Configura la clave de API antes de activar este proveedor.",
         "modelLabel": "Modelo predeterminado",
         "apiKeyLabel": "Clave de API",
         "apiKeyPlaceholder": "Pega la clave de API",
@@ -1224,16 +1220,15 @@
         "saving": "Guardando...",
         "toastSavedTitle": "Guardado",
         "toastSavedBody": "Configuración de proveedor actualizada.",
+        "toastActivatedTitle": "Proveedor activado",
+        "toastActivatedBody": "El pipeline ahora usa este proveedor.",
         "toastErrorTitle": "Error",
-        "toastErrorBody": "Fallo al guardar. Inténtalo de nuevo.",
-        "toastPreviewTitle": "Vista previa",
-        "toastPreviewBody": "Esto todavía es solo una vista previa visual — nada se guardó de verdad."
+        "toastErrorBody": "Fallo al guardar. Inténtalo de nuevo."
       },
       "pricingSection": {
         "label": "Costos de LLM",
         "title": "Tabla de precios (COGS)",
         "subtitle": "Editar crea una nueva versión — el historial de costo ya registrado no cambia.",
-        "previewBadge": "Vista previa — aún no funcional.",
         "th": {
           "provider": "Proveedor",
           "model": "Modelo",
@@ -1254,9 +1249,7 @@
         "toastSavedTitle": "Precio actualizado",
         "toastSavedBody": "Nueva versión de precio creada para {model}.",
         "toastErrorTitle": "Error",
-        "toastErrorBody": "Fallo al guardar el precio.",
-        "toastPreviewTitle": "Vista previa",
-        "toastPreviewBody": "Esto todavía es solo una vista previa visual — no se creó ninguna versión de precio de verdad."
+        "toastErrorBody": "Fallo al guardar el precio."
       }
     }
   },
@@ -1626,7 +1619,12 @@
       "tipEmoji": "💡 {tip}",
       "autoGeneratedCriteria": "Criterios generados automáticamente",
       "deleteScript": "Eliminar script",
-      "emptyScripts": "Aún no hay scripts creados. Crea tu primer script de ventas para empezar."
+      "emptyScripts": "Aún no hay scripts creados. Crea tu primer script de ventas para empezar.",
+      "weightLabel": "Peso (%)",
+      "critical": "Crítica",
+      "criticalHint": "(score ≤ 4 activa alerta)",
+      "weightsSumInvalid": "⚠ La suma de los pesos es {total}% — debe ser 100% antes de guardar.",
+      "weightsSumValid": "✓ La suma de los pesos es 100%"
     },
     "insights": {
       "title": "Script Intelligence",
@@ -1849,7 +1847,12 @@
         "gpt4oMini": "OpenAI GPT-4o Mini (Rápido y Económico)",
         "gemini25Flash": "Google Gemini 2.5 Flash (Balanceado)",
         "gemini25Pro": "Google Gemini 2.5 Pro (Potente)"
-      }
+      },
+      "weightLabel": "Peso (%)",
+      "critical": "Crítica",
+      "criticalHint": "(score ≤ 4 activa alerta)",
+      "weightsSumInvalid": "⚠ La suma de los pesos es {total}% — debe ser 100% antes de guardar.",
+      "weightsSumValid": "✓ La suma de los pesos es 100%"
     },
     "upload": {
       "title": "Subir llamada",
@@ -1972,7 +1975,11 @@
         "browseFiles": "Explorar archivos",
         "transcriptPlaceholder": "Pega la transcripción de la llamada aquí...",
         "charactersCount": "{count} caracteres"
-      }
+      },
+      "intentIndexTitle": "Ask Moses Intent Index",
+      "intentIndexSubtitle": "Evaluación de intención de compra (escala 0-5)",
+      "finalIntentIndex": "Intent Index final",
+      "dealClosed": "Trato cerrado"
     }
   },
   "MarketingIntelligence": {
@@ -2960,6 +2967,57 @@
     "teamAverage": "Promedio del equipo",
     "breakdownLabel": "Desglose",
     "radarLabel": "Intent Index",
-    "highestIntentLeads": "Leads de Mayor Prioridad"
+    "highestIntentLeads": "Leads de Mayor Prioridad",
+    "period1w": "1 semana",
+    "period2w": "2 semanas",
+    "period15d": "15 días",
+    "period1m": "1 mes"
+  },
+  "Success": {
+    "title": "¡Pago confirmado!",
+    "description": "Tu plan <b>{plan}</b> está activo. Ahora crea tu cuenta para acceder a la plataforma.",
+    "defaultPlan": "tu plan",
+    "createAccount": "Crear mi cuenta →",
+    "backToSite": "Volver al sitio",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "login": "Iniciar sesión"
+  },
+  "Marketing": {
+    "sectionLabel": "Inteligencia de Marketing",
+    "subtitle": "Insights de copy generados por IA a partir de tus llamadas cerradas · Se ejecuta semanalmente · Analiza 3–5 llamadas",
+    "copyToClipboard": "Copiado al portapapeles",
+    "copyFailed": "Error al copiar",
+    "copied": "Copiado",
+    "copy": "COPIAR",
+    "confidenceBadge": "{value}% · {level}",
+    "confidenceLevelHigh": "CONFIANZA ALTA",
+    "confidenceLevelMedium": "CONFIANZA MEDIA",
+    "confidenceLevelLow": "CONFIANZA BAJA",
+    "lastRun": "Última ejecución:",
+    "basedOn": "Basado en <b>{count} llamadas cerradas</b>",
+    "nextRun": "Próxima ejecución:",
+    "disclaimer": "Las sugerencias de copy se generan con IA. Revísalas antes de publicar.",
+    "headlinesTitle": "🔥 Titulares de anuncio sugeridos",
+    "primaryTextTitle": "✏️ Texto principal sugerido",
+    "aiGenerated": "Generado por IA",
+    "sourceCalls": "Llamadas de origen",
+    "analyzedCount": "{count} de 5 analizadas · Solo cerradas",
+    "closed": "CERRADA",
+    "scoreLabel": "Score:",
+    "frequency": "Frecuencia",
+    "frequencyValue": "Semanal",
+    "autoNote": "(auto)",
+    "sampleSize": "Tamaño de muestra",
+    "sampleSizeValue": "3–5 llamadas cerradas",
+    "randomNote": "(aleatorio)",
+    "tokenCost": "Costo de tokens",
+    "tokenCostValue": "Controlado por el admin de AskMoses",
+    "runNow": "EJECUTAR AHORA",
+    "running": "EJECUTANDO…",
+    "runFailed": "Error en la ejecución",
+    "runFailedDesc": "No se pudo generar copy nuevo.",
+    "runSuccess": "Nuevo análisis listo",
+    "runSuccessDesc": "Titulares y textos principales actualizados.",
+    "loadFailed": "Error al cargar Marketing Intelligence"
   }
 }

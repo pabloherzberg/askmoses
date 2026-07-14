@@ -131,7 +131,10 @@ export default function SignupPage() {
           className="mb-6 rounded-lg px-4 py-3 text-sm"
           style={{ background: 'rgba(110,86,255,0.1)', border: '1px solid rgba(110,86,255,0.3)', color: 'var(--am-accent2)' }}
         >
-          Plano <strong>{PLAN_LABELS[stripePlan] ?? stripePlan}</strong> adquirido ✓ — crie sua conta para acessar.
+          {t.rich('stripeBanner', {
+            plan: PLAN_LABELS[stripePlan] ?? stripePlan,
+            b: (chunks) => <strong>{chunks}</strong>,
+          })}
         </div>
       )}
 

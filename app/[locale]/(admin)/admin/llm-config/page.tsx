@@ -3,22 +3,36 @@ import { SectionLabel } from '@/components/shared/SectionLabel'
 import { LlmConfigClient } from './LlmConfigClient'
 import { LlmProviderSettingsClient } from './LlmProviderSettingsClient'
 import { LlmPricingEditorClient } from './LlmPricingEditorClient'
-import {
-  aiModuleConfigs,
-  aiModuleConfigLog,
-  llmProviderSettingsMock,
-  llmPricingMock,
-} from '@/lib/mock-data'
+import { getAdminLlmSettings } from '@/lib/db/llm-settings'
+import { getAllModuleConfigs } from '@/lib/db/ai-module-configs'
+import type { LlmProviderSetting, LlmPricingRow, AiModuleConfig, AiModuleConfigLogEntry } from '@/lib/types'
 
-// PREVIEW VISUAL — ainda não funcional. Provider/chave/preço vêm de mock
-// data (lib/mock-data.ts), não do Supabase — /api/analyze continua 100%
-// hardcoded em OpenAI/env (lib/openai.ts), sem nenhuma dependência nova.
-// Quando a feature for finalizada, isso volta a buscar de
-// llm_provider_settings/llm_pricing via createAdminClient().
+// Página SSR (Server Component — não passa por MSW). Lê provider/pricing/tuning
+// DIRETO do Supabase via service-role. Se as migrations (099/088/100/101) ainda
+// não rodaram, a query falha e caímos em listas vazias — a UI mostra o estado
+// "não migrado" (tratado nos clients). Nada de mock aqui.
 export default async function LlmConfigPage() {
   const t = await getTranslations('Admin.llmConfig')
-  const providers = llmProviderSettingsMock
-  const pricing = llmPricingMock
+
+  let providers: LlmProviderSetting[] = []
+  let pricing: LlmPricingRow[] = []
+  try {
+    const settings = await getAdminLlmSettings()
+    providers = settings.providers
+    pricing = settings.pricing
+  } catch (err) {
+    console.error('[llm-config] falha ao carregar provider/pricing:', err)
+  }
+
+  let configs: AiModuleConfig[] = []
+  let log: AiModuleConfigLogEntry[] = []
+  try {
+    const modules = await getAllModuleConfigs()
+    configs = modules.configs
+    log = modules.log
+  } catch (err) {
+    console.error('[llm-config] falha ao carregar módulos:', err)
+  }
 
   return (
     <div>
@@ -39,10 +53,7 @@ export default async function LlmConfigPage() {
 
         <div>
           <SectionLabel>{t('moduleTuningLabel')}</SectionLabel>
-          <LlmConfigClient
-            initialConfigs={[...aiModuleConfigs]}
-            initialLog={[...aiModuleConfigLog]}
-          />
+          <LlmConfigClient initialConfigs={configs} initialLog={log} />
         </div>
       </div>
     </div>

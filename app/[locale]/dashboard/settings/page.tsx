@@ -78,7 +78,7 @@ export default function SettingsPage() {
     setLoading(true)
     const [rubricRes, scriptsRes] = await Promise.all([
       fetch("/api/rubric?config=true"),
-      fetch("/api/scripts"),
+      fetch("/api/scripts", { headers: { "x-locale": locale } }),
     ])
     // /api/rubric?config=true returns { rubric, criteria } — unwrap before
     // saving to state so `rubric.id` and friends are reachable downstream.
@@ -154,7 +154,9 @@ export default function SettingsPage() {
       const { data: scriptData } = (await res.json()) as { data: Script | null; error: unknown }
 
       if (scriptData) {
-        setScripts([...scripts, { ...scriptData, criteria: generatedCriteria }])
+        // Recarrega via GET (que traduz os critérios por locale) em vez de
+        // inserir otimisticamente os critérios recém-gerados em inglês.
+        await fetchData()
         setNewScriptForm({ name: "", description: "", sections: [{ name: "", instructions: "", tips: "", weight: 0, critical: false }] })
       }
     } catch (error) {
@@ -372,7 +374,7 @@ export default function SettingsPage() {
                       />
                       <div className="flex items-center gap-4 pt-1">
                         <div className="flex items-center gap-2 flex-1">
-                          <Label className="text-xs whitespace-nowrap">Weight (%)</Label>
+                          <Label className="text-xs whitespace-nowrap">{t('weightLabel')}</Label>
                           <Input
                             type="number"
                             min={0}
@@ -397,8 +399,8 @@ export default function SettingsPage() {
                             }}
                             className="rounded"
                           />
-                          <span className="font-medium text-destructive">Critical</span>
-                          <span className="text-muted-foreground">(score ≤ 4 triggers alert)</span>
+                          <span className="font-medium text-destructive">{t('critical')}</span>
+                          <span className="text-muted-foreground">{t('criticalHint')}</span>
                         </label>
                       </div>
                     </div>
@@ -409,10 +411,10 @@ export default function SettingsPage() {
                     if (validSections.length === 0) return null
                     return total !== 100 ? (
                       <p className="text-xs text-destructive font-medium">
-                        ⚠ Weights sum to {total}% — must equal 100% before saving.
+                        {t('weightsSumInvalid', { total })}
                       </p>
                     ) : (
-                      <p className="text-xs text-green-500 font-medium">✓ Weights sum to 100%</p>
+                      <p className="text-xs text-green-500 font-medium">{t('weightsSumValid')}</p>
                     )
                   })()}
                   <Button

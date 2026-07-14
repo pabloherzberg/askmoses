@@ -17,16 +17,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 //   UPDATE com WHERE org_id = sessão.activeOrgId — defesa cruzada contra
 //   um owner aceitar pending de outra tenant via id direto.
 //
-//   Admin impersonando NÃO pode aceitar pelo owner (requireOwnerWrite
-//   bloqueia). Trainer também é barrado (role guard explícito abaixo).
+//   Admin impersonando age como owner efetivo da org e também pode aceitar.
+//   Trainer é barrado (role guard abaixo).
 export async function POST(request: NextRequest) {
   const csrf = requireSameOrigin(request)
   if (csrf) return csrf
 
   const ctx = await getActiveOrgContext()
   if (!ctx) return unauthorized()
-  if (ctx.isImpersonating) return forbidden()
-  if (ctx.role !== 'owner') return forbidden()
+  if (ctx.role !== 'owner' && !(ctx.role === 'admin' && ctx.isImpersonating)) return forbidden()
   if (!ctx.activeOrgId) return forbidden()
 
   let body: AcceptBody

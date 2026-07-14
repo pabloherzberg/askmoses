@@ -20,6 +20,7 @@ export type LlmSurface =
   | 'coaching'
   | 'translation'
   | 'script_generation'
+  | 'criteria_generation'
   | 'script_improve'
   | 'script_gap'
   | 'script_intelligence'

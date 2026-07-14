@@ -75,10 +75,8 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
       }))
     : intentSignals
 
-  // Closed calls always have Intent Index of 5 with all signals at 10
-  const isClosed = call.result === 'closed'
-  const finalIntentBreakdown = isClosed ? { financial: 10, urgency: 10, authority: 10, engagement: 10 } : intentBreakdown
-  const intentIndex = isClosed ? 5 : computeIntentIndex(finalIntentBreakdown, weights)
+  const finalIntentBreakdown = intentBreakdown
+  const intentIndex = computeIntentIndex(finalIntentBreakdown, weights)
 
   return (
     <div>

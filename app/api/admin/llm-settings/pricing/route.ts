@@ -2,9 +2,10 @@ import { type NextRequest } from 'next/server'
 import { getSession, getRole, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireSameOrigin } from '@/lib/auth/csrf'
+import { isValidProvider, PROVIDER_LIST } from '@/lib/llm/registry'
 
 interface PostBody {
-  provider?: 'openai' | 'gemini'
+  provider?: string
   model?: string
   unit?: 'per_1m_tokens' | 'per_minute'
   input_usd_per_1m?: number | null
@@ -72,8 +73,8 @@ export async function POST(request: NextRequest) {
   }
 
   const { provider, model, unit, input_usd_per_1m, output_usd_per_1m, usd_per_minute } = body
-  if (provider !== 'openai' && provider !== 'gemini') {
-    return badRequest("provider deve ser 'openai' ou 'gemini'")
+  if (typeof provider !== 'string' || !isValidProvider(provider)) {
+    return badRequest(`provider inválido — suportados: ${PROVIDER_LIST.map((p) => p.id).join(', ')}`)
   }
   if (!model || typeof model !== 'string') return badRequest('model é obrigatório')
   if (unit !== 'per_1m_tokens' && unit !== 'per_minute') {

@@ -1,5 +1,9 @@
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
+// correlation_engine — Script Intelligence é um dos serviços do módulo
+// correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
+// provider ativo; tuning (temperature/max_tokens) de correlation_engine.
+import { getActiveLlmModel } from '@/lib/llm-provider'
+import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { ScriptSection } from '@/lib/db/scripts'
@@ -141,18 +145,22 @@ export async function runScriptIntelligence(
 
   let text: string
   try {
+    const { model, provider, modelId } = await getActiveLlmModel('gpt-4o-mini')
+    const tuning = await getModuleTuning('correlation_engine')
     const aiResult = await generateText({
-      model: getOpenAIModel('gpt-4o-mini'),
+      model,
       system: SYSTEM_PROMPT,
       prompt,
-      temperature: 0.3,
+      temperature: tuning.temperature,
+      maxOutputTokens: tuning.max_tokens,
     })
     text = aiResult.text
     // Telemetria de custo p/ COGS (best-effort).
     void recordLlmUsage({
       orgId,
       surface: 'script_intelligence',
-      model: 'gpt-4o-mini',
+      provider,
+      model: modelId,
       inputTokens: aiResult.usage?.inputTokens ?? 0,
       outputTokens: aiResult.usage?.outputTokens ?? 0,
       ref: currentScriptId,

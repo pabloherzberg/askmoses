@@ -24,8 +24,12 @@
   },
   "Billing": {
     "title": "Facturation",
-    "block1": { "title": "Utilisation sur la période" },
-    "block2": { "title": "Cycle de facturation" },
+    "block1": {
+      "title": "Utilisation sur la période"
+    },
+    "block2": {
+      "title": "Cycle de facturation"
+    },
     "cards": {
       "callsAnalyzed": "Appels analysés",
       "billableMinutes": "Minutes facturables",
@@ -97,7 +101,9 @@
       "colAmount": "Montant",
       "payTitle": "La facturation est gérée directement avec l'équipe AskMoses",
       "payBody": "Cette page affiche votre utilisation et le montant dû à titre indicatif. Le paiement s'organise hors plateforme — il n'y a rien à payer ici."
-    }
+    },
+    "prevMonth": "Mois précédent",
+    "nextMonth": "Mois suivant"
   },
   "Navigation": {
     "overview": "Vue d'ensemble",
@@ -171,7 +177,8 @@
     "genericError": "Impossible de créer le compte. Veuillez réessayer.",
     "verifyEmailTitle": "Confirmez votre e-mail",
     "verifyEmailBody": "Nous avons envoyé un lien de confirmation à {email}. Cliquez sur le lien pour activer votre compte et continuer.",
-    "backToLogin": "Retour à la connexion"
+    "backToLogin": "Retour à la connexion",
+    "stripeBanner": "Offre <b>{plan}</b> souscrite ✓ — créez votre compte pour y accéder."
   },
   "Onboarding": {
     "stepLabel": "Étape {current} sur {total}",
@@ -409,15 +416,13 @@
       "legacyScriptHint": "ancien"
     },
     "performanceTrend": {
-      "title": "Tendance de performance",
-      "myTrend": "Ma tendance",
-      "mockBadge": "données mock uniquement",
+      "noCalls": "Aucun appel",
+      "title": "Tendance du taux de conversion",
       "team": "Équipe",
-      "closeRate": "Taux de closing %",
-      "avgScore": "Score moyen",
-      "tooltipCloseRate": "Taux de closing",
-      "tooltipAvgScore": "Score moyen",
-      "mockFooter": "↑ valeurs issues de mock-data.ts · Recharts LineChart · pas de calcul réel"
+      "teamAvg": "Moyenne de l'équipe",
+      "closeRateLegend": "Taux de conversion",
+      "weekLabel": "Semaine {n}",
+      "callLabel": "Appel {n}"
     },
     "upsell": {
       "defaultCta": "Comparer les forfaits",
@@ -486,15 +491,6 @@
       "summary": "{from}% → {to}% · {delta} pts",
       "closeRate": "Taux de closing",
       "teamPill": "Équipe"
-    },
-    "performanceTrend": {
-      "noCalls": "Aucun appel",
-      "title": "Tendance du taux de conversion",
-      "team": "Équipe",
-      "teamAvg": "Moyenne de l'équipe",
-      "closeRateLegend": "Taux de conversion",
-      "weekLabel": "Semaine {n}",
-      "callLabel": "Appel {n}"
     },
     "rubricGapDetection": {
       "title": "Détection des lacunes du script",
@@ -954,7 +950,8 @@
       "criteriaWeight": "{count} critères · Poids : {weight}%",
       "current": "Actuel",
       "proposed": "Proposé",
-      "noChanges": "Aucun changement à afficher."
+      "noChanges": "Aucun changement à afficher.",
+      "saveFailed": "Échec de l’enregistrement du script"
     },
     "health": {
       "healthy": "Sain",
@@ -1015,11 +1012,11 @@
       "errorTitle": "Impossible de terminer",
       "errorBody": "Quelque chose s'est mal passé. Réessayez."
     },
-    "impersonateTooltip": "Entrer dans {name} (vue en lecture seule)",
+    "impersonateTooltip": "Entrer dans {name} (en tant que propriétaire)",
     "impersonateError": "Impossible d'entrer dans cette organisation. Réessayez.",
     "impersonateBanner": {
       "label": "Vue en tant que",
-      "readOnly": "Lecture seule",
+      "readOnly": "Agit en tant que propriétaire",
       "exit": "Retour au panel admin",
       "exiting": "Sortie…"
     },
@@ -1206,11 +1203,10 @@
       "providerSection": {
         "label": "Fournisseur LLM",
         "title": "Fournisseur actif",
-        "subtitle": "Détermine quel fournisseur réel le pipeline d'analyse (/api/analyze) utilise.",
-        "previewBadge": "Aperçu — pas encore fonctionnel. L'analyse des appels utilise toujours OpenAI via une variable d'environnement.",
+        "subtitle": "Détermine quel fournisseur le pipeline d'analyse utilise. Le changer ici s'applique à toute la plateforme (la transcription audio utilise toujours OpenAI).",
         "notMigrated": "La table de configuration du fournisseur n'existe pas encore — exécutez la migration 099.",
-        "providerOpenAI": "OpenAI",
-        "providerGemini": "Google Gemini",
+        "selectorHint": "Plusieurs fournisseurs ont une clé configurée — choisissez lequel est actif.",
+        "setActiveNeedsKey": "Configurez la clé API avant d'activer ce fournisseur.",
         "modelLabel": "Modèle par défaut",
         "apiKeyLabel": "Clé API",
         "apiKeyPlaceholder": "Collez la clé API",
@@ -1224,16 +1220,15 @@
         "saving": "Enregistrement...",
         "toastSavedTitle": "Enregistré",
         "toastSavedBody": "Configuration du fournisseur mise à jour.",
+        "toastActivatedTitle": "Fournisseur activé",
+        "toastActivatedBody": "Le pipeline utilise désormais ce fournisseur.",
         "toastErrorTitle": "Erreur",
-        "toastErrorBody": "Échec de l'enregistrement. Réessayez.",
-        "toastPreviewTitle": "Aperçu",
-        "toastPreviewBody": "Ceci n'est encore qu'un aperçu visuel — rien n'a été réellement enregistré."
+        "toastErrorBody": "Échec de l'enregistrement. Réessayez."
       },
       "pricingSection": {
         "label": "Coûts LLM",
         "title": "Table des prix (COGS)",
         "subtitle": "Modifier crée une nouvelle version — l'historique de coût déjà enregistré ne change pas.",
-        "previewBadge": "Aperçu — pas encore fonctionnel.",
         "th": {
           "provider": "Fournisseur",
           "model": "Modèle",
@@ -1254,9 +1249,7 @@
         "toastSavedTitle": "Prix mis à jour",
         "toastSavedBody": "Nouvelle version de prix créée pour {model}.",
         "toastErrorTitle": "Erreur",
-        "toastErrorBody": "Échec de l'enregistrement du prix.",
-        "toastPreviewTitle": "Aperçu",
-        "toastPreviewBody": "Ceci n'est encore qu'un aperçu visuel — aucune version de prix n'a été réellement créée."
+        "toastErrorBody": "Échec de l'enregistrement du prix."
       }
     }
   },
@@ -1626,7 +1619,12 @@
       "tipEmoji": "💡 {tip}",
       "autoGeneratedCriteria": "Critères générés automatiquement",
       "deleteScript": "Supprimer le script",
-      "emptyScripts": "Aucun script créé pour le moment. Créez votre premier script de vente pour démarrer."
+      "emptyScripts": "Aucun script créé pour le moment. Créez votre premier script de vente pour démarrer.",
+      "weightLabel": "Poids (%)",
+      "critical": "Critique",
+      "criticalHint": "(un score ≤ 4 déclenche une alerte)",
+      "weightsSumInvalid": "⚠ La somme des poids est {total}% — elle doit être égale à 100% avant d’enregistrer.",
+      "weightsSumValid": "✓ La somme des poids est 100%"
     },
     "insights": {
       "title": "Script Intelligence",
@@ -1849,7 +1847,12 @@
         "gpt4oMini": "OpenAI GPT-4o Mini (Rapide et Économique)",
         "gemini25Flash": "Google Gemini 2.5 Flash (Équilibré)",
         "gemini25Pro": "Google Gemini 2.5 Pro (Puissant)"
-      }
+      },
+      "weightLabel": "Poids (%)",
+      "critical": "Critique",
+      "criticalHint": "(un score ≤ 4 déclenche une alerte)",
+      "weightsSumInvalid": "⚠ La somme des poids est {total}% — elle doit être égale à 100% avant d’enregistrer.",
+      "weightsSumValid": "✓ La somme des poids est 100%"
     },
     "upload": {
       "title": "Téléverser un appel",
@@ -1972,7 +1975,11 @@
         "browseFiles": "Parcourir les fichiers",
         "transcriptPlaceholder": "Collez la transcription de l'appel ici...",
         "charactersCount": "{count} caractères"
-      }
+      },
+      "intentIndexTitle": "Ask Moses Intent Index",
+      "intentIndexSubtitle": "Évaluation de l’intention d’achat (échelle 0-5)",
+      "finalIntentIndex": "Intent Index final",
+      "dealClosed": "Affaire conclue"
     }
   },
   "MarketingIntelligence": {
@@ -2960,6 +2967,57 @@
     "teamAverage": "Moyenne d'équipe",
     "breakdownLabel": "Ventilation",
     "radarLabel": "Intent Index",
-    "highestIntentLeads": "Leads de Plus Haute Priorité"
+    "highestIntentLeads": "Leads de Plus Haute Priorité",
+    "period1w": "1 semaine",
+    "period2w": "2 semaines",
+    "period15d": "15 jours",
+    "period1m": "1 mois"
+  },
+  "Success": {
+    "title": "Paiement confirmé !",
+    "description": "Votre offre <b>{plan}</b> est active. Créez maintenant votre compte pour accéder à la plateforme.",
+    "defaultPlan": "votre offre",
+    "createAccount": "Créer mon compte →",
+    "backToSite": "Retour au site",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "login": "Se connecter"
+  },
+  "Marketing": {
+    "sectionLabel": "Intelligence marketing",
+    "subtitle": "Suggestions de copy générées par IA à partir de vos appels conclus · Exécution hebdomadaire · Analyse 3–5 appels",
+    "copyToClipboard": "Copié dans le presse-papiers",
+    "copyFailed": "Échec de la copie",
+    "copied": "Copié",
+    "copy": "COPIER",
+    "confidenceBadge": "{value}% · {level}",
+    "confidenceLevelHigh": "CONFIANCE ÉLEVÉE",
+    "confidenceLevelMedium": "CONFIANCE MOYENNE",
+    "confidenceLevelLow": "CONFIANCE FAIBLE",
+    "lastRun": "Dernière exécution :",
+    "basedOn": "Basé sur <b>{count} appels conclus</b>",
+    "nextRun": "Prochaine exécution :",
+    "disclaimer": "Les suggestions de copy sont générées par IA. Vérifiez avant de publier.",
+    "headlinesTitle": "🔥 Titres d’annonce suggérés",
+    "primaryTextTitle": "✏️ Texte principal suggéré",
+    "aiGenerated": "Généré par IA",
+    "sourceCalls": "Appels sources",
+    "analyzedCount": "{count} sur 5 analysés · Conclus uniquement",
+    "closed": "CONCLU",
+    "scoreLabel": "Score :",
+    "frequency": "Fréquence",
+    "frequencyValue": "Hebdomadaire",
+    "autoNote": "(auto)",
+    "sampleSize": "Taille de l’échantillon",
+    "sampleSizeValue": "3–5 appels conclus",
+    "randomNote": "(aléatoire)",
+    "tokenCost": "Coût en tokens",
+    "tokenCostValue": "Contrôlé par l’admin AskMoses",
+    "runNow": "EXÉCUTER",
+    "running": "EN COURS…",
+    "runFailed": "Échec de l’exécution",
+    "runFailedDesc": "Impossible de générer un nouveau copy.",
+    "runSuccess": "Nouvelle analyse prête",
+    "runSuccessDesc": "Titres et textes principaux actualisés.",
+    "loadFailed": "Échec du chargement de Marketing Intelligence"
   }
 }

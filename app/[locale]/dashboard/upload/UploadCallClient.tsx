@@ -310,7 +310,7 @@ export default function UploadCallClient() {
       );
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-locale": locale },
         body: JSON.stringify({
           transcript,
           trainerId: formData.trainerId || undefined,
@@ -665,15 +665,14 @@ export default function UploadCallClient() {
               { id: 'authority', weight: weights.authority, color: 'blue' },
               { id: 'engagement', weight: weights.engagement, color: 'accent2' },
             ];
-            const intentIndex = computeIntentIndex(analysisResult.intentBreakdown, weights);
-            const finalIntentIndex = analysisResult.detectedOutcome === 'closed' ? 5.0 : intentIndex;
+            const finalIntentIndex = computeIntentIndex(analysisResult.intentBreakdown, weights);
 
             return (
               <Card>
                 <CardHeader>
-                  <CardTitle>Ask Moses Intent Index</CardTitle>
+                  <CardTitle>{t('intentIndexTitle')}</CardTitle>
                   <CardDescription>
-                    Buying intent assessment (0-5 scale)
+                    {t('intentIndexSubtitle')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -683,12 +682,12 @@ export default function UploadCallClient() {
                       {finalIntentIndex.toFixed(1)}
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm text-muted-foreground mb-2">Final Intent Index</div>
+                      <div className="text-sm text-muted-foreground mb-2">{t('finalIntentIndex')}</div>
                       <Progress value={(finalIntentIndex / 5) * 100} className="h-3" />
                     </div>
                     {analysisResult.detectedOutcome === 'closed' && (
                       <Badge variant="default" className="bg-green-600">
-                        Deal Closed
+                        {t('dealClosed')}
                       </Badge>
                     )}
                   </div>

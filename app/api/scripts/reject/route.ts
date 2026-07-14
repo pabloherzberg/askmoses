@@ -17,14 +17,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 //   updates na mesma transação: marca pending como rejected + restaura o
 //   previous_script_id (se existia) pra active. Retorna restored_script_id
 //   pra UI mostrar "voltou pra v1.0".
+//
+//   Admin impersonando age como owner efetivo da org e também pode rejeitar.
+//   Trainer é barrado (role guard abaixo).
 export async function POST(request: NextRequest) {
   const csrf = requireSameOrigin(request)
   if (csrf) return csrf
 
   const ctx = await getActiveOrgContext()
   if (!ctx) return unauthorized()
-  if (ctx.isImpersonating) return forbidden()
-  if (ctx.role !== 'owner') return forbidden()
+  if (ctx.role !== 'owner' && !(ctx.role === 'admin' && ctx.isImpersonating)) return forbidden()
   if (!ctx.activeOrgId) return forbidden()
 
   let body: RejectBody
