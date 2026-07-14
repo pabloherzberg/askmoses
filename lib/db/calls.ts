@@ -431,6 +431,11 @@ export interface CreateGhlCallInput {
   trainerEmail?: string | null
   /** GHLUSERID (payload.userId) que fez a call — guardado sempre. */
   ghlUserId?: string | null
+  /** GHL contactId — chave usada pelo webhook OpportunityStageChanged
+   *  (dbUpdateGhlOpportunity) para achar as calls do contato e gravar
+   *  ghl_won_status. Sem isso a call nunca é encontrada quando a
+   *  oportunidade fecha. */
+  contactId?: string | null
   /** Estado inicial do pipeline. Default 'pending'. 'unlinked_trainer' bloqueia
    *  a análise quando o GHLUSERID não está vinculado a um membro ativo. */
   processingStatus?: ProcessingStatus
@@ -480,6 +485,7 @@ export async function dbUpsertGhlCall(input: CreateGhlCallInput): Promise<Upsert
       trainer_email: input.trainerEmail ?? '',
       trainer_id: input.trainerId ?? null,
       ghl_user_id: input.ghlUserId ?? null,
+      contact_id: input.contactId ?? null,
       client_name: input.clientName ?? null,
       lead_name: input.leadName ?? null,
       lead_source: input.leadSource ?? null,

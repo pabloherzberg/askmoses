@@ -68,6 +68,37 @@ export async function dbGetOrgGhlConfigByLocation(
 }
 
 /**
+ * Lista todas as orgs com integração GHL habilitada e credenciais completas.
+ * Usado pelo cron de sync de opportunities (poll diário) — que precisa
+ * iterar todas as orgs, diferente dos lookups por location/orgId acima.
+ */
+export async function dbListGhlEnabledOrgs(): Promise<OrgGhlConfig[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id, ghl_location_id, ghl_access_token, ghl_webhook_secret, ghl_integration_enabled')
+    .eq('ghl_integration_enabled', true)
+
+  if (error) throw new Error(`dbListGhlEnabledOrgs: ${error.message}`)
+
+  const orgs: OrgGhlConfig[] = []
+  for (const row of data ?? []) {
+    const accessToken = row.ghl_access_token as string | null
+    const dbLocation = row.ghl_location_id as string | null
+    if (!accessToken || !dbLocation) continue
+    orgs.push({
+      orgId: row.id as string,
+      locationId: dbLocation,
+      accessToken,
+      webhookSecret: (row.ghl_webhook_secret as string | null) ?? '',
+      enabled: true,
+    })
+  }
+  return orgs
+}
+
+/**
  * Lookup pelo orgId (para reprocessamento de calls já existentes).
  * Retorna null se a integração estiver desabilitada ou sem credenciais.
  */

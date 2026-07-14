@@ -244,6 +244,7 @@ export async function POST(req: NextRequest) {
       trainerId: trainerLink.trainerId,
       trainerName,
       trainerEmail,
+      contactId,
       clientName,
       leadName: clientName,
       leadSource,
