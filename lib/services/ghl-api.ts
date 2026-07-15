@@ -381,6 +381,96 @@ export async function downloadRecording(
   }
 }
 
+export interface GhlOpportunityResult {
+  id: string
+  contactId: string | null
+  status: string | null
+  pipelineStageId?: string | null
+  pipelineStageName?: string | null
+  monetaryValue?: number | null
+}
+
+const OPPORTUNITIES_PAGE_LIMIT = 100
+const MAX_OPPORTUNITY_PAGES = 20 // defensivo — cap de 2000 opportunities por status/run
+
+/**
+ * Busca opportunities de uma location filtradas por status ('won' | 'lost' | ...).
+ * Usado pelo cron de sync diário (poll) como alternativa ao webhook
+ * OpportunityStageChanged — não requer nenhum workflow configurado no GHL,
+ * só o PIT com escopo `opportunities.readonly`.
+ *
+ * Pagina via `startAfter`/`startAfterId` (padrão da API v2 de search) até
+ * esgotar os resultados ou atingir o cap defensivo de páginas.
+ */
+export async function fetchOpportunitiesByStatus(
+  locationId: string,
+  accessToken: string,
+  status: string,
+): Promise<GhlOpportunityResult[]> {
+  const base = getApiBase()
+  const headers = buildAuthHeaders(accessToken)
+
+  const results: GhlOpportunityResult[] = []
+  let startAfter: string | undefined
+  let startAfterId: string | undefined
+
+  for (let page = 0; page < MAX_OPPORTUNITY_PAGES; page++) {
+    const params = new URLSearchParams({
+      location_id: locationId,
+      status,
+      limit: String(OPPORTUNITIES_PAGE_LIMIT),
+    })
+    if (startAfter) params.set('startAfter', startAfter)
+    if (startAfterId) params.set('startAfterId', startAfterId)
+
+    const res = await fetch(`${base}/opportunities/search?${params.toString()}`, { headers })
+    if (!res.ok) {
+      const body = await res.text()
+      if (res.status === 401 || res.status === 403) {
+        throw new GhlAuthError(
+          res.status,
+          `GHL opportunities/search auth failed (${res.status}): ${body}`,
+        )
+      }
+      throw new Error(`GHL opportunities/search failed ${res.status}: ${body}`)
+    }
+
+    const data = (await res.json()) as {
+      opportunities?: Array<{
+        id?: string
+        contactId?: string
+        status?: string
+        pipelineStageId?: string
+        pipelineStageName?: string
+        monetaryValue?: number
+      }>
+      meta?: { startAfter?: string | number; startAfterId?: string }
+    }
+
+    const batch = data.opportunities ?? []
+    for (const opp of batch) {
+      if (!opp.id) continue
+      results.push({
+        id: opp.id,
+        contactId: opp.contactId ?? null,
+        status: opp.status ?? null,
+        pipelineStageId: opp.pipelineStageId ?? null,
+        pipelineStageName: opp.pipelineStageName ?? null,
+        monetaryValue: opp.monetaryValue ?? null,
+      })
+    }
+
+    // Fim da paginação: página incompleta ou meta sem cursor pra próxima.
+    if (batch.length < OPPORTUNITIES_PAGE_LIMIT || !data.meta?.startAfterId) {
+      break
+    }
+    startAfter = data.meta.startAfter !== undefined ? String(data.meta.startAfter) : undefined
+    startAfterId = data.meta.startAfterId
+  }
+
+  return results
+}
+
 export interface GhlCalendarAppointment {
   id: string
   contactId?: string | null
