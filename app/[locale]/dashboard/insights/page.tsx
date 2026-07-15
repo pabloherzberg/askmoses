@@ -43,6 +43,20 @@ interface PendingScriptInfo {
 
 // ── Script Intelligence ───────────────────────────────────────────────────────
 
+// O cache grava result={} em dois casos: análise que falhou (process/route.ts)
+// e linha recém-criada aguardando na fila (send-script.ts). Um {} é truthy, então
+// sem essa checagem ele passa pelos guards e chega no painel, que quebra no
+// primeiro result.sections.map(). Só aceita resultado com o shape completo.
+function isCompleteResult(result: unknown): result is ScriptIntelligenceResult {
+  const r = result as ScriptIntelligenceResult | null | undefined
+  return (
+    !!r &&
+    Array.isArray(r.sections) && r.sections.length > 0 &&
+    Array.isArray(r.suggestions) &&
+    Array.isArray(r.topCloserPhrases)
+  )
+}
+
 function SectionBar({ sections }: { sections: ScriptIntelligenceResult["sections"] }) {
   const colors: Record<string, string> = {
     opening: "#22D9A0",
@@ -457,7 +471,7 @@ function ScriptIntelligencePanel({
     </div>
   )
 
-  if (!result) return null
+  if (!isCompleteResult(result)) return null
 
   return (
     <div className="space-y-6">
@@ -504,20 +518,28 @@ function ScriptIntelligencePanel({
 
       <div className="space-y-4">
         {result.sections.map((section, i) => {
+          // Sugestões só existem para seções que mudaram, então o array
+          // `suggestions` NÃO está alinhado por índice com `sections`.
+          // Casar exclusivamente por nome — sem fallback por índice, que
+          // grudaria a sugestão de uma seção em outra (ex.: Close → Opening).
           const suggestion = result.suggestions.find(
             (s) => s.sectionName.toLowerCase() === section.name.toLowerCase()
-          ) ?? result.suggestions[i]
+          ) ?? null
           const saved = decisions.find((d) => d.index === i)
-          const scriptSec = scriptSections.find(
+          // Índice REAL da seção dentro do script da org — a escrita
+          // (onSaveSection) grava por este índice. Resolver por nome; se não
+          // houver seção correspondente, não há onde gravar com segurança.
+          const scriptIndex = scriptSections.findIndex(
             (s) => s.name.toLowerCase() === section.name.toLowerCase()
-          ) ?? scriptSections[i] ?? null
+          )
+          const scriptSec = scriptIndex >= 0 ? scriptSections[scriptIndex] : null
           return (
             <div key={section.id} className="grid gap-4 lg:grid-cols-2">
               {/* Left: score + editable section content */}
               <SectionLeftCard
                 intelSection={section}
                 scriptSection={scriptSec}
-                onSave={(updated) => onSaveSection(i, updated)}
+                onSave={(updated) => onSaveSection(scriptIndex, updated)}
                 t={t}
               />
 
@@ -534,7 +556,7 @@ function ScriptIntelligencePanel({
                       next.push({ index: i, decision, editedText })
                       onDecisionsChange(next)
                       if (decision === "accepted") {
-                        void onSaveSection(i, { instructions: editedText })
+                        void onSaveSection(scriptIndex, { instructions: editedText })
                       }
                     }}
                     t={t}
@@ -729,13 +751,19 @@ export default function InsightsPage() {
             const cacheRes = await fetch(`/api/script-intelligence/cache?orgScriptId=${parsed.orgScriptId}`, { headers: { "x-locale": locale }, cache: "no-store" })
             const cacheJson = await cacheRes.json()
             const cached = cacheJson?.data?.cache
-            if (cached?.resolution && cached?.result) {
+            if (cached?.resolution) {
               setResolution(cached.resolution)
               setResolvedScriptName(parsed.scriptName)
-              setIntelligence(cached.result)
-              setSuggestionDecisions(cached.decisions ?? [])
               setOrgScriptIdCache(parsed.orgScriptId)
               intelligenceKeyRef.current = parsed.orgScriptId
+              // O pending pode ter sido resolvido com a análise em erro (os botões
+              // do banner ficam habilitados nesse estado) — aí o cache guarda
+              // resolution + result={}. Restaura só o banner de resolução; sem
+              // shape completo o painel não entra.
+              if (isCompleteResult(cached.result)) {
+                setIntelligence(cached.result)
+                setSuggestionDecisions(cached.decisions ?? [])
+              }
             }
           }
         } catch {
@@ -876,7 +904,10 @@ export default function InsightsPage() {
         if (cacheJson?.data?.cache) {
           const cached = cacheJson.data.cache
 
-          if (cached.analysis_status === 'processing') {
+          // 'queued' = análise ainda na fila (send-script.ts insere assim as orgs
+          // a partir da segunda). O result é {} até virar 'ready' — tratar igual
+          // a 'processing' e ficar no polling.
+          if (cached.analysis_status === 'processing' || cached.analysis_status === 'queued') {
             setIntelligenceLoadingSync(true)
             setIntelligenceError("")
             analysisPollRef.current = setInterval(async () => {
@@ -886,6 +917,12 @@ export default function InsightsPage() {
               if (pollCache?.analysis_status === 'ready') {
                 clearInterval(analysisPollRef.current!)
                 analysisPollRef.current = null
+                if (!isCompleteResult(pollCache.result)) {
+                  setIntelligenceError(t("errors.generateFailed"))
+                  setIntelligenceLoadingSync(false)
+                  setPending((prev) => (prev ? { ...prev, analysisStatus: 'error' } : prev))
+                  return
+                }
                 setIntelligence(pollCache.result)
                 setSuggestionDecisions(pollCache.decisions ?? [])
                 setOrgScriptIdCache(orgScriptId)
@@ -911,11 +948,15 @@ export default function InsightsPage() {
             return
           }
 
-          setIntelligence(cached.result)
-          setSuggestionDecisions(cached.decisions ?? [])
-          setOrgScriptIdCache(orgScriptId)
-          setIntelligenceLoadingSync(false)
-          return
+          // Cache íntegro — usa. Shape incompleto (result={} de análise antiga ou
+          // interrompida) cai fora do if e roda a análise fresh abaixo.
+          if (isCompleteResult(cached.result)) {
+            setIntelligence(cached.result)
+            setSuggestionDecisions(cached.decisions ?? [])
+            setOrgScriptIdCache(orgScriptId)
+            setIntelligenceLoadingSync(false)
+            return
+          }
         }
       }
 
@@ -1178,7 +1219,10 @@ export default function InsightsPage() {
             }}
             scriptSections={script?.sections ?? []}
             onSaveSection={async (index, updated) => {
-              if (!script) return
+              // index === -1 => seção da análise sem correspondente no script
+              // da org. Nunca gravar por índice fora de faixa (gravaria no
+              // lugar errado / criaria seção fantasma).
+              if (!script || index < 0 || index >= script.sections.length) return
               const newSections = script.sections.map((s, i) => i === index ? { ...s, ...updated } : s)
               const res = await fetch(`/api/scripts/${script.id}`, {
                 method: "PATCH",
