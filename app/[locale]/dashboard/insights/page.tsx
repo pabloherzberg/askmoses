@@ -518,20 +518,28 @@ function ScriptIntelligencePanel({
 
       <div className="space-y-4">
         {result.sections.map((section, i) => {
+          // Sugestões só existem para seções que mudaram, então o array
+          // `suggestions` NÃO está alinhado por índice com `sections`.
+          // Casar exclusivamente por nome — sem fallback por índice, que
+          // grudaria a sugestão de uma seção em outra (ex.: Close → Opening).
           const suggestion = result.suggestions.find(
             (s) => s.sectionName.toLowerCase() === section.name.toLowerCase()
-          ) ?? result.suggestions[i]
+          ) ?? null
           const saved = decisions.find((d) => d.index === i)
-          const scriptSec = scriptSections.find(
+          // Índice REAL da seção dentro do script da org — a escrita
+          // (onSaveSection) grava por este índice. Resolver por nome; se não
+          // houver seção correspondente, não há onde gravar com segurança.
+          const scriptIndex = scriptSections.findIndex(
             (s) => s.name.toLowerCase() === section.name.toLowerCase()
-          ) ?? scriptSections[i] ?? null
+          )
+          const scriptSec = scriptIndex >= 0 ? scriptSections[scriptIndex] : null
           return (
             <div key={section.id} className="grid gap-4 lg:grid-cols-2">
               {/* Left: score + editable section content */}
               <SectionLeftCard
                 intelSection={section}
                 scriptSection={scriptSec}
-                onSave={(updated) => onSaveSection(i, updated)}
+                onSave={(updated) => onSaveSection(scriptIndex, updated)}
                 t={t}
               />
 
@@ -548,7 +556,7 @@ function ScriptIntelligencePanel({
                       next.push({ index: i, decision, editedText })
                       onDecisionsChange(next)
                       if (decision === "accepted") {
-                        void onSaveSection(i, { instructions: editedText })
+                        void onSaveSection(scriptIndex, { instructions: editedText })
                       }
                     }}
                     t={t}
@@ -1211,7 +1219,10 @@ export default function InsightsPage() {
             }}
             scriptSections={script?.sections ?? []}
             onSaveSection={async (index, updated) => {
-              if (!script) return
+              // index === -1 => seção da análise sem correspondente no script
+              // da org. Nunca gravar por índice fora de faixa (gravaria no
+              // lugar errado / criaria seção fantasma).
+              if (!script || index < 0 || index >= script.sections.length) return
               const newSections = script.sections.map((s, i) => i === index ? { ...s, ...updated } : s)
               const res = await fetch(`/api/scripts/${script.id}`, {
                 method: "PATCH",
