@@ -1,5 +1,6 @@
 import type React from 'react'
 import { cn } from '@/lib/utils'
+import { MetricInfoTooltip } from '@/components/shared/MetricInfoTooltip'
 
 interface ScoreCardProps {
   label: string
@@ -8,11 +9,13 @@ interface ScoreCardProps {
   delta?: number
   deltaPrefix?: string
   deltaLabel?: string
+  /** Quando presente, um ícone (i) ao lado do label explica como a métrica é calculada. */
+  tooltip?: string
   className?: string
   style?: React.CSSProperties
 }
 
-export function ScoreCard({ label, value, valueColor, delta, deltaPrefix, deltaLabel, className, style }: ScoreCardProps) {
+export function ScoreCard({ label, value, valueColor, delta, deltaPrefix, deltaLabel, tooltip, className, style }: ScoreCardProps) {
   const isPositive = delta !== undefined && delta > 0
   const isNegative = delta !== undefined && delta < 0
 
@@ -28,8 +31,12 @@ export function ScoreCard({ label, value, valueColor, delta, deltaPrefix, deltaL
         ...style,
       }}
     >
-      <div className="text-xs mb-2" style={{ color: 'var(--am-muted)' }}>
+      <div
+        className="text-xs mb-2 flex items-center gap-1.5"
+        style={{ color: 'var(--am-muted)' }}
+      >
         {label}
+        {tooltip && <MetricInfoTooltip text={tooltip} />}
       </div>
       <div
         className="text-[28px] font-semibold tracking-tight leading-none mb-1.5"

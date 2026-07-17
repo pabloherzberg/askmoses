@@ -710,6 +710,7 @@
       "vsBaseline": "% vs base",
       "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Tasa media de cierre",
+      "avgCloseRateTooltip": "Llamadas cerradas ÷ total de llamadas, en todo el equipo. Se incluyen todas las llamadas realizadas — es una cifra global e histórica, no corresponde a ningún período concreto, y cada llamada pesa igual, sin importar quién la hizo.",
       "ptsSinceWeek1": "pts desde la semana 1",
       "avgScore": "Puntuación media",
       "teamAvgCallScore": "Score medio por llamada",
