@@ -595,6 +595,58 @@ export async function dbUpdateGhlCallPipeline(
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
 }
 
+/** Close rate global da org — ver dbGetOrgCloseRate. */
+export interface OrgCloseRate {
+  /** Todas as calls da org (denominador). */
+  totalCalls: number
+  /** Subconjunto de totalCalls com call_outcome='closed' (numerador). */
+  closedCalls: number
+  /** closedCalls / totalCalls em %, inteiro. 0 quando a org não tem calls. */
+  closeRate: number
+}
+
+/**
+ * Close rate da org inteira, contado das calls — não da média dos trainers.
+ * A média por trainer dava peso igual a quem fez 1 call e a quem fez 50; aqui
+ * cada call pesa o mesmo.
+ *
+ * Regra deliberadamente simples: denominador = TODAS as calls da org, sem
+ * exceção. Entram também as que ainda não têm desfecho — não analisadas
+ * (transcription_failed, no_recording, pending) ou sem outcome confirmado.
+ * O trade-off é conhecido e aceito: falha de pipeline derruba o close rate.
+ * Se o número cair sem explicação de venda, é aqui que se olha primeiro.
+ *
+ * Global e sem recorte de período: todas as calls da org desde sempre.
+ * Usa count-only (head: true) — nenhuma linha trafega.
+ */
+export async function dbGetOrgCloseRate(orgId: string): Promise<OrgCloseRate> {
+  const supabase = createAdminClient()
+
+  const [total, closed] = await Promise.all([
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId),
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .eq('call_outcome', 'closed'),
+  ])
+
+  if (total.error) throw new Error(`dbGetOrgCloseRate(total): ${total.error.message}`)
+  if (closed.error) throw new Error(`dbGetOrgCloseRate(closed): ${closed.error.message}`)
+
+  const totalCalls = total.count ?? 0
+  const closedCalls = closed.count ?? 0
+
+  return {
+    totalCalls,
+    closedCalls,
+    closeRate: totalCalls > 0 ? Math.round((closedCalls / totalCalls) * 100) : 0,
+  }
+}
+
 /** Call bloqueada por falta de vínculo — o mínimo pra reprocessar (id + payload). */
 export interface UnlinkedCallRow {
   id: string

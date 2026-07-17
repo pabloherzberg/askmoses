@@ -710,6 +710,7 @@
       "vsBaseline": "% vs baseline",
       "vsBaselineCurrency": "vs baseline",
       "avgCloseRate": "Avg Close Rate",
+      "avgCloseRateTooltip": "Closed calls ÷ total calls, across the whole team. Every call the team has ever made is included — this is a global, all-time figure, not limited to any period, and each call counts the same regardless of who made it.",
       "ptsSinceWeek1": "pts since week 1",
       "avgScore": "Avg Score",
       "teamAvgCallScore": "Team Avg Call Score",

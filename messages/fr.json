@@ -710,6 +710,7 @@
       "vsBaseline": "% vs base",
       "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Taux de closing moyen",
+      "avgCloseRateTooltip": "Appels conclus ÷ total des appels, sur toute l'équipe. Tous les appels réalisés sont pris en compte — c'est un chiffre global et historique, il ne porte sur aucune période précise, et chaque appel compte autant, quel que soit son auteur.",
       "ptsSinceWeek1": "pts depuis la semaine 1",
       "avgScore": "Score moyen",
       "teamAvgCallScore": "Score moyen par appel",
