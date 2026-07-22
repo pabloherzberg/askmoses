@@ -379,6 +379,8 @@
     "outcomes": {
       "all": "Todos os Resultados Iniciais",
       "unknown": "Sem outcome",
+      "notSalesCall": "Não é venda",
+      "notSalesCallMessage": "Esta transcrição não foi identificada como uma call de venda — nenhuma análise foi gerada. A transcrição foi salva normalmente.",
       "short": {
         "closed": "Fechada",
         "partial": "Parcial",
@@ -710,6 +712,7 @@
       "vsBaseline": "% vs base",
       "vsBaselineCurrency": "vs base",
       "avgCloseRate": "Taxa média de fechamento",
+      "avgCloseRateTooltip": "Calls fechadas ÷ total de calls, no time inteiro. Todas as calls já feitas entram na conta — é um número global e histórico, não é de um período específico, e cada call pesa igual, não importa quem a fez.",
       "ptsSinceWeek1": "pts desde a semana 1",
       "avgScore": "Nota média",
       "teamAvgCallScore": "Nota média por call",

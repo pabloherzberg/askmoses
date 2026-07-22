@@ -71,6 +71,11 @@ export interface DbCall {
   ghl_opportunity_id?: string | null
   ghl_won_status?: string | null
   ghl_won_at?: string | null
+  // Gate de classificação — added in migration 104. true = call de venda,
+  // análise completa. false = não é venda, sem scores/strengths/improvements/
+  // detectedOutcome. null = call analisada antes desta migration (legado,
+  // não classificada — diferente de false).
+  is_sales_call?: boolean | null
 }
 
 export interface CreateCallInput {
@@ -103,6 +108,9 @@ export interface CreateCallInput {
   intentBreakdown?: Record<string, number> | null
   // Intent weights snapshot at time of analysis (financial, urgency, authority, engagement).
   intentWeights?: Record<string, number> | null
+  // Gate de classificação (migration 104). Quando omitido, persiste null
+  // (call legada / não classificada).
+  isSalesCall?: boolean | null
 }
 
 export interface UpdateCallInput {
@@ -312,6 +320,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       intent: input.intent ?? null,
       intent_breakdown: input.intentBreakdown ?? null,
       intent_weights: input.intentWeights ?? null,
+      is_sales_call: input.isSalesCall ?? null,
     })
     .select()
     .single()
@@ -556,6 +565,8 @@ export interface UpdateGhlPipelineInput {
   // Campos populados pela fase de coaching email (após scoring).
   emailSent?: boolean
   emailId?: string | null
+  // Gate de classificação (migration 104).
+  isSalesCall?: boolean | null
 }
 
 export async function dbUpdateGhlCallPipeline(
@@ -590,9 +601,62 @@ export async function dbUpdateGhlCallPipeline(
   if (input.intentWeights !== undefined) patch.intent_weights = input.intentWeights
   if (input.emailSent !== undefined) patch.email_sent = input.emailSent
   if (input.emailId !== undefined) patch.email_id = input.emailId
+  if (input.isSalesCall !== undefined) patch.is_sales_call = input.isSalesCall
 
   const { error } = await supabase.from('calls').update(patch).eq('id', id)
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)
+}
+
+/** Close rate global da org — ver dbGetOrgCloseRate. */
+export interface OrgCloseRate {
+  /** Todas as calls da org (denominador). */
+  totalCalls: number
+  /** Subconjunto de totalCalls com call_outcome='closed' (numerador). */
+  closedCalls: number
+  /** closedCalls / totalCalls em %, inteiro. 0 quando a org não tem calls. */
+  closeRate: number
+}
+
+/**
+ * Close rate da org inteira, contado das calls — não da média dos trainers.
+ * A média por trainer dava peso igual a quem fez 1 call e a quem fez 50; aqui
+ * cada call pesa o mesmo.
+ *
+ * Regra deliberadamente simples: denominador = TODAS as calls da org, sem
+ * exceção. Entram também as que ainda não têm desfecho — não analisadas
+ * (transcription_failed, no_recording, pending) ou sem outcome confirmado.
+ * O trade-off é conhecido e aceito: falha de pipeline derruba o close rate.
+ * Se o número cair sem explicação de venda, é aqui que se olha primeiro.
+ *
+ * Global e sem recorte de período: todas as calls da org desde sempre.
+ * Usa count-only (head: true) — nenhuma linha trafega.
+ */
+export async function dbGetOrgCloseRate(orgId: string): Promise<OrgCloseRate> {
+  const supabase = createAdminClient()
+
+  const [total, closed] = await Promise.all([
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId),
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .eq('call_outcome', 'closed'),
+  ])
+
+  if (total.error) throw new Error(`dbGetOrgCloseRate(total): ${total.error.message}`)
+  if (closed.error) throw new Error(`dbGetOrgCloseRate(closed): ${closed.error.message}`)
+
+  const totalCalls = total.count ?? 0
+  const closedCalls = closed.count ?? 0
+
+  return {
+    totalCalls,
+    closedCalls,
+    closeRate: totalCalls > 0 ? Math.round((closedCalls / totalCalls) * 100) : 0,
+  }
 }
 
 /** Call bloqueada por falta de vínculo — o mínimo pra reprocessar (id + payload). */

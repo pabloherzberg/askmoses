@@ -85,6 +85,7 @@ interface SectionResult {
 }
 
 interface AnalysisResult {
+  isSalesCall?: boolean;
   overallScore: number;
   sections: SectionResult[];
   detectedOutcome?: CallOutcome;
@@ -102,6 +103,7 @@ interface AnalysisResult {
 export default function UploadCallClient() {
   const t = useTranslations("Dashboard.upload");
   const tUpsell = useTranslations("Shared.upsell.uploadTwilio");
+  const tOutcomes = useTranslations("Shared.outcomes");
   const locale = useLocale();
   const [step, setStep] = useState<UploadStep>("input");
   const [uploadType, setUploadType] = useState<"audio" | "transcript">("audio");
@@ -448,6 +450,31 @@ export default function UploadCallClient() {
                 {t("processing.percentComplete", { progress })}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === "results" && analysisResult && analysisResult.isSalesCall === false) {
+    return (
+      <div className="space-y-6 pb-16 lg:pb-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {t("results.title")}
+            </h2>
+          </div>
+          <Button variant="outline" onClick={resetForm}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t("results.startOver")}
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">
+              {tOutcomes("notSalesCallMessage")}
+            </p>
           </CardContent>
         </Card>
       </div>

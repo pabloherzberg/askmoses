@@ -4,6 +4,7 @@ import {
   dbCreateCall,
   dbUpdateCall,
   dbDeleteCall,
+  dbGetOrgCloseRate,
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
@@ -25,6 +26,7 @@ import type {
   GetCallsFilters,
   GetCallByIdScope,
   CallMutationScope,
+  OrgCloseRate,
 } from "@/lib/db/calls";
 
 export type {
@@ -173,6 +175,7 @@ function toCall(db: DbCall): Call {
     // (call_date extraído/estimado do transcript) — sinalizado na UI.
     callDate: db.call_date ?? null,
     evalDateSource: db.ingest_source === "ghl" ? "ghl" : "llm",
+    isSalesCall: db.is_sales_call ?? null,
   };
 }
 
@@ -206,6 +209,19 @@ export function avgRubricScores(calls: Call[]): RubricScores {
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
+
+export type { OrgCloseRate };
+
+/**
+ * Close rate da org ativa, contado call a call (ver dbGetOrgCloseRate). É a
+ * fonte única do card "Avg Close Rate" — não usar a média de `trainer.closeRate`,
+ * que dá o mesmo peso a quem fez 1 call e a quem fez 50.
+ */
+export async function getOrgCloseRate(): Promise<OrgCloseRate> {
+  const orgId = await getOrgId();
+  if (!orgId) return { totalCalls: 0, closedCalls: 0, closeRate: 0 };
+  return dbGetOrgCloseRate(orgId);
+}
 
 export async function getCalls(
   filters?: GetCallsFilters & { locale?: Locale },

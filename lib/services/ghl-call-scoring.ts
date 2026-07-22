@@ -178,6 +178,50 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
       clientName: call.client_name ?? undefined,
     });
 
+    // Gate: se não é call de venda, não roda mais nenhuma análise (intent,
+    // rubrica, strengths/improvements, detectedOutcome). O custo da própria
+    // chamada de classificação já foi computado acima e é registrado abaixo —
+    // só o RESTANTE do pipeline é pulado.
+    if (!result.isSalesCall) {
+      await dbUpdateGhlCallPipeline(callId, {
+        rubricId,
+        scriptId: script?.id ?? null,
+        isSalesCall: false,
+        overallScore: null,
+        detectedOutcome: null,
+        callOutcome: null,
+        summary: null,
+        strengths: null,
+        improvements: null,
+        sections: null,
+        modelUsed: result.modelUsed,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        costUsd: result.costUsd,
+        promptVersion: result.promptVersion,
+        intent: null,
+        intentBreakdown: null,
+        intentWeights: orgIntentWeights,
+      });
+
+      void recordLlmUsage({
+        orgId: call.org_id ?? null,
+        surface: "analyze",
+        provider: result.provider,
+        model: result.modelUsed,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        costUsdOverride: result.costUsd,
+        callId,
+      });
+
+      console.info("[ghl-scoring] not a sales call — gated, no analysis persisted", {
+        callId,
+        orgId: call.org_id,
+      });
+      return;
+    }
+
     // Intent breakdown (4 signals: financial, urgency, authority, engagement).
     // Phase 3: IA retorna os scores durante scoring.
     if (result.intent) {
@@ -219,6 +263,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   await dbUpdateGhlCallPipeline(callId, {
     rubricId,
     scriptId: script?.id ?? null,
+    isSalesCall: true,
     overallScore: result.overallScore,
     detectedOutcome: result.detectedOutcome,
     // GHL pipeline não tem humano marcando outcome — espelha o detectado
