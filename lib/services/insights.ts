@@ -1,5 +1,5 @@
 import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
-import { getCalls, avgRubricScores } from "@/lib/services/calls";
+import { getCalls, avgRubricScores, getOrgCloseRate } from "@/lib/services/calls";
 import { generateText } from "ai";
 // correlation_engine — o motor de insights faz parte do módulo
 // correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
@@ -15,16 +15,20 @@ export async function getInsights(locale?: Locale): Promise<Insight[]> {
   // Always compute from real data
   const { dbGetTrainers } = await import("@/lib/db/trainers");
   const orgId = await getOrgId();
-  const [trainers, calls] = await Promise.all([
+  const [trainers, calls, closeRate] = await Promise.all([
     orgId ? dbGetTrainers({ orgId }) : Promise.resolve([]),
     orgId ? getCalls({ limit: 200, orgId }) : Promise.resolve([]),
+    // Mesma fonte do card "Avg Close Rate" — o insight de ROI cita o número na
+    // mesma tela que o card, então os dois têm que bater. Não dá pra derivar de
+    // `calls` aqui: essa lista vem com limit 200 e o close rate conta a org toda.
+    getOrgCloseRate().then((r) => r.closeRate),
   ]);
 
   if (trainers.length === 0 || calls.length === 0) {
     return [];
   }
 
-  const insights = buildInsightsFromData(trainers, calls);
+  const insights = buildInsightsFromData(trainers, calls, closeRate);
   // Insight strings are built server-side in English (with interpolated names
   // and numbers). Translate the user-facing fields when a non-en locale is
   // requested — one batched LLM call covers all cards.
@@ -35,7 +39,11 @@ export async function getInsights(locale?: Locale): Promise<Insight[]> {
 
 // ─── Compute insights from real trainer + call data ─────────────────────────
 
-function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
+function buildInsightsFromData(
+  trainers: Trainer[],
+  calls: Call[],
+  avgClose: number,
+): Insight[] {
   const insights: Insight[] = [];
   const sorted = [...trainers].sort((a, b) => b.score - a.score);
   const teamAvg = avgRubricScores(calls);
@@ -180,10 +188,7 @@ function buildInsightsFromData(trainers: Trainer[], calls: Call[]): Insight[] {
   });
 
   // ── 4. Coaching ROI signal ────────────────────────────────────────────────
-  const avgClose =
-    sorted.length > 0
-      ? Math.round(sorted.reduce((s, t) => s + t.closeRate, 0) / sorted.length)
-      : 0;
+  // avgClose vem do caller (getOrgCloseRate) — ver comentário lá.
 
   // Find strongest improvement section (highest team avg)
   const strongestTeam = rubricKeys.reduce((prev, curr) =>

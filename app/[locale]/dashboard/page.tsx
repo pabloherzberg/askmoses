@@ -7,6 +7,7 @@ import {
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
+import { getOrgCloseRate } from "@/lib/services/calls";
 import type { Locale } from "@/i18n/routing";
 import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
 import { getScriptGaps } from "@/lib/services/script-gaps";
@@ -29,6 +30,7 @@ export default async function DashboardPage() {
     teamHealth,
     ctx,
     gapAnalysis,
+    { closeRate: avgClose },
     t,
     tMetrics,
     tHealth,
@@ -39,6 +41,7 @@ export default async function DashboardPage() {
     getTeamHealth(),
     getActiveOrgContext(),
     getScriptGaps(locale),
+    getOrgCloseRate(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
@@ -56,16 +59,10 @@ export default async function DashboardPage() {
   const totalCalls = trainers.reduce((s, tr) => s + tr.totalCalls, 0);
 
   // Médias do time consideram só vendedores que já fizeram ao menos 1 call —
-  // um trainer recém-adicionado (0 calls → score/closeRate 0) não deve puxar
-  // os KPIs do time pra baixo.
+  // um trainer recém-adicionado (0 calls → score 0) não deve puxar os KPIs do
+  // time pra baixo. (avgClose não passa por aqui: vem de getOrgCloseRate, que
+  // conta call a call em vez de tirar média por trainer.)
   const ratedTrainers = trainers.filter((tr) => tr.totalCalls > 0);
-  const avgClose =
-    ratedTrainers.length > 0
-      ? Math.round(
-          ratedTrainers.reduce((s, tr) => s + tr.closeRate, 0) /
-            ratedTrainers.length,
-        )
-      : 0;
   const avgScore =
     ratedTrainers.length > 0
       ? Math.round(
@@ -126,6 +123,7 @@ export default async function DashboardPage() {
         {/* Hero — Avg Close Rate */}
         <ScoreCard
           label={tMetrics("avgCloseRate")}
+          tooltip={tMetrics("avgCloseRateTooltip")}
           value={`${avgClose}%`}
           valueColor="var(--am-green)"
           delta={closeRateDelta}

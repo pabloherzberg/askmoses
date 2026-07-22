@@ -105,7 +105,7 @@ Estas páginas já existem e funcionam com Supabase real. **Não alterar, não s
 
 | Rota | Role | Status | Descrição |
 |---|---|---|---|
-| `/overview` | owner, admin | 🔨 Construir | **Visão executiva do time** — métricas, ranking, alertas, rubric, tendências, insights (baseada no `askmoses-dashboard.html`) |
+| ~~`/overview`~~ | — | ❌ Removida | Era a visão executiva do time. Deprecada — a home do owner é `/dashboard`. O middleware redireciona `/overview` → `/dashboard` (rota legada); não recriar. |
 | `/me` | trainer | 🔨 Construir | Dashboard pessoal do trainer — score, close rate, rubrica pessoal, dica de coaching, histórico |
 | `/me/calls/[id]` | trainer | 🔨 Construir | Detalhe de call do trainer (sem notas de coaching) |
 | `/calls` | owner, admin | 🔨 Construir | Tabela de calls do time com filtros |
@@ -120,9 +120,11 @@ Estas páginas já existem e funcionam com Supabase real. **Não alterar, não s
 
 | Role | Home (redirect após login) | Acessa | NÃO acessa |
 |---|---|---|---|
-| `trainer` | `/me` | `/me`, `/me/calls/[id]` | `/overview`, `/dashboard`, `/calls`, `/admin` |
-| `owner` | `/overview` | `/overview`, `/dashboard/*`, `/calls`, `/calls/[id]` | `/admin` |
+| `trainer` | `/me` | `/me`, `/me/calls/[id]` | `/dashboard`, `/calls`, `/admin` |
+| `owner` | `/dashboard` | `/dashboard/*`, `/calls`, `/calls/[id]` | `/admin` |
 | `admin` | `/admin` | Tudo | — |
+
+> A home de cada role vive em `redirectByRole()` (`lib/auth.ts`) — é a fonte da verdade.
 
 ### Matriz de permissões
 
@@ -140,15 +142,16 @@ Estas páginas já existem e funcionam com Supabase real. **Não alterar, não s
 | Email | Senha | Role | Redireciona |
 |---|---|---|---|
 | `trainer@demo.askmoses.ai` | `demo123` | trainer | `/me` |
-| `owner@demo.askmoses.ai` | `demo123` | owner | `/overview` |
+| `owner@demo.askmoses.ai` | `demo123` | owner | `/dashboard` |
 | `admin@askmoses.ai` | `demo123` | admin | `/admin` |
 
 ### Regras de proteção (middleware.ts)
 
 - Sem sessão em rota protegida → `/login`
 - Rotas públicas (`/`, `/presentation`, `/tech`, `/demobiz`) → acesso livre
-- Trainer → `/overview`, `/dashboard`, `/calls`, `/admin` → redireciona para `/me`
-- Owner → `/admin` → redireciona para `/overview`
+- Trainer → `/dashboard`, `/calls`, `/admin` → redireciona para `/me`
+- Owner → `/admin` → redireciona para `/dashboard`
+- Rotas legadas → `/overview` e `/coaching` redirecionam para `/dashboard` e `/team-command-center`
 
 ---
 
@@ -160,7 +163,6 @@ app/
   (auth)/login/              → Tela de login
   (trainer)/me/              → Dashboard pessoal do trainer
   (trainer)/me/calls/[id]/   → Detalhe de call (visão trainer)
-  overview/                  → Visão executiva do gestor (NOVA — baseada no HTML)
   calls/                     → Tabela de calls do time (NOVA)
   calls/[id]/                → Detalhe de call (visão gestor)
   dashboard/                 → Dashboard operacional (JÁ EXISTE — não mexer)
@@ -264,6 +266,6 @@ Não implementar nada disso agora:
 
 ## Referências visuais
 
-- `askmoses-dashboard.html` — especificação visual da tela `/overview` (visão executiva do gestor). Usar como referência de design, não como substituto de páginas existentes.
+- `askmoses-dashboard.html` — especificação visual da antiga tela `/overview`, hoje removida. Vale como referência de design (tokens, densidade, cards), não como rota a recriar.
 - `AskMoses_Levantamento_Tecnico_v3.pdf` — levantamento técnico completo do projeto.
 - `FASE1_TASK_BREAKDOWN.md` — tasks detalhadas com critérios de aceite. **Manter atualizado.**
