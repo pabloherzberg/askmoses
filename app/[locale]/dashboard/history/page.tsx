@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { NotSalesCallPill } from "@/components/shared/NotSalesCallPill"
 import {
   Table,
   TableBody,
@@ -226,15 +227,23 @@ export default function HistoryPage() {
                             {new Date(latest.date).toLocaleDateString(locale)}
                           </TableCell>
                           <TableCell>
-                            <Badge style={{ background: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).color }}>
-                              {outcomeLabel(latest.result)}
-                            </Badge>
+                            {latest.isSalesCall === false ? (
+                              <NotSalesCallPill label={tOutcomes("notSalesCall")} />
+                            ) : (
+                              <Badge style={{ background: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[latest.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                                {outcomeLabel(latest.result)}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-semibold tabular-nums">{toDisplay5(latest.score)}</span>
-                              <span className="text-muted-foreground text-sm">/5</span>
-                            </div>
+                            {latest.isSalesCall === false ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold tabular-nums">{toDisplay5(latest.score)}</span>
+                                <span className="text-muted-foreground text-sm">/5</span>
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -331,6 +340,15 @@ export default function HistoryPage() {
               </DialogHeader>
 
               <div className="space-y-6">
+                {selectedCall.isSalesCall === false ? (
+                  <div className="rounded-lg border p-4 flex items-center gap-3">
+                    <NotSalesCallPill label={tOutcomes("notSalesCall")} />
+                    <p className="text-sm text-muted-foreground">
+                      {tOutcomes("notSalesCallMessage")}
+                    </p>
+                  </div>
+                ) : (
+                  <>
                 {/* Score */}
                 <div className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
                   <div className="text-5xl font-bold">
@@ -421,6 +439,8 @@ export default function HistoryPage() {
                     })}
                   </div>
                 </div>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -463,12 +483,18 @@ export default function HistoryPage() {
                       <span className="text-xs text-muted-foreground">{call.trainerName}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
-                        {outcomeLabel(call.result)}
-                      </Badge>
-                      <span className="text-sm font-semibold tabular-nums">
-                        {toDisplay5(call.score)}/5
-                      </span>
+                      {call.isSalesCall === false ? (
+                        <NotSalesCallPill label={tOutcomes("notSalesCall")} />
+                      ) : (
+                        <>
+                          <Badge style={{ background: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).bg, color: (RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE).color }}>
+                            {outcomeLabel(call.result)}
+                          </Badge>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {toDisplay5(call.score)}/5
+                          </span>
+                        </>
+                      )}
                     </div>
                   </button>
                 ))}

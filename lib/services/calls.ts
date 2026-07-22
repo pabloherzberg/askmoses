@@ -173,6 +173,7 @@ function toCall(db: DbCall): Call {
     // (call_date extraído/estimado do transcript) — sinalizado na UI.
     callDate: db.call_date ?? null,
     evalDateSource: db.ingest_source === "ghl" ? "ghl" : "llm",
+    isSalesCall: db.is_sales_call ?? null,
   };
 }
 

@@ -95,6 +95,7 @@ export interface CallCostBreakdown {
 }
 
 export interface AnalyzeResult {
+  isSalesCall?: boolean;
   overallScore: number;
   detectedOutcome: CallOutcome;
   intent: IntentScore;
@@ -110,6 +111,7 @@ export interface AnalyzeResult {
 
 // ── Parsed-shape validator (TC-02, TC-03, TC-04) ────────────────────────────
 interface ParsedAnalysis {
+  isSalesCall: boolean;
   detectedOutcome: string;
   intent?: number;
   summary: string;
@@ -213,6 +215,10 @@ function validateAnalysis(
   return {
     ok: true,
     data: {
+      // Default true (fail-open) em campo ausente/malformado — consistente
+      // com "when in doubt, prefer true" do prompt (SALES CALL GATE).
+      isSalesCall:
+        typeof obj.isSalesCall === "boolean" ? obj.isSalesCall : true,
       detectedOutcome:
         typeof obj.detectedOutcome === "string"
           ? obj.detectedOutcome
@@ -570,6 +576,88 @@ export async function POST(request: NextRequest) {
 
     const parsed = reorderSectionsToRubric(validation.data, allowedSections);
 
+    // ── Gate: se não é call de venda, salva só a transcrição (+ flag) e pula
+    // o resto do pipeline (intent scoring, rubrica, strengths/improvements,
+    // detectedOutcome). O custo da chamada de classificação já foi computado
+    // acima (totalInputTokens/totalOutputTokens) e é registrado abaixo —
+    // apenas o RESTANTE do pipeline é pulado, não a telemetria de custo.
+    if (!parsed.isSalesCall) {
+      const rawLeadNameGate = body.lead_name?.trim() || null;
+      const rawLeadSourceGate = body.lead_source?.trim().toLowerCase() || null;
+      const validSourceValuesGate = new Set<string>(
+        LEAD_SOURCES.map((s) => s.value),
+      );
+      const normalisedLeadSourceGate: LeadSource | null = rawLeadSourceGate
+        ? validSourceValuesGate.has(rawLeadSourceGate)
+          ? (rawLeadSourceGate as LeadSource)
+          : "other"
+        : null;
+
+      let gatedCall: { id?: string } = {};
+      try {
+        gatedCall = await dbCreateCall({
+          orgId,
+          rubricId,
+          scriptId: script.id,
+          trainerId: sessionTrainerId ?? undefined,
+          trainerName: trainerName ?? "Unknown",
+          trainerEmail: trainerEmail ?? undefined,
+          transcript,
+          isSalesCall: false,
+          clientName: clientName ?? undefined,
+          modelUsed,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          costUsd,
+          promptVersion: PROMPT_VERSION,
+          leadName: rawLeadNameGate,
+          leadSource: normalisedLeadSourceGate,
+        });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error("[analyze] dbCreateCall failed (gated, not a sales call)", {
+          message,
+          orgId,
+          rubricId,
+          trainerId: sessionTrainerId,
+          cost: { modelUsed, totalInputTokens, totalOutputTokens, costUsd },
+        });
+        return Response.json(
+          { error: "Failed to save call to database" },
+          { status: 500 },
+        );
+      }
+
+      void recordLlmUsage({
+        orgId,
+        surface: "analyze",
+        provider,
+        model: modelUsed,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        costUsdOverride: costUsd,
+        callId: gatedCall.id ?? null,
+      });
+
+      console.info("[analyze] not a sales call — gated, no analysis persisted", {
+        callId: gatedCall.id,
+        orgId,
+      });
+
+      return Response.json({
+        id: gatedCall.id,
+        isSalesCall: false,
+        transcript,
+        cost: {
+          modelUsed,
+          inputTokens: totalInputTokens,
+          outputTokens: totalOutputTokens,
+          costUsd,
+          promptVersion: PROMPT_VERSION,
+        },
+      });
+    }
+
     // ── 3b. Get current org weights for intent scoring (will be stored with call) ──
     const currentOrgWeights = await getOrgIntentWeightsForScoring(orgId);
 
@@ -665,6 +753,7 @@ export async function POST(request: NextRequest) {
         trainerName: trainerName ?? "Unknown",
         trainerEmail: trainerEmail ?? undefined,
         transcript,
+        isSalesCall: true,
         overallScore,
         sections: normalisedSections as unknown as Record<string, unknown>[],
         summary: parsed.summary,
@@ -831,7 +920,14 @@ function buildDefaultSystemPrompt(): string {
 Your mission is to help salespeople close more deals by giving them honest, specific, and actionable feedback grounded in the call transcript.
 You do not give participation trophies. A score reflects real performance — if the deal did not close, the score must reflect that reality.
 
-The script/rubric the salesperson was supposed to follow is the source of truth for "good execution"; do not impose assumptions from a specific industry (this product is vertical-agnostic — calls may be SaaS, services, training, healthcare, real estate, e-commerce, or anything else).`;
+The script/rubric the salesperson was supposed to follow is the source of truth for "good execution"; do not impose assumptions from a specific industry (this product is vertical-agnostic — calls may be SaaS, services, training, healthcare, real estate, e-commerce, or anything else).
+
+SALES CALL GATE — CRITICAL FIRST CHECK:
+Before scoring anything, first determine whether this transcript is actually a sales call — a conversation where one party is presenting/selling a product or service to a prospect, with some attempt at discovery, presenting an offer, handling objections, or closing.
+It is NOT a sales call when the transcript is, for example: an internal team meeting, a customer-support/troubleshooting call, a personal conversation, silence/dead air, test audio, a wrong-number call, or any recording where no selling activity is taking place.
+When in doubt, prefer true (mark it as a sales call) UNLESS the transcript gives a clear signal otherwise — a false positive on this gate costs far less than incorrectly discarding a real sales call. Examples:
+- English: an internal standup ("okay team, let's review this week's numbers"), a support call ("I'm having trouble logging into my account") → isSalesCall: false. A discovery call with a prospect, a pitch, objection handling, or a close attempt → isSalesCall: true.
+- Portuguese: uma reunião de equipe interna ("bom dia pessoal, vamos revisar as métricas da semana"), um chamado de suporte técnico ("meu login não está funcionando") → isSalesCall: false. Uma call de descoberta com prospect, apresentação de oferta, tratamento de objeção ou tentativa de fechamento → isSalesCall: true.`;
 }
 
 const DEFAULT_SECTIONS: Array<{
@@ -976,6 +1072,7 @@ ${input.transcript}
 
 ## Output — strict JSON, no markdown fences, no commentary
 {
+  "isSalesCall": <true|false — answer this FIRST, per the SALES CALL GATE rule above>,
   "detectedOutcome": "<closed|partial|not_closed|no_outcome>",
   "summary": "<2–3 honest sentences naming the biggest reason the deal did or did not close>",
   "strengths": ["<specific strength with transcript context>", "..."],
@@ -991,6 +1088,7 @@ ${input.transcript}
 }
 
 CRITICAL CONSTRAINTS:
+- isSalesCall MUST be a JSON boolean (true or false), not a string. Answer this before anything else.
 - Reply with JSON ONLY. No prose before or after. No \`\`\` fences.
 - sections[] MUST contain exactly these names (from "Sections to Score"), in this order: ${allowedJson}.
 - DO NOT include any rubric-framework names in sections[] — those are mental-model only.

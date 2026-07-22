@@ -71,6 +71,11 @@ export interface DbCall {
   ghl_opportunity_id?: string | null
   ghl_won_status?: string | null
   ghl_won_at?: string | null
+  // Gate de classificação — added in migration 104. true = call de venda,
+  // análise completa. false = não é venda, sem scores/strengths/improvements/
+  // detectedOutcome. null = call analisada antes desta migration (legado,
+  // não classificada — diferente de false).
+  is_sales_call?: boolean | null
 }
 
 export interface CreateCallInput {
@@ -103,6 +108,9 @@ export interface CreateCallInput {
   intentBreakdown?: Record<string, number> | null
   // Intent weights snapshot at time of analysis (financial, urgency, authority, engagement).
   intentWeights?: Record<string, number> | null
+  // Gate de classificação (migration 104). Quando omitido, persiste null
+  // (call legada / não classificada).
+  isSalesCall?: boolean | null
 }
 
 export interface UpdateCallInput {
@@ -312,6 +320,7 @@ export async function dbCreateCall(input: CreateCallInput): Promise<DbCall> {
       intent: input.intent ?? null,
       intent_breakdown: input.intentBreakdown ?? null,
       intent_weights: input.intentWeights ?? null,
+      is_sales_call: input.isSalesCall ?? null,
     })
     .select()
     .single()
@@ -556,6 +565,8 @@ export interface UpdateGhlPipelineInput {
   // Campos populados pela fase de coaching email (após scoring).
   emailSent?: boolean
   emailId?: string | null
+  // Gate de classificação (migration 104).
+  isSalesCall?: boolean | null
 }
 
 export async function dbUpdateGhlCallPipeline(
@@ -590,6 +601,7 @@ export async function dbUpdateGhlCallPipeline(
   if (input.intentWeights !== undefined) patch.intent_weights = input.intentWeights
   if (input.emailSent !== undefined) patch.email_sent = input.emailSent
   if (input.emailId !== undefined) patch.email_id = input.emailId
+  if (input.isSalesCall !== undefined) patch.is_sales_call = input.isSalesCall
 
   const { error } = await supabase.from('calls').update(patch).eq('id', id)
   if (error) throw new Error(`dbUpdateGhlCallPipeline: ${error.message}`)

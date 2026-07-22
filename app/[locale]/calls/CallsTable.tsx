@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle, History, X, Clock } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
+import { NotSalesCallPill } from '@/components/shared/NotSalesCallPill'
 import { IntentCell } from '@/components/shared/IntentCell'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
@@ -308,12 +309,21 @@ export function CallsTable({
         <td className="px-4 py-3">
           <IntentCell score={call.intent} />
         </td>
-        <td className="px-4 py-3"><ScorePill score={call.score} /></td>
-        <td className="px-4 py-3">
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
-            {outcomeLabel}
-          </span>
-        </td>
+        {call.isSalesCall === false ? (
+          <>
+            <td className="px-4 py-3"><span style={{ color: 'var(--am-muted)' }}>—</span></td>
+            <td className="px-4 py-3"><NotSalesCallPill label={tOutcomes('notSalesCall')} /></td>
+          </>
+        ) : (
+          <>
+            <td className="px-4 py-3"><ScorePill score={call.score} /></td>
+            <td className="px-4 py-3">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
+                {outcomeLabel}
+              </span>
+            </td>
+          </>
+        )}
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-end gap-2">
             {hasHistory && (
@@ -477,9 +487,13 @@ export function CallsTable({
                         <span className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
                           {new Date(call.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: r.bg, color: r.color }}>
-                          {label}
-                        </span>
+                        {call.isSalesCall === false ? (
+                          <NotSalesCallPill label={tOutcomes('notSalesCall')} />
+                        ) : (
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: r.bg, color: r.color }}>
+                            {label}
+                          </span>
+                        )}
                         {call.lead_source && (
                           <span
                             className="text-[10px] font-mono px-1.5 py-0.5 rounded"
@@ -518,7 +532,7 @@ export function CallsTable({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <ScorePill score={call.score} />
+                      {call.isSalesCall !== false && <ScorePill score={call.score} />}
                       {showReprocess ? (
                         <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
                       ) : (

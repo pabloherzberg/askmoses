@@ -49,6 +49,7 @@ export interface CotPromptInput {
 }
 
 interface ParsedAnalysis {
+  isSalesCall: boolean
   detectedOutcome: string
   summary: string
   strengths: string[]
@@ -79,6 +80,7 @@ export interface ScoreTranscriptInput {
 }
 
 export interface ScoreTranscriptResult {
+  isSalesCall: boolean
   overallScore: number
   detectedOutcome: CallOutcome
   summary: string
@@ -120,6 +122,13 @@ You do not give participation trophies. A score reflects real performance — if
 
 INDUSTRY CONTEXT:
 This product is vertical-agnostic — calls may be for SaaS, professional services, training programs, consulting, e-commerce, healthcare, real estate, or any other category. Use the script/rubric the salesperson was supposed to follow as the source of truth for "good execution"; do not impose assumptions from a specific industry.
+
+SALES CALL GATE — CRITICAL FIRST CHECK:
+Before scoring anything, first determine whether this transcript is actually a sales call — a conversation where one party is presenting/selling a product or service to a prospect, with some attempt at discovery, presenting an offer, handling objections, or closing.
+It is NOT a sales call when the transcript is, for example: an internal team meeting, a customer-support/troubleshooting call, a personal conversation, silence/dead air, test audio, a wrong-number call, or any recording where no selling activity is taking place.
+When in doubt, prefer true (mark it as a sales call) UNLESS the transcript gives a clear signal otherwise — a false positive on this gate costs far less than incorrectly discarding a real sales call. Examples:
+- English: an internal standup ("okay team, let's review this week's numbers"), a support call ("I'm having trouble logging into my account") → isSalesCall: false. A discovery call with a prospect, a pitch, objection handling, or a close attempt → isSalesCall: true.
+- Portuguese: uma reunião de equipe interna ("bom dia pessoal, vamos revisar as métricas da semana"), um chamado de suporte técnico ("meu login não está funcionando") → isSalesCall: false. Uma call de descoberta com prospect, apresentação de oferta, tratamento de objeção ou tentativa de fechamento → isSalesCall: true.
 
 LANGUAGE DETECTION:
 The transcript may be in any language (commonly English or Portuguese, sometimes Spanish or others). First identify the language(s) actually spoken. Then, when detecting closing signals and writing feedback, reason in those languages — do not rely on English keywords if the call was in another language. Section feedback and summary should be in English for the coach UI, but evidence quoted from the transcript should preserve the original language.
@@ -261,6 +270,9 @@ function validateAnalysis(raw: unknown, allowedSections: string[]): ValidationRe
   return {
     ok: true,
     data: {
+      // Default true (fail-open) em campo ausente/malformado — consistente
+      // com "when in doubt, prefer true" do prompt (SALES CALL GATE).
+      isSalesCall: typeof obj.isSalesCall === "boolean" ? obj.isSalesCall : true,
       detectedOutcome: typeof obj.detectedOutcome === "string" ? obj.detectedOutcome : "no_outcome",
       summary: typeof obj.summary === "string" ? obj.summary : "",
       strengths: Array.isArray(obj.strengths) ? (obj.strengths as unknown[]).map(stringifyItem) : [],
@@ -394,6 +406,7 @@ ${input.transcript}
 
 ## Output — strict JSON, no markdown fences, no commentary
 {
+  "isSalesCall": <true|false — answer this FIRST, per the SALES CALL GATE rule above>,
   "detectedOutcome": "<closed|partial|not_closed|no_outcome>",
   "summary": "<2–3 honest sentences naming the biggest reason the deal did or did not close>",
   "strengths": ["<specific strength with transcript context>", "..."],
@@ -415,6 +428,7 @@ ${input.transcript}
 }
 
 CRITICAL CONSTRAINTS:
+- isSalesCall MUST be a JSON boolean (true or false), not a string. Answer this before anything else.
 - Reply with JSON ONLY. No prose before or after. No \`\`\` fences.
 - sections[] MUST contain exactly these names (from "Sections to Score"), in this order: ${allowedJson}.
 - DO NOT include any rubric-framework names in sections[] — those are mental-model only.
@@ -524,6 +538,7 @@ export async function scoreTranscript(
   }))
 
   return {
+    isSalesCall: parsed.isSalesCall,
     overallScore,
     detectedOutcome,
     summary: parsed.summary,

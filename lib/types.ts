@@ -130,6 +130,10 @@ export interface Call {
   // 'llm' quando veio de upload manual (call_date é estimado/extraído do
   // transcript) — sinalizado na UI como fallback.
   evalDateSource?: "ghl" | "llm";
+  // Gate de classificação (migration 104). true = call de venda, análise
+  // completa. false = não é venda, sem scores/strengths/improvements/
+  // detectedOutcome. null/undefined = call legada, não classificada.
+  isSalesCall?: boolean | null;
 }
 
 export interface TrainerScore {

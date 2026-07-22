@@ -379,6 +379,8 @@
     "outcomes": {
       "all": "Todos los Resultados Iniciales",
       "unknown": "Sin resultado",
+      "notSalesCall": "No es una venta",
+      "notSalesCallMessage": "Esta transcripción no fue identificada como una llamada de venta — no se generó ningún análisis. La transcripción se guardó normalmente.",
       "short": {
         "closed": "Cerrada",
         "partial": "Parcial",

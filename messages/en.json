@@ -379,6 +379,8 @@
     "outcomes": {
       "all": "All Initial Results",
       "unknown": "No Outcome",
+      "notSalesCall": "Not a Sales Call",
+      "notSalesCallMessage": "This transcript was not identified as a sales call — no analysis was generated. The transcript was saved normally.",
       "short": {
         "closed": "Closed",
         "partial": "Partial",

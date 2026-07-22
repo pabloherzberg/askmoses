@@ -379,6 +379,8 @@
     "outcomes": {
       "all": "Todos os Resultados Iniciais",
       "unknown": "Sem outcome",
+      "notSalesCall": "Não é venda",
+      "notSalesCallMessage": "Esta transcrição não foi identificada como uma call de venda — nenhuma análise foi gerada. A transcrição foi salva normalmente.",
       "short": {
         "closed": "Fechada",
         "partial": "Parcial",
