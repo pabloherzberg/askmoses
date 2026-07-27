@@ -5,6 +5,7 @@ import { generateText } from 'ai'
 import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { Role } from '@/lib/types'
 import type { ScriptSection, ScriptCriterion } from '@/lib/db/scripts'
@@ -117,10 +118,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Fetch up to 5 recent calls globally (any org) — transcripts used for context only
-  const { data: callsData } = await admin
-    .from('calls')
-    .select('transcript, overall_score')
-    .not('transcript', 'is', null)
+  const { data: callsData } = await applySalesCallOnly(
+    admin
+      .from('calls')
+      .select('transcript, overall_score')
+      .not('transcript', 'is', null),
+  )
     .order('created_at', { ascending: false })
     .limit(5)
 

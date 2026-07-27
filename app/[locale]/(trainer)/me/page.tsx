@@ -31,8 +31,10 @@ export default async function TrainerDashboardPage() {
 
   const [trainerProfile, trainerCalls, allCalls, performanceTrends] = await Promise.all([
     getTrainerProfile(trainerId),
-    getCalls({ trainerId }),
-    getCalls(),
+    // salesOnly: esta página é 100% métrica (KPIs, buckets semanais, rubrica
+    // vs time). Não lista calls, então nenhuma não-venda precisa aparecer.
+    getCalls({ trainerId, salesOnly: true }),
+    getCalls({ salesOnly: true }),
     getPerformanceTrends([{ id: trainerId, email: session.user.email ?? undefined }]),
   ]);
 

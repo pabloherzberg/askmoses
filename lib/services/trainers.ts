@@ -1,3 +1,4 @@
+import { applySalesCallOnly, isCountableSalesCall } from "@/lib/sales-calls";
 import type { Trainer, PerformanceTrendPoint, TrendPoint, CallsByTrainerMap } from "@/lib/types";
 import type { BehavioralDimension, CoachingRec, BehavioralTrendDimension, TeamHealthEntry } from "@/lib/mock-data";
 
@@ -67,12 +68,16 @@ export async function getTeamHealth(): Promise<TeamHealthEntry[]> {
   const supabase = createAdminClient();
   const [trainers, lastCalls, t] = await Promise.all([
     dbGetTrainers({ orgId }),
-    supabase
-      .from("calls")
-      .select("trainer_id, created_at")
-      .eq("org_id", orgId)
-      .not("trainer_id", "is", null)
-      .order("created_at", { ascending: false }),
+    // salesOnly: o status de atividade (active/recent/away) do time reflete
+    // trabalho de venda. Uma call não-venda não deve fazer um trainer parado
+    // aparecer como "ativo hoje".
+    applySalesCallOnly(
+      supabase
+        .from("calls")
+        .select("trainer_id, created_at")
+        .eq("org_id", orgId)
+        .not("trainer_id", "is", null),
+    ).order("created_at", { ascending: false }),
     getTranslations("Owner.teamHealth"),
   ]);
 
@@ -145,7 +150,11 @@ export async function getPerformanceTrends(
     const orgId = await getOrgId();
     if (!orgId) return {};
     const { getCalls } = await import("@/lib/services/calls");
-    calls = await getCalls({ limit: 200, orgId });
+    calls = await getCalls({ limit: 200, orgId, salesOnly: true });
+  } else {
+    // Defensivo: o caller pode ter carregado as calls para outra finalidade
+    // (ex.: /api/coaching, que também lista). Trend é métrica — só venda.
+    calls = calls.filter(isCountableSalesCall);
   }
 
   // Janela do gráfico em modo weekly = nº de semanas que as calls da org

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 
 export interface DbCall {
   id: string
@@ -137,6 +138,14 @@ export interface GetCallsFilters {
   rubricId?: string
   limit?: number
   offset?: number
+  /**
+   * Exclui calls classificadas como NÃO-venda (is_sales_call = false).
+   * Opt-in: listagens (/calls, /dashboard/history) precisam exibir essas
+   * calls com o badge "não é venda", então o default é NÃO filtrar. Toda
+   * agregação de métrica deve passar `salesOnly: true`.
+   * Ver lib/sales-calls.ts para a semântica de NULL.
+   */
+  salesOnly?: boolean
 }
 
 export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
@@ -152,6 +161,7 @@ export async function dbGetCalls(filters?: GetCallsFilters): Promise<DbCall[]> {
   else if (filters?.trainerName) query = query.eq('trainer_name', filters.trainerName)
   if (filters?.callOutcome) query = query.eq('call_outcome', filters.callOutcome)
   if (filters?.rubricId) query = query.eq('rubric_id', filters.rubricId)
+  if (filters?.salesOnly) query = applySalesCallOnly(query)
   if (filters?.limit) query = query.limit(filters.limit)
   if (filters?.offset && filters?.limit) {
     query = query.range(filters.offset, filters.offset + filters.limit - 1)
@@ -634,16 +644,25 @@ export interface OrgCloseRate {
 export async function dbGetOrgCloseRate(orgId: string): Promise<OrgCloseRate> {
   const supabase = createAdminClient()
 
+  // salesOnly nas DUAS contagens: é o card "Avg Close Rate" do /dashboard e a
+  // base do insight de ROI. Calls não-venda têm call_outcome NULL — sem o
+  // filtro no total, elas inflariam só o denominador e derrubariam o close
+  // rate. O filtro precisa bater com o de syncTrainerStats pra os números
+  // do dashboard e do leaderboard fecharem.
   const [total, closed] = await Promise.all([
-    supabase
-      .from('calls')
-      .select('id', { count: 'exact', head: true })
-      .eq('org_id', orgId),
-    supabase
-      .from('calls')
-      .select('id', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('call_outcome', 'closed'),
+    applySalesCallOnly(
+      supabase
+        .from('calls')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId),
+    ),
+    applySalesCallOnly(
+      supabase
+        .from('calls')
+        .select('id', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .eq('call_outcome', 'closed'),
+    ),
   ])
 
   if (total.error) throw new Error(`dbGetOrgCloseRate(total): ${total.error.message}`)

@@ -42,7 +42,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/calls?limit=200')
+    fetch('/api/calls?limit=200&salesOnly=true')
       .then((r) => r.json())
       .then((response) => {
         if (Array.isArray(response?.data)) {

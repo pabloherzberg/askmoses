@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import { dbGetTodayAppointments } from '@/lib/db/appointments'
 import { readStoredIntent } from '@/lib/services/calls'
 import type { CallResult } from '@/lib/types'
@@ -29,12 +30,16 @@ export async function getTodayAppointmentsWithIntent(orgId: string): Promise<Tod
   const intentByContact = new Map<string, number | null>()
   if (contactIds.length > 0) {
     const admin = createAdminClient()
-    const { data } = await admin
-      .from('calls')
-      .select('contact_id, intent, call_outcome, created_at')
-      .eq('org_id', orgId)
-      .in('contact_id', contactIds)
-      .order('created_at', { ascending: false })
+    // salesOnly: o intent do lead vem da call de venda mais recente do contato.
+    // Sem o filtro, uma call não-venda (intent NULL) mais recente mascararia o
+    // intent real de uma call de venda anterior.
+    const { data } = await applySalesCallOnly(
+      admin
+        .from('calls')
+        .select('contact_id, intent, call_outcome, created_at')
+        .eq('org_id', orgId)
+        .in('contact_id', contactIds),
+    ).order('created_at', { ascending: false })
 
     for (const row of (data ?? []) as Array<{
       contact_id: string | null

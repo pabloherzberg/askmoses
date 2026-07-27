@@ -40,7 +40,12 @@ export async function GET(request: NextRequest) {
     trainerId = searchParams.get('trainerId') ?? undefined
   }
 
-  const callsData = await getCalls({ trainerId, callOutcome, rubricId, limit, offset, locale })
+  // `?salesOnly=true` exclui calls classificadas como não-venda. Opt-in porque
+  // a listagem de /calls e /dashboard/history precisa exibi-las (com badge);
+  // consumidores que agregam métricas (analytics, intent) passam a flag.
+  const salesOnly = searchParams.get('salesOnly') === 'true'
+
+  const callsData = await getCalls({ trainerId, callOutcome, rubricId, salesOnly, limit, offset, locale })
 
   // Filter by days if provided (Intent Dashboard)
   const days = searchParams.get('days') ? Number(searchParams.get('days')) : undefined

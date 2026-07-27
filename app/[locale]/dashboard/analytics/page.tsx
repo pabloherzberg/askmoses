@@ -67,7 +67,9 @@ export default function AnalyticsPage() {
     async function fetchAnalytics() {
       setLoading(true);
 
-      const res = await fetch("/api/calls");
+      // salesOnly: a página inteira é agregação (tendências, heatmap,
+      // leaderboard de conversão). Calls não-venda não entram em nenhuma.
+      const res = await fetch("/api/calls?salesOnly=true");
       const { data: callsData, error } = (await res.json()) as {
         data: Call[] | null;
         error: unknown;
