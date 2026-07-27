@@ -56,7 +56,24 @@ export function withLiveTrainerStats(
   trainer: Trainer,
   calls: Call[],
 ): Trainer {
-  if (calls.length === 0) return trainer
+  // 0 calls de venda (todas do trainer viraram não-venda, ou trainer sem
+  // calls) → zera os stats vivos. Retornar `trainer` aqui ressuscitaria o
+  // snapshot, que pode estar defasado (contando calls hoje classificadas como
+  // não-venda). O /me e o /dashboard já mostram 0 nesse caso — o Team Command
+  // Center tem que bater.
+  if (calls.length === 0) {
+    const zeroedRubric = { ...trainer.rubricScores }
+    for (const k of Object.keys(zeroedRubric) as (keyof RubricScores)[]) {
+      zeroedRubric[k] = 0
+    }
+    return {
+      ...trainer,
+      totalCalls: 0,
+      closeRate: 0,
+      score: 0,
+      rubricScores: zeroedRubric,
+    }
+  }
 
   const total = calls.length
   const closed = calls.filter((c) => c.result === 'closed').length

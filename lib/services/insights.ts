@@ -17,7 +17,7 @@ export async function getInsights(locale?: Locale): Promise<Insight[]> {
   const orgId = await getOrgId();
   const [trainers, calls, closeRate] = await Promise.all([
     orgId ? dbGetTrainers({ orgId }) : Promise.resolve([]),
-    orgId ? getCalls({ limit: 200, orgId }) : Promise.resolve([]),
+    orgId ? getCalls({ limit: 200, orgId, salesOnly: true }) : Promise.resolve([]),
     // Mesma fonte do card "Avg Close Rate" — o insight de ROI cita o número na
     // mesma tela que o card, então os dois têm que bater. Não dá pra derivar de
     // `calls` aqui: essa lista vem com limit 200 e o close rate conta a org toda.
@@ -213,7 +213,7 @@ function buildInsightsFromData(
 export async function generateInsights(scriptId?: string) {
   // ── 1. Fetch recent calls from Supabase ──────────────────────────────────
   const orgId = await getOrgId();
-  const calls = orgId ? await getCalls({ limit: 50, orgId }) : [];
+  const calls = orgId ? await getCalls({ limit: 50, orgId, salesOnly: true }) : [];
 
   const closedCalls    = calls.filter((c) => c.result === "closed");
   const notClosedCalls = calls.filter((c) => c.result === "not_closed");

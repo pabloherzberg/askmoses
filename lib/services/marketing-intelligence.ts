@@ -214,7 +214,7 @@ function buildSourceCallsFromSample(samples: SampleCall[]): MarketingSourceCall[
 
 async function buildSourceCallsFromIds(orgId: string, ids: string[]): Promise<MarketingSourceCall[]> {
   if (ids.length === 0) return []
-  const all = await dbGetCalls({ orgId, callOutcome: 'closed', limit: 200 })
+  const all = await dbGetCalls({ orgId, callOutcome: 'closed', salesOnly: true, limit: 200 })
   const byId = new Map(all.map((c) => [c.id, c]))
   return ids
     .map((id) => byId.get(id))
@@ -248,7 +248,7 @@ function toMarketingIntelligence(
 }
 
 async function selectSample(orgId: string): Promise<SampleCall[]> {
-  const closed = await dbGetCalls({ orgId, callOutcome: 'closed', limit: 200 })
+  const closed = await dbGetCalls({ orgId, callOutcome: 'closed', salesOnly: true, limit: 200 })
   if (closed.length === 0) throw new NoClosedCallsError()
 
   // Prioriza calls com maior overall_score — copy gerado a partir das melhores

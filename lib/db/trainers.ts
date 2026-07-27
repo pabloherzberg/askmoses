@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import type { Trainer, AvatarColor } from '@/lib/types'
 
 // ─── Sync trainer stats from real calls ──────────────────────────────────────
@@ -17,18 +18,51 @@ interface SectionScore { name?: string; score?: number }
 export async function syncTrainerStats(trainerId: string): Promise<void> {
   const supabase = createAdminClient()
 
-  const { data: calls, error } = await supabase
-    .from('calls')
-    .select('overall_score, call_outcome, created_at, sections')
-    .eq('trainer_id', trainerId)
-    .order('created_at', { ascending: false })
+  // Filtro na ORIGEM do cálculo: close rate, avg score, deltas semanais e as
+  // médias por seção da rubrica nascem aqui e alimentam o leaderboard
+  // (TrainerTabs) e o /dashboard. Calls não-venda entram com overall_score e
+  // call_outcome NULL — sem este filtro, `?? 0` as contaria como score 0 e
+  // como "não fechou", puxando as duas métricas para baixo.
+  const { data: calls, error } = await applySalesCallOnly(
+    supabase
+      .from('calls')
+      .select('overall_score, call_outcome, created_at, sections')
+      .eq('trainer_id', trainerId),
+  ).order('created_at', { ascending: false })
 
   if (error) {
     console.error('[syncTrainerStats] Failed to fetch calls:', error.message)
     return
   }
 
-  if (!calls || calls.length === 0) return
+  // Sem NENHUMA call de venda contável — trainer novo, ou TODAS as calls dele
+  // foram classificadas como não-venda (is_sales_call = false). Precisa ZERAR
+  // o snapshot, não dar early-return: sair aqui deixaria os stats ANTIGOS
+  // gravados na tabela `trainers`, e o trainer continuaria aparecendo no
+  // leaderboard/dashboard com close rate e score de antes mesmo sem nenhuma
+  // call de venda. Um resync (`/api/sync-trainers`) tem que conseguir zerar.
+  if (!calls || calls.length === 0) {
+    const zeroedRubric = Object.fromEntries(
+      Array.from(new Set(Object.values(SECTION_COLUMN_MAP))).map((col) => [col, 0]),
+    )
+    const { error: resetError } = await supabase
+      .from('trainers')
+      .update({
+        total_calls: 0,
+        score: 0,
+        score_delta: 0,
+        close_rate: 0,
+        close_delta: 0,
+        last_active: '—',
+        updated_at: new Date().toISOString(),
+        ...zeroedRubric,
+      })
+      .eq('id', trainerId)
+    if (resetError) {
+      console.error('[syncTrainerStats] Failed to reset trainer stats:', resetError.message)
+    }
+    return
+  }
 
   const total = calls.length
   const closed = calls.filter((c) => c.call_outcome === 'closed').length

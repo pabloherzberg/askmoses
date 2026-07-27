@@ -5,6 +5,7 @@ import { generateText } from 'ai'
 import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { ScriptSection } from '@/lib/db/scripts'
 import type { ScriptIntelligenceResult } from '@/lib/mocks/data/script-intelligence'
@@ -120,11 +121,15 @@ export async function runScriptIntelligence(
   if (!currentScript) return { ok: false, error: 'Current script not found' }
   if (!suggestedScript) return { ok: false, error: 'Suggested script not found' }
 
-  const { data: callsRaw } = await admin
-    .from('calls')
-    .select('transcript, overall_score, call_outcome')
-    .eq('org_id', orgId)
-    .not('transcript', 'is', null)
+  // salesOnly: as transcrições alimentam a comparação entre script atual e
+  // sugerido. Call não-venda não representa execução de script.
+  const { data: callsRaw } = await applySalesCallOnly(
+    admin
+      .from('calls')
+      .select('transcript, overall_score, call_outcome')
+      .eq('org_id', orgId)
+      .not('transcript', 'is', null),
+  )
     .order('created_at', { ascending: false })
     .limit(20)
 
