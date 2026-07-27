@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
   // alimentar o prompt. O resultado final sai no locale alvo direto da IA.
   const [trainer, calls] = await Promise.all([
     dbGetTrainerById(trainerId),
-    getCalls({ orgId, trainerId, limit: 50 }),
+    // salesOnly: as recomendações de coaching são geradas a partir destas
+    // transcrições. Uma call não-venda produziria conselho sobre nada.
+    getCalls({ orgId, trainerId, limit: 50, salesOnly: true }),
   ])
 
   // Trainer sem calls → sem recs. Não faz sentido fabricar recomendação pra

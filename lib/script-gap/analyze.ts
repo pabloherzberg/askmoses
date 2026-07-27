@@ -5,6 +5,7 @@ import { generateText } from 'ai'
 import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import { dbGetActiveOrgScript } from '@/lib/db/scripts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import type { ScriptSection } from '@/lib/db/scripts'
@@ -104,11 +105,16 @@ export async function runScriptGapDetection(orgId: string): Promise<AnalyzeGapsR
   }
 
   const admin = createAdminClient()
-  const { data: callsRaw } = await admin
-    .from('calls')
-    .select('id, transcript, overall_score, call_outcome')
-    .eq('org_id', orgId)
-    .not('transcript', 'is', null)
+  // salesOnly: gap analysis compara transcrições contra o script de vendas.
+  // Um standup interno ou chamado de suporte geraria "gaps" em todas as
+  // seções — ruído puro que distorce o resultado.
+  const { data: callsRaw } = await applySalesCallOnly(
+    admin
+      .from('calls')
+      .select('id, transcript, overall_score, call_outcome')
+      .eq('org_id', orgId)
+      .not('transcript', 'is', null),
+  )
     .order('created_at', { ascending: false })
     .limit(20)
 

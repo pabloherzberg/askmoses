@@ -245,6 +245,7 @@ export async function getCalls(
       ? (normaliseOutcome(filters.callOutcome) ?? undefined)
       : undefined,
     rubricId: filters?.rubricId,
+    salesOnly: filters?.salesOnly,
     limit: filters?.limit,
     offset: filters?.offset,
   });

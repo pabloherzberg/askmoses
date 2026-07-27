@@ -1,6 +1,7 @@
 import { generateText } from 'ai'
 import { getOpenAIModel } from '@/lib/openai'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { applySalesCallOnly } from '@/lib/sales-calls'
 import { dbCreateScript } from '@/lib/db/scripts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { SYSTEM_PROMPT, buildUserPrompt } from '@/lib/script-intelligence/generate-script-prompt'
@@ -29,11 +30,16 @@ export type WeeklySuggestionResult =
 async function pickTopClosedCalls(): Promise<{ id: string; transcript: string }[]> {
   const admin = createAdminClient()
 
-  const { data: callsRaw, error } = await admin
-    .from('calls')
-    .select('id, transcript, overall_score')
-    .eq('call_outcome', 'closed')
-    .not('transcript', 'is', null)
+  // salesOnly é redundante hoje (o gate zera call_outcome, e o .eq('closed')
+  // já descarta não-venda), mas explicitar protege contra qualquer backfill
+  // futuro de call_outcome e documenta a intenção.
+  const { data: callsRaw, error } = await applySalesCallOnly(
+    admin
+      .from('calls')
+      .select('id, transcript, overall_score')
+      .eq('call_outcome', 'closed')
+      .not('transcript', 'is', null),
+  )
     .order('overall_score', { ascending: false, nullsFirst: false })
     .limit(CALLS_OVER_FETCH)
 

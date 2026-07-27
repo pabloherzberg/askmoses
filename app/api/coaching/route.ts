@@ -69,7 +69,9 @@ export async function GET(request: NextRequest) {
   // trainers da org (consistência horizontal). Sem ele, o builder cai pro
   // fallback (call mais recente do trainer) — comportamento legado.
   const [calls, activeScript] = await Promise.all([
-    getCalls({ orgId, limit: 200 }),
+    // salesOnly: alimenta best/worst calls, behavioral profile, callsThisWeek
+    // e performance trends do Team Command Center — tudo métrica de venda.
+    getCalls({ orgId, limit: 200, salesOnly: true }),
     dbGetActiveOrgScript(orgId).catch(() => null),
   ])
   const performanceTrends = await getPerformanceTrends(trainers, calls)

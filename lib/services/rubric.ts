@@ -233,7 +233,10 @@ export async function getRubric(): Promise<{
   }
   const [defaultRubric, calls] = await Promise.all([
     dbGetDefaultRubricWithCriteria(orgId),
-    getCalls({ limit: 200, orgId }),
+    // salesOnly: alimenta o trend semanal do time e os section scores da
+    // rubrica no /dashboard — tudo métrica. Call não-venda (score/outcome
+    // nulos) puxaria o trend pra baixo.
+    getCalls({ limit: 200, orgId, salesOnly: true }),
   ]);
 
   // Trend é puro stats de calls — não depende da rubric existir localmente.
