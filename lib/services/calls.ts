@@ -130,7 +130,7 @@ export function readStoredIntent(raw: unknown, result: CallResult): IntentScore 
 
 function toCall(db: DbCall): Call {
   const result =
-    normaliseOutcome(db.call_outcome ?? "no_outcome") ?? "no_outcome";
+    normaliseOutcome(db.call_outcome ?? "not_closed") ?? "not_closed";
   // dbGetCalls já remapeia intent_breakdown/intent_weights (snake) → camelCase
   // antes de chegar aqui; aceita ambas as chaves por segurança.
   const intentBreakdown =

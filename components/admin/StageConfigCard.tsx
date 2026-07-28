@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import type { CallResult } from '@/lib/types'
 import type { OrgStageConfig } from '@/lib/services/stage-config'
 
-const OUTCOMES: CallResult[] = ['closed', 'partial', 'not_closed', 'no_outcome']
+const OUTCOMES: CallResult[] = ['closed', 'not_closed']
 
 // Config dos dois estágios do funil para o owner. Stage 1 = quais outcomes
 // contam como "agendou o intro offer"; Stage 2 = como a org descreve paying

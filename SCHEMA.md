@@ -131,10 +131,10 @@ Core table. One row per analyzed call. **Primary source for the ML pipeline.**
 
 | Value | Meaning |
 |---|---|
-| `closed` | Deal closed on this call |
-| `not_closed` | Call completed, no deal |
-| `partial` | Follow-up scheduled / co-decision maker involved |
-| `no_outcome` | Call ended with no resolution |
+| `closed` | Deal closed, or advanced partially (follow-up scheduled, co-decision maker involved) — the call moved something forward |
+| `not_closed` | Call completed with no deal, or ended with no clear resolution |
+
+Simplified from 4 to 2 values in migration 105 (`partial` → `closed`, `no_outcome` → `not_closed`).
 
 #### `sections` JSONB structure
 
@@ -269,3 +269,4 @@ ORDER BY f.call_date DESC;
 | `033_overall_score_numeric.sql` | Converts `overall_score INT → NUMERIC(3,1)` |
 | `035_drop_criteria_columns.sql` | Drops legacy `criteria`, `total_criteria` columns |
 | **`036_ml_fields.sql`** | **Adds `closed`, `call_date`, `duration_seconds`; creates `calls_ml_flat` view and `trg_sync_closed` trigger** |
+| `105_call_outcome_2_values.sql` | Simplifies `call_outcome_enum` from 4 to 2 values (`partial`→`closed`, `no_outcome`→`not_closed`); remaps `organizations.stage1_success_outcomes` |

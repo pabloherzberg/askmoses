@@ -383,15 +383,11 @@
       "notSalesCallMessage": "Esta transcrição não foi identificada como uma call de venda — nenhuma análise foi gerada. A transcrição foi salva normalmente.",
       "short": {
         "closed": "Fechada",
-        "partial": "Parcial",
-        "not_closed": "Não fechada",
-        "no_outcome": "Sem outcome"
+        "not_closed": "Não fechada"
       },
       "full": {
         "closed": "Fechada",
-        "partial": "Parcial — follow-up pendente",
-        "not_closed": "Não fechada",
-        "no_outcome": "Sem outcome"
+        "not_closed": "Não fechada"
       }
     },
     "rubric": {
@@ -611,7 +607,7 @@
     "kpiDeltaVsPrev": "vs ant.",
     "kpiTotalSuffix": "de {count} no total",
     "kpiAvgSuffix": "{value} histórico",
-    "closedBreakdown": "{partial} parciais · {notClosed} não fechadas · {noOutcome} sem desfecho",
+    "closedBreakdown": "{notClosed} não fechadas",
     "recentCalls": "Chamadas recentes",
     "noCallsYet": "Nenhuma chamada ainda.",
     "myCallsLabel": "Minhas chamadas",
@@ -664,7 +660,6 @@
       "outcome": "Resultado",
       "outcomes": {
         "closed": "Fechada",
-        "followUp": "Follow-up",
         "noClose": "Não fechada"
       },
       "uploadRecording": "Enviar gravação",
@@ -1376,8 +1371,6 @@
       "teamAverage": "Média do time: {avg} — Foque em consistência",
       "closedDeals": "Negócios fechados",
       "notClosed": "Não fechadas",
-      "partial": "Parcial",
-      "noOutcome": "Sem outcome",
       "closeRate": "Taxa de fechamento",
       "conversionLeaderboard": "Ranking de conversão",
       "conversionSubtitle": "Taxa de fechamento por vendedor",
@@ -1899,17 +1892,9 @@
             "label": "Fechada",
             "note": "Negócio fechado — faixa total de nota disponível."
           },
-          "partial": {
-            "label": "Parcial",
-            "note": "Proposta feita, follow-up pendente — nota limitada a 80."
-          },
           "not_closed": {
             "label": "Não fechada",
             "note": "Call completa, não fechou — nota limitada a 60."
-          },
-          "no_outcome": {
-            "label": "Sem outcome",
-            "note": "Call incompleta ou sem resolução clara — nota limitada a 50."
           }
         },
         "sectionBreakdown": "Detalhamento por seção",
@@ -1961,9 +1946,7 @@
         "callOutcomeHint": "Como esta chamada terminou?",
         "outcomes": {
           "closed": "Fechada",
-          "partial": "Parcial — follow-up pendente",
-          "not_closed": "Não fechada",
-          "no_outcome": "Sem outcome"
+          "not_closed": "Não fechada"
         },
         "callContentTitle": "Conteúdo da chamada",
         "callContentSubtitle": "Envie áudio ou vídeo, ou cole a transcrição diretamente",

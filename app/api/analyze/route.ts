@@ -63,9 +63,9 @@ interface AnalyzeRequestBody {
 }
 
 /** Accept canonical CallOutcome plus a few legacy aliases that older
- *  clients/AI drift sometimes still emit. Falls back to "no_outcome". */
+ *  clients/AI drift sometimes still emit. Falls back to "not_closed". */
 function coerceOutcome(raw: string | null | undefined): CallOutcome {
-  return normaliseOutcome((raw ?? "").toLowerCase().trim()) ?? "no_outcome";
+  return normaliseOutcome((raw ?? "").toLowerCase().trim()) ?? "not_closed";
 }
 
 export interface CriterionScore {
@@ -222,7 +222,7 @@ function validateAnalysis(
       detectedOutcome:
         typeof obj.detectedOutcome === "string"
           ? obj.detectedOutcome
-          : "no_outcome",
+          : "not_closed",
       intent: Number.isFinite(Number(obj.intent))
         ? Number(obj.intent)
         : undefined,

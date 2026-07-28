@@ -11,6 +11,7 @@ import { IntentRadarChart } from '@/components/shared/IntentRadarChart'
 import { PeriodTabs } from '@/components/shared/billing/PeriodTabs'
 import { IntentPeriodTabs } from '@/components/shared/IntentPeriodTabs'
 import type { BillingPeriodRange, IntentDateRange } from '@/lib/types'
+import { normaliseOutcome } from '@/lib/constants'
 
 const PERIOD_DAYS: Record<BillingPeriodRange, number> = { '1w': 7, '2w': 14, '3w': 21, '1m': 30 }
 const LEADS_RANGE_DAYS: Record<IntentDateRange, number> = { '1w': 7, '2w': 14, '15d': 15, '1m': 30 }
@@ -358,9 +359,6 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
 const RESULT_LABEL: Record<string, { label: string; color: string }> = {
   closed:      { label: 'Closed',     color: 'var(--am-green)' },
   not_closed:  { label: 'Not Closed', color: 'var(--am-red)'   },
-  partial:     { label: 'Partial',    color: 'var(--am-amber)'  },
-  no_outcome:  { label: 'No Outcome', color: 'var(--am-muted)'  },
-  follow_up:   { label: 'Follow Up',  color: 'var(--am-blue)'   },
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -444,7 +442,7 @@ function LeadsList({
             <tbody>
               {pageLeads.map((call) => {
                 const bd = call.intentBreakdown as Record<string, number> | undefined | null
-                const result = RESULT_LABEL[call.result] ?? RESULT_LABEL.no_outcome
+                const result = RESULT_LABEL[normaliseOutcome(call.result) ?? 'not_closed'] ?? RESULT_LABEL.not_closed
                 return (
                   <tr
                     key={call.id}

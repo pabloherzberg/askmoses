@@ -3,7 +3,7 @@ import { ok, unauthorized, getSession, getActiveOrgContext } from '@/lib/auth'
 import { getStageConfig, updateStageConfig } from '@/lib/services/stage-config'
 import type { CallResult } from '@/lib/types'
 
-const VALID_OUTCOMES: CallResult[] = ['closed', 'not_closed', 'partial', 'no_outcome']
+const VALID_OUTCOMES: CallResult[] = ['closed', 'not_closed']
 
 // Config dos dois estágios (Stage 1 / Stage 2) por org — owner-scoped.
 // Opera sempre na org ativa do solicitante (owner ou admin impersonando).

@@ -184,8 +184,6 @@ export async function dbCreateRubric(
       outcome_options: input.outcomeOptions ?? [
         "closed",
         "not_closed",
-        "partial",
-        "no_outcome",
       ],
       system_prompt: input.systemPrompt ?? null,
       llm_model: input.llmModel ?? null,

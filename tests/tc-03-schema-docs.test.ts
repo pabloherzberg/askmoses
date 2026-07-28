@@ -137,7 +137,5 @@ describe('TC-03 › nullable e tipos obrigatórios', () => {
     // Cada valor pode estar em linha separada (tabela Markdown)
     expect(schema).toMatch(/closed/i)
     expect(schema).toMatch(/not_closed/i)
-    expect(schema).toMatch(/partial/i)
-    expect(schema).toMatch(/no_outcome/i)
   })
 })

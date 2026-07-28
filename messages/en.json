@@ -383,15 +383,11 @@
       "notSalesCallMessage": "This transcript was not identified as a sales call — no analysis was generated. The transcript was saved normally.",
       "short": {
         "closed": "Closed",
-        "partial": "Partial",
-        "not_closed": "Not Closed",
-        "no_outcome": "No Outcome"
+        "not_closed": "Not Closed"
       },
       "full": {
         "closed": "Closed",
-        "partial": "Partial — follow-up pending",
-        "not_closed": "Not Closed",
-        "no_outcome": "No Outcome"
+        "not_closed": "Not Closed"
       }
     },
     "rubric": {
@@ -611,7 +607,7 @@
     "kpiDeltaVsPrev": "vs prev",
     "kpiTotalSuffix": "of {count} total",
     "kpiAvgSuffix": "{value} all-time",
-    "closedBreakdown": "{partial} partial · {notClosed} not closed · {noOutcome} no outcome",
+    "closedBreakdown": "{notClosed} not closed",
     "recentCalls": "Recent Calls",
     "noCallsYet": "No calls yet.",
     "myCallsLabel": "My Calls",
@@ -664,7 +660,6 @@
       "outcome": "Outcome",
       "outcomes": {
         "closed": "Closed",
-        "followUp": "Follow-up",
         "noClose": "No Close"
       },
       "uploadRecording": "Upload Recording",
@@ -1376,8 +1371,6 @@
       "teamAverage": "Team average: {avg} — Focus on consistency",
       "closedDeals": "Closed Deals",
       "notClosed": "Not Closed",
-      "partial": "Partial",
-      "noOutcome": "No Outcome",
       "closeRate": "Close Rate",
       "conversionLeaderboard": "Conversion Leaderboard",
       "conversionSubtitle": "Close rate per sales person",
@@ -1899,17 +1892,9 @@
             "label": "Closed",
             "note": "Deal was closed — full score range available."
           },
-          "partial": {
-            "label": "Partial",
-            "note": "Proposal made, follow-up pending — score capped at 80."
-          },
           "not_closed": {
             "label": "Not Closed",
             "note": "Call complete, did not close — score capped at 60."
-          },
-          "no_outcome": {
-            "label": "No Outcome",
-            "note": "Call incomplete or no clear resolution — score capped at 50."
           }
         },
         "sectionBreakdown": "Section Breakdown",
@@ -1961,9 +1946,7 @@
         "callOutcomeHint": "How did this call end?",
         "outcomes": {
           "closed": "Closed",
-          "partial": "Partial — follow-up pending",
-          "not_closed": "Not Closed",
-          "no_outcome": "No Outcome"
+          "not_closed": "Not Closed"
         },
         "callContentTitle": "Call Content",
         "callContentSubtitle": "Upload audio or video, or paste the transcript directly",

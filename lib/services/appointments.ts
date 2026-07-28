@@ -47,7 +47,7 @@ export async function getTodayAppointmentsWithIntent(orgId: string): Promise<Tod
       call_outcome: string | null
     }>) {
       if (!row.contact_id || intentByContact.has(row.contact_id)) continue
-      const result = (row.call_outcome ?? 'no_outcome') as CallResult
+      const result = (row.call_outcome ?? 'not_closed') as CallResult
       intentByContact.set(row.contact_id, readStoredIntent(row.intent, result))
     }
   }

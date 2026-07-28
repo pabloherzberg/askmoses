@@ -55,8 +55,6 @@ export default function AnalyticsPage() {
   const [outcomeMetrics, setOutcomeMetrics] = useState({
     closed: 0,
     notClosed: 0,
-    partial: 0,
-    noOutcome: 0,
     closeRate: 0,
   });
   const [trainerConversions, setTrainerConversions] = useState<
@@ -215,11 +213,9 @@ export default function AnalyticsPage() {
 
       const closed = sorted.filter((c) => c.result === "closed").length;
       const notClosed = sorted.filter((c) => c.result === "not_closed").length;
-      const partial = sorted.filter((c) => c.result === "partial").length;
-      const noOutcome = sorted.filter((c) => c.result === "no_outcome").length;
       const closeRate =
         sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
-      setOutcomeMetrics({ closed, notClosed, partial, noOutcome, closeRate });
+      setOutcomeMetrics({ closed, notClosed, closeRate });
 
       const trainerMap = new Map<string, { closed: number; total: number }>();
       sorted.forEach((call) => {
@@ -291,7 +287,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Conversion Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
             <p className="text-3xl font-bold text-green-600 dark:text-green-400">
@@ -302,26 +298,10 @@ export default function AnalyticsPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-              {outcomeMetrics.partial}
-            </p>
-            <p className="text-sm text-muted-foreground">{t('partial')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
             <p className="text-3xl font-bold text-red-600 dark:text-red-400">
               {outcomeMetrics.notClosed}
             </p>
             <p className="text-sm text-muted-foreground">{t('notClosed')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-3xl font-bold text-muted-foreground">
-              {outcomeMetrics.noOutcome}
-            </p>
-            <p className="text-sm text-muted-foreground">{t('noOutcome')}</p>
           </CardContent>
         </Card>
         <Card
