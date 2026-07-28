@@ -220,7 +220,10 @@ async function fetchOrgMeta(
     name: o.name,
     // micro-USD → USD (default 66700 = $0,0667/min).
     ratePerMinute: (o.rate_per_minute_micros ?? DEFAULT_RATE_MICROS) / 1_000_000,
-    billingStatus: o.billing_status ?? "PILOT",
+    // Coluna é NOT NULL DEFAULT 'PAID' (082 + 106) — o fallback é defensivo,
+    // não uma regra. Espelha o default pra não classificar uma org como piloto
+    // grátis por acidente de leitura.
+    billingStatus: o.billing_status ?? "PAID",
     planName: o.plans?.name ?? "—",
   }));
 }
