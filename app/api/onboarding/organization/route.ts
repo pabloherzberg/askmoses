@@ -169,6 +169,10 @@ export async function POST(request: NextRequest) {
       // subscription_status default 'inactive' (DB), explicitado aqui pra
       // deixar a intenção do self-service legível no código.
       subscription_status: 'inactive',
+      // Cobrável por padrão (migration 106). Independe de subscription_status
+      // continuar 'inactive' aqui: este eixo governa SE a org é cobrada, e o
+      // outro governa acesso ao produto. Admin ajusta em /admin/billing.
+      billing_status: 'PAID',
       health: 'healthy',
     })
     .select('id, name')

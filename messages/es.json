@@ -47,20 +47,26 @@
       "callsBilled": "Llamadas facturadas",
       "amount": "Importe",
       "llmCosts": "Costos LLM",
-      "actions": "Uso",
+      "actions": "Facturación",
       "totalPaid": "Total — de pago",
-      "editRate": "Editar tarifa",
+      "editRate": "Editar facturación",
       "viewUsage": "Ver uso"
     },
     "editRate": {
-      "title": "Editar tarifa de facturación",
-      "description": "Define la tarifa por minuto de esta organización",
+      "title": "Editar facturación",
+      "description": "Define el estado de facturación y la tarifa por minuto de esta organización",
       "rateLabel": "Tarifa por minuto (USD)",
       "hint": "ej.: 0.0667 ≈ $1 por llamada de 15 min",
       "cancel": "Cancelar",
       "save": "Guardar",
       "saving": "Guardando…",
-      "invalid": "Introduce una tarifa válida (USD por minuto)"
+      "invalid": "Introduce una tarifa válida (USD por minuto)",
+      "statusLabel": "Estado de facturación",
+      "statusHint": "Solo PAID y DEMO se facturan. PILOT y DISABLED aparecen como $0 y quedan fuera de los totales de ingresos.",
+      "status_PAID": "PAID — facturada normalmente",
+      "status_PILOT": "PILOT — piloto gratis, no facturada",
+      "status_DEMO": "DEMO — org de demostración, facturada",
+      "status_DISABLED": "DISABLED — facturación suspendida"
     },
     "admin": {
       "subtitle": "Uso, valor y cargos del ciclo en todas las organizaciones",

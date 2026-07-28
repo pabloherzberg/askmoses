@@ -47,20 +47,26 @@
       "callsBilled": "Calls billed",
       "amount": "Amount",
       "llmCosts": "LLM Costs",
-      "actions": "Usage",
+      "actions": "Billing",
       "totalPaid": "Total — paid",
-      "editRate": "Edit billing rate",
+      "editRate": "Edit billing",
       "viewUsage": "View usage"
     },
     "editRate": {
-      "title": "Edit billing rate",
-      "description": "Set the per-minute rate for this organization",
+      "title": "Edit billing",
+      "description": "Set the billing status and per-minute rate for this organization",
       "rateLabel": "Rate per minute (USD)",
       "hint": "e.g. 0.0667 ≈ $1 per 15-min call",
       "cancel": "Cancel",
       "save": "Save",
       "saving": "Saving…",
-      "invalid": "Enter a valid rate (USD per minute)"
+      "invalid": "Enter a valid rate (USD per minute)",
+      "statusLabel": "Billing status",
+      "statusHint": "Only PAID and DEMO are billed. PILOT and DISABLED show $0 and stay out of revenue totals.",
+      "status_PAID": "PAID — billed normally",
+      "status_PILOT": "PILOT — free pilot, not billed",
+      "status_DEMO": "DEMO — demo org, billed",
+      "status_DISABLED": "DISABLED — billing suspended"
     },
     "admin": {
       "subtitle": "Usage, value and cycle charges across all organizations",

@@ -222,6 +222,11 @@ export async function POST(request: NextRequest) {
       name,
       plan_id: plan.id,
       subscription_status: 'active',
+      // Org criada pelo Admin nasce cobrável. Explicitado aqui (e não só via
+      // DEFAULT da coluna, migration 106) pra não depender da ordem em que as
+      // migrations rodaram e pra deixar a intenção legível. PILOT/DEMO/
+      // DISABLED são exceção — o Admin seta depois em /admin/billing.
+      billing_status: 'PAID',
       health: 'healthy',
       ...(mrr !== undefined ? { mrr } : {}),
     })

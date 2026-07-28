@@ -2,7 +2,7 @@ import { type NextRequest } from 'next/server'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireSameOrigin } from '@/lib/auth/csrf'
-import type { Role } from '@/lib/types'
+import type { BillingStatus, Role } from '@/lib/types'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -10,9 +10,14 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // micros com a unidade e gravar um número absurdo).
 const MAX_RATE_MICROS = 100_000_000
 
+// Espelha o CHECK constraint organizations_billing_status_check (migration 082).
+const BILLING_STATUSES: readonly BillingStatus[] = ['PAID', 'PILOT', 'DEMO', 'DISABLED']
+
 interface PatchBody {
   // Tarifa por minuto em micro-USD (1 USD = 1e6). Ex.: 66700 = $0,0667/min.
   ratePerMinuteMicros?: number
+  // Status de cobrança da org. Independe de subscription_status.
+  billingStatus?: BillingStatus
 }
 
 function badRequest(message: string, reason: string) {
@@ -34,9 +39,19 @@ function orgNotFound() {
 }
 
 // PATCH /api/admin/organizations/[id]/billing-rate
-//   Body: { ratePerMinuteMicros }
-//   Ajuste manual da tarifa de cobrança por org (negociação). Persiste em
-//   organizations.rate_per_minute_micros (migration 082). Admin only.
+//   Body: { ratePerMinuteMicros?, billingStatus? } — ao menos um dos dois.
+//
+//   Ajustes de cobrança por org, persistidos em organizations
+//   (rate_per_minute_micros + billing_status, migrations 082/106):
+//
+//     • ratePerMinuteMicros — tarifa negociada por org.
+//     • billingStatus — PAID | PILOT | DEMO | DISABLED. É o ÚNICO caminho de
+//       escrita desta coluna: antes da 106 nada no app a alterava e toda org
+//       ficava presa no default 'PILOT' (receita zerada com COGS real). NÃO
+//       mexe em subscription_status de propósito — um eixo governa cobrança, o
+//       outro governa acesso ao produto (ver COMMENT da coluna na 082).
+//
+//   Chamado pelo dialog da BillingTable em /admin/billing. Admin only.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -60,31 +75,51 @@ export async function PATCH(
     return badRequest('Body inválido', 'INVALID_BODY')
   }
 
-  const micros = body.ratePerMinuteMicros
+  const { ratePerMinuteMicros: micros, billingStatus } = body
+
+  if (micros === undefined && billingStatus === undefined) {
+    return badRequest(
+      'Forneça ao menos um campo: ratePerMinuteMicros ou billingStatus',
+      'NO_FIELDS',
+    )
+  }
+
   if (
-    typeof micros !== 'number' ||
-    !Number.isInteger(micros) ||
-    micros < 0 ||
-    micros > MAX_RATE_MICROS
+    micros !== undefined &&
+    (typeof micros !== 'number' ||
+      !Number.isInteger(micros) ||
+      micros < 0 ||
+      micros > MAX_RATE_MICROS)
   ) {
     return badRequest('ratePerMinuteMicros deve ser um inteiro entre 0 e 100000000 (micro-USD)', 'INVALID_RATE')
   }
+
+  if (billingStatus !== undefined && !BILLING_STATUSES.includes(billingStatus)) {
+    return badRequest('billingStatus deve ser "PAID", "PILOT", "DEMO" ou "DISABLED"', 'INVALID_STATUS')
+  }
+
+  // Update parcial — só o que veio no body. Mandar a chave ausente como null
+  // violaria o NOT NULL das duas colunas.
+  const patch: Record<string, unknown> = {}
+  if (micros !== undefined) patch.rate_per_minute_micros = micros
+  if (billingStatus !== undefined) patch.billing_status = billingStatus
 
   const admin = createAdminClient()
 
   const { data: updated, error: updateErr } = await admin
     .from('organizations')
-    .update({ rate_per_minute_micros: micros })
+    .update(patch)
     .eq('id', orgId)
-    .select('id, name, rate_per_minute_micros')
+    .select('id, name, rate_per_minute_micros, billing_status')
     .maybeSingle()
 
-  if (updateErr) return serverError('Não foi possível atualizar a tarifa', updateErr)
+  if (updateErr) return serverError('Não foi possível atualizar a cobrança', updateErr)
   if (!updated) return orgNotFound()
 
   return ok({
     id: updated.id,
     name: updated.name,
     ratePerMinuteMicros: updated.rate_per_minute_micros,
+    billingStatus: updated.billing_status as BillingStatus,
   })
 }

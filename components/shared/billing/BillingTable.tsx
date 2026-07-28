@@ -29,15 +29,16 @@ interface Props {
     llmCosts: string;
     actions: string;
     totalPaid: string;
-    editRate: string; // tooltip/aria do botão
-    viewUsage: string; // texto do link da coluna de uso
+    editRate: string; // texto + aria do botão que abre o dialog de cobrança
     dialog: EditRateLabels;
   };
 }
 
 // Tabela de orgs (admin, Bloco 2). Coluna LLM Costs é admin-only — esta tabela
-// só é renderizada na view admin. Coluna de ação abre modal pra editar a tarifa
-// por org (persiste em organizations.rate_per_minute_micros).
+// só é renderizada na view admin. Coluna de ação abre modal pra editar a
+// cobrança da org: tarifa (organizations.rate_per_minute_micros) e billing
+// status (organizations.billing_status) — o único lugar do app que promove uma
+// org de PILOT pra PAID.
 export function BillingTable({ rows, footerNote, onRateUpdated, labels }: Props) {
   const [editing, setEditing] = useState<BillingOrgRow | null>(null);
 
@@ -127,7 +128,7 @@ export function BillingTable({ rows, footerNote, onRateUpdated, labels }: Props)
                       className="text-[13px] font-medium transition-opacity hover:opacity-80"
                       style={{ color: "var(--sidebar-primary)" }}
                     >
-                      {labels.viewUsage}
+                      {labels.editRate}
                     </button>
                   </td>
                 </tr>
