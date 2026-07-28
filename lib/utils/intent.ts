@@ -6,9 +6,7 @@ import type { CallResult, IntentScore } from "@/lib/types";
 // real quando disponível.
 export const INTENT_BY_RESULT: Record<CallResult, IntentScore> = {
   closed: 4,
-  partial: 3,
   not_closed: 2,
-  no_outcome: 1,
 };
 
 // Converte um valor cru (number/string/unknown) num IntentScore 1–5, ou null

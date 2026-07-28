@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Trainer,
   Call,
   CallSection,
@@ -21,7 +21,7 @@ import type {
   BillingPeriodRange,
 } from '@/lib/types'
 
-// ─── Trainers ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Trainers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const trainers: Trainer[] = [
   {
@@ -114,10 +114,10 @@ export const trainers: Trainer[] = [
   },
 ]
 
-// ─── Calls ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Calls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const calls: Call[] = [
-  // Marcus R. — 7 calls, mostly closed
+  // Marcus R. â€” 7 calls, mostly closed
   {
     id: '00000000-0000-0000-0000-000000000601',
     trainerId: '00000000-0000-0000-0000-000000000301',
@@ -148,7 +148,7 @@ export const calls: Call[] = [
     improvements: [
       'Could have deepened problem agitation more before moving to the offer',
     ],
-    transcript: 'Marcus: Hi Bob, thanks for making time today. Before anything else, tell me — what\'s going on with Rex that brought you to us?\nBob: Man, he just doesn\'t listen to anything. We can barely leave the house with him.\nMarcus: I get it. When you say he doesn\'t listen — give me a concrete example from recently.\nBob: Last week he escaped the yard for the third time. We spent two hours looking for him in the neighborhood.\nMarcus: Wow, that must\'ve been terrifying. Does this affect your daily life beyond the safety concern?\nBob: Absolutely. My daughter is scared to play with him now, and my wife said if it doesn\'t get fixed, we\'ll have to rehome him.\nMarcus: I understand the gravity of that. Before I show you what we do — have you tried anything before? Group classes, YouTube, another trainer?\n...',
+    transcript: 'Marcus: Hi Bob, thanks for making time today. Before anything else, tell me â€” what\'s going on with Rex that brought you to us?\nBob: Man, he just doesn\'t listen to anything. We can barely leave the house with him.\nMarcus: I get it. When you say he doesn\'t listen â€” give me a concrete example from recently.\nBob: Last week he escaped the yard for the third time. We spent two hours looking for him in the neighborhood.\nMarcus: Wow, that must\'ve been terrifying. Does this affect your daily life beyond the safety concern?\nBob: Absolutely. My daughter is scared to play with him now, and my wife said if it doesn\'t get fixed, we\'ll have to rehome him.\nMarcus: I understand the gravity of that. Before I show you what we do â€” have you tried anything before? Group classes, YouTube, another trainer?\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000602',
@@ -197,7 +197,7 @@ export const calls: Call[] = [
     lead_source: 'referral',
     rubricScores: { discovery: 92, problemAgitation: 86, offerPresentation: 92, objectionHandling: 80, closeAndNextSteps: 88 },
     sections: [
-      { name: 'Discovery',           score: 92, feedback: 'Uncovered the social embarrassment angle — a pain point the prospect hadn\'t explicitly stated.', critical: true },
+      { name: 'Discovery',           score: 92, feedback: 'Uncovered the social embarrassment angle â€” a pain point the prospect hadn\'t explicitly stated.', critical: true },
       { name: 'Problem Agitation',   score: 86, feedback: 'Used social proof to anchor the agitation. Time in the agitation phase was slightly short.', critical: true },
       { name: 'Offer Presentation',  score: 92, feedback: 'Specific social proof example matched the prospect\'s breed. Clear transformation framing.', critical: false },
       { name: 'Objection Handling',  score: 80, feedback: 'Minor hesitation on the time objection before recovering. Good final resolution.', critical: false },
@@ -232,14 +232,14 @@ export const calls: Call[] = [
       { name: 'Problem Agitation',   score: 86, feedback: 'Urgency created naturally via limited spots. Emotional connection was present.', critical: true },
       { name: 'Offer Presentation',  score: 90, feedback: 'Offer well-positioned after the agitation. Price context was strong.', critical: false },
       { name: 'Objection Handling',  score: 80, feedback: 'Some resistance required extra effort to navigate. Final resolution was effective.', critical: false },
-      { name: 'Close & Next Steps',  score: 88, feedback: 'Closed successfully. Next step lacked a specific time — ended somewhat open.', critical: false },
+      { name: 'Close & Next Steps',  score: 88, feedback: 'Closed successfully. Next step lacked a specific time â€” ended somewhat open.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Good performance. Longer call than usual, but Marcus maintained control of the conversation throughout.',
     strengths: [
       'Kept the prospect engaged for 45 minutes with strategic questions',
       'Created real urgency by mentioning limited spots in the in-person program',
     ],
-    improvements: ['Next steps could have been more specific — ended without a set date'],
+    improvements: ['Next steps could have been more specific â€” ended without a set date'],
     transcript: 'Marcus: Linda, how old is Bella now?\nLinda: Almost 8 months. And she\'s already too big for us to hold when she gets hyper...\n...',
   },
   {
@@ -268,8 +268,8 @@ export const calls: Call[] = [
       'Correctly read that the prospect was qualified and accelerated the call',
       'Presented the plans in ascending order of value',
     ],
-    improvements: ['Discovery was a bit short — could have extracted more information'],
-    transcript: 'Marcus: Tom, first of all — do you already know our method or are you coming in fresh?\nTom: I\'ve done a lot of research. Saw the testimonials on Instagram. Just want to know how it works in practice.\n...',
+    improvements: ['Discovery was a bit short â€” could have extracted more information'],
+    transcript: 'Marcus: Tom, first of all â€” do you already know our method or are you coming in fresh?\nTom: I\'ve done a lot of research. Saw the testimonials on Instagram. Just want to know how it works in practice.\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000606',
@@ -278,7 +278,7 @@ export const calls: Call[] = [
     date: '2026-06-02',
     durationSeconds: 1680,
     score: 86,
-    result: 'partial',
+    result: 'closed',
     intent: 4,
     intentBreakdown: { financial: 8, urgency: 7, authority: 8, engagement: 9 },
     prospect: 'Amy C.',
@@ -292,13 +292,13 @@ export const calls: Call[] = [
       { name: 'Objection Handling',  score: 76, feedback: 'Handled the husband situation gracefully but missed the opportunity to include him live.', critical: false },
       { name: 'Close & Next Steps',  score: 82, feedback: 'Follow-up booked with a specific date. Good discipline in not leaving it open-ended.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Excellent discovery and presentation. The call didn\'t close because Amy needed to confirm schedule availability with her husband — follow-up booked for 2 days out.',
+    feedback: 'Excellent discovery and presentation. The call didn\'t close because Amy needed to confirm schedule availability with her husband â€” follow-up booked for 2 days out.',
     strengths: [
       'Identified the co-decision maker (husband) before attempting to close',
       'Left the follow-up with a specific date and time, not open-ended',
     ],
     improvements: ['Could have suggested including the husband on the call instead of rescheduling'],
-    transcript: 'Marcus: Amy, tell me — when you picture Duke fully trained, how do you see your day-to-day looking different?\nAmy: It would be amazing. We could take him anywhere without stress...\n...',
+    transcript: 'Marcus: Amy, tell me â€” when you picture Duke fully trained, how do you see your day-to-day looking different?\nAmy: It would be amazing. We could take him anywhere without stress...\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000607',
@@ -327,10 +327,10 @@ export const calls: Call[] = [
       'Used the strategic silence technique after presenting the price',
     ],
     improvements: ['The response to the price objection could have been quicker and less defensive'],
-    transcript: 'Marcus: Chris, in the current situation without training — how much do you think Max\'s behavior is actually "costing" you?\nChris: Never thought about it that way...\nMarcus: The couch he destroyed, the vet visits from stress, the restriction of traveling with him...\n...',
+    transcript: 'Marcus: Chris, in the current situation without training â€” how much do you think Max\'s behavior is actually "costing" you?\nChris: Never thought about it that way...\nMarcus: The couch he destroyed, the vet visits from stress, the restriction of traveling with him...\n...',
   },
 
-  // Jamie L. — 5 calls
+  // Jamie L. â€” 5 calls
   {
     id: '00000000-0000-0000-0000-000000000608',
     trainerId: '00000000-0000-0000-0000-000000000302',
@@ -349,12 +349,12 @@ export const calls: Call[] = [
       { name: 'Discovery',           score: 90, feedback: 'Good situational questions. Identified that the dog was restricting the prospect\'s social life.', critical: true },
       { name: 'Problem Agitation',   score: 90, feedback: 'Empathetic delivery made agitation feel genuine. Prospect became emotionally engaged without feeling manipulated.', critical: true },
       { name: 'Offer Presentation',  score: 88, feedback: 'Offer framed as a lifestyle restoration, not just a training service. Strong value communication.', critical: false },
-      { name: 'Objection Handling',  score: 84, feedback: 'Close made before resistance surfaced — good timing read.', critical: false },
+      { name: 'Objection Handling',  score: 84, feedback: 'Close made before resistance surfaced â€” good timing read.', critical: false },
       { name: 'Close & Next Steps',  score: 86, feedback: 'Closed with confidence. Concrete follow-up step defined.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Excellent call from Jamie. The problem agitation was particularly strong — Diana became visibly emotional talking about how much stress the dog was causing.',
+    feedback: 'Excellent call from Jamie. The problem agitation was particularly strong â€” Diana became visibly emotional talking about how much stress the dog was causing.',
     strengths: [
-      'Problem agitation delivered with genuine empathy — didn\'t come across as manipulative',
+      'Problem agitation delivered with genuine empathy â€” didn\'t come across as manipulative',
       'Close made before resistance surfaced',
     ],
     improvements: ['Discovery could have explored more about prior attempts'],
@@ -386,8 +386,8 @@ export const calls: Call[] = [
       'Correctly calibrated agitation level for a prospect already aware of the problem',
       'Presented cases of a similar breed (Border Collie)',
     ],
-    improvements: ['The close could have been more directive — felt slightly hesitant'],
-    transcript: 'Jamie: Robert, when you say Luna "doesn\'t focus" — describe a specific situation from last week.\nRobert: Just yesterday. I tried teaching "sit" for half an hour. She knows how to do it, but ignores me when she wants...\n...',
+    improvements: ['The close could have been more directive â€” felt slightly hesitant'],
+    transcript: 'Jamie: Robert, when you say Luna "doesn\'t focus" â€” describe a specific situation from last week.\nRobert: Just yesterday. I tried teaching "sit" for half an hour. She knows how to do it, but ignores me when she wants...\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000610',
@@ -396,7 +396,7 @@ export const calls: Call[] = [
     date: '2026-06-09',
     durationSeconds: 2280,
     score: 82,
-    result: 'partial',
+    result: 'closed',
     intent: 3,
     intentBreakdown: { financial: 6, urgency: 7, authority: 5, engagement: 7 },
     prospect: 'Karen H.',
@@ -405,12 +405,12 @@ export const calls: Call[] = [
     rubricScores: { discovery: 86, problemAgitation: 84, offerPresentation: 82, objectionHandling: 78, closeAndNextSteps: 80 },
     sections: [
       { name: 'Discovery',           score: 86, feedback: 'Found the co-decision maker mid-call. Would have been stronger if surfaced in opening questions.', critical: true },
-      { name: 'Problem Agitation',   score: 84, feedback: 'Connected the dog scratching to child safety — high emotional stakes leveraged well.', critical: true },
+      { name: 'Problem Agitation',   score: 84, feedback: 'Connected the dog scratching to child safety â€” high emotional stakes leveraged well.', critical: true },
       { name: 'Offer Presentation',  score: 82, feedback: 'Offer presentation was solid. Slightly cut short given the co-decision constraint.', critical: false },
       { name: 'Objection Handling',  score: 78, feedback: 'Didn\'t push for a close knowing a second decision-maker was needed. Appropriate restraint.', critical: false },
       { name: 'Close & Next Steps',  score: 80, feedback: 'Follow-up scheduled. Maintained Karen\'s engagement for the next call.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Good call. Karen is a shared decision-maker with her husband and Jamie identified this halfway through — follow-up to include him.',
+    feedback: 'Good call. Karen is a shared decision-maker with her husband and Jamie identified this halfway through â€” follow-up to include him.',
     strengths: [
       'Didn\'t try to close knowing there was another decision-maker in the equation',
       'Maintained Karen\'s engagement for the next call',
@@ -439,10 +439,10 @@ export const calls: Call[] = [
       { name: 'Objection Handling',  score: 74, feedback: 'Minor handling of slight hesitation. Could have probed deeper.', critical: false },
       { name: 'Close & Next Steps',  score: 78, feedback: 'Consistent close in a short call. Could have pushed for a higher-tier plan.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Shorter call than ideal. Jamie closed but left money on the table — Steve could have bought a more complete plan with more agitation.',
+    feedback: 'Shorter call than ideal. Jamie closed but left money on the table â€” Steve could have bought a more complete plan with more agitation.',
     strengths: ['Consistent close even in a shorter call', 'Direct and no-nonsense tone, appropriate for the prospect\'s profile'],
-    improvements: ['Problem agitation too fast — didn\'t explore the emotional costs of the problem'],
-    transcript: 'Jamie: Steve, quick question — what would change in your routine if Rocky was fully obedient in the first 3 months?\nSteve: Mainly the runs. He has potential but doesn\'t focus...\n...',
+    improvements: ['Problem agitation too fast â€” didn\'t explore the emotional costs of the problem'],
+    transcript: 'Jamie: Steve, quick question â€” what would change in your routine if Rocky was fully obedient in the first 3 months?\nSteve: Mainly the runs. He has potential but doesn\'t focus...\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000612',
@@ -451,7 +451,7 @@ export const calls: Call[] = [
     date: '2026-06-03',
     durationSeconds: 2520,
     score: 76,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 2,
     intentBreakdown: { financial: 3, urgency: 4, authority: 3, engagement: 5 },
     prospect: 'Nancy W.',
@@ -463,18 +463,18 @@ export const calls: Call[] = [
       { name: 'Problem Agitation',   score: 80, feedback: 'Pain was established but emotional intensity faded before the close attempt.', critical: true },
       { name: 'Offer Presentation',  score: 78, feedback: 'Offer presentation was adequate but not compelling enough to neutralize the price concern.', critical: false },
       { name: 'Objection Handling',  score: 62, feedback: 'Went into justification mode immediately. Failed to probe the real objection or reframe value. Call ended with no commitment.', critical: false },
-      { name: 'Close & Next Steps',  score: 70, feedback: 'No next step defined. Call ended open-ended — prospect left without any commitment.', critical: false },
+      { name: 'Close & Next Steps',  score: 70, feedback: 'No next step defined. Call ended open-ended â€” prospect left without any commitment.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Discovery and agitation well done, but Jamie couldn\'t overcome the price objection effectively. Nancy left without buying and without a clear next step.',
     strengths: ['Good rapport built in the opening phase', 'Discovery correctly identified the real pain'],
     improvements: [
-      'Response to price objection was defensive — went into justification mode instead of reframing',
-      'No next step defined — call ended without commitment',
+      'Response to price objection was defensive â€” went into justification mode instead of reframing',
+      'No next step defined â€” call ended without commitment',
     ],
     transcript: 'Nancy: The investment is above what I had planned to spend...\nJamie: I understand, but our program has excellent value for money compared to...\nNancy: Sure, but I don\'t have that amount available right now...\n...',
   },
 
-  // Jordan K. — 5 calls
+  // Jordan K. â€” 5 calls
   {
     id: '00000000-0000-0000-0000-000000000613',
     trainerId: '00000000-0000-0000-0000-000000000303',
@@ -482,7 +482,7 @@ export const calls: Call[] = [
     date: '2026-06-15',
     durationSeconds: 1680,
     score: 82,
-    result: 'partial',
+    result: 'closed',
     intent: 2,
     intentBreakdown: { financial: 4, urgency: 3, authority: 4, engagement: 5 },
     prospect: 'Peter G.',
@@ -490,17 +490,17 @@ export const calls: Call[] = [
     lead_source: 'facebook',
     rubricScores: { discovery: 82, problemAgitation: 64, offerPresentation: 82, objectionHandling: 70, closeAndNextSteps: 68 },
     sections: [
-      { name: 'Discovery',           score: 82, feedback: 'Problem identified early. Questions were surface-level — no follow-up depth.', critical: true },
+      { name: 'Discovery',           score: 82, feedback: 'Problem identified early. Questions were surface-level â€” no follow-up depth.', critical: true },
       { name: 'Problem Agitation',   score: 64, feedback: 'Jumped from discovery directly to the offer. The prospect\'s pain was not sufficiently deepened.', critical: true },
       { name: 'Offer Presentation',  score: 82, feedback: 'Clear and well-structured program explanation. Confident delivery.', critical: false },
       { name: 'Objection Handling',  score: 70, feedback: 'Some hesitation managed. Could have been more proactive in surfacing concerns.', critical: false },
-      { name: 'Close & Next Steps',  score: 68, feedback: 'Follow-up vague — "I\'ll send you the material" with no date. Low commitment signal.', critical: false },
+      { name: 'Close & Next Steps',  score: 68, feedback: 'Follow-up vague â€” "I\'ll send you the material" with no date. Low commitment signal.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Reasonable discovery. Jordan identified the problem but moved too quickly to the offer presentation. Problem agitation was superficial.',
     strengths: ['Offer presentation clear and well-structured', 'Confident tone throughout the call'],
     improvements: [
       'Jumped from discovery directly to the offer without adequately agitating the problem',
-      'Follow-up was vague — "I\'ll send you the material" with no date',
+      'Follow-up was vague â€” "I\'ll send you the material" with no date',
     ],
     transcript: 'Jordan: Peter, tell me what\'s going on with Gobi.\nPeter: He\'s super hyper. Jumps on everyone, can\'t stay still.\nJordan: Got it. So what we offer is an 8-week program...\n...',
   },
@@ -520,18 +520,18 @@ export const calls: Call[] = [
     rubricScores: { discovery: 80, problemAgitation: 62, offerPresentation: 80, objectionHandling: 66, closeAndNextSteps: 64 },
     sections: [
       { name: 'Discovery',           score: 80, feedback: 'Functional discovery. Problems identified but not probed deeply.', critical: true },
-      { name: 'Problem Agitation',   score: 62, feedback: 'Weak agitation — Donna wasn\'t sufficiently committed to value before price was discussed.', critical: true },
+      { name: 'Problem Agitation',   score: 62, feedback: 'Weak agitation â€” Donna wasn\'t sufficiently committed to value before price was discussed.', critical: true },
       { name: 'Offer Presentation',  score: 80, feedback: 'Product knowledge evident. Presentation was clear but not emotionally anchored.', critical: false },
       { name: 'Objection Handling',  score: 66, feedback: 'Gave a discount without exploring other resolution paths. Price objection not genuinely handled.', critical: false },
-      { name: 'Close & Next Steps',  score: 64, feedback: 'Closed with a discount — value was not sufficiently established. Leaves precedent for future negotiations.', critical: false },
+      { name: 'Close & Next Steps',  score: 64, feedback: 'Closed with a discount â€” value was not sufficiently established. Leaves precedent for future negotiations.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Closed but with an unnecessary discount. Jordan didn\'t create enough value in the agitation phase and caved on price before exploring other objections.',
     strengths: ['Persisted through to close despite objection', 'Knows the product well and presented it clearly'],
     improvements: [
       'Gave a discount without trying to resolve the objection in other ways',
-      'Problem agitation too weak — Donna wasn\'t sufficiently committed',
+      'Problem agitation too weak â€” Donna wasn\'t sufficiently committed',
     ],
-    transcript: 'Jordan: Donna, I\'ll be straight — if you sign up today, I can apply a 10% discount...\nDonna: Oh, that works better for me...\n...',
+    transcript: 'Jordan: Donna, I\'ll be straight â€” if you sign up today, I can apply a 10% discount...\nDonna: Oh, that works better for me...\n...',
   },
   {
     id: '00000000-0000-0000-0000-000000000615',
@@ -540,7 +540,7 @@ export const calls: Call[] = [
     date: '2026-06-09',
     durationSeconds: 1800,
     score: 74,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 1,
     intentBreakdown: { financial: 2, urgency: 2, authority: 3, engagement: 3 },
     prospect: 'Mark T.',
@@ -549,7 +549,7 @@ export const calls: Call[] = [
     rubricScores: { discovery: 78, problemAgitation: 60, offerPresentation: 78, objectionHandling: 62, closeAndNextSteps: 62 },
     sections: [
       { name: 'Discovery',           score: 78, feedback: 'Good opening atmosphere. Only surface-level questions before pivoting to the pitch.', critical: true },
-      { name: 'Problem Agitation',   score: 60, feedback: 'Offer presented at minute 10 — problem was barely established. Prospect disengaged shortly after.', critical: true },
+      { name: 'Problem Agitation',   score: 60, feedback: 'Offer presented at minute 10 â€” problem was barely established. Prospect disengaged shortly after.', critical: true },
       { name: 'Offer Presentation',  score: 78, feedback: 'Presentation was structured but lost impact because the problem frame wasn\'t set.', critical: false },
       { name: 'Objection Handling',  score: 62, feedback: 'Didn\'t attempt recovery when disengagement was visible. Opportunity missed.', critical: false },
       { name: 'Close & Next Steps',  score: 62, feedback: 'No real close attempt. Call ended without a commitment or a defined next step.', critical: false },
@@ -557,7 +557,7 @@ export const calls: Call[] = [
     feedback: 'Call with a good start but lost the thread halfway. Jordan moved to the offer too early and couldn\'t regain the prospect\'s engagement.',
     strengths: ['Good call opening, created a positive initial atmosphere'],
     improvements: [
-      'Presented the offer at minute 10 — too early, before the problem was well established',
+      'Presented the offer at minute 10 â€” too early, before the problem was well established',
       'Didn\'t try to recover when sensing the prospect was disengaged',
     ],
     transcript: 'Jordan: Mark, great to meet you. So you\'re interested in training for Rocky, right?\nMark: Yeah, saw it on Google...\nJordan: Great! Let me tell you about our program...\n...',
@@ -569,7 +569,7 @@ export const calls: Call[] = [
     date: '2026-06-06',
     durationSeconds: 1500,
     score: 70,
-    result: 'partial',
+    result: 'closed',
     intent: 2,
     intentBreakdown: { financial: 3, urgency: 4, authority: 3, engagement: 4 },
     prospect: 'Susan B.',
@@ -580,13 +580,13 @@ export const calls: Call[] = [
       { name: 'Discovery',           score: 76, feedback: 'Only 2 questions before moving to the offer. Prospect\'s situation barely explored.', critical: true },
       { name: 'Problem Agitation',   score: 58, feedback: 'Practically non-existent. Jumped from a vague problem description directly to "want me to send info?"', critical: true },
       { name: 'Offer Presentation',  score: 78, feedback: 'Product knowledge is solid. Delivery lacks urgency or emotional hook.', critical: false },
-      { name: 'Objection Handling',  score: 62, feedback: 'No real objections surfaced — likely because the conversation never went deep enough.', critical: false },
+      { name: 'Objection Handling',  score: 62, feedback: 'No real objections surfaced â€” likely because the conversation never went deep enough.', critical: false },
       { name: 'Close & Next Steps',  score: 60, feedback: 'Follow-up scheduled but without qualifying interest. Low commitment from prospect.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Weak call. Jordan managed to present the product but without creating the urgency context needed for the close.',
     strengths: ['Solid product knowledge'],
     improvements: [
-      'Very shallow discovery — only 2 questions before moving to the offer',
+      'Very shallow discovery â€” only 2 questions before moving to the offer',
       'Problem agitation practically non-existent',
       'Follow-up scheduled but with no real qualification of interest',
     ],
@@ -599,7 +599,7 @@ export const calls: Call[] = [
     date: '2026-06-03',
     durationSeconds: 1200,
     score: 66,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 1,
     intentBreakdown: { financial: 1, urgency: 2, authority: 2, engagement: 3 },
     prospect: 'James R.',
@@ -614,16 +614,16 @@ export const calls: Call[] = [
       { name: 'Close & Next Steps',  score: 58, feedback: 'Premature close with no foundation. Ended without a defined next step.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Very short and shallow call. Jordan couldn\'t deepen the conversation enough to create value.',
-    strengths: ['At least the call happened — Jordan needed more discovery practice'],
+    strengths: ['At least the call happened â€” Jordan needed more discovery practice'],
     improvements: [
-      'Call ended too early — James needed more time to build trust',
+      'Call ended too early â€” James needed more time to build trust',
       'No real attempt at problem agitation',
       'Premature close without a value foundation',
     ],
     transcript: 'Jordan: James, tell me about Brutus.\nJames: He\'s just too big for us to control...\nJordan: Got it. Our program fixes that. The investment is X...\nJames: Hmm, let me think...\n...',
   },
 
-  // Taylor M. — 4 calls
+  // Taylor M. â€” 4 calls
   {
     id: '00000000-0000-0000-0000-000000000618',
     trainerId: '00000000-0000-0000-0000-000000000304',
@@ -631,7 +631,7 @@ export const calls: Call[] = [
     date: '2026-06-13',
     durationSeconds: 1320,
     score: 74,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 4,
     intentBreakdown: { financial: 7, urgency: 6, authority: 5, engagement: 8 },
     prospect: 'Helen K.',
@@ -648,7 +648,7 @@ export const calls: Call[] = [
     feedback: 'Taylor showed product knowledge but struggled to connect the product to Helen\'s real pain. The call was too technical and not emotional enough.',
     strengths: ['Knows the program specs and differentiators well'],
     improvements: [
-      'Discovery too technical — focused on dog behaviors, not on the impact to the owner\'s life',
+      'Discovery too technical â€” focused on dog behaviors, not on the impact to the owner\'s life',
       'When Helen hesitated, Taylor pulled back instead of advancing with empathy',
     ],
     transcript: 'Taylor: Helen, which command specifically is Ziggy having trouble with? Stay, sit, or is it more aggression?\nHelen: He\'s very reactive to other dogs on walks...\nTaylor: I see. Reactivity is one of our specialties...\n...',
@@ -660,7 +660,7 @@ export const calls: Call[] = [
     date: '2026-06-10',
     durationSeconds: 1680,
     score: 70,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 3,
     intentBreakdown: { financial: 5, urgency: 5, authority: 4, engagement: 6 },
     prospect: 'Paul M.',
@@ -674,11 +674,11 @@ export const calls: Call[] = [
       { name: 'Objection Handling',  score: 54, feedback: 'Immediately justified price when objection arose. Failed to probe root cause or reframe value. Went defensive.', critical: false },
       { name: 'Close & Next Steps',  score: 62, feedback: 'No close attempt after objection. Call ended without Paul committing to anything.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Second consecutive call without closing. Taylor is clearly struggling in the objection stage — goes defensive instead of keeping focus on value.',
+    feedback: 'Second consecutive call without closing. Taylor is clearly struggling in the objection stage â€” goes defensive instead of keeping focus on value.',
     strengths: ['Structured and complete program presentation'],
     improvements: [
       'Price objection: immediately went into justification mode',
-      'Problem agitation too quick — Paul didn\'t feel real urgency',
+      'Problem agitation too quick â€” Paul didn\'t feel real urgency',
       'Didn\'t try to involve the prospect in the solution during the call',
     ],
     transcript: 'Paul: It\'s expensive for what it is...\nTaylor: I understand the price might seem high, but if you break it down by week...\nPaul: Hmm...\nTaylor: I can also explain what\'s included...\n...',
@@ -690,7 +690,7 @@ export const calls: Call[] = [
     date: '2026-06-07',
     durationSeconds: 1080,
     score: 68,
-    result: 'partial',
+    result: 'closed',
     intent: 2,
     intentBreakdown: { financial: 3, urgency: 3, authority: 3, engagement: 4 },
     prospect: 'Alice N.',
@@ -702,13 +702,13 @@ export const calls: Call[] = [
       { name: 'Problem Agitation',   score: 56, feedback: 'No real agitation. Moved from a vague problem description to "I\'ll send you info on WhatsApp."', critical: true },
       { name: 'Offer Presentation',  score: 70, feedback: 'Rushed and lacking confidence. Alice likely didn\'t perceive the real value.', critical: false },
       { name: 'Objection Handling',  score: 52, feedback: 'Call ended without Taylor knowing Alice\'s real reason for hesitation. No probe attempted.', critical: false },
-      { name: 'Close & Next Steps',  score: 60, feedback: 'Follow-up scheduled via WhatsApp — low-commitment format. Better than nothing.', critical: false },
+      { name: 'Close & Next Steps',  score: 60, feedback: 'Follow-up scheduled via WhatsApp â€” low-commitment format. Better than nothing.', critical: false },
     ] satisfies CallSection[],
-    feedback: 'Very short call. Taylor seems to be feeling insecure — discovery questions were timid and the offer presentation was too rushed.',
-    strengths: ['Scheduled a follow-up — at least didn\'t leave without a next step'],
+    feedback: 'Very short call. Taylor seems to be feeling insecure â€” discovery questions were timid and the offer presentation was too rushed.',
+    strengths: ['Scheduled a follow-up â€” at least didn\'t leave without a next step'],
     improvements: [
       'Discovery with only 2 questions before moving to the offer',
-      'Insecure tone in the presentation — Alice probably didn\'t perceive the real value',
+      'Insecure tone in the presentation â€” Alice probably didn\'t perceive the real value',
       'Call ended without Taylor knowing the real reason for the hesitation',
     ],
     transcript: 'Taylor: Alice, what motivated you to look into dog training?\nAlice: Mel has been chewing things around the house a bit...\nTaylor: Got it. Let me send you the program info via WhatsApp?\n...',
@@ -720,7 +720,7 @@ export const calls: Call[] = [
     date: '2026-06-04',
     durationSeconds: 1500,
     score: 64,
-    result: 'no_outcome',
+    result: 'not_closed',
     intent: 3,
     intentBreakdown: { financial: 4, urgency: 5, authority: 3, engagement: 5 },
     prospect: 'George T.',
@@ -730,22 +730,22 @@ export const calls: Call[] = [
     sections: [
       { name: 'Discovery',           score: 62, feedback: 'Prospect led the conversation from the start. Taylor failed to take control and direct the discovery.', critical: true },
       { name: 'Problem Agitation',   score: 54, feedback: 'No agitation attempt. The conversation stayed surface-level throughout.', critical: true },
-      { name: 'Offer Presentation',  score: 70, feedback: 'Presentation was reactive — responding to George\'s questions rather than leading a structured pitch.', critical: false },
+      { name: 'Offer Presentation',  score: 70, feedback: 'Presentation was reactive â€” responding to George\'s questions rather than leading a structured pitch.', critical: false },
       { name: 'Objection Handling',  score: 52, feedback: '"Let me think" accepted without any probe or push. Call ended in a passive position.', critical: false },
-      { name: 'Close & Next Steps',  score: 60, feedback: 'No close attempt. Ended with "let me think about what you said" — fully passive.', critical: false },
+      { name: 'Close & Next Steps',  score: 60, feedback: 'No close attempt. Ended with "let me think about what you said" â€” fully passive.', critical: false },
     ] satisfies CallSection[],
     feedback: 'Concerning call. Taylor is showing clear signs of low confidence. Voice was hesitant and he let the prospect lead the entire conversation.',
     strengths: ['Managed to keep George on the call for 25 minutes'],
     improvements: [
-      'Let the prospect drive the call — lost control of the conversation',
+      'Let the prospect drive the call â€” lost control of the conversation',
       'Made no real attempt to close',
-      'Ended the call with "let me think about what you said" — passive position',
+      'Ended the call with "let me think about what you said" â€” passive position',
     ],
     transcript: 'George: How much does it cost?\nTaylor: The investment is... it depends on the plan. Options start at...\nGeorge: Yeah, but what\'s the most basic one?\nTaylor: The basic includes...\nGeorge: Hmm, let me think...\nTaylor: Of course, no problem...\n...',
   },
 ]
 
-// ─── Rubric Sections ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Rubric Sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const rubricSections: RubricSection[] = [
   {
@@ -800,13 +800,13 @@ export const rubricSections: RubricSection[] = [
   },
 ]
 
-// ─── Insights ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Insights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const insights: Insight[] = [
   {
     id: 'insight-1',
     type: 'risk',
-    icon: '🚨',
+    icon: 'ðŸš¨',
     title: 'Objection Handling is the biggest revenue leak',
     tag: 'Team pattern',
     tagColor: 'red',
@@ -818,7 +818,7 @@ export const insights: Insight[] = [
   {
     id: 'insight-2',
     type: 'warning',
-    icon: '⚠️',
+    icon: 'âš ï¸',
     title: 'Taylor is at risk of disengagement',
     tag: 'Sales person alert',
     tagColor: 'amber',
@@ -830,30 +830,30 @@ export const insights: Insight[] = [
   {
     id: 'insight-3',
     type: 'tip',
-    icon: '💡',
+    icon: 'ðŸ’¡',
     title: "Marcus's Discovery can elevate the whole team",
     tag: 'Best practices',
     tagColor: 'blue',
     summary:
-      'Marcus scores 94 in Discovery — 11pts above average. He asks 3 open-ended questions before presenting the offer. No other sales person replicates this.',
+      'Marcus scores 94 in Discovery â€” 11pts above average. He asks 3 open-ended questions before presenting the offer. No other sales person replicates this.',
     action:
       'Pull 2 clips from Marcus\'s calls and share as training material at the next team meeting.',
   },
   {
     id: 'insight-4',
     type: 'positive',
-    icon: '📈',
-    title: 'Coaching working — close rate +7pts in 6 weeks',
+    icon: 'ðŸ“ˆ',
+    title: 'Coaching working â€” close rate +7pts in 6 weeks',
     tag: 'ROI signal',
     tagColor: 'green',
     summary:
-      'Since starting AI coaching, close rate went from 57% → 64%. Biggest gain in Offer Presentation (+12pts team average).',
+      'Since starting AI coaching, close rate went from 57% â†’ 64%. Biggest gain in Offer Presentation (+12pts team average).',
     action:
       'Keep the cadence. Consider daily uploads for faster feedback loops.',
   },
 ]
 
-// ─── Plans ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Plans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const plans: Plan[] = [
   {
@@ -918,11 +918,11 @@ const STARTER = plans[0]
 const PRO     = plans[1]
 const PRO_RAG = plans[2]
 
-// ─── Clients (admin view) ────────────────────────────────────────────────────
+// â”€â”€â”€ Clients (admin view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Mirrors the real Supabase rows (clients_rows.json):
-//   801 → Dog Wizard HQ      (Pro,     org 100)
-//   803 → K9 Elite Training  (Pro+RAG, org 200)
-//   802 → Paw Academy        (Starter, org 300)
+//   801 â†’ Dog Wizard HQ      (Pro,     org 100)
+//   803 â†’ K9 Elite Training  (Pro+RAG, org 200)
+//   802 â†’ Paw Academy        (Starter, org 300)
 
 export const clients: Client[] = [
   {
@@ -934,8 +934,8 @@ export const clients: Client[] = [
     callsThisMonth: 20,
     avgScore: 84,
     totalSecondsThisMonth: 620 * 60,
-    // minutos × US$2/min (mock; o cálculo real fica em lib/billing.ts, que NÃO
-    // é importado aqui pra não vazar billing em bundles não-admin).
+    // minutos Ã— US$2/min (mock; o cÃ¡lculo real fica em lib/billing.ts, que NÃƒO
+    // Ã© importado aqui pra nÃ£o vazar billing em bundles nÃ£o-admin).
     totalCostThisMonth: 620 * 2,
     health: 'healthy',
     trainersCount: 4,
@@ -989,7 +989,7 @@ export const globalMetrics: GlobalMetrics = {
   avgScore: 82,
 }
 
-// ─── Trend data ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Trend data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const trendData: TrendPoint[] = [
   { week: 'W1', closeRate: 57, score: 72 },
@@ -1000,12 +1000,12 @@ export const trendData: TrendPoint[] = [
   { week: 'W6', closeRate: 68, score: 86 },
 ]
 
-// ─── Top Metrics — Est. Monthly Revenue ──────────────────────────────────────
+// â”€â”€â”€ Top Metrics â€” Est. Monthly Revenue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const estimatedRevenue = 18200
 export const revenueBaseline = 15100
 
-// ─── 6-Week Close Rate Trend ─────────────────────────────────────────────────
+// â”€â”€â”€ 6-Week Close Rate Trend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const closeRateTrend: { week: string; closeRate: number }[] = [
   { week: 'W1', closeRate: 57 },
@@ -1022,7 +1022,7 @@ export const closeRateTrendSummary = {
   delta: 8,
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerScore> = {
   '00000000-0000-0000-0000-000000000301': 'marcus',
@@ -1031,7 +1031,7 @@ export const TRAINER_ID_TO_KEY: Record<string, keyof import('./types').TrainerSc
   '00000000-0000-0000-0000-000000000304': 'taylor',
 }
 
-// ─── Rubric (Supabase format) ────────────────────────────────────────────────
+// â”€â”€â”€ Rubric (Supabase format) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const rubric = {
   id: 'rubric-001',
@@ -1043,7 +1043,7 @@ export const rubric = {
   created_at: '2026-03-01T10:00:00Z',
 }
 
-// ─── Scripts (Supabase format) ───────────────────────────────────────────────
+// â”€â”€â”€ Scripts (Supabase format) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const scripts = [
   {
@@ -1078,7 +1078,7 @@ export const scripts = [
     is_active: true,
     created_at: '2026-03-05T14:00:00Z',
     sections: [
-      { name: 'Objection Identification', instructions: 'Classify: price, time, authority, or need.', tips: 'Never respond immediately — pause.' },
+      { name: 'Objection Identification', instructions: 'Classify: price, time, authority, or need.', tips: 'Never respond immediately â€” pause.' },
       { name: 'Reframing', instructions: 'Recontextualize the investment in terms of the cost of inaction.', tips: '"How much does it cost NOT to solve this?"' },
       { name: 'Social Proof', instructions: 'Use specific cases from clients with a similar situation.', tips: 'Similar breed and problem work best.' },
     ],
@@ -1091,7 +1091,7 @@ export const scripts = [
   },
 ]
 
-// ─── Calls in Supabase format (for PostgREST handlers) ────────────────────
+// â”€â”€â”€ Calls in Supabase format (for PostgREST handlers) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const supabaseCalls = calls.map((call) => ({
   id: call.id,
@@ -1119,10 +1119,10 @@ export const supabaseCalls = calls.map((call) => ({
   detected_outcome: call.result,
   email_sent: true,
   email_id: `email-${call.id}`,
-  // Duração em segundos — fonte de `durationSeconds` no mapper toCall.
+  // DuraÃ§Ã£o em segundos â€” fonte de `durationSeconds` no mapper toCall.
   duration_seconds: call.durationSeconds,
-  // Prompt v2 cost tracking — mocked from a typical gpt-4o call (demo default).
-  // 2400 input × $2.50/1M + 480 output × $10/1M = $0.0108
+  // Prompt v2 cost tracking â€” mocked from a typical gpt-4o call (demo default).
+  // 2400 input Ã— $2.50/1M + 480 output Ã— $10/1M = $0.0108
   model_used: 'gpt-4o',
   input_tokens: 2400,
   output_tokens: 480,
@@ -1133,7 +1133,7 @@ export const supabaseCalls = calls.map((call) => ({
   intent: call.intent ?? null,
 }))
 
-// ─── Revenue Impact Estimator ─────────────────────────────────────────────────
+// â”€â”€â”€ Revenue Impact Estimator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const revenueEstimator: RevenueEstimatorItem[] = [
   { section: 'Objection Handling',  current: 72, target: 86, monthlyImpact: 2400, confidence: 'High' },
@@ -1141,10 +1141,10 @@ export const revenueEstimator: RevenueEstimatorItem[] = [
   { section: 'Close & Next Steps',  current: 76, target: 88, monthlyImpact: 1200, confidence: 'Low'  },
 ]
 
-// ─── Performance Trends (per sales person + team aggregate) ──────────────────
+// â”€â”€â”€ Performance Trends (per sales person + team aggregate) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const performanceTrends: Record<string, PerformanceTrendPoint[]> = {
-  // trainerId → trend data (keys match mock trainer IDs)
+  // trainerId â†’ trend data (keys match mock trainer IDs)
   '00000000-0000-0000-0000-000000000301': [ // Marcus R.
     { week: 'W1', closeRate: 60, avgScore: 72 },
     { week: 'W2', closeRate: 63, avgScore: 76 },
@@ -1192,9 +1192,9 @@ export const revenueEstimatorTotal = revenueEstimator.reduce(
   0,
 )
 
-// ─── Demo credentials ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Demo credentials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ─── Rubric Gap Detection ─────────────────────────────────────────────────────
+// â”€â”€â”€ Rubric Gap Detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const rubricGaps: import('./types').RubricGap[] = [
   { frequency: 71, description: 'Price comparison to competitors not in rubric' },
@@ -1202,7 +1202,7 @@ export const rubricGaps: import('./types').RubricGap[] = [
   { frequency: 38, description: '"My dog is too old" objection unhandled' },
 ]
 
-// ─── Correlation Engine ───────────────────────────────────────────────────────
+// â”€â”€â”€ Correlation Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const correlationEngine: import('./types').CorrelationFactor[] = [
   { label: 'Objection Handling', score: 90, correlation: 'High', impact: 'High', source: 'Rubric' },
@@ -1214,7 +1214,7 @@ export const correlationEngine: import('./types').CorrelationFactor[] = [
   { label: 'Problem Agitation',  score: 36, correlation: 'Low',  impact: 'Low',  source: 'Rubric' },
 ]
 
-// ─── Best Call This Week ──────────────────────────────────────────────────────
+// â”€â”€â”€ Best Call This Week â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const bestCalls: import('./types').CallsByTrainerMap = {
   marcus: [
@@ -1223,7 +1223,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/21/2026',
       score:    94,
       result:   'Closed',
-      analysis: 'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      analysis: 'At 2:14 Marcus handled the price objection perfectly â€” acknowledged concern, reframed value, asked for the booking without hesitation.',
       listenAt: '2:14',
     },
     {
@@ -1241,7 +1241,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/20/2026',
       score:    90,
       result:   'Closed',
-      analysis: 'At 3:05 Jamie reframed the value proposition with a ROI story that resonated immediately — prospect stopped negotiating on price.',
+      analysis: 'At 3:05 Jamie reframed the value proposition with a ROI story that resonated immediately â€” prospect stopped negotiating on price.',
       listenAt: '3:05',
     },
     {
@@ -1259,7 +1259,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/22/2026',
       score:    84,
       result:   'Closed',
-      analysis: 'At 1:50 Jordan handled the "my dog is too old" objection with a success story — effectively shifted emotional state of the prospect.',
+      analysis: 'At 1:50 Jordan handled the "my dog is too old" objection with a success story â€” effectively shifted emotional state of the prospect.',
       listenAt: '1:50',
     },
     {
@@ -1277,7 +1277,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/21/2026',
       score:    78,
       result:   'Closed',
-      analysis: 'At 2:30 Taylor used silence effectively after presenting the price — waited for the prospect to self-convince rather than filling the gap.',
+      analysis: 'At 2:30 Taylor used silence effectively after presenting the price â€” waited for the prospect to self-convince rather than filling the gap.',
       listenAt: '2:30',
     },
     {
@@ -1285,7 +1285,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:     '3/19/2026',
       score:    76,
       result:   'Closed',
-      analysis: 'Strongest tone and energy of the week — kept energy high through a 25-minute call, matching the prospect\'s excitement level throughout.',
+      analysis: 'Strongest tone and energy of the week â€” kept energy high through a 25-minute call, matching the prospect\'s excitement level throughout.',
       listenAt: '5:10',
     },
   ],
@@ -1298,7 +1298,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
       date:            '3/21/2026',
       score:           94,
       result:          'Closed',
-      analysis:        'At 2:14 Marcus handled the price objection perfectly — acknowledged concern, reframed value, asked for the booking without hesitation.',
+      analysis:        'At 2:14 Marcus handled the price objection perfectly â€” acknowledged concern, reframed value, asked for the booking without hesitation.',
       listenAt:        '2:14',
     },
     {
@@ -1315,7 +1315,7 @@ export const bestCalls: import('./types').CallsByTrainerMap = {
   ],
 }
 
-// ─── Worst Call This Week ─────────────────────────────────────────────────────
+// â”€â”€â”€ Worst Call This Week â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const worstCalls: import('./types').CallsByTrainerMap = {
   marcus: [
@@ -1324,7 +1324,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/18/2026',
       score:    62,
       result:   'No Close',
-      analysis: 'At 1:42 Marcus skipped discovery entirely and jumped straight to pricing — prospect disengaged after 3 minutes. No pain established before the offer.',
+      analysis: 'At 1:42 Marcus skipped discovery entirely and jumped straight to pricing â€” prospect disengaged after 3 minutes. No pain established before the offer.',
       listenAt: '1:42',
     },
     {
@@ -1332,7 +1332,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/20/2026',
       score:    64,
       result:   'No Close',
-      analysis: 'Objection at 4:10 ("too expensive") was met with silence, then a discount offer — reinforced price anchoring without defending value.',
+      analysis: 'Objection at 4:10 ("too expensive") was met with silence, then a discount offer â€” reinforced price anchoring without defending value.',
       listenAt: '4:10',
     },
   ],
@@ -1350,7 +1350,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/21/2026',
       score:    66,
       result:   'Follow-up',
-      analysis: 'Offer presentation was vague — benefits listed without connecting them to the prospect\'s stated problems. No urgency created.',
+      analysis: 'Offer presentation was vague â€” benefits listed without connecting them to the prospect\'s stated problems. No urgency created.',
       listenAt: '3:40',
     },
   ],
@@ -1360,7 +1360,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/17/2026',
       score:    58,
       result:   'No Close',
-      analysis: 'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      analysis: 'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" â€” self-sabotaged before the offer was even presented.',
       listenAt: '0:55',
     },
     {
@@ -1368,7 +1368,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/20/2026',
       score:    62,
       result:   'No Close',
-      analysis: 'Close sequence at 5:15 was rushed — asked for the sale twice in 30 seconds without pausing for a response, creating pressure that backfired.',
+      analysis: 'Close sequence at 5:15 was rushed â€” asked for the sale twice in 30 seconds without pausing for a response, creating pressure that backfired.',
       listenAt: '5:15',
     },
   ],
@@ -1386,7 +1386,7 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:     '3/22/2026',
       score:    60,
       result:   'No Close',
-      analysis: 'Problem agitation phase was skipped entirely — moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
+      analysis: 'Problem agitation phase was skipped entirely â€” moved from intro to offer in under 90 seconds. Prospect had no emotional reason to buy.',
       listenAt: '1:28',
     },
   ],
@@ -1410,13 +1410,13 @@ export const worstCalls: import('./types').CallsByTrainerMap = {
       date:            '3/17/2026',
       score:           58,
       result:          'No Close',
-      analysis:        'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" — self-sabotaged before the offer was even presented.',
+      analysis:        'At 0:55 Jordan agreed with the prospect that "maybe now isn\'t the right time" â€” self-sabotaged before the offer was even presented.',
       listenAt:        '0:55',
     },
   ],
 }
 
-// ─── Coaching Recommendations ────────────────────────────────────────────────
+// â”€â”€â”€ Coaching Recommendations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type CtaKey = 'reference' | 'share' | 'viewMissing' | 'viewCalls' | 'viewScript'
 
@@ -1426,7 +1426,7 @@ export type CoachingRec = {
   text: string
   /** Display label for the CTA button. May be translated server-side. */
   cta: string
-  /** Stable identifier used for styling/behavior — never translated. */
+  /** Stable identifier used for styling/behavior â€” never translated. */
   ctaKey: CtaKey
 }
 
@@ -1436,21 +1436,21 @@ export const coachingRecs: Record<string, CoachingRec[]> = {
       order: 1,
       title: 'Work on empathy',
       text: 'Trending down 3 weeks. Pull Lisa M. call and identify where emotional connection dropped.',
-      cta: 'Reference call →',
+      cta: 'Reference call â†’',
       ctaKey: 'reference',
     },
     {
       order: 2,
       title: "Use Marcus's Bob W. call as team training",
-      text: 'Best objection handling example in 6 weeks — share at next team meeting.',
-      cta: 'Share call →',
+      text: 'Best objection handling example in 6 weeks â€” share at next team meeting.',
+      cta: 'Share call â†’',
       ctaKey: 'share',
     },
     {
       order: 3,
       title: 'Review 3 missing calls before next session',
       text: 'Submission gaps are a coaching signal, not just a compliance issue.',
-      cta: 'View missing →',
+      cta: 'View missing â†’',
       ctaKey: 'viewMissing',
     },
   ],
@@ -1459,21 +1459,21 @@ export const coachingRecs: Record<string, CoachingRec[]> = {
       order: 1,
       title: 'Close more decisively',
       text: 'Last 3 calls ended without a firm commitment. Pull the Karen H. follow-up and practice a direct close script.',
-      cta: 'Reference call →',
+      cta: 'Reference call â†’',
       ctaKey: 'reference',
     },
     {
       order: 2,
       title: 'Identify co-decision makers early',
       text: 'Two calls this month were derailed by an unidentified second decision-maker. Add one qualifying question in discovery.',
-      cta: 'View script →',
+      cta: 'View script â†’',
       ctaKey: 'viewScript',
     },
     {
       order: 3,
       title: 'Use Diana M. call in the next team session',
-      text: 'Best problem agitation example on the team — empathetic and never manipulative.',
-      cta: 'Share call →',
+      text: 'Best problem agitation example on the team â€” empathetic and never manipulative.',
+      cta: 'Share call â†’',
       ctaKey: 'share',
     },
   ],
@@ -1482,50 +1482,50 @@ export const coachingRecs: Record<string, CoachingRec[]> = {
       order: 1,
       title: 'Stop jumping to the offer too early',
       text: 'Presenting the offer before minute 15 correlates with 0% close rate for Jordan. Add a problem agitation checkpoint.',
-      cta: 'View script →',
+      cta: 'View script â†’',
       ctaKey: 'viewScript',
     },
     {
       order: 2,
       title: 'No more discounts without objection reframe',
       text: "Jordan offered a discount in 2 of 5 calls this week. Review Marcus's objection handling technique first.",
-      cta: 'Reference call →',
+      cta: 'Reference call â†’',
       ctaKey: 'reference',
     },
     {
       order: 3,
       title: 'Set a specific follow-up time on every call',
       text: 'Vague follow-ups ("I\'ll send you info") have zero conversion. Commit to a date and time before hanging up.',
-      cta: 'View missing →',
+      cta: 'View missing â†’',
       ctaKey: 'viewMissing',
     },
   ],
   taylor: [
     {
       order: 1,
-      title: 'Schedule a 1:1 this week — priority',
+      title: 'Schedule a 1:1 this week â€” priority',
       text: 'Score dropped 12pts in 2 weeks and call volume is down 40%. This is a confidence issue, not a skills gap.',
-      cta: 'View calls →',
+      cta: 'View calls â†’',
       ctaKey: 'viewCalls',
     },
     {
       order: 2,
       title: 'Stop over-explaining after presenting price',
       text: 'Taylor fills silence with justifications. Review the strategic silence technique from Marcus\'s Bob W. call.',
-      cta: 'Reference call →',
+      cta: 'Reference call â†’',
       ctaKey: 'reference',
     },
     {
       order: 3,
       title: 'Focus discovery on emotional impact, not behaviors',
       text: 'Questions are too technical. Ask "how does this affect your family?" not "which command is the problem?"',
-      cta: 'View script →',
+      cta: 'View script â†’',
       ctaKey: 'viewScript',
     },
   ],
 }
 
-// ─── Behavioral Correlation Profile ──────────────────────────────────────────
+// â”€â”€â”€ Behavioral Correlation Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type BehavioralDimension = {
   dimension: string
@@ -1570,7 +1570,7 @@ export const trainerBehavioral: Record<string, BehavioralDimension[]> = {
   ],
 }
 
-// ─── Behavioral Trends — 6 Weeks ─────────────────────────────────────────────
+// â”€â”€â”€ Behavioral Trends â€” 6 Weeks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type BehavioralTrendDimension = {
   dimension: string
@@ -1605,7 +1605,7 @@ export const trainerTrends: Record<string, BehavioralTrendDimension[]> = {
   ],
 }
 
-// ─── Active Alerts ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Active Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type ActiveAlert = {
   type: 'critical' | 'warning' | 'positive'
@@ -1635,7 +1635,7 @@ export const activeAlerts: ActiveAlert[] = [
   },
 ]
 
-// ─── Team Health ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Team Health â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type TeamHealthEntry = {
   initials: string
@@ -1677,12 +1677,12 @@ export const aiModuleConfigLog: AiModuleConfigLogEntry[] = [
   { id: 'log-003', module_id: 'correlation_engine',     field: 'temperature', previous_value: 0.7, new_value: 0.5, updated_by: 'admin@askmoses.ai', updated_at: '2026-05-09T09:11:00Z' },
 ]
 
-// ─── LLM provider / pricing — REFERÊNCIA (a feature está finalizada) ──────────
-// NÃO são mais consumidos pela UI: /admin/llm-config lê provider/pricing DIRETO
+// â”€â”€â”€ LLM provider / pricing â€” REFERÃŠNCIA (a feature estÃ¡ finalizada) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// NÃƒO sÃ£o mais consumidos pela UI: /admin/llm-config lÃª provider/pricing DIRETO
 // do Supabase (llm_provider_settings / llm_pricing) via lib/db/llm-settings.ts,
-// e /api/analyze usa getActiveLlmModel. Estes exports ficam só como referência
-// do formato/seed. Idem aiModuleConfigs/aiModuleConfigLog acima — a fonte de
-// verdade agora é a tabela ai_module_configs (migration 101).
+// e /api/analyze usa getActiveLlmModel. Estes exports ficam sÃ³ como referÃªncia
+// do formato/seed. Idem aiModuleConfigs/aiModuleConfigLog acima â€” a fonte de
+// verdade agora Ã© a tabela ai_module_configs (migration 101).
 export const llmProviderSettingsMock: LlmProviderSetting[] = [
   {
     id: 'mock-openai',
@@ -1713,20 +1713,20 @@ export const llmPricingMock: LlmPricingRow[] = [
   { id: 'mock-price-4', provider: 'gemini', model: 'gemini-2.5-flash-lite', unit: 'per_1m_tokens', input_usd_per_1m: 0.10, output_usd_per_1m: 0.40, usd_per_minute: null, effective_from: '2026-01-01T00:00:00Z', active: true },
 ]
 
-// ─── Section Feedback Fallbacks ───────────────────────────────────────────────
+// â”€â”€â”€ Section Feedback Fallbacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Used when a call's sections[].feedback is empty (legacy calls without AI feedback).
-// Keyed by normalized section name, then score tier: high (≥80), mid (≥60), low (<60).
+// Keyed by normalized section name, then score tier: high (â‰¥80), mid (â‰¥60), low (<60).
 
 type FeedbackTier = { high: string; mid: string; low: string }
 
 export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
   'opening': {
-    high: 'Strong opening — rep established rapport quickly, confirmed details, and gained permission to proceed.',
+    high: 'Strong opening â€” rep established rapport quickly, confirmed details, and gained permission to proceed.',
     mid:  'Opening was adequate but felt scripted. A warmer, more personalized start would improve engagement.',
     low:  'Opening was weak or rushed. Permission to proceed was not clearly established.',
   },
   'pain qualification': {
-    high: 'Pain was deeply qualified — rep uncovered the emotional story and the real stakes before any presentation.',
+    high: 'Pain was deeply qualified â€” rep uncovered the emotional story and the real stakes before any presentation.',
     mid:  'Pain was identified at a surface level. More follow-up questions would have revealed stronger emotional drivers.',
     low:  'Pain qualification was minimal. The prospect\'s real problem was never uncovered.',
   },
@@ -1746,7 +1746,7 @@ export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
     low:  'No clear call to action. The call ended without any commitment from the prospect.',
   },
   'discovery': {
-    high: 'Strong discovery phase — rep asked targeted questions and uncovered the prospect\'s core pain before any presentation.',
+    high: 'Strong discovery phase â€” rep asked targeted questions and uncovered the prospect\'s core pain before any presentation.',
     mid:  'Discovery was functional but surface-level. More probing questions would have strengthened the emotional case.',
     low:  'Discovery was rushed or skipped. The prospect\'s real pain was never established, weakening the entire call.',
   },
@@ -1772,7 +1772,7 @@ export const sectionFeedbackFallback: Record<string, FeedbackTier> = {
   },
 }
 
-// ─── Ask Moses Intent Index ───────────────────────────────────────────────────
+// â”€â”€â”€ Ask Moses Intent Index â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Pesos base 100 (igual rubric), default 25/25/25/25.
 export const intentSignals: IntentSignal[] = [
@@ -1782,7 +1782,7 @@ export const intentSignals: IntentSignal[] = [
   { id: 'engagement', weight: 25, color: 'accent2' },
 ]
 
-// ─── Billing mock data ────────────────────────────────────────────────────────
+// â”€â”€â”€ Billing mock data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const BILLING_CALLS_PER_DAY_14 = [2, 3, 1, 4, 5, 3, 2, 6, 4, 3, 5, 7, 4, 3]
 
@@ -1819,7 +1819,7 @@ export function mockBillingUsage(scope: string, range: BillingPeriodRange): Bill
 export function mockBillingCycle(scope: string, month: string): BillingCycle {
   const label = new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   const howYouAreBilled = [
-    '$0.0667 per minute of analyzed calls (≈ $1 per 15-min call)',
+    '$0.0667 per minute of analyzed calls (â‰ˆ $1 per 15-min call)',
     'Billed in whole minutes, rounded up',
     'Calls under 30 seconds aren\'t billed',
     'Charged monthly, on the calendar month',
@@ -1834,7 +1834,7 @@ export function mockBillingCycle(scope: string, month: string): BillingCycle {
       callsBilled: 1248,
       avgCallLengthMin: 15.0,
       ratePerMinute: 0.0667,
-      planName: '—',
+      planName: 'â€”',
       cogs: 374.46,
       rows: [
         { orgId: 'org-1', name: 'Dog Wizard HQ',      status: 'PAID', planName: 'Pro',  ratePerMinute: 0.0667, billableMinutes: 5400, callsBilled: 360, amount: 360.18, llmCost: 108.05 },

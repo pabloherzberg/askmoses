@@ -51,7 +51,6 @@ export function NewCallForm() {
 
   const RESULT_OPTIONS = [
     { value: 'closed',    label: t('outcomes.closed'),   color: 'var(--am-green)' },
-    { value: 'follow-up', label: t('outcomes.followUp'), color: 'var(--am-amber)' },
     { value: 'no-close',  label: t('outcomes.noClose'),  color: 'var(--am-red)'   },
   ]
 

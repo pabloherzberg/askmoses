@@ -378,7 +378,7 @@ describe('TC-07 › Calls antigas sem lead_name/lead_source não quebram a inter
       expect(call.trainerName).toBeDefined()
       expect(call.prospect).toBeDefined()
       expect(call.score).toBeTypeOf('number')
-      expect(['closed', 'not_closed', 'partial', 'no_outcome']).toContain(call.result)
+      expect(['closed', 'not_closed']).toContain(call.result)
     }
   })
 
@@ -411,7 +411,7 @@ describe('TC-07 › Calls antigas sem lead_name/lead_source não quebram a inter
       date: '2025-01-01',
       durationSeconds: 1200,
       score: 3.5,
-      result: 'no_outcome',
+      result: 'not_closed',
       intent: 3,
       prospect: 'Old Prospect',
       rubricScores: { discovery: 3.5, problemAgitation: 3.0, offerPresentation: 3.5, objectionHandling: 3.0, closeAndNextSteps: 3.0 },

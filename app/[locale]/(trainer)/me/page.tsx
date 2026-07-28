@@ -43,9 +43,7 @@ export default async function TrainerDashboardPage() {
   // ── Totais históricos (todas as calls do trainer, sem janela) ────────────
   const totalCalls = trainerCalls.length;
   const closedCalls    = trainerCalls.filter((c) => c.result === "closed").length;
-  const partialCalls   = trainerCalls.filter((c) => c.result === "partial").length;
   const notClosedCalls = trainerCalls.filter((c) => c.result === "not_closed").length;
-  const noOutcomeCalls = trainerCalls.filter((c) => c.result === "no_outcome").length;
   const totalAvgScore = totalCalls > 0
     ? Math.round(trainerCalls.reduce((sum, c) => sum + c.score, 0) / totalCalls)
     : 0;
@@ -120,9 +118,7 @@ export default async function TrainerDashboardPage() {
           wins: closedCalls,
           avgScore: totalAvgScore,
           closeRate: totalCloseRate,
-          partial: partialCalls,
           notClosed: notClosedCalls,
-          noOutcome: noOutcomeCalls,
         }}
       />
 

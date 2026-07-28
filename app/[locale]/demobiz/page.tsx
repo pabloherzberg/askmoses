@@ -104,7 +104,7 @@ const actionItems = [
 const recentCalls = [
   { id: 1, user: "Pablo Santos", outcome: "closed", duration: "16:42", time: "2h ago", lead: "John D." },
   { id: 2, user: "Maria Silva", outcome: "not_closed", duration: "7:23", time: "2.5h ago", lead: "Sarah M." },
-  { id: 3, user: "Jose Oliveira", outcome: "partial", duration: "12:05", time: "3h ago", lead: "Mike T." },
+  { id: 3, user: "Jose Oliveira", outcome: "closed", duration: "12:05", time: "3h ago", lead: "Mike T." },
   { id: 4, user: "Pablo Santos", outcome: "closed", duration: "18:31", time: "4h ago", lead: "Lisa K." },
   { id: 5, user: "Maria Silva", outcome: "not_closed", duration: "5:12", time: "4.5h ago", lead: "Tom R." },
 ]
@@ -418,7 +418,6 @@ export default function DemoBizPage() {
                     <div className="flex items-center gap-4">
                       <div className={`h-3 w-3 rounded-full ${
                         call.outcome === "closed" ? "bg-green-500" :
-                        call.outcome === "partial" ? "bg-amber-500" :
                         "bg-red-500"
                       }`} />
                       <div>
@@ -433,16 +432,12 @@ export default function DemoBizPage() {
                       </div>
                       <Badge variant={
                         call.outcome === "closed" ? "default" :
-                        call.outcome === "partial" ? "secondary" :
                         "outline"
                       } className={
                         call.outcome === "closed" ? "bg-green-600" :
-                        call.outcome === "partial" ? "bg-amber-100 text-amber-700" :
                         "bg-red-50 text-red-600"
                       }>
-                        {call.outcome === "closed" ? "Closed" :
-                         call.outcome === "partial" ? "Partial" :
-                         "Not Closed"}
+                        {call.outcome === "closed" ? "Closed" : "Not Closed"}
                       </Badge>
                       <Button variant="ghost" size="sm">
                         <MessageSquare className="h-4 w-4" />

@@ -27,7 +27,7 @@ export const outcomeProfiles: Record<string, AnalysisProfile> = {
   follow_up: {
     scores: [4, 4, 4, 3, 3],
     overall: 3.6,
-    detected: 'partial',
+    detected: 'closed',
   },
   objection_unresolved: {
     scores: [4, 3, 3, 2, 2],
@@ -202,7 +202,7 @@ export function buildMockAnalysis(): AnalyzeResult {
   ]
   return {
     overallScore: 3.9,
-    detectedOutcome: 'partial',
+    detectedOutcome: 'closed',
     intent: 3,
     summary: 'Well-conducted call with good rapport, but no close. Follow-up was correctly scheduled. The sales person showed solid product knowledge but needs to deepen problem agitation.',
     strengths: [

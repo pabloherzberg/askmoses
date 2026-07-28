@@ -141,11 +141,9 @@ CLOSING SIGNALS (examples — not exhaustive):
 
 DETECTED OUTCOME RULE — CRITICAL CONSISTENCY:
 detectedOutcome MUST be consistent with what you wrote in section feedback and strengths. Concretely:
-- If the prospect explicitly agreed to buy/sign/pay → detectedOutcome MUST be "closed". Period. Even if execution was sloppy. Outcome reflects WHAT HAPPENED, not HOW WELL it was done.
+- If the prospect explicitly agreed to buy/sign/pay, OR made any partial commitment (e.g., agreed to a follow-up meeting, took a trial, but did not pay) → detectedOutcome MUST be "closed". Period. Even if execution was sloppy. Outcome reflects WHAT HAPPENED, not HOW WELL it was done.
 - If you wrote "the deal closed", "successfully closed", "prospect agreed to purchase", "quick closure", or any phrase indicating a closed deal in ANY section's feedback or in strengths → detectedOutcome MUST be "closed". Writing one thing and marking another is a critical error.
-- Only use "not_closed" when the prospect explicitly declined or no agreement was reached.
-- Only use "no_outcome" when the call ended without any closure signal (e.g., call dropped, prospect said they'd think about it without committing).
-- "partial" is for cases where there was partial commitment (e.g., agreed to a follow-up meeting, took a trial, but did not pay).
+- Use "not_closed" for everything else: explicit decline, no agreement reached, or the call ended without any closure signal (e.g., call dropped, prospect said they'd think about it without committing).
 
 Self-check before responding: read your own sections[] and strengths. If they describe closure, your detectedOutcome field MUST say "closed".`
 }
@@ -153,7 +151,7 @@ Self-check before responding: read your own sections[] and strengths. If they de
 // ── Helpers puros ───────────────────────────────────────────────────────
 
 function coerceOutcome(raw: string | null | undefined): CallOutcome {
-  return normaliseOutcome((raw ?? "").toLowerCase().trim()) ?? "no_outcome"
+  return normaliseOutcome((raw ?? "").toLowerCase().trim()) ?? "not_closed"
 }
 
 function clampScore(value: unknown): number | null {
@@ -273,7 +271,7 @@ function validateAnalysis(raw: unknown, allowedSections: string[]): ValidationRe
       // Default true (fail-open) em campo ausente/malformado — consistente
       // com "when in doubt, prefer true" do prompt (SALES CALL GATE).
       isSalesCall: typeof obj.isSalesCall === "boolean" ? obj.isSalesCall : true,
-      detectedOutcome: typeof obj.detectedOutcome === "string" ? obj.detectedOutcome : "no_outcome",
+      detectedOutcome: typeof obj.detectedOutcome === "string" ? obj.detectedOutcome : "not_closed",
       summary: typeof obj.summary === "string" ? obj.summary : "",
       strengths: Array.isArray(obj.strengths) ? (obj.strengths as unknown[]).map(stringifyItem) : [],
       improvements: Array.isArray(obj.improvements) ? (obj.improvements as unknown[]).map(stringifyItem) : [],
@@ -285,14 +283,14 @@ function validateAnalysis(raw: unknown, allowedSections: string[]): ValidationRe
 
 // Keywords em vários idiomas que indicam "deal fechado" — usado pela
 // defensiva determinística que override outcome quando o LLM disse
-// "no_outcome" mas escreveu nas sections que houve fechamento.
+// "not_closed" mas escreveu nas sections que houve fechamento.
 const CLOSED_KEYWORDS_REGEX =
   /\b(closed|closing|close[ds]?\s+the\s+deal|deal\s+closed|signed?\s+up|purchas|bought|agreed?\s+to\s+(buy|pay|purchase|sign)|prospect\s+agreed|quick\s+closure|immediate\s+(prospect\s+)?agreement|fechou|fechad[oa]|comprou|aceitou|cerrad[oa]|firm[oó]|trato\s+hecho)\b/i
 
 /**
  * Heuristic determinístico: se qualquer section "close" alcançou score alto
  * (≥80/100) ou se strengths/summary mencionam explicitamente o deal fechado,
- * retorna true. Usado pra corrigir contradição quando LLM diz no_outcome
+ * retorna true. Usado pra corrigir contradição quando LLM diz not_closed
  * mas as próprias sections evidenciam closed.
  */
 function sectionsSignalClosed(
@@ -407,7 +405,7 @@ ${input.transcript}
 ## Output — strict JSON, no markdown fences, no commentary
 {
   "isSalesCall": <true|false — answer this FIRST, per the SALES CALL GATE rule above>,
-  "detectedOutcome": "<closed|partial|not_closed|no_outcome>",
+  "detectedOutcome": "<closed|not_closed>",
   "summary": "<2–3 honest sentences naming the biggest reason the deal did or did not close>",
   "strengths": ["<specific strength with transcript context>", "..."],
   "improvements": ["<what went wrong → what to say/do instead → why it matters>", "..."],
@@ -520,9 +518,9 @@ export async function scoreTranscript(
 
   let detectedOutcome = coerceOutcome(parsed.detectedOutcome)
   // Override determinístico: LLM (gpt-4o-mini sobretudo) às vezes escreve nas
-  // sections que "the deal closed" mas mantém detectedOutcome="no_outcome".
+  // sections que "the deal closed" mas mantém detectedOutcome="not_closed".
   // Corrige a contradição entre badge e feedback.
-  if (detectedOutcome === "no_outcome" || detectedOutcome === "not_closed") {
+  if (detectedOutcome === "not_closed") {
     if (sectionsSignalClosed(parsed.sections, parsed.strengths, parsed.summary)) {
       console.info("[scoring] outcome override: sections signal closed, LLM said", parsed.detectedOutcome)
       detectedOutcome = "closed"

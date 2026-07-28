@@ -128,14 +128,6 @@ describe('TC-01 › lógica de backfill (closed derivado de call_outcome)', () =
     expect(deriveClosedFromOutcome('not_closed')).toBe(false)
   })
 
-  it('call_outcome=partial → closed=false', () => {
-    expect(deriveClosedFromOutcome('partial')).toBe(false)
-  })
-
-  it('call_outcome=no_outcome → closed=false', () => {
-    expect(deriveClosedFromOutcome('no_outcome')).toBe(false)
-  })
-
   it('call_outcome=null → closed=null (sem backfill)', () => {
     expect(deriveClosedFromOutcome(null)).toBeNull()
   })
@@ -144,9 +136,9 @@ describe('TC-01 › lógica de backfill (closed derivado de call_outcome)', () =
   const centurionCalls: Array<{ client_name: string; call_outcome: string }> = [
     { client_name: 'Centurion Dog Training', call_outcome: 'closed' },
     { client_name: 'Centurion Dog Training', call_outcome: 'not_closed' },
-    { client_name: 'Centurion Dog Training', call_outcome: 'partial' },
+    { client_name: 'Centurion Dog Training', call_outcome: 'closed' },
     { client_name: 'Taking the Lead', call_outcome: 'closed' },
-    { client_name: 'Taking the Lead', call_outcome: 'no_outcome' },
+    { client_name: 'Taking the Lead', call_outcome: 'not_closed' },
   ]
 
   it('todas as calls de Centurion/Taking the Lead têm closed !== null após backfill', () => {

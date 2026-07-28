@@ -217,8 +217,6 @@ export async function generateInsights(scriptId?: string) {
 
   const closedCalls    = calls.filter((c) => c.result === "closed");
   const notClosedCalls = calls.filter((c) => c.result === "not_closed");
-  const partialCalls   = calls.filter((c) => c.result === "partial");
-  const noOutcomeCalls = calls.filter((c) => c.result === "no_outcome");
   const closeRate =
     calls.length > 0
       ? Math.round((closedCalls.length / calls.length) * 100)
@@ -228,8 +226,6 @@ export async function generateInsights(scriptId?: string) {
     total: calls.length,
     closed: closedCalls.length,
     notClosed: notClosedCalls.length,
-    partial: partialCalls.length,
-    noOutcome: noOutcomeCalls.length,
     closeRate,
   };
 
@@ -246,7 +242,7 @@ export async function generateInsights(scriptId?: string) {
   // ── 3. Call the LLM ───────────────────────────────────────────────────────
   const prompt = `
 You are an expert sales coach analysing a batch of dog training sales calls.
-You have ${calls.length} calls: ${closedCalls.length} closed, ${partialCalls.length} partial (follow-up pending), ${notClosedCalls.length} not closed, ${noOutcomeCalls.length} with no clear outcome.
+You have ${calls.length} calls: ${closedCalls.length} closed, ${notClosedCalls.length} not closed.
 Close rate: ${closeRate}%.
 ${scriptId ? `Script ID being analysed: ${scriptId}` : ""}
 

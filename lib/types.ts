@@ -1,5 +1,5 @@
 export type Role = "trainer" | "owner" | "admin";
-export type CallResult = "closed" | "not_closed" | "partial" | "no_outcome";
+export type CallResult = "closed" | "not_closed";
 export type LeadSource =
   | "facebook"
   | "google"
