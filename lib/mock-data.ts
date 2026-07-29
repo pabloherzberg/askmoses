@@ -933,10 +933,10 @@ export const clients: Client[] = [
     orgId: '00000000-0000-0000-0000-000000000100',
     callsThisMonth: 20,
     avgScore: 84,
-    totalSecondsThisMonth: 620 * 60,
-    // minutos Ã— US$2/min (mock; o cÃ¡lculo real fica em lib/billing.ts, que NÃƒO
-    // Ã© importado aqui pra nÃ£o vazar billing em bundles nÃ£o-admin).
-    totalCostThisMonth: 620 * 2,
+    // Minutos billable do mes (mock) - mesma unidade da tabela de
+    // /admin/billing. Custo nao vive mais no Client: quem mostra dinheiro e o
+    // Billing, derivando da tarifa da org.
+    billableMinutesThisMonth: 620,
     health: 'healthy',
     trainersCount: 4,
     ownerAccepted: true,
@@ -953,8 +953,7 @@ export const clients: Client[] = [
     orgId: '00000000-0000-0000-0000-000000000200',
     callsThisMonth: 35,
     avgScore: 88,
-    totalSecondsThisMonth: 1100 * 60,
-    totalCostThisMonth: 1100 * 2,
+    billableMinutesThisMonth: 1100,
     health: 'healthy',
     trainersCount: 4,
     ownerAccepted: true,
@@ -971,8 +970,7 @@ export const clients: Client[] = [
     orgId: '00000000-0000-0000-0000-000000000300',
     callsThisMonth: 8,
     avgScore: 72,
-    totalSecondsThisMonth: 240 * 60,
-    totalCostThisMonth: 240 * 2,
+    billableMinutesThisMonth: 240,
     health: 'at-risk',
     trainersCount: 4,
     ownerAccepted: true,

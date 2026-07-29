@@ -230,12 +230,12 @@ export interface Client {
   orgId: string;
   callsThisMonth: number;
   avgScore: number;
-  // Cobrança por minuto (substitui o MRR fixo). `totalSecondsThisMonth` é o
-  // consumo agregado da org no mês (soma de calls.duration_seconds, dinâmico);
-  // `totalCostThisMonth` é o valor exato em USD. Ambos só exibidos no painel
-  // Admin — Owner nunca vê custo.
-  totalSecondsThisMonth: number;
-  totalCostThisMonth: number;
+  // Minutos faturáveis consumidos pela org no mês corrente (calendário, UTC).
+  // Mesma regra da feature de Billing — ceil por call, calls < 30s não contam
+  // (lib/billing.ts) — pra coluna "Minutes" do SaaS Panel bater com o que o
+  // Billing cobra no mesmo mês. Custo NÃO vive aqui: quem mostra dinheiro é
+  // /admin/billing, que deriva o valor da tarifa por org.
+  billableMinutesThisMonth: number;
   health: HealthStatus;
   trainersCount: number;
   // false = nenhuma membership com role='owner' e invite_status='accepted'

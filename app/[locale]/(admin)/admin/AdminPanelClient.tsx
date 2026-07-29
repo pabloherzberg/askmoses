@@ -503,7 +503,6 @@ export function AdminPanelClient({
                     "planStatus",
                     "salesPeople",
                     "minutes",
-                    "cost",
                     "lastActivity",
                   ] as const
                 ).map((k) => (
@@ -521,7 +520,7 @@ export function AdminPanelClient({
               {rows.length === 0 && !loading && (
                 <tr>
                   <td
-                    colSpan={selectionMode ? 11 : 10}
+                    colSpan={selectionMode ? 10 : 9}
                     className="text-center py-10 text-sm"
                     style={{ color: "var(--am-muted)" }}
                   >
