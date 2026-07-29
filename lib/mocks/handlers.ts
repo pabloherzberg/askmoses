@@ -6,8 +6,6 @@ import {
   supabaseCalls,
   demoCredentials,
   intentSignals,
-  mockBillingUsage,
-  mockBillingCycle,
 } from '@/lib/mock-data'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -88,21 +86,12 @@ const apiHandlers = [
   // Antes havia mock GET/PUT aqui; foram removidos ao ligar a feature no banco,
   // pois sombreavam a rota real em dev (onUnhandledRequest: 'bypass').
 
-  // GET /api/billing/usage
-  http.get('/api/billing/usage', ({ request }) => {
-    const url = new URL(request.url)
-    const scope = url.searchParams.get('scope') ?? 'owner'
-    const range = (url.searchParams.get('range') ?? '1m') as import('@/lib/types').BillingPeriodRange
-    return ok(mockBillingUsage(scope, range))
-  }),
-
-  // GET /api/billing/cycle
-  http.get('/api/billing/cycle', ({ request }) => {
-    const url = new URL(request.url)
-    const scope = url.searchParams.get('scope') ?? 'owner'
-    const month = url.searchParams.get('month') ?? new Date().toISOString().slice(0, 7)
-    return ok(mockBillingCycle(scope, month))
-  }),
+  // /api/billing/usage e /api/billing/cycle — passthrough p/ as rotas reais
+  // (Supabase, via lib/db/billing.ts). Antes havia mocks GET aqui; foram
+  // removidos ao ligar a feature no banco, pois sombreavam as rotas reais em
+  // dev (onUnhandledRequest: 'bypass') e serviam orgIds fictícios ('org-1'…),
+  // que faziam o dialog de cobrança do /admin/billing salvar contra um id
+  // inexistente e voltar 400 INVALID_ORG_ID.
 
   // (PUT /api/ai-module-configs removido — ver nota acima; rota real persiste no banco)
 
