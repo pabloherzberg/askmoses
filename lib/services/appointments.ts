@@ -1,8 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { applySalesCallOnly } from '@/lib/sales-calls'
-import { dbGetTodayAppointments } from '@/lib/db/appointments'
+import { dbGetTodayAppointments, dbGetAppointmentsByContacts } from '@/lib/db/appointments'
 import { readStoredIntent } from '@/lib/services/calls'
-import type { CallResult } from '@/lib/types'
+import type { Call, CallResult } from '@/lib/types'
 
 export interface TodayAppointment {
   id: string
@@ -13,6 +13,67 @@ export interface TodayAppointment {
   status: string | null
   // Último intent conhecido do lead (0–5) — junta appointment → calls via contactId.
   intent: number | null
+}
+
+// Enriquece calls com o agendamento do lead (coluna "Appointment" do Intent
+// Analysis). Junta por contactId — a MESMA chave que o fluxo do "Won" usa pra
+// casar opportunity → calls, então uma call sem contact_id (upload manual, ou
+// call GHL anterior ao backfill 102/103) fica sem appointment, exatamente como
+// fica sem ghl_won_status.
+//
+// Qual agendamento casa com a call: o primeiro agendado NO DIA da call ou
+// depois — é o agendamento que a call produziu, que é o que o owner quer ver.
+// Sem nenhum posterior, cai pro mais recente anterior (o agendamento que gerou
+// a call), marcado só pela data — a UI não distingue os dois casos.
+//
+// Calls sem contactId ganham `appointmentAt: null` (consultado, não há), nunca
+// undefined — a UI usa a diferença pra não confundir "não enriquecido" com
+// "sem agendamento".
+export async function attachAppointmentsToCalls(
+  orgId: string,
+  calls: Call[],
+): Promise<Call[]> {
+  const contactIds = Array.from(
+    new Set(calls.map((c) => c.contactId).filter((c): c is string => !!c)),
+  )
+  if (contactIds.length === 0) {
+    return calls.map((c) => ({ ...c, appointmentAt: null, appointmentStatus: null }))
+  }
+
+  const rows = await dbGetAppointmentsByContacts(orgId, contactIds)
+
+  // contactId → agendamentos ordenados por horário asc (a query já ordena,
+  // mas o chunking quebra a ordem global — reordena por contato).
+  const byContact = new Map<string, { at: number; iso: string; status: string | null }[]>()
+  for (const row of rows) {
+    if (!row.contact_id) continue
+    const at = new Date(row.scheduled_at).getTime()
+    if (Number.isNaN(at)) continue
+    const list = byContact.get(row.contact_id) ?? []
+    list.push({ at, iso: row.scheduled_at, status: row.status })
+    byContact.set(row.contact_id, list)
+  }
+  for (const list of byContact.values()) list.sort((a, b) => a.at - b.at)
+
+  return calls.map((call) => {
+    const list = call.contactId ? byContact.get(call.contactId) : undefined
+    if (!list || list.length === 0) {
+      return { ...call, appointmentAt: null, appointmentStatus: null }
+    }
+    // Âncora: início do dia da call (UTC). callDate é a data real; date
+    // (created_at) é o fallback pra calls sem call_date.
+    const rawAnchor = call.callDate ?? call.date
+    const anchorMs = rawAnchor ? new Date(rawAnchor).getTime() : Number.NaN
+    let picked = list[list.length - 1]
+    if (!Number.isNaN(anchorMs)) {
+      const anchor = new Date(anchorMs)
+      const dayStart = Date.UTC(
+        anchor.getUTCFullYear(), anchor.getUTCMonth(), anchor.getUTCDate(), 0, 0, 0, 0,
+      )
+      picked = list.find((a) => a.at >= dayStart) ?? list[list.length - 1]
+    }
+    return { ...call, appointmentAt: picked.iso, appointmentStatus: picked.status }
+  })
 }
 
 // Agendados hoje + o intent de cada lead. O owner usa pra mandar o time focar

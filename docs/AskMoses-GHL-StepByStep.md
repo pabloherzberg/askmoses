@@ -32,7 +32,7 @@
 | Location ID | **Per-org**, stored in `organizations.ghl_location_id`. Sent in the webhook request via `X-GHL-Location-Id` header (the handler uses the header for org resolution, not a payload field). |
 | Access Token | **Per-org**, stored in the org record. Pipeline reads it for each call — no global env var. |
 | API Base | `https://services.leadconnectorhq.com` (no `/v2` path — version is pinned via `Version: 2021-04-15` header) |
-| Scopes | conversations, objects/schema, objects/record, medias, templates, tags, redirects, products, **contacts, opportunities, users** (all .readonly) |
+| Scopes | conversations, objects/schema, objects/record, medias, templates, tags, redirects, products, **contacts, opportunities, users, calendars/events** (all .readonly) |
 | Workflow | "Call Completion Notification" → Send to Ask Moses → Email Check Confirmation |
 
 ---
