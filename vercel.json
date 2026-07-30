@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/sync-ghl-opportunities",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-ghl-appointments",
+      "schedule": "30 6 * * *"
     }
   ],
   "redirects": [

@@ -58,6 +58,34 @@ export async function dbUpsertGhlAppointment(
   return data as DbAppointment
 }
 
+// Agendamentos da org para um conjunto de contatos (chunked — a lista de
+// contactIds vem das calls exibidas e pode passar de 200). Ordenados por
+// horário asc; quem escolhe QUAL agendamento casa com cada call é o serviço.
+const CONTACTS_CHUNK = 100
+
+export async function dbGetAppointmentsByContacts(
+  orgId: string,
+  contactIds: string[],
+): Promise<DbAppointment[]> {
+  if (contactIds.length === 0) return []
+  const supabase = createAdminClient()
+
+  const rows: DbAppointment[] = []
+  for (let i = 0; i < contactIds.length; i += CONTACTS_CHUNK) {
+    const chunk = contactIds.slice(i, i + CONTACTS_CHUNK)
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('org_id', orgId)
+      .in('contact_id', chunk)
+      .order('scheduled_at', { ascending: true })
+
+    if (error) throw new Error(`dbGetAppointmentsByContacts: ${error.message}`)
+    rows.push(...((data ?? []) as DbAppointment[]))
+  }
+  return rows
+}
+
 // Agendamentos de HOJE para a org (janela [início, fim] do dia no servidor),
 // ordenados por horário. Alimenta a visão "agendados hoje" do owner.
 export async function dbGetTodayAppointments(orgId: string): Promise<DbAppointment[]> {

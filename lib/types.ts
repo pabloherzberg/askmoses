@@ -124,8 +124,15 @@ export interface Call {
   ghlWonStatus?: string | null;
   ghlWonAt?: string | null;
   // Data em que a call de fato aconteceu (migration 036), distinta de `date`
-  // (created_at = upload/ingestão). Usada como "data da eval" no Intent dashboard.
+  // (created_at = upload/ingestão). Exibida como "Call Date" no Intent dashboard.
   callDate?: string | null;
+  // Agendamento do lead no Pepper/GHL (tabela appointments, migration 094),
+  // juntado à call por contactId. Enriquecimento opt-in — só populado quando o
+  // consumidor pede (`/api/calls?withAppointments=true`); undefined significa
+  // "não consultado", null significa "consultado e não há agendamento".
+  appointmentAt?: string | null;
+  // Status do agendamento no GHL: booked | confirmed | cancelled | showed | noshow.
+  appointmentStatus?: string | null;
   // Origem da data da eval: 'ghl' quando ingest_source é webhook (confiável),
   // 'llm' quando veio de upload manual (call_date é estimado/extraído do
   // transcript) — sinalizado na UI como fallback.
