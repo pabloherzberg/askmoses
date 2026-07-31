@@ -527,3 +527,60 @@ export async function fetchAppointments(
     }
   })
 }
+
+/**
+ * Busca os agendamentos de UM contato.
+ *
+ * Por que por contato e não por calendário: `GET /calendars/events` (acima)
+ * exige `calendarId`/`userId`/`groupId` além do locationId — dado que não
+ * guardamos por org, então não dá pra varrer a agenda inteira só com o que
+ * temos no `organizations`. `/contacts/{id}/appointments` precisa apenas do
+ * PIT com escopo `calendars/events.readonly`, e o conjunto de contatos que nos
+ * interessa é justamente o das calls já ingeridas — é o análogo direto do que
+ * `fetchOpportunitiesByStatus` faz no fluxo do Won.
+ *
+ * Retorna [] quando o contato não tem agendamento. 401/403 → GhlAuthError.
+ */
+export async function fetchContactAppointments(
+  contactId: string,
+  accessToken: string,
+): Promise<GhlCalendarAppointment[]> {
+  const base = getApiBase()
+  const headers = buildAuthHeaders(accessToken)
+
+  const res = await fetch(
+    `${base}/contacts/${encodeURIComponent(contactId)}/appointments`,
+    { headers },
+  )
+  if (!res.ok) {
+    const body = await res.text()
+    if (res.status === 401 || res.status === 403) {
+      throw new GhlAuthError(res.status, `GHL contact appointments auth failed: ${body.slice(0, 200)}`)
+    }
+    // 404 = contato sem agenda/inexistente na location — não é falha do sync.
+    if (res.status === 404) return []
+    throw new Error(`GHL contact appointments failed (${res.status}): ${body.slice(0, 200)}`)
+  }
+
+  const json = (await res.json()) as { events?: unknown[]; appointments?: unknown[] }
+  const events = Array.isArray(json.events)
+    ? json.events
+    : Array.isArray(json.appointments)
+      ? json.appointments
+      : []
+
+  return events
+    .map((e) => {
+      const ev = e as Record<string, unknown>
+      return {
+        id: String(ev.id ?? ev.appointmentId ?? ""),
+        contactId: (ev.contactId as string) ?? contactId,
+        contactName: (ev.contactName as string) ?? (ev.title as string) ?? null,
+        assignedUserId: (ev.assignedUserId as string) ?? null,
+        assignedUserName: (ev.assignedUserName as string) ?? null,
+        startTime: (ev.startTime as string) ?? null,
+        appointmentStatus: (ev.appointmentStatus as string) ?? (ev.status as string) ?? null,
+      }
+    })
+    .filter((a) => a.id !== "" && !!a.startTime)
+}

@@ -236,7 +236,8 @@ Acesso de admin no AskMoses:
 2. Ir em `/admin/organizations/<orgId>/integrations/ghl`.
 3. Preencher:
    - **Location ID**: o `locationId` do GHL (ex: `tZd61H2adMPsphEwGyDt` para Centurion).
-   - **Access Token**: Private Integration Token (PIT) do GHL com escopos: `conversations.readonly`, `medias.readonly`, `contacts.readonly`, `opportunities.readonly`, `users.readonly`.
+   - **Access Token**: Private Integration Token (PIT) do GHL com escopos: `conversations.readonly`, `medias.readonly`, `contacts.readonly`, `opportunities.readonly`, `users.readonly`, `calendars/events.readonly`.
+     - `calendars/events.readonly` alimenta o cron `sync-ghl-appointments` (coluna **Appointment** do Intent Analysis). Sem ele, o cron cai em `GhlAuthError` e a org acende o banner de PIT — mas o webhook de agendamento (caminho push) continua populando `appointments` normalmente.
    - **Enabled**: toggle on.
 4. Salvar — o backend gera automaticamente um `webhookSecret` aleatório (32 bytes hex).
 5. Copiar a configuração exibida (URL + headers `X-GHL-Location-Id`, `X-AskMoses-Secret`) e colar no step de webhook do Pepper.

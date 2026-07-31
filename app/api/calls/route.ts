@@ -1,6 +1,7 @@
 import { type NextRequest } from 'next/server'
-import { ok, unauthorized, forbidden, getSession, getRole, getTrainerDbId, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
+import { ok, unauthorized, forbidden, getSession, getRole, getOrgId, getTrainerDbId, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
 import { getCalls, createCall } from '@/lib/services/calls'
+import { attachAppointmentsToCalls } from '@/lib/services/appointments'
 import type { CreateCallInput } from '@/lib/services/calls'
 import { routing, type Locale } from '@/i18n/routing'
 
@@ -45,7 +46,25 @@ export async function GET(request: NextRequest) {
   // consumidores que agregam métricas (analytics, intent) passam a flag.
   const salesOnly = searchParams.get('salesOnly') === 'true'
 
-  const callsData = await getCalls({ trainerId, callOutcome, rubricId, salesOnly, limit, offset, locale })
+  // `?withAppointments=true` junta o agendamento do lead (tabela appointments,
+  // por contactId) a cada call. Opt-in: é uma query extra e só o Intent
+  // Analysis renderiza a coluna "Appointment".
+  const wantsAppointments = searchParams.get('withAppointments') === 'true'
+
+  let callsData = await getCalls({ trainerId, callOutcome, rubricId, salesOnly, limit, offset, locale })
+
+  if (wantsAppointments && callsData.length > 0) {
+    const orgId = await getOrgId()
+    if (orgId) {
+      try {
+        callsData = await attachAppointmentsToCalls(orgId, callsData)
+      } catch (err) {
+        // Enriquecimento é acessório: a tabela de intent continua útil sem a
+        // coluna de agendamento. Falhar aqui derrubaria a listagem inteira.
+        console.error('[api/calls] appointment enrichment failed', err)
+      }
+    }
+  }
 
   // Filter by days if provided (Intent Dashboard)
   const days = searchParams.get('days') ? Number(searchParams.get('days')) : undefined
