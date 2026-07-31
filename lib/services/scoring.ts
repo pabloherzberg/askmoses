@@ -46,6 +46,12 @@ export interface CotPromptInput {
   transcript: string
   trainerName: string
   clientName: string
+  // true/false quando sabemos (via integração GHL) se este contato tem um
+  // agendamento futuro criado a partir desta call; undefined quando o dado
+  // não está disponível (ex.: upload manual sem contactId). É só MAIS UM
+  // sinal de contexto — ver CLOSING SIGNALS / DETECTED OUTCOME RULE no
+  // system prompt para as regras completas de "closed".
+  hasFollowUpAppointment?: boolean
 }
 
 interface ParsedAnalysis {
@@ -77,6 +83,8 @@ export interface ScoreTranscriptInput {
   llmModel: string | null
   trainerName?: string
   clientName?: string
+  // Ver CotPromptInput.hasFollowUpAppointment.
+  hasFollowUpAppointment?: boolean
 }
 
 export interface ScoreTranscriptResult {
@@ -143,9 +151,15 @@ DETECTED OUTCOME RULE — CRITICAL CONSISTENCY:
 detectedOutcome MUST be consistent with what you wrote in section feedback and strengths. Concretely:
 - If the prospect explicitly agreed to buy/sign/pay, OR made any partial commitment (e.g., agreed to a follow-up meeting, took a trial, but did not pay) → detectedOutcome MUST be "closed". Period. Even if execution was sloppy. Outcome reflects WHAT HAPPENED, not HOW WELL it was done.
 - If you wrote "the deal closed", "successfully closed", "prospect agreed to purchase", "quick closure", or any phrase indicating a closed deal in ANY section's feedback or in strengths → detectedOutcome MUST be "closed". Writing one thing and marking another is a critical error.
-- Use "not_closed" for everything else: explicit decline, no agreement reached, or the call ended without any closure signal (e.g., call dropped, prospect said they'd think about it without committing).
+- Use "not_closed" for everything else: explicit decline, no agreement reached, or the call ended without any closure signal (e.g., call dropped, prospect said they'd think about it without committing). If the transcript gives you nothing to hang a "closed" on — no sale, no scheduling, no explicit next-step commitment — detectedOutcome MUST be "not_closed". Do not default to "closed" out of leniency.
 
-Self-check before responding: read your own sections[] and strengths. If they describe closure, your detectedOutcome field MUST say "closed".`
+SCHEDULING/APPOINTMENT SIGNAL (when provided as call context, e.g. "Follow-up appointment on file: yes/no"):
+- This signal only tells you whether the CRM has a scheduled follow-up appointment logged for this contact after this call. Treat it as ONE additional piece of evidence for "partial commitment", exactly like any other next-step commitment described above — it does not override or replace the transcript.
+- If the transcript itself already shows a clear commitment (sale, follow-up meeting agreed verbally, trial accepted, etc.), decide "closed" from the transcript — the appointment signal is not required to confirm it.
+- If the appointment signal says an appointment WAS booked for this contact, treat that as supporting evidence of a partial commitment (a confirmed next step), consistent with the "agreed to a follow-up meeting" rule above.
+- If the appointment signal says NO appointment was booked (or the signal is simply absent/unknown), that alone is NOT evidence of "not_closed" — plenty of real closes happen without any CRM appointment (e.g., prospect paid on the call, or the next step is handled outside the CRM). Judge the transcript on its own merits; never mark "not_closed" merely because there's no appointment on file.
+
+Self-check before responding: read your own sections[] and strengths. If they describe closure, your detectedOutcome field MUST say "closed". If neither the transcript nor the appointment signal shows any sale, scheduling, or explicit commitment, your detectedOutcome field MUST say "not_closed".`
 }
 
 // ── Helpers puros ───────────────────────────────────────────────────────
@@ -376,6 +390,11 @@ For each section in "Sections to Score", in order:
 ## Call information
 - Trainer: ${input.trainerName}
 - Prospect: ${input.clientName}
+${
+  input.hasFollowUpAppointment === undefined
+    ? ""
+    : `- Follow-up appointment on file (CRM): ${input.hasFollowUpAppointment ? "yes" : "no"} — see SCHEDULING/APPOINTMENT SIGNAL rule above. This is supporting evidence only, not a verdict by itself.\n`
+}
 
 ## Buying Intent Assessment (0–10 scale for each category)
 In addition to scoring the sections above, evaluate the prospect's buying intent across these 4 signals (immutable questions):
@@ -462,6 +481,7 @@ export async function scoreTranscript(
     transcript: input.transcript,
     trainerName: input.trainerName ?? "not provided",
     clientName: input.clientName ?? "not provided",
+    hasFollowUpAppointment: input.hasFollowUpAppointment,
   })
 
   const { model, provider, modelId } = await getActiveLlmModel(input.llmModel)

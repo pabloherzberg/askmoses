@@ -78,3 +78,27 @@ export async function dbGetTodayAppointments(orgId: string): Promise<DbAppointme
   if (error) throw new Error(`dbGetTodayAppointments: ${error.message}`)
   return (data ?? []) as DbAppointment[]
 }
+
+// Agendamentos do MESMO contato criados a partir da call (janela
+// [call.created_at, +N dias]) — sinal para o scoring saber se a call gerou um
+// agendamento futuro, mesmo sem venda fechada na hora. Usado por
+// runGhlCallScoring (lib/services/ghl-call-scoring.ts) para enriquecer o
+// prompt; NÃO decide outcome sozinho (ver buildDefaultSystemPrompt).
+export async function dbGetAppointmentsForContactSince(
+  orgId: string,
+  contactId: string,
+  since: string,
+): Promise<DbAppointment[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('contact_id', contactId)
+    .gte('scheduled_at', since)
+    .order('scheduled_at', { ascending: true })
+
+  if (error) throw new Error(`dbGetAppointmentsForContactSince: ${error.message}`)
+  return (data ?? []) as DbAppointment[]
+}
