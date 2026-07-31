@@ -1,4 +1,5 @@
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls";
+import { dbGetAppointmentsForContactSince } from "@/lib/db/appointments";
 import { dbGetDefaultRubricWithCriteria } from "@/lib/db/rubric";
 import { dbGetScriptById, type DbScript } from "@/lib/db/scripts";
 import { syncTrainerStats } from "@/lib/db/trainers";
@@ -167,6 +168,29 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
   // Pesos da org, persistidos com a call e usados pra computar o Intent Index.
   const orgIntentWeights = await getOrgIntentWeightsForScoring(call.org_id);
 
+  // Sinal best-effort: este contato tem algum agendamento no GHL criado a
+  // partir desta call? É só contexto extra pro prompt (ver
+  // SCHEDULING/APPOINTMENT SIGNAL em buildDefaultSystemPrompt) — nunca decide
+  // o outcome sozinho. undefined quando não dá pra saber (sem contactId ou
+  // falha na consulta), o que o prompt trata como "sem sinal".
+  let hasFollowUpAppointment: boolean | undefined;
+  if (call.contact_id) {
+    try {
+      const appointments = await dbGetAppointmentsForContactSince(
+        call.org_id,
+        call.contact_id,
+        call.created_at,
+      );
+      hasFollowUpAppointment = appointments.length > 0;
+    } catch (err) {
+      console.warn("[ghl-scoring] appointment lookup failed, scoring without signal", {
+        callId,
+        orgId: call.org_id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   try {
     result = await scoreTranscript({
       transcript: call.transcript,
@@ -176,6 +200,7 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
       llmModel,
       trainerName: call.trainer_name ?? undefined,
       clientName: call.client_name ?? undefined,
+      hasFollowUpAppointment,
     });
 
     // Gate: se não é call de venda, não roda mais nenhuma análise (intent,

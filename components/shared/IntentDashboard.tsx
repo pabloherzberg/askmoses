@@ -16,6 +16,12 @@ import { normaliseOutcome } from '@/lib/constants'
 const PERIOD_DAYS: Record<BillingPeriodRange, number> = { '1w': 7, '2w': 14, '3w': 21, '1m': 30 }
 const LEADS_RANGE_DAYS: Record<IntentDateRange, number> = { '1w': 7, '2w': 14, '15d': 15, '1m': 30 }
 
+// Piso de intent (escala 0–5, a mesma da coluna "Avg") da lista de leads
+// prioritários — leads NO valor ou abaixo dele não entram na lista.
+// Reduzido de 3.5 → 2.4 em jul/2026 para alargar a lista de quem perseguir.
+// Fonte única: o número é usado no filtro E nos textos da UI.
+const MIN_LEAD_INTENT = 2.4
+
 interface IntentDashboardProps {
   signals: IntentSignal[]
 }
@@ -43,7 +49,9 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/calls?limit=200&salesOnly=true')
+    // withAppointments: junta o agendamento do lead (Pepper/GHL) a cada call —
+    // alimenta a coluna "Appointment" da tabela de leads.
+    fetch('/api/calls?limit=200&salesOnly=true&withAppointments=true')
       .then((r) => r.json())
       .then((response) => {
         if (Array.isArray(response?.data)) {
@@ -127,7 +135,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
       // persistido em call.intentBreakdown.
       if (!c.intentBreakdown || typeof c.intentBreakdown !== 'object') continue
       const score = intentScore(c)
-      if (score <= 3.5) continue
+      if (score <= MIN_LEAD_INTENT) continue
       const key = c.contactId ?? c.prospect ?? c.id
       const existing = byLead.get(key)
       if (!existing || score > existing.intentScore) {
@@ -138,7 +146,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
       .sort((a, b) => b.intentScore - a.intentScore)
   }
 
-  // Team view: leads do dia com intent > 3.5, um por cliente, ordenados por intent desc
+  // Team view: leads do dia acima do piso de intent, um por cliente, ordenados por intent desc
   const teamLeads = dedupeByLead(leadsPool)
 
   // Seller view — compara por trainerId quando disponível, senão por trainerName
@@ -190,9 +198,9 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
   }
   const dateLabel = leadsRangeLabel[leadsRange]
   const leadsSubtitle = view === 'team'
-    ? `${dateLabel} · ${activeLeadCount} ${activeLeadCount === 1 ? 'lead' : 'leads'} with intent > 3.5`
+    ? `${dateLabel} · ${activeLeadCount} ${activeLeadCount === 1 ? 'lead' : 'leads'} with intent > ${MIN_LEAD_INTENT}`
     : view === 'seller' && activeTrainer
-      ? `${dateLabel} · ${activeTrainer.name.split(' ')[0]} · ${activeLeadCount} ${activeLeadCount === 1 ? 'lead' : 'leads'} with intent > 3.5`
+      ? `${dateLabel} · ${activeTrainer.name.split(' ')[0]} · ${activeLeadCount} ${activeLeadCount === 1 ? 'lead' : 'leads'} with intent > ${MIN_LEAD_INTENT}`
       : view === 'lead' && activeLead
         ? `${dateLabel} · ${activeLead.name} · ${activeLeadCount} ${activeLeadCount === 1 ? 'call' : 'calls'}`
         : dateLabel
@@ -285,7 +293,7 @@ export function IntentDashboard({ signals }: IntentDashboardProps) {
           <LeadsList
             leads={activeLeads}
             locale={locale}
-            emptyLabel={`No leads with intent above 3.5 in the ${dateLabel.toLowerCase()}`}
+            emptyLabel={`No leads with intent above ${MIN_LEAD_INTENT} in the ${dateLabel.toLowerCase()}`}
             title=""
             subtitle={leadsSubtitle}
             page={leadsPage}
@@ -375,10 +383,22 @@ function sig(bd: Record<string, number> | undefined | null, key: string): string
   return v != null ? (v / 2).toFixed(1) : '—'
 }
 
-function formatEvalDate(call: Call, locale: string): string {
+function formatCallDate(call: Call, locale: string): string {
   const raw = call.callDate ?? call.date
   if (!raw) return '—'
   return new Date(raw).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Status de agendamento que significa "não vai acontecer" — mostrado em
+// vermelho pra não passar por agendamento firme. GHL manda o valor livre;
+// comparamos normalizado e tratamos o resto como agendado.
+const DEAD_APPOINTMENT_STATUSES = new Set(['cancelled', 'canceled', 'noshow', 'no_show', 'invalid'])
+
+function appointmentTone(status: string | null | undefined): string {
+  if (!status) return 'var(--am-text)'
+  return DEAD_APPOINTMENT_STATUSES.has(status.trim().toLowerCase().replace(/[\s-]/g, '_'))
+    ? 'var(--am-red)'
+    : 'var(--am-text)'
 }
 
 const LEADS_PAGE_SIZE = 10
@@ -400,7 +420,7 @@ function LeadsList({
   page: number
   onPageChange: (page: number) => void
 }) {
-  const COLS = ['Lead', 'Financial', 'Urgency', 'Authority', 'Engagement', 'Avg', 'Initial Result', 'Won', 'Source', 'Eval Date'] as const
+  const COLS = ['Lead', 'Financial', 'Urgency', 'Authority', 'Engagement', 'Avg', 'Initial Result', 'Won', 'Source', 'Call Date', 'Appointment'] as const
 
   const totalPages = Math.max(1, Math.ceil(leads.length / LEADS_PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
@@ -513,10 +533,10 @@ function LeadsList({
                     <td className="py-2.5 pr-4 whitespace-nowrap" style={{ color: 'var(--am-muted)' }}>
                       {call.lead_source ? (SOURCE_LABEL[call.lead_source] ?? call.lead_source) : '—'}
                     </td>
-                    {/* Eval Date — destacada; sinaliza quando a data vem de fallback do LLM (não do GHL) */}
-                    <td className="py-2.5 whitespace-nowrap">
+                    {/* Call Date — destacada; sinaliza quando a data vem de fallback do LLM (não do GHL) */}
+                    <td className="py-2.5 pr-4 whitespace-nowrap">
                       <span className="font-mono font-semibold" style={{ color: 'var(--am-text)' }}>
-                        {formatEvalDate(call, locale)}
+                        {formatCallDate(call, locale)}
                       </span>
                       {call.evalDateSource === 'llm' && (
                         <span
@@ -526,6 +546,22 @@ function LeadsList({
                         >
                           est.
                         </span>
+                      )}
+                    </td>
+                    {/* Appointment — data do agendamento no Pepper/GHL, juntada por contactId */}
+                    <td className="py-2.5 whitespace-nowrap">
+                      {call.appointmentAt ? (
+                        <span
+                          className="font-mono font-semibold"
+                          style={{ color: appointmentTone(call.appointmentStatus) }}
+                          title={call.appointmentStatus ?? undefined}
+                        >
+                          {new Date(call.appointmentAt).toLocaleDateString(locale, {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--am-muted)' }}>—</span>
                       )}
                     </td>
                   </tr>

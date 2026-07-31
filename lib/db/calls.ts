@@ -250,6 +250,33 @@ export async function dbUpdateGhlOpportunity(
   return count ?? 0
 }
 
+// contact_ids distintos das calls da org criadas nos últimos `days` dias.
+// É o universo que o sync de agendamentos precisa varrer: só faz sentido puxar
+// a agenda de quem tem call ingerida — mesma chave (contact_id) que o fluxo do
+// Won usa pra casar opportunity → calls.
+export async function dbListRecentContactIds(
+  orgId: string,
+  days: number,
+): Promise<string[]> {
+  const supabase = createAdminClient()
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data, error } = await supabase
+    .from('calls')
+    .select('contact_id')
+    .eq('org_id', orgId)
+    .not('contact_id', 'is', null)
+    .gte('created_at', since)
+
+  if (error) throw new Error(`dbListRecentContactIds: ${error.message}`)
+
+  const ids = new Set<string>()
+  for (const row of (data ?? []) as Array<{ contact_id: string | null }>) {
+    if (row.contact_id) ids.add(row.contact_id)
+  }
+  return Array.from(ids)
+}
+
 export interface MarkStage2Input {
   stage2Outcome: 'paying' | 'not_paying' | 'pending'
   // Snapshot do Intent Index previsto no momento — comporta o loop de

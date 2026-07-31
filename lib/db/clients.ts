@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { secondsToCostValue } from "@/lib/billing";
+import { billableMinutes } from "@/lib/billing";
 import type {
   Client,
   GlobalMetrics,
@@ -66,7 +66,7 @@ function toClient(
   ownerAccepted: boolean,
   currentScript: OrgScriptInfo | null,
   lastCallAt: string | null,
-  totalSecondsThisMonth: number,
+  billableMinutesThisMonth: number,
   trainersCount: number,
 ): Client {
   if (!row.plans) {
@@ -82,10 +82,10 @@ function toClient(
     orgId: row.id,
     callsThisMonth: row.calls_this_month ?? 0,
     avgScore: row.avg_score ?? 0,
-    // Segundos agregados dinamicamente das calls do mês (calls.duration_seconds),
-    // não de coluna materializada. Custo exato derivado em TS.
-    totalSecondsThisMonth,
-    totalCostThisMonth: secondsToCostValue(totalSecondsThisMonth),
+    // Minutos faturáveis agregados dinamicamente das calls do mês
+    // (calls.duration_seconds), não de coluna materializada. Mesma regra do
+    // Billing — ver billableMinutes em lib/billing.ts.
+    billableMinutesThisMonth,
     health: row.health,
     // Contagem dinâmica de trainers aceitos (memberships), não a coluna
     // materializada organizations.trainers_count.
@@ -98,7 +98,7 @@ function toClient(
   };
 }
 
-// ── Listagem paginada via RPC ────────────────────────────────────────────
+// ── Listagem paginada ────────────────────────────────────────────────────
 
 export interface ClientsQuery {
   search?: string;
@@ -121,111 +121,15 @@ export interface ClientsPage {
   limit: number;
 }
 
-// Row achatada vinda da RPC list_admin_organizations.
-interface RpcRow {
-  org_id: string;
-  org_name: string;
-  org_created_at: string;
-  org_subscription_status: "active" | "inactive" | "trial";
-  org_total_seconds_this_month: number | string;
-  org_health: HealthStatus;
-  org_trainers_count: number;
-  org_calls_this_month: number;
-  org_avg_score: number;
-  plan_id: string;
-  plan_code: PlanCode;
-  plan_name: string;
-  plan_price_cents: number;
-  plan_timeline_weeks: number;
-  plan_has_rag: boolean;
-  plan_has_twilio: boolean;
-  plan_has_manual_upload: boolean;
-  plan_max_sales_people: number | null;
-  plan_features: unknown;
-  owner_accepted: boolean;
-  script_id: string | null;
-  script_name: string | null;
-  script_major_version: number | null;
-  script_minor_version: number | null;
-  script_status: OrgScriptStatus;
-  script_started_at: string | null;
-  prev_script_major: number | null;
-  prev_script_minor: number | null;
-  last_call_at: string | null;
-  total: number | string;
-}
-
-function rpcRowToClient(row: RpcRow): Client {
-  // plans.features vem como JSONB array. Defensive: aceita array de strings,
-  // ignora outros formatos pra não quebrar a UI.
-  const featuresRaw = row.plan_features;
-  const features = Array.isArray(featuresRaw)
-    ? featuresRaw.filter((f): f is string => typeof f === "string")
-    : [];
-
-  const plan: Plan = {
-    id: row.plan_id,
-    code: row.plan_code,
-    name: row.plan_name,
-    priceCents: row.plan_price_cents,
-    timelineWeeks: row.plan_timeline_weeks,
-    hasRag: row.plan_has_rag,
-    hasTwilio: row.plan_has_twilio,
-    hasManualUpload: row.plan_has_manual_upload,
-    maxSalesPeople: row.plan_max_sales_people,
-    features,
-  };
-
-  let currentScript: OrgScriptInfo | null = null;
-  if (row.script_id && row.script_status !== "none") {
-    const previousVersion =
-      (row.script_status === "pending" || row.script_status === "rejected") &&
-      row.prev_script_major !== null &&
-      row.prev_script_minor !== null
-        ? `${row.prev_script_major}.${row.prev_script_minor}`
-        : null;
-    currentScript = {
-      scriptId: row.script_id,
-      scriptName: row.script_name ?? "",
-      version: `${row.script_major_version ?? 1}.${row.script_minor_version ?? 0}`,
-      previousVersion,
-      status: row.script_status,
-      startedAt: row.script_started_at,
-    };
-  }
-
-  return {
-    id: row.org_id,
-    name: row.org_name,
-    planId: row.plan_id,
-    plan,
-    orgId: row.org_id,
-    callsThisMonth: row.org_calls_this_month,
-    avgScore: row.org_avg_score,
-    totalSecondsThisMonth: Number(row.org_total_seconds_this_month ?? 0),
-    totalCostThisMonth: secondsToCostValue(Number(row.org_total_seconds_this_month ?? 0)),
-    health: row.org_health,
-    trainersCount: row.org_trainers_count,
-    ownerAccepted: row.owner_accepted,
-    subscriptionStatus: row.org_subscription_status,
-    currentScript,
-    // pendingScriptName é preenchido por dbListClients via query separada.
-    // No single-org fetch (dbGetClientByOrgId) inicializamos null — caller
-    // pode buscar via dbGetActiveOrgScript ou query própria se precisar.
-    pendingScriptName: null,
-    lastCallAt: row.last_call_at,
-    createdAt: row.org_created_at,
-  };
-}
-
 /**
  * Listagem paginada + filtrada de organizations para o painel /admin.
  * Usa queries diretas nas tabelas (organizations + plans + memberships +
  * org_scripts + calls) porque a RPC list_admin_organizations pode não existir
  * no schema cache do banco. Interface pública inalterada.
  *
- * Billing por minuto: `totalSecondsThisMonth` é agregado de
- * calls.duration_seconds do mês corrente (UTC); "Sales People" conta
+ * Billing por minuto: `billableMinutesThisMonth` é agregado das calls do mês
+ * corrente (UTC) pela MESMA regra do /admin/billing — billableMinutes() por
+ * call, calls < 30s não contam (lib/billing.ts); "Sales People" conta
  * memberships trainer aceitas. Como minutos/script-status/version não são
  * colunas filtráveis, esses filtros + a paginação rodam em JS sobre o conjunto
  * já filtrado por coluna — OK na escala atual (dezenas de orgs); se crescer
@@ -270,7 +174,7 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   const trainerCountByOrg = new Map<string, number>();
   const scriptByOrg = new Map<string, OrgScriptInfo>();
   const lastCallByOrg = new Map<string, string>();
-  const monthSecondsByOrg = new Map<string, number>();
+  const monthMinutesByOrg = new Map<string, number>();
 
   if (orgIds.length > 0) {
     const monthStart = monthStartIso();
@@ -332,9 +236,10 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
     }
 
     // Calls paginado (created_at desc) — alimenta lastCall (1ª ocorrência por
-    // org) + minutos do mês (soma de duration_seconds, compare lexicográfico
-    // ISO/UTC). Paginação evita truncar no limite do PostgREST. Em escala
-    // grande, migrar pra um SUM no banco (ver nota no JSDoc).
+    // org) + minutos faturáveis do mês (soma de billableMinutes por call,
+    // compare lexicográfico ISO/UTC). Paginação evita truncar no limite do
+    // PostgREST. Em escala grande, migrar a agregação pro banco — mas mantendo
+    // o ceil por call, senão volta a divergir do /admin/billing.
     const seenCall = new Set<string>();
     let callFrom = 0;
     for (;;) {
@@ -356,9 +261,10 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
           lastCallByOrg.set(row.org_id, row.created_at);
         }
         if (row.created_at >= monthStart) {
-          monthSecondsByOrg.set(
+          monthMinutesByOrg.set(
             row.org_id,
-            (monthSecondsByOrg.get(row.org_id) ?? 0) + (row.duration_seconds ?? 0),
+            (monthMinutesByOrg.get(row.org_id) ?? 0) +
+              billableMinutes(row.duration_seconds),
           );
         }
       }
@@ -373,7 +279,7 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
       ownerAcceptedSet.has(r.id),
       scriptByOrg.get(r.id) ?? null,
       lastCallByOrg.get(r.id) ?? null,
-      monthSecondsByOrg.get(r.id) ?? 0,
+      monthMinutesByOrg.get(r.id) ?? 0,
       trainerCountByOrg.get(r.id) ?? 0,
     ),
   );
@@ -387,11 +293,13 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   if (query.scriptVersion) {
     clients = clients.filter((c) => c.currentScript?.version === query.scriptVersion);
   }
+  // Filtro de minutos compara direto com os minutos faturáveis — é o mesmo
+  // número que a coluna "Minutes" mostra, então o range filtra o que se vê.
   if (query.minutesMin !== undefined) {
-    clients = clients.filter((c) => c.totalSecondsThisMonth >= query.minutesMin! * 60);
+    clients = clients.filter((c) => c.billableMinutesThisMonth >= query.minutesMin!);
   }
   if (query.minutesMax !== undefined) {
-    clients = clients.filter((c) => c.totalSecondsThisMonth <= query.minutesMax! * 60);
+    clients = clients.filter((c) => c.billableMinutesThisMonth <= query.minutesMax!);
   }
 
   // ── Total + paginação (em JS — escala pequena nesta fase) ────────────────
@@ -486,16 +394,16 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
   };
 }
 
-// ── Segundos consumidos no mês (cobrança por minuto) ────────────────────
+// ── Minutos faturáveis no mês (cobrança por minuto) ─────────────────────
 // Agregado dinâmico de calls.duration_seconds — NÃO há coluna materializada
-// (evita dessincronização e reset mensal manual). Retorna SEGUNDOS crus; a
-// conversão pra minutos/custo é feita pelo consumidor (sem arredondar minuto,
-// pra não divergir do que o /admin mostra via RPC). O recorte do mês usa UTC
-// pra casar com a RPC (date_trunc('month', now() AT TIME ZONE 'UTC')).
+// (evita dessincronização e reset mensal manual). Retorna MINUTOS já pela
+// regra de faturamento (billableMinutes, lib/billing.ts) — a mesma que
+// /admin/billing aplica, pra as duas telas mostrarem o mesmo número pro mesmo
+// mês. O recorte do mês usa UTC pra casar com o boundary do Billing.
 
 type AdminSupabase = ReturnType<typeof createAdminClient>;
 
-/** Início do mês corrente em ISO/UTC — alinhado com o boundary da RPC. */
+/** Início do mês corrente em ISO/UTC — alinhado com o boundary do Billing. */
 function monthStartIso(): string {
   const now = new Date();
   return new Date(
@@ -504,10 +412,10 @@ function monthStartIso(): string {
 }
 
 /**
- * Segundos consumidos por uma org no mês corrente (soma de duration_seconds).
- * Paginado pra não truncar no limite de linhas do PostgREST.
+ * Minutos faturáveis de uma org no mês corrente (soma de billableMinutes por
+ * call). Paginado pra não truncar no limite de linhas do PostgREST.
  */
-async function dbGetOrgMonthSeconds(
+async function dbGetOrgMonthBillableMinutes(
   supabase: AdminSupabase,
   orgId: string,
 ): Promise<number> {
@@ -521,10 +429,11 @@ async function dbGetOrgMonthSeconds(
       .eq("org_id", orgId)
       .gte("created_at", monthStart)
       .range(from, from + PG_MAX_ROWS - 1);
-    if (error) throw new Error(`dbGetOrgMonthSeconds: ${error.message}`);
+    if (error) throw new Error(`dbGetOrgMonthBillableMinutes: ${error.message}`);
     const rows = data ?? [];
     total += rows.reduce(
-      (s, r: { duration_seconds: number | null }) => s + (r.duration_seconds ?? 0),
+      (s, r: { duration_seconds: number | null }) =>
+        s + billableMinutes(r.duration_seconds),
       0,
     );
     if (rows.length < PG_MAX_ROWS) break;
@@ -579,9 +488,9 @@ export async function dbGetClientByOrgId(
   const ownerAccepted = (ownerRes.count ?? 0) > 0;
   const trainersCount = trainersRes.count ?? 0;
 
-  // currentScript + lastCallAt + segundos do mês: queries dedicadas pra esse
-  // único org (sem reuse da RPC que é otimizada pra batch).
-  const [scriptRes, lastCallRes, monthSeconds] = await Promise.all([
+  // currentScript + lastCallAt + minutos do mês: queries dedicadas pra esse
+  // único org (sem reuse do batch de dbListClients).
+  const [scriptRes, lastCallRes, monthMinutes] = await Promise.all([
     // Filtra explicitamente por effective_status IN ('active','deprecated')
     // — os dois mapeiam pra status='active' no banco. Pending agora coexiste
     // com active (mig. 057): sem este filtro o order-by started_at pegaria a
@@ -604,7 +513,7 @@ export async function dbGetClientByOrgId(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    dbGetOrgMonthSeconds(supabase, orgId),
+    dbGetOrgMonthBillableMinutes(supabase, orgId),
   ]);
 
   let currentScript: OrgScriptInfo | null = null;
@@ -635,7 +544,7 @@ export async function dbGetClientByOrgId(
     ownerAccepted,
     currentScript,
     lastCallAt,
-    monthSeconds,
+    monthMinutes,
     trainersCount,
   );
 }

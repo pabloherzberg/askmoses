@@ -1,16 +1,16 @@
 /**
- * Cobertura dos helpers de duração/billing introduzidos no modelo de cobrança
- * por minuto — formatação (UI) e conversão segundos→USD (Admin).
+ * Cobertura dos helpers de duração/billing do modelo de cobrança por minuto.
  *
  *   - lib/format.ts   · formatDuration
- *   - lib/billing.ts  · secondsToCostValue, formatCost, COST_PER_MINUTE_USD
+ *   - lib/billing.ts  · billableMinutes, MIN_BILLABLE_SECONDS
  *
- * São funções puras que decidem o que o Owner vê (duração) e o que o Admin
- * cobra (custo) — pequenas, mas com edge cases (null/0, padding, precisão).
+ * São funções puras que decidem o que o Owner vê (duração) e quantos minutos o
+ * SaaS Panel conta — pequenas, mas com edge cases (null/0, padding, o piso de
+ * 30s e o arredondamento por call).
  */
 import { describe, it, expect } from 'vitest'
 import { formatDuration } from '@/lib/format'
-import { secondsToCostValue, formatCost, COST_PER_MINUTE_USD } from '@/lib/billing'
+import { billableMinutes, MIN_BILLABLE_SECONDS } from '@/lib/billing'
 
 describe('formatDuration', () => {
   it('retorna "—" para duração desconhecida (null/undefined/0/negativo)', () => {
@@ -46,31 +46,42 @@ describe('formatDuration', () => {
   })
 })
 
-describe('secondsToCostValue', () => {
-  it('tarifa única = US$2/min', () => {
-    expect(COST_PER_MINUTE_USD).toBe(2)
+/**
+ * billableMinutes espelha a regra de lib/db/billing.ts (ceil por call, calls
+ * < 30s não faturam). Estes testes travam essa paridade: se alguém mudar a
+ * conta do painel sem mudar a do Billing, quebram aqui.
+ */
+describe('billableMinutes', () => {
+  it('piso de faturamento é 30s', () => {
+    expect(MIN_BILLABLE_SECONDS).toBe(30)
   })
 
   it('retorna 0 para entrada vazia/inválida', () => {
-    expect(secondsToCostValue(null)).toBe(0)
-    expect(secondsToCostValue(undefined)).toBe(0)
-    expect(secondsToCostValue(0)).toBe(0)
-    expect(secondsToCostValue(-60)).toBe(0)
+    expect(billableMinutes(null)).toBe(0)
+    expect(billableMinutes(undefined)).toBe(0)
+    expect(billableMinutes(0)).toBe(0)
+    expect(billableMinutes(-60)).toBe(0)
+    expect(billableMinutes(NaN)).toBe(0)
+    expect(billableMinutes(Infinity)).toBe(0)
   })
 
-  it('custo exato proporcional aos segundos (sem arredondar minuto)', () => {
-    expect(secondsToCostValue(60)).toBe(2)
-    expect(secondsToCostValue(90)).toBe(3) // 1m30s → US$3
-    expect(secondsToCostValue(30)).toBe(1) // meio minuto → US$1
-    expect(secondsToCostValue(620 * 60)).toBe(1240)
+  it('call abaixo de 30s não fatura', () => {
+    expect(billableMinutes(29)).toBe(0)
+    expect(billableMinutes(29.9)).toBe(0)
   })
-})
 
-describe('formatCost', () => {
-  it('formata como moeda USD (default en-US)', () => {
-    expect(formatCost(1240)).toBe('$1,240.00')
-    expect(formatCost(2)).toBe('$2.00')
-    expect(formatCost(0)).toBe('$0.00')
-    expect(formatCost(1.5)).toBe('$1.50')
+  it('arredonda pra minuto cheio a partir de 30s', () => {
+    expect(billableMinutes(30)).toBe(1)
+    expect(billableMinutes(60)).toBe(1)
+    expect(billableMinutes(61)).toBe(2) // 1m01s → 2 min faturados
+    expect(billableMinutes(90)).toBe(2)
+    expect(billableMinutes(120)).toBe(2)
+    expect(billableMinutes(15 * 60)).toBe(15)
+  })
+
+  it('soma por call, não sobre o total (é o que difere do modelo antigo)', () => {
+    // 3 calls de 1m30s: 3 × ceil(90/60) = 6 min faturados — não ceil(270/60)=5.
+    const calls = [90, 90, 90]
+    expect(calls.reduce((s, d) => s + billableMinutes(d), 0)).toBe(6)
   })
 })

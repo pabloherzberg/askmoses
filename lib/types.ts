@@ -124,8 +124,15 @@ export interface Call {
   ghlWonStatus?: string | null;
   ghlWonAt?: string | null;
   // Data em que a call de fato aconteceu (migration 036), distinta de `date`
-  // (created_at = upload/ingestão). Usada como "data da eval" no Intent dashboard.
+  // (created_at = upload/ingestão). Exibida como "Call Date" no Intent dashboard.
   callDate?: string | null;
+  // Agendamento do lead no Pepper/GHL (tabela appointments, migration 094),
+  // juntado à call por contactId. Enriquecimento opt-in — só populado quando o
+  // consumidor pede (`/api/calls?withAppointments=true`); undefined significa
+  // "não consultado", null significa "consultado e não há agendamento".
+  appointmentAt?: string | null;
+  // Status do agendamento no GHL: booked | confirmed | cancelled | showed | noshow.
+  appointmentStatus?: string | null;
   // Origem da data da eval: 'ghl' quando ingest_source é webhook (confiável),
   // 'llm' quando veio de upload manual (call_date é estimado/extraído do
   // transcript) — sinalizado na UI como fallback.
@@ -230,12 +237,12 @@ export interface Client {
   orgId: string;
   callsThisMonth: number;
   avgScore: number;
-  // Cobrança por minuto (substitui o MRR fixo). `totalSecondsThisMonth` é o
-  // consumo agregado da org no mês (soma de calls.duration_seconds, dinâmico);
-  // `totalCostThisMonth` é o valor exato em USD. Ambos só exibidos no painel
-  // Admin — Owner nunca vê custo.
-  totalSecondsThisMonth: number;
-  totalCostThisMonth: number;
+  // Minutos faturáveis consumidos pela org no mês corrente (calendário, UTC).
+  // Mesma regra da feature de Billing — ceil por call, calls < 30s não contam
+  // (lib/billing.ts) — pra coluna "Minutes" do SaaS Panel bater com o que o
+  // Billing cobra no mesmo mês. Custo NÃO vive aqui: quem mostra dinheiro é
+  // /admin/billing, que deriva o valor da tarifa por org.
+  billableMinutesThisMonth: number;
   health: HealthStatus;
   trainersCount: number;
   // false = nenhuma membership com role='owner' e invite_status='accepted'
