@@ -548,7 +548,8 @@ function LeadsList({
                         </span>
                       )}
                     </td>
-                    {/* Appointment — data do agendamento no Pepper/GHL, juntada por contactId */}
+                    {/* Appointment — data do agendamento no Pepper/GHL, juntada por contactId.
+                        attachAppointmentsToCalls já zera appointmentAt quando Won = "Yes". */}
                     <td className="py-2.5 whitespace-nowrap">
                       {call.appointmentAt ? (
                         <span

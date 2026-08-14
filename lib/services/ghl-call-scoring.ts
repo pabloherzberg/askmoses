@@ -244,6 +244,14 @@ export async function runGhlCallScoring(callId: string): Promise<void> {
         callId,
         orgId: call.org_id,
       });
+
+      // Resync: cobre o reprocessamento (scripts/reprocess-org-calls.mts),
+      // onde essa call pode já ter contado como venda num sync anterior — sem
+      // isso os stats do trainer ficariam com a call "fantasma" até um
+      // /api/sync-trainers manual.
+      if (call.trainer_id) {
+        await syncTrainerStats(call.trainer_id);
+      }
       return;
     }
 
