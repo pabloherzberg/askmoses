@@ -56,6 +56,11 @@ export async function attachAppointmentsToCalls(
   for (const list of byContact.values()) list.sort((a, b) => a.at - b.at)
 
   return calls.map((call) => {
+    // Won "Yes" esconde o appointment: lead já fechou, o agendamento de
+    // follow-up deixou de ser relevante pra esta visão.
+    if (call.ghlWonStatus === 'won') {
+      return { ...call, appointmentAt: null, appointmentStatus: null }
+    }
     const list = call.contactId ? byContact.get(call.contactId) : undefined
     if (!list || list.length === 0) {
       return { ...call, appointmentAt: null, appointmentStatus: null }
