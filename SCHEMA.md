@@ -1,8 +1,10 @@
 # AskMoses.AI — Database Schema Reference
 
 > **Audience:** Data scientists, ML engineers, backend developers.
-> **Last updated:** 2026-05-08
-> **Migration applied:** `scripts/036_ml_fields.sql`
+> **Last updated:** 2026-08-19
+> **Latest migration documented here:** `scripts/107_won_rate_and_weekly_stats.sql`
+>
+> This file is written by hand and can drift from the live database. Migration history below lists what the repo's scripts create — constraints applied directly to a database will not appear. `scripts/schema-fingerprint.sql` compares two databases when they disagree.
 
 ---
 
@@ -104,7 +106,7 @@ Core table. One row per analyzed call. **Primary source for the ML pipeline.**
 | `trainer_email` | TEXT | NO | Denormalized for email routing |
 | `org_id` | UUID FK → `organizations.id` | YES | |
 | `transcript` | TEXT | NO | Raw transcript |
-| `overall_score` | NUMERIC(3,1) | NO | 0.0–5.0 weighted average of section scores |
+| `overall_score` | NUMERIC(4,1) | NO | **0–100** weighted average of section scores. Widened and rescaled from 0.0–5.0 by migration 043 — the 0–5 you see in the UI is display only, produced by `toDisplay5()` (`s / 20`). Do not divide by 20 outside `lib/score-display.ts`. |
 | `summary` | TEXT | NO | AI-generated summary |
 | `strengths` | TEXT[] | NO | Array of strength observations |
 | `improvements` | TEXT[] | NO | Array of improvement suggestions |
@@ -210,6 +212,94 @@ Fires `BEFORE INSERT OR UPDATE OF call_outcome` on `calls`. Automatically sets `
 
 ---
 
+## Trigger: `trg_calls_updated_at`
+
+Fires `BEFORE UPDATE` on `calls` and sets `updated_at = now()`, overriding whatever the application sent. Added in migration 107.
+
+The weekly stamp into `call_stats_weekly` is incremental — it finds the weeks that need recomputing with `WHERE calls.updated_at >= <last run>`. That only holds if `updated_at` moves on every write. With the trigger, forgetting to set it stops being possible; without it, a new write path that omits it makes the call invisible to the stamp, and the failure is silent.
+
+Coexists with `trg_sync_closed`: both are `BEFORE ... FOR EACH ROW` and touch different columns, so their order does not matter. Paired with `calls_updated_at_idx` so the lookup does not scan the table.
+
+A bulk `UPDATE` (a backfill, a data fix) moves `updated_at` on every row it touches, and the next stamp will recompute every week involved. That is correct — the data did change — but it is one expensive run.
+
+---
+
+## Table: `call_stats_weekly`
+
+Weekly aggregates per org and per sales person. **Append-only** — counts only, no transcript, no prospect name, no `contact_id`. Nothing here identifies a person, which is why a churned client's rows stay.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | UUID PK | NO | |
+| `org_id` | UUID FK → `organizations.id` | NO | `ON DELETE RESTRICT` — deleting an org must not take its history |
+| `trainer_id` | UUID FK → `trainers.id` | YES | **NULL = the org row**, same convention as `org_won_rate` |
+| `week_start` | DATE | NO | Monday |
+| `snapshot_at` | DATE | NO | Day the row was stamped — part of the grain |
+| `total_calls` | INT | NO | Calls made that week |
+| `closed_calls` | INT | NO | Of those, how many booked an evaluation |
+| `closed_leads` | INT | NO | Distinct leads that booked that week |
+| `won_leads` | INT | NO | Of **those** leads, how many had bought as of `snapshot_at` |
+| `score_sum` | NUMERIC(12,2) | NO | Sum of `overall_score`, **0–100 scale** — same as the source column. Not 0–5; that is display only |
+| `score_count` | INT | NO | Calls that had a score. **Not** `total_calls` — an unscored call must not drag the mean toward zero |
+| `intent_sum` | NUMERIC(12,2) | NO | Sum of `intent` (0–5) |
+| `intent_count` | INT | NO | Calls that had an intent |
+| `avg_score` | NUMERIC | YES | `GENERATED` — `score_sum / score_count`. Convenience only; the sums are the fact |
+| `avg_intent` | NUMERIC | YES | `GENERATED` — `intent_sum / intent_count` |
+| `source` | TEXT | NO | `live` \| `backfill` |
+| `created_at` | TIMESTAMPTZ | NO | |
+
+**Facts, never results.** This is a log for statistical analysis, not a render cache, so it stores only what is additive — counts and sums — and nothing already divided. Every division happens on read:
+
+```
+close rate = closed_calls / total_calls    (per call)
+won rate   = won_leads    / closed_leads   (per lead)
+avg score  = score_sum    / score_count
+```
+
+This applies to means for the same reason it applies to rates: both throw away the denominator. **An average of averages is wrong whenever the Ns differ** — a 3-call week averaging 80 and a 30-call week averaging 60 combine to 61.8, not 70. Keeping what is additive means any regrouping works: weeks into a month, sales people into a team, org by period. None of that is recoverable from a number that has already been divided.
+
+The three denominators differ on purpose. A call with no `contact_id` counts in `total_calls` and not in `closed_leads`; a call with no score counts in `total_calls` and not in `score_count`. Each metric counts the population it is actually about.
+
+**Why `snapshot_at` is in the grain.** `won_leads` matures: a lead that books this week may buy a month from now. Each stamp records "of week X's bookings, this many had sold by then". Re-stamping does not correct the past — it adds a riper reading beside it, and the earlier one stays for audit. Read the current figure with:
+
+```sql
+SELECT DISTINCT ON (trainer_id, week_start) *
+FROM   public.call_stats_weekly
+WHERE  org_id = $1
+ORDER  BY trainer_id, week_start DESC, snapshot_at DESC;
+```
+
+**Write contract:** `stamp_call_stats_weekly()` inserts a row only when a measured value actually changed against the most recent snapshot for that (org, sales person, week). A week that has stopped moving stops producing rows, so every row that exists represents a real change — the table is a log of changes, not a log of cron runs.
+
+It also decides *which* weeks to recompute rather than sweeping a fixed window: dirty weeks come from `calls.updated_at` since the cursor in `job_watermarks`, expanded from the changed call to its lead and then to every week that lead booked in. That expansion matters because a sale changes `ghl_won_status`, while the week that needs recomputing is the booking week. Driven weekly by `GET /api/cron/snapshot-weekly`.
+
+**Attribution:** the week is the week of the *booking*, not of the sale. The org row is not the sum of the sales-person rows — a lead worked by two people counts once for each and once for the org.
+
+`UPDATE` and `DELETE` are revoked from `anon`, `authenticated` and `service_role`. Correcting a figure means inserting a new `snapshot_at`.
+
+---
+
+## Function: `org_won_rate(p_org_id uuid)`
+
+Returns the numerator and denominator behind **Won Rate**, one row per sales person plus one row with `trainer_id IS NULL` for the whole org.
+
+| Column | Meaning |
+|---|---|
+| `trainer_id` | Sales person, or `NULL` for the org total |
+| `closed_leads` | Distinct `contact_id` with at least one call where `call_outcome = 'closed'` |
+| `won_leads` | Those same leads that also have a call with `ghl_won_status = 'won'` |
+
+Won Rate = `won_leads / closed_leads`. Two rules matter when reading this:
+
+- **Counted per lead, never per call.** `dbUpdateGhlOpportunity` stamps `ghl_won_status` on *every* call belonging to a contact, so counting calls would turn one sale into six and push the rate past 100%. `COUNT(DISTINCT contact_id)` is immune to that.
+- **The org row is not the sum of the sales-person rows.** A lead worked by two people counts once for each of them and once for the org.
+
+Calls with `contact_id IS NULL` (manual upload, GHL calls predating backfill 102) are excluded from both sides — which is why this denominator is smaller than the one behind Close Rate, which counts calls.
+
+Global and not restricted to any period, matching `dbGetOrgCloseRate`.
+
+---
+
 ## Indexes relevant to ML queries
 
 | Index | Table | Columns |
@@ -219,6 +309,7 @@ Fires `BEFORE INSERT OR UPDATE OF call_outcome` on `calls`. Automatically sets `
 | `calls_call_date_idx` | calls | `call_date DESC` |
 | `calls_trainer_id_idx` | calls | `trainer_id` |
 | `calls_org_id_idx` | calls | `org_id` |
+| `calls_updated_at_idx` | calls | `updated_at` |
 | `idx_calls_sections` | calls | `sections` (GIN) |
 
 ---
@@ -270,3 +361,4 @@ ORDER BY f.call_date DESC;
 | `035_drop_criteria_columns.sql` | Drops legacy `criteria`, `total_criteria` columns |
 | **`036_ml_fields.sql`** | **Adds `closed`, `call_date`, `duration_seconds`; creates `calls_ml_flat` view and `trg_sync_closed` trigger** |
 | `105_call_outcome_2_values.sql` | Simplifies `call_outcome_enum` from 4 to 2 values (`partial`→`closed`, `no_outcome`→`not_closed`); remaps `organizations.stage1_success_outcomes` |
+| `107_won_rate_and_weekly_stats.sql` | Won Rate and the weekly stats log: `org_won_rate(uuid)`, `call_stats_weekly` (append-only), `job_watermarks`, `stamp_call_stats_weekly()`, `calls_updated_at_idx` + `trg_calls_updated_at`, and the one-time backfill |
