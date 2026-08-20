@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/sync-ghl-appointments",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-weekly",
+      "schedule": "0 7 * * 1"
     }
   ],
   "redirects": [

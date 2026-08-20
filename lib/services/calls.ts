@@ -5,6 +5,7 @@ import {
   dbUpdateCall,
   dbDeleteCall,
   dbGetOrgCloseRate,
+  dbGetOrgWonRate,
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
@@ -27,6 +28,8 @@ import type {
   GetCallByIdScope,
   CallMutationScope,
   OrgCloseRate,
+  OrgWonRate,
+  WonRate,
 } from "@/lib/db/calls";
 
 export type {
@@ -210,7 +213,7 @@ export function avgRubricScores(calls: Call[]): RubricScores {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export type { OrgCloseRate };
+export type { OrgCloseRate, OrgWonRate, WonRate };
 
 /**
  * Close rate da org ativa, contado call a call (ver dbGetOrgCloseRate). É a
@@ -221,6 +224,17 @@ export async function getOrgCloseRate(): Promise<OrgCloseRate> {
   const orgId = await getOrgId();
   if (!orgId) return { totalCalls: 0, closedCalls: 0, closeRate: 0 };
   return dbGetOrgCloseRate(orgId);
+}
+
+/**
+ * Won rate da org ativa + o recorte por vendedor (ver dbGetOrgWonRate).
+ * Fonte única do card "Won Rate" do /dashboard e do número por vendedor no
+ * Team Command Center — os dois leem a MESMA chamada para não divergirem.
+ */
+export async function getOrgWonRate(): Promise<OrgWonRate> {
+  const orgId = await getOrgId();
+  if (!orgId) return { closedLeads: 0, wonLeads: 0, wonRate: 0, byTrainer: {} };
+  return dbGetOrgWonRate(orgId);
 }
 
 export async function getCalls(
