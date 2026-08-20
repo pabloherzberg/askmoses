@@ -7,7 +7,7 @@ import {
   getTeamHealth,
 } from "@/lib/services/trainers";
 import { getInsights } from "@/lib/services/insights";
-import { getOrgCloseRate } from "@/lib/services/calls";
+import { getOrgCloseRate, getOrgWonRate } from "@/lib/services/calls";
 import type { Locale } from "@/i18n/routing";
 import { getRubric, buildCoachingDrivers } from "@/lib/services/rubric";
 import { getScriptGaps } from "@/lib/services/script-gaps";
@@ -31,6 +31,7 @@ export default async function DashboardPage() {
     ctx,
     gapAnalysis,
     { closeRate: avgClose },
+    wonRate,
     t,
     tMetrics,
     tHealth,
@@ -42,6 +43,7 @@ export default async function DashboardPage() {
     getActiveOrgContext(),
     getScriptGaps(locale),
     getOrgCloseRate(),
+    getOrgWonRate(),
     getTranslations("Owner"),
     getTranslations("Owner.metrics"),
     getTranslations("Owner.teamHealth"),
@@ -118,8 +120,8 @@ export default async function DashboardPage() {
       {/* ── Team overview ─────────────────────────────────────── */}
       <SectionLabel>{t("teamOverview")}</SectionLabel>
 
-      {/* Hero KPI row: Close Rate em destaque + 3 secundários */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      {/* Hero KPI row: Close Rate em destaque + secundários */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
         {/* Hero — Avg Close Rate */}
         <ScoreCard
           label={tMetrics("avgCloseRate")}
@@ -138,6 +140,13 @@ export default async function DashboardPage() {
             boxShadow:
               "0 0 0 1px rgba(34,217,160,0.10), 0 4px 24px rgba(34,217,160,0.08)",
           }}
+        />
+        {/* Won Rate — leads fechados ÷ leads que agendaram avaliação (Stage 1) */}
+        <ScoreCard
+          label={tMetrics("wonRate")}
+          tooltip={tMetrics("wonRateTooltip")}
+          value={`${wonRate.wonRate}%`}
+          valueColor="var(--am-blue)"
         />
         <ScoreCard
           label={tMetrics("teamAvgCallScore")}

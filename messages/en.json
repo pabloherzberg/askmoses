@@ -714,6 +714,8 @@
       "vsBaselineCurrency": "vs baseline",
       "avgCloseRate": "Avg Close Rate",
       "avgCloseRateTooltip": "Closed calls ÷ total calls, across the whole team. Every call the team has ever made is included — this is a global, all-time figure, not limited to any period, and each call counts the same regardless of who made it.",
+      "wonRate": "Won Rate",
+      "wonRateTooltip": "Leads who bought ÷ leads who scheduled an evaluation, across the whole team. Counted per lead, not per call — a lead with several calls only counts once. This is a global, all-time figure, not limited to any period.",
       "ptsSinceWeek1": "pts since week 1",
       "avgScore": "Avg Score",
       "teamAvgCallScore": "Team Avg Call Score",
@@ -1274,6 +1276,7 @@
       "callsProcessed": "calls processed"
     },
     "conversionRate": "Conversion rate",
+    "wonRate": "Won rate",
     "sinceWeek1": "since week 1",
     "avgScore": "Avg score",
     "totalCallsWeek": "Total calls this week",
