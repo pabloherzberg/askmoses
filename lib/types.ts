@@ -55,6 +55,13 @@ export interface Trainer {
   callsThisWeek?: number;
   closeRate: number;
   closeDelta: number;
+  // Won rate do vendedor — das avaliações que ELE agendou, quantas viraram
+  // venda. Contado por lead, não por call (ver dbGetOrgWonRate). Opcional:
+  // só o bundle do Team Command Center preenche; undefined = não consultado,
+  // que a UI distingue de 0 (consultado, nenhum lead fechou).
+  wonRate?: number;
+  closedLeads?: number;
+  wonLeads?: number;
   score: number;
   scoreDelta: number;
   lastActive: string;

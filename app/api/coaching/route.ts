@@ -3,6 +3,7 @@ import { ok, unauthorized, getSession, getOrgId } from '@/lib/auth'
 import { dbGetTrainers } from '@/lib/db/trainers'
 import { dbGetActiveOrgScript } from '@/lib/db/scripts'
 import { getCalls } from '@/lib/services/calls'
+import { dbGetOrgWonRate } from '@/lib/db/calls'
 import { getPerformanceTrends } from '@/lib/services/trainers'
 import {
   buildBehavioralProfile,
@@ -68,11 +69,21 @@ export async function GET(request: NextRequest) {
   // activeScript define as DIMENSIONS do Behavioral Profile pra TODOS os
   // trainers da org (consistência horizontal). Sem ele, o builder cai pro
   // fallback (call mais recente do trainer) — comportamento legado.
-  const [calls, activeScript] = await Promise.all([
+  //
+  // wonRates NÃO sai de `calls`: aquele array é limitado a 200 e conta call,
+  // e o won rate é global e contado por lead. Vem agregado do banco (RPC
+  // org_won_rate). `.catch` porque a migration 107 pode não ter rodado ainda
+  // num ambiente — o Team Command Center degrada sem o número em vez de
+  // quebrar inteiro.
+  const [calls, activeScript, wonRates] = await Promise.all([
     // salesOnly: alimenta best/worst calls, behavioral profile, callsThisWeek
     // e performance trends do Team Command Center — tudo métrica de venda.
     getCalls({ orgId, limit: 200, salesOnly: true }),
     dbGetActiveOrgScript(orgId).catch(() => null),
+    dbGetOrgWonRate(orgId).catch((err) => {
+      console.error('[api/coaching] won rate indisponível:', err)
+      return null
+    }),
   ])
   const performanceTrends = await getPerformanceTrends(trainers, calls)
 
@@ -107,10 +118,24 @@ export async function GET(request: NextRequest) {
           return Number.isFinite(t) && t > max ? t : max
         }, 0)
       : 0
+    // ATENÇÃO ao consumir: wonRate NÃO compartilha a janela de closeRate e
+    // score. Os dois últimos saem de `tc`, que é o recorte das 200 calls
+    // mais recentes da org; wonRate vem do RPC e é histórico completo. Um
+    // vendedor pode aparecer com closeRate de 5 calls e wonRate de 50 leads.
+    // Não é bug: são perguntas diferentes, e estreitar o wonRate pra essa
+    // janela exigiria contar lead dentro de um limite que é por call.
+    //
+    // Por isso o número real vai sempre que existir, mesmo com `tc` vazio —
+    // omiti-lo ali esconderia dado verdadeiro pra imitar uma janela que ele
+    // não usa.
+    const won = wonRates?.byTrainer[trainer.id]
     return {
       ...live,
       callsThisWeek,
       lastActiveAt: lastAt > 0 ? new Date(lastAt).toISOString() : null,
+      wonRate: won?.wonRate,
+      closedLeads: won?.closedLeads,
+      wonLeads: won?.wonLeads,
     }
   })
 

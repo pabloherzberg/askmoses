@@ -186,6 +186,24 @@ export function TrainerTabs() {
               {t('totalCallsWeek')}
             </span>
           </div>
+
+          {/* wonRate é undefined quando o bundle não conseguiu consultar o RPC
+              (migration 107 pode não ter rodado) — nesse caso omite o bloco em
+              vez de mostrar um 0% que não é real. */}
+          {trainer.wonRate !== undefined && (
+            <>
+              <div className="hidden md:block w-px self-stretch" style={{ background: 'var(--am-border)' }} />
+
+              <div className="flex flex-col min-w-[72px]">
+                <span className="text-2xl font-bold font-mono" style={{ color: 'var(--am-blue)' }}>
+                  {trainer.wonRate}%
+                </span>
+                <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+                  {t('wonRate')}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

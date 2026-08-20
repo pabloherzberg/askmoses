@@ -250,6 +250,23 @@ export async function dbUpdateGhlOpportunity(
   return count ?? 0
 }
 
+// Já existe alguma call WON para este contato na org? Usado pelo webhook do
+// GHL para rejeitar novas calls de um lead que já fechou — depois do Won,
+// dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls do
+// contato, então basta achar UMA linha pra saber que o lead está fechado.
+export async function dbHasWonCall(orgId: string, contactId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('calls')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('contact_id', contactId)
+    .eq('ghl_won_status', 'won')
+    .limit(1)
+  if (error) throw new Error(`dbHasWonCall: ${error.message}`)
+  return (data?.length ?? 0) > 0
+}
+
 // contact_ids distintos das calls da org criadas nos últimos `days` dias.
 // É o universo que o sync de agendamentos precisa varrer: só faz sentido puxar
 // a agenda de quem tem call ingerida — mesma chave (contact_id) que o fluxo do
@@ -703,6 +720,78 @@ export async function dbGetOrgCloseRate(orgId: string): Promise<OrgCloseRate> {
     closedCalls,
     closeRate: totalCalls > 0 ? Math.round((closedCalls / totalCalls) * 100) : 0,
   }
+}
+
+/** Won rate — ver dbGetOrgWonRate. Contado por LEAD, nunca por call. */
+export interface WonRate {
+  /** Leads (contact_id distintos) com ao menos uma call 'closed' — denominador. */
+  closedLeads: number
+  /** Subconjunto de closedLeads que também tem ghl_won_status='won' — numerador. */
+  wonLeads: number
+  /** wonLeads / closedLeads em %, inteiro. 0 quando não há lead com 'closed'. */
+  wonRate: number
+}
+
+export interface OrgWonRate extends WonRate {
+  /** Mesmo cálculo recortado por vendedor. Chave = trainers.id. */
+  byTrainer: Record<string, WonRate>
+}
+
+function toWonRate(closedLeads: unknown, wonLeads: unknown): WonRate {
+  // bigint do Postgres chega como number no JSON do PostgREST, mas em orgs
+  // grandes pode vir como string — Number() cobre os dois.
+  const closed = Number(closedLeads) || 0
+  const won = Number(wonLeads) || 0
+  return {
+    closedLeads: closed,
+    wonLeads: won,
+    wonRate: closed > 0 ? Math.round((won / closed) * 100) : 0,
+  }
+}
+
+/**
+ * Won rate da org e de cada vendedor: leads que fecharam venda ÷ leads que
+ * agendaram avaliação (`call_outcome='closed'` — Stage 1 do funil).
+ *
+ * Toda a contagem é por LEAD (`contact_id` distinto), não por call. Um lead
+ * com 6 ligações e 1 venda conta como 1/1, não 6/6 — dbUpdateGhlOpportunity
+ * carimba `ghl_won_status` em todas as calls do contato, e contar call faria
+ * o rate estourar 100%. Ver scripts/107_org_won_rate.sql para o raciocínio
+ * completo.
+ *
+ * Calls sem `contact_id` (upload manual, GHL anterior ao backfill 102) ficam
+ * fora dos DOIS lados — entram no close rate, que conta call, mas não aqui.
+ * É por isso que os denominadores das duas métricas não batem.
+ *
+ * `byTrainer[id]` responde "das avaliações que ELE agendou, quantas viraram
+ * venda" — qualidade do agendamento, não crédito pelo fechamento (o closer
+ * pode ser outra pessoa). A soma dos vendedores não reproduz o total da org:
+ * um lead atendido por dois conta uma vez em cada e uma vez só na org.
+ *
+ * Global e sem recorte de período, igual a dbGetOrgCloseRate.
+ */
+export async function dbGetOrgWonRate(orgId: string): Promise<OrgWonRate> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase.rpc('org_won_rate', { p_org_id: orgId })
+  if (error) throw new Error(`dbGetOrgWonRate: ${error.message}`)
+
+  const rows = (data ?? []) as Array<{
+    trainer_id: string | null
+    closed_leads: number | string
+    won_leads: number | string
+  }>
+
+  let org: WonRate = { closedLeads: 0, wonLeads: 0, wonRate: 0 }
+  const byTrainer: Record<string, WonRate> = {}
+
+  for (const row of rows) {
+    const entry = toWonRate(row.closed_leads, row.won_leads)
+    if (row.trainer_id === null) org = entry
+    else byTrainer[row.trainer_id] = entry
+  }
+
+  return { ...org, byTrainer }
 }
 
 /** Call bloqueada por falta de vínculo — o mínimo pra reprocessar (id + payload). */
