@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
-import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbUpdateGhlOpportunity } from "@/lib/db/calls"
+import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbUpdateGhlOpportunity, dbHasWonCall } from "@/lib/db/calls"
 import { dbResolveTrainerForGhlCall, type GhlCallTrainerLink } from "@/lib/db/trainers"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
@@ -242,6 +242,42 @@ export async function POST(req: NextRequest) {
       data: { status: "skipped_trainer_invite_pending" },
       error: null,
     })
+  }
+
+  // 5d. Lead já fechou (Won) — não registra mais calls dele. Depois do Won,
+  //     dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls
+  //     do contato; uma call nova do mesmo contactId só existiria por reagenda-
+  //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha) —
+  //     mesmo tratamento silencioso do gate de trainer não vinculado acima.
+  try {
+    const alreadyWon = await dbHasWonCall(orgConfig.orgId, contactId)
+    if (alreadyWon) {
+      console.info("[ghl-webhook] contato já fechado (won) — rejeitando nova call", {
+        orgId: orgConfig.orgId,
+        contactId,
+        externalCallId,
+      })
+      return NextResponse.json({
+        data: { status: "skipped_contact_already_won" },
+        error: null,
+      })
+    }
+  } catch (err) {
+    console.error("[ghl-webhook] won-status lookup failed", { err, externalCallId })
+    void notifyPipelineFailure("webhook_failed", {
+      callId: `sync-error:won-check:${externalCallId}`,
+      orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
+      contactId,
+      clientName,
+      trainerName,
+      ghlUserId,
+      error: err instanceof Error ? `[won-check] ${err.message}` : String(err),
+      stage: "webhook",
+      reason: "db_error",
+      meta: { externalCallId, operation: "dbHasWonCall" },
+    })
+    return jsonError("Server error", 500)
   }
 
   let upsertResult

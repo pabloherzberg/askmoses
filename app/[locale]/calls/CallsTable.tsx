@@ -118,6 +118,26 @@ function ReprocessButton({ callId, hasSections, onRefresh }: { callId: string; h
   )
 }
 
+// Mesmo badge/cores do Intent Analysis (components/shared/IntentDashboard.tsx) —
+// consistência visual entre as duas telas que exibem ghlWonStatus.
+function WonBadge({ status, yesLabel, noLabel }: { status?: string | null; yesLabel: string; noLabel: string }) {
+  if (status === 'won') {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(34,217,160,0.12)', color: 'var(--am-green)' }}>
+        {yesLabel}
+      </span>
+    )
+  }
+  if (status === 'lost') {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(255,94,94,0.12)', color: 'var(--am-red)' }}>
+        {noLabel}
+      </span>
+    )
+  }
+  return <span style={{ color: 'var(--am-muted)' }}>—</span>
+}
+
 interface CallsTableProps {
   calls: Call[]
   showTrainerColumn?: boolean
@@ -159,6 +179,7 @@ export function CallsTable({
   // Source filter removido da UI (sem funcionalidade real ainda).
   // const [sourceFilter, setSourceFilter] = useState<string>('all')
   const [scriptFilter, setScriptFilter] = useState<string>('all')
+  const [wonFilter, setWonFilter] = useState<string>('all')
 
   const trainers = useMemo(() => {
     const map = new Map<string, string>()
@@ -188,9 +209,11 @@ export function CallsTable({
       if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
       if (scriptFilter !== 'all' && (c.scriptId ?? null) !== scriptFilter) return false
+      if (wonFilter === 'won' && c.ghlWonStatus !== 'won') return false
+      if (wonFilter === 'lost' && c.ghlWonStatus !== 'lost') return false
       return true
     }),
-    [calls, resultFilter, trainerFilter, scriptFilter]
+    [calls, resultFilter, trainerFilter, scriptFilter, wonFilter]
   )
 
   // Agrupa as calls filtradas por contactId — um registro por cliente. Dentro
@@ -229,7 +252,7 @@ export function CallsTable({
     ...(showTrainerColumn ? [t('thTrainer')] : []),
     t('thProspect'), t('thDate'),
     ...(hasScripts ? [t('thScript')] : []),
-    t('thDuration'), t('thIntent'), t('thScore'), t('thResult'), '',
+    t('thDuration'), t('thIntent'), t('thScore'), t('thResult'), t('thWon'), '',
   ]
 
   const countLabel = filtered.length === 1
@@ -324,6 +347,9 @@ export function CallsTable({
             </td>
           </>
         )}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <WonBadge status={call.ghlWonStatus} yesLabel={t('wonYes')} noLabel={t('wonNo')} />
+        </td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-end gap-2">
             {hasHistory && (
@@ -376,6 +402,11 @@ export function CallsTable({
         )}
         {/* Filtro de Sources removido — sem funcionalidade real por trás.
             Reabilitar quando lead_source for editável e tiver consumidores. */}
+        <select className={selectClass} style={selectStyle} value={wonFilter} onChange={(e) => setWonFilter(e.target.value)}>
+          <option value="all">{t('filterAllWon')}</option>
+          <option value="won">{t('filterWonYes')}</option>
+          <option value="lost">{t('filterWonNo')}</option>
+        </select>
         {hasScripts && (
           <select className={selectClass} style={selectStyle} value={scriptFilter} onChange={(e) => setScriptFilter(e.target.value)}>
             <option value="all">{t('filterAllScripts')}</option>
@@ -528,6 +559,10 @@ export function CallsTable({
                         <span className="inline-flex items-center gap-1">
                           {t('thIntent')}
                           <IntentCell score={call.intent} />
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          {t('thWon')}
+                          <WonBadge status={call.ghlWonStatus} yesLabel={t('wonYes')} noLabel={t('wonNo')} />
                         </span>
                       </div>
                     </div>

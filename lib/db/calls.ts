@@ -250,6 +250,23 @@ export async function dbUpdateGhlOpportunity(
   return count ?? 0
 }
 
+// Já existe alguma call WON para este contato na org? Usado pelo webhook do
+// GHL para rejeitar novas calls de um lead que já fechou — depois do Won,
+// dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls do
+// contato, então basta achar UMA linha pra saber que o lead está fechado.
+export async function dbHasWonCall(orgId: string, contactId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('calls')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('contact_id', contactId)
+    .eq('ghl_won_status', 'won')
+    .limit(1)
+  if (error) throw new Error(`dbHasWonCall: ${error.message}`)
+  return (data?.length ?? 0) > 0
+}
+
 // contact_ids distintos das calls da org criadas nos últimos `days` dias.
 // É o universo que o sync de agendamentos precisa varrer: só faz sentido puxar
 // a agenda de quem tem call ingerida — mesma chave (contact_id) que o fluxo do
