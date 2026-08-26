@@ -228,6 +228,7 @@ export interface GhlTrainerLink {
   trainerId: string
   userId: string
   name: string
+  email: string | null
   /** invite aceito → membro ativo. Pendente/sem linha → call fica bloqueada. */
   inviteAccepted: boolean
 }
@@ -249,7 +250,7 @@ export async function dbGetTrainerByGhlUserId(
 
   const { data, error } = await supabase
     .from('trainers')
-    .select('id, user_id, users!inner(name, invite_status)')
+    .select('id, user_id, users!inner(name, email, invite_status)')
     .eq('org_id', orgId)
     .eq('ghl_user_id', ghlUserId)
     .maybeSingle()
@@ -260,11 +261,12 @@ export async function dbGetTrainerByGhlUserId(
   }
   if (!data) return null
 
-  const user = data.users as { name?: string; invite_status?: string } | null
+  const user = data.users as { name?: string; email?: string; invite_status?: string } | null
   return {
     trainerId: data.id as string,
     userId: data.user_id as string,
     name: user?.name ?? '—',
+    email: user?.email ?? null,
     inviteAccepted: user?.invite_status === 'accepted',
   }
 }
@@ -304,6 +306,14 @@ export async function dbGetLinkedGhlUserIds(
 
 export interface GhlCallTrainerLink {
   trainerId: string
+  /** Nome real do trainer (users.name) — fonte confiável para trainer_name,
+   *  independente do que o GHL mandou no payload (userName pode vir com o
+   *  nome da Location/Company quando o usuário não está configurado
+   *  individualmente no Phone System do GHL). */
+  name: string
+  /** Email real do trainer (users.email) — fonte confiável para
+   *  trainer_email quando o payload do GHL não traz (ou traz vazio). */
+  email: string | null
   /** invite_status do user do trainer — 'pending' | 'accepted' (ou o que
    *  estiver na coluna). Decide se emitimos o alerta informativo de pendência. */
   inviteStatus: string
@@ -327,7 +337,7 @@ export async function dbResolveTrainerForGhlCall(
 
   const { data, error } = await supabase
     .from('trainers')
-    .select('id, users!inner(invite_status)')
+    .select('id, users!inner(name, email, invite_status)')
     .eq('org_id', orgId)
     .eq('ghl_user_id', ghlUserId)
     .maybeSingle()
@@ -337,10 +347,18 @@ export async function dbResolveTrainerForGhlCall(
 
   const row = data as {
     id: string
-    users: { invite_status: string | null } | { invite_status: string | null }[] | null
+    users:
+      | { name: string | null; email: string | null; invite_status: string | null }
+      | { name: string | null; email: string | null; invite_status: string | null }[]
+      | null
   }
   const users = Array.isArray(row.users) ? row.users[0] : row.users
-  return { trainerId: row.id, inviteStatus: users?.invite_status ?? 'accepted' }
+  return {
+    trainerId: row.id,
+    name: users?.name ?? '—',
+    email: users?.email ?? null,
+    inviteStatus: users?.invite_status ?? 'accepted',
+  }
 }
 
 /**

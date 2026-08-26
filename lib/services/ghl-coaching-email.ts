@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbGetTrainerById } from "@/lib/db/trainers"
 import { buildCoachingEmail } from "@/lib/email/coaching-template"
 
 interface DbSectionRow {
@@ -32,8 +33,24 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
   if (call.email_sent) {
     return
   }
-  if (!call.trainer_email) {
-    console.info("[ghl-coaching-email] skip — no trainer_email on call", { callId })
+
+  // Fallback: trainer_email pode vir vazio do GHL (ex.: merge tag que não
+  // resolveu para o usuário — comum quando um owner-vendedor não está
+  // configurado como Phone System User individual no GHL). Com trainer_id
+  // vinculado, users.email é a fonte confiável — evita perder o envio por um
+  // campo vazio vindo do payload externo.
+  let trainerEmail = call.trainer_email
+  let trainerName = call.trainer_name
+  if (!trainerEmail && call.trainer_id) {
+    const trainer = await dbGetTrainerById(call.trainer_id)
+    if (trainer?.email) {
+      trainerEmail = trainer.email
+      trainerName = trainer.name
+    }
+  }
+
+  if (!trainerEmail) {
+    console.warn("[ghl-coaching-email] skip — no trainer_email on call (and no fallback via users.email)", { callId })
     return
   }
   if (call.overall_score == null) {
@@ -60,8 +77,8 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
   }))
 
   const { subject, html } = buildCoachingEmail({
-    trainerName: call.trainer_name ?? "Trainer",
-    trainerEmail: call.trainer_email,
+    trainerName: trainerName ?? "Trainer",
+    trainerEmail,
     clientName: call.client_name ?? undefined,
     overallScore: call.overall_score,
     sections,
@@ -75,7 +92,7 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
   })
 
   const resend = new Resend(apiKey)
-  const to = process.env.DEV_EMAIL_OVERRIDE ?? call.trainer_email
+  const to = process.env.DEV_EMAIL_OVERRIDE ?? trainerEmail
 
   const { data, error } = await resend.emails.send({
     from: "AskMoses.AI <noreply@askmoses.ai>",
