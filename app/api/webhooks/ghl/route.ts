@@ -230,6 +230,13 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  // trainerLink vem de `users` (nossa fonte cadastral) e substitui o que veio
+  // cru do GHL: o payload pode trazer o nome/email da Location/Company em vez
+  // do usuário real (ex.: owner que também vende sem estar configurado como
+  // Phone System User individual no GHL) — users.name/email são confiáveis.
+  const resolvedTrainerName = trainerLink.name !== '—' ? trainerLink.name : trainerName
+  const resolvedTrainerEmail = trainerLink.email ?? trainerEmail
+
   if (trainerLink.inviteStatus !== "accepted") {
     console.info("[ghl-webhook] call de trainer com convite pendente — ignorando", {
       orgId: orgConfig.orgId,
@@ -287,8 +294,8 @@ export async function POST(req: NextRequest) {
       externalCallId,
       ghlPayload: rawBody as unknown as Record<string, unknown>,
       trainerId: trainerLink.trainerId,
-      trainerName,
-      trainerEmail,
+      trainerName: resolvedTrainerName,
+      trainerEmail: resolvedTrainerEmail,
       ghlUserId,
       contactId,
       clientName,
