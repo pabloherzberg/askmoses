@@ -101,6 +101,7 @@ export default async function DashboardPage() {
   // null (lacuna no gráfico) em vez de uma barra de 0% que confundiria.
   const closeRateChartData = teamTrend.map((w) => ({
     week: w.week,
+    weekStart: w.weekStart,
     closeRate: w.score > 0 ? w.closeRate : null,
   }));
 

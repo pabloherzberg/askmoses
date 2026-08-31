@@ -424,7 +424,9 @@
       "title": "Tendencia de tasa de conversión",
       "team": "Equipo",
       "teamAvg": "Promedio del equipo",
-      "closeRateLegend": "Tasa de cierre",
+      "closeRateLegend": "Tasa de cierre"
+    },
+    "trendAxis": {
       "weekLabel": "Semana {n}",
       "callLabel": "Llamada {n}"
     },

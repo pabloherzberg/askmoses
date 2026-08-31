@@ -424,7 +424,9 @@
       "title": "Tendance du taux de conversion",
       "team": "Équipe",
       "teamAvg": "Moyenne de l'équipe",
-      "closeRateLegend": "Taux de conversion",
+      "closeRateLegend": "Taux de conversion"
+    },
+    "trendAxis": {
       "weekLabel": "Semaine {n}",
       "callLabel": "Appel {n}"
     },

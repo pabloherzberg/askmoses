@@ -424,7 +424,9 @@
       "title": "Conversion Rate Trend",
       "team": "Team",
       "teamAvg": "Team avg",
-      "closeRateLegend": "Close Rate",
+      "closeRateLegend": "Close Rate"
+    },
+    "trendAxis": {
       "weekLabel": "Week {n}",
       "callLabel": "Call {n}"
     },

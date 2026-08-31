@@ -11,6 +11,7 @@ import {
   AreaChart,
 } from 'recharts'
 import type { PerformanceTrendPoint } from '@/lib/types'
+import { useTrendAxisLabel } from '@/components/shared/useTrendAxisLabel'
 
 interface SalesPerson {
   id: string
@@ -28,26 +29,15 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
   const t = useTranslations('Shared.performanceTrend')
   const [selected, setSelected] = useState<string>('team')
 
-  // Labels localizados:
-  //   - "W{n}" → "Week {n}" (modo semanal, weeklyTrend)
-  //   - "C{n}" → "Call {n}" (modo per-call esparso, buildPerCallTrend)
-  //   - Outras formas: usa string crua (defesa contra labels customizados).
-  const labelWeek = (w: string) => {
-    if (w.startsWith('W')) {
-      const num = parseInt(w.slice(1), 10)
-      return Number.isNaN(num) ? w : t('weekLabel', { n: num })
-    }
-    if (w.startsWith('C')) {
-      const num = parseInt(w.slice(1), 10)
-      return Number.isNaN(num) ? w : t('callLabel', { n: num })
-    }
-    return w
-  }
+  // Label do eixo X — range real da semana ("11–17 de ago.") quando o ponto
+  // traz `weekStart`; senão cai em "Semana {n}"/"Call {n}". Ver
+  // useTrendAxisLabel.
+  const labelWeek = useTrendAxisLabel()
 
   const activeId = fixedId ?? selected
   const data = (trends[activeId] ?? []).map((d) => ({
     ...d,
-    weekLabel: labelWeek(d.week),
+    weekLabel: labelWeek(d.week, d.weekStart),
   }))
 
   const trainerName = fixedId
@@ -64,7 +54,7 @@ export function PerformanceTrend({ trends, salesPeople, fixedId, chartHeight = 2
     : 'team'
   const teamData = (trends[teamKey] ?? []).map((d) => ({
     ...d,
-    weekLabel: labelWeek(d.week),
+    weekLabel: labelWeek(d.week, d.weekStart),
   }))
 
   // Merge trainer + team avg numa série só. Semanas sem call vão pra 0 no

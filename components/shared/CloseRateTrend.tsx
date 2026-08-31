@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useTrendAxisLabel } from '@/components/shared/useTrendAxisLabel'
 import {
   Bar,
   BarChart,
@@ -13,7 +14,12 @@ import {
 
 // closeRate = null → semana sem nenhuma call: vira lacuna no gráfico (sem
 // barra), em vez de uma barra falsa de 0% que confundiria o usuário.
-type WeeklyPoint = { week: string; closeRate: number | null }
+// weekStart = "YYYY-MM-DD" da segunda-feira; alimenta o range no eixo X.
+type WeeklyPoint = {
+  week: string
+  weekStart?: string
+  closeRate: number | null
+}
 
 interface CloseRateTrendProps {
   /** Team-mode data */
@@ -33,6 +39,7 @@ export function CloseRateTrend({
   salesPeople,
 }: CloseRateTrendProps) {
   const t = useTranslations('Shared.closeRateTrend')
+  const axisLabel = useTrendAxisLabel()
   const [selected, setSelected] = useState<string>('team')
 
   const trainersWithData =
@@ -60,6 +67,13 @@ export function CloseRateTrend({
             (knownPoints[knownPoints.length - 1]?.closeRate ?? 0) -
             (knownPoints[0]?.closeRate ?? 0),
         }
+
+  // Eixo X mostra o range da semana ("11–17 de ago.") em vez do ordinal "W1",
+  // que muda de data toda segunda e não diz ao usuário de que período se trata.
+  const chartData = activeData.map((p) => ({
+    ...p,
+    weekLabel: axisLabel(p.week, p.weekStart),
+  }))
 
   const deltaSign = activeSummary.delta >= 0 ? '+' : ''
   const summaryColor =
@@ -122,11 +136,11 @@ export function CloseRateTrend({
       <div style={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={activeData}
+            data={chartData}
             margin={{ top: 12, right: 12, left: 4, bottom: 0 }}
           >
             <XAxis
-              dataKey="week"
+              dataKey="weekLabel"
               tick={{ fill: 'var(--am-muted)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}

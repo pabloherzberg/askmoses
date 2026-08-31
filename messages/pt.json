@@ -424,7 +424,9 @@
       "title": "Tendência da taxa de conversão",
       "team": "Time",
       "teamAvg": "Média do time",
-      "closeRateLegend": "Taxa de fechamento",
+      "closeRateLegend": "Taxa de fechamento"
+    },
+    "trendAxis": {
       "weekLabel": "Semana {n}",
       "callLabel": "Call {n}"
     },

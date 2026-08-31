@@ -76,17 +76,33 @@ export interface TrainerSectionScore {
 
 // ─── Trend computation ───────────────────────────────────────────────────────
 
+// Segunda-feira 00:00 da semana que contém `d`. Fonte única do "início de
+// semana" — buildWeeklyTrend e weeksSpanned precisam concordar, senão a
+// janela do gráfico e os buckets desalinham.
+function mondayOf(d: Date): Date {
+  const m = new Date(d);
+  m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  m.setHours(0, 0, 0, 0);
+  return m;
+}
+
+// Data-calendário "YYYY-MM-DD", sem hora e sem fuso. Serializar a segunda como
+// ISO/UTC deslocaria o dia no cliente (segunda 00:00 UTC vira domingo 21:00 em
+// UTC-3, e o eixo mostraria a semana errada).
+function toDateKey(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 export function buildWeeklyTrend(
   calls: { date: string; score: number; result: string }[],
   weeks: number,
 ): TrendPoint[] {
   if (calls.length === 0) return [];
 
-  const now = new Date();
   // Start of current week (Monday)
-  const currentMonday = new Date(now);
-  currentMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  currentMonday.setHours(0, 0, 0, 0);
+  const currentMonday = mondayOf(new Date());
 
   const trend: TrendPoint[] = [];
 
@@ -102,9 +118,15 @@ export function buildWeeklyTrend(
     });
 
     const label = `W${weeks - w}`;
+    const weekStartKey = toDateKey(weekStart);
 
     if (weekCalls.length === 0) {
-      trend.push({ week: label, closeRate: 0, score: 0 });
+      trend.push({
+        week: label,
+        weekStart: weekStartKey,
+        closeRate: 0,
+        score: 0,
+      });
       continue;
     }
 
@@ -114,7 +136,12 @@ export function buildWeeklyTrend(
       weekCalls.reduce((s, c) => s + c.score, 0) / weekCalls.length,
     );
 
-    trend.push({ week: label, closeRate, score: avgScore });
+    trend.push({
+      week: label,
+      weekStart: weekStartKey,
+      closeRate,
+      score: avgScore,
+    });
   }
 
   return trend;
@@ -200,13 +227,7 @@ export function weeksSpanned(
   maxWeeks: number,
 ): number {
   if (calls.length === 0) return 0;
-  const mondayOf = (d: Date): number => {
-    const m = new Date(d);
-    m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    m.setHours(0, 0, 0, 0);
-    return m.getTime();
-  };
-  const currentMonday = mondayOf(new Date());
+  const currentMonday = mondayOf(new Date()).getTime();
   let oldest = Number.POSITIVE_INFINITY;
   for (const c of calls) {
     const t = new Date(c.date).getTime();
@@ -215,7 +236,8 @@ export function weeksSpanned(
   if (!Number.isFinite(oldest)) return Math.min(maxWeeks, 1);
   const span =
     Math.round(
-      (currentMonday - mondayOf(new Date(oldest))) / (7 * 24 * 60 * 60 * 1000),
+      (currentMonday - mondayOf(new Date(oldest)).getTime()) /
+        (7 * 24 * 60 * 60 * 1000),
     ) + 1;
   return Math.max(1, Math.min(maxWeeks, span));
 }
