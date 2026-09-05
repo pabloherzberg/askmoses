@@ -550,14 +550,19 @@ function ScriptIntelligencePanel({
                     suggestion={suggestion}
                     initialDecision={saved?.decision ?? "pending"}
                     initialEditedText={saved?.editedText ?? suggestion.suggestedQuote}
-                    forceDecision={resolution ?? undefined}
+                    // Resolvido em bloco (Approve/Reject all) → força o mesmo
+                    // estado em todos. Resolvido seção a seção → cada card
+                    // mantém a decisão real do owner.
+                    forceDecision={saved && saved.decision !== "pending" ? undefined : resolution ?? undefined}
                     onDecisionChange={(decision, editedText) => {
+                      // Só registra a decisão. O texto aceito NÃO é gravado no
+                      // script atual aqui: o script atual pode ser global
+                      // (compartilhado entre orgs) e a aplicação real acontece
+                      // quando todas as seções forem decididas
+                      // (handleResolveSections → clone org-scoped).
                       const next = decisions.filter((d) => d.index !== i)
                       next.push({ index: i, decision, editedText })
                       onDecisionsChange(next)
-                      if (decision === "accepted") {
-                        void onSaveSection(scriptIndex, { instructions: editedText })
-                      }
                     }}
                     t={t}
                   />
@@ -693,7 +698,7 @@ export default function InsightsPage() {
   const [resolution, setResolution] = useState<"accepted" | "rejected" | null>(null)
   const [resolvedScriptName, setResolvedScriptName] = useState<string>("")
   const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState<"accept" | "reject" | null>(null)
+  const [busy, setBusy] = useState<"accept" | "reject" | "resolve" | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [intelligence, setIntelligence] = useState<ScriptIntelligenceResult | null>(null)
@@ -882,6 +887,102 @@ export default function InsightsPage() {
       setActionError(err instanceof Error ? err.message : t("suggestion.actionError"))
     } finally {
       setBusy(null)
+    }
+  }
+
+  // Recarrega o script ativo da org — depois de resolver seção a seção o
+  // ativo passa a ser o clone org-scoped criado pelo backend.
+  const refreshActiveScript = async () => {
+    try {
+      const res = await fetch("/api/scripts/active", { cache: "no-store" })
+      const json = await res.json()
+      if (json?.data?.script) setScript(json.data.script as ActiveScript)
+    } catch {
+      // silencioso — o painel do script atual só fica desatualizado até o próximo load
+    }
+  }
+
+  // Resolução seção a seção: chamada quando TODAS as sugestões receberam
+  // decisão. Backend monta o merge (aceitas = texto novo/editado, rejeitadas
+  // = texto atual), clona como script da org e ativa o pending.
+  const handleResolveSections = async (
+    decisions: Array<{ sectionName: string; decision: "accepted" | "rejected"; editedText: string | null }>,
+  ) => {
+    if (!pending || busy) return
+    if (pending.analysisStatus === 'processing' || pending.analysisStatus === 'queued') return
+    setBusy("resolve")
+    setActionError(null)
+    try {
+      const res = await fetch("/api/scripts/resolve-sections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: pending.orgScriptId, decisions }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error?.message)
+      const resolvedOrgScriptId = pending.orgScriptId
+      const resolvedScriptName = pending.incoming.name
+      setResolvedScriptName(resolvedScriptName)
+      setResolution("accepted")
+      setPending(null)
+      localStorage.setItem("sic_resolution", JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "accepted", scriptName: resolvedScriptName }))
+      void fetch("/api/script-intelligence/cache", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgScriptId: resolvedOrgScriptId, resolution: "accepted" }),
+      })
+      void refreshActiveScript()
+      setToast(t("suggestion.resolutionAcceptedTitle"))
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t("suggestion.actionError"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  // Índices (em result.sections) que têm sugestão — só esses precisam de
+  // decisão. Sugestões casam com seções por nome, não por índice.
+  const suggestionIndexes = (result: ScriptIntelligenceResult): number[] =>
+    result.sections
+      .map((sec, i) => (
+        result.suggestions.some((s) => s.sectionName.toLowerCase() === sec.name.toLowerCase()) ? i : -1
+      ))
+      .filter((i) => i >= 0)
+
+  const decisionProgress = (() => {
+    if (!intelligence) return null
+    const idx = suggestionIndexes(intelligence)
+    if (idx.length === 0) return null
+    const decided = idx.filter((i) => {
+      const d = suggestionDecisions.find((x) => x.index === i)
+      return d && d.decision !== "pending"
+    }).length
+    return { decided, total: idx.length }
+  })()
+
+  // Dispara a resolução assim que a última sugestão for decidida.
+  const maybeAutoResolve = (decisions: typeof suggestionDecisions) => {
+    if (!pending || !intelligence || busy) return
+    const idx = suggestionIndexes(intelligence)
+    if (idx.length === 0) return
+
+    const decided: Array<{ sectionName: string; decision: "accepted" | "rejected"; editedText: string | null }> = []
+    for (const i of idx) {
+      const d = decisions.find((x) => x.index === i)
+      if (!d || d.decision === "pending") return
+      const sec = intelligence.sections[i]
+      const suggestion = intelligence.suggestions.find((s) => s.sectionName.toLowerCase() === sec.name.toLowerCase())
+      // Só manda editedText se o owner de fato reescreveu. Sem edição o
+      // backend usa o texto canônico (inglês) do script novo — evita gravar
+      // a versão traduzida exibida na UI.
+      const edited = d.editedText.trim() && d.editedText !== suggestion?.suggestedQuote ? d.editedText : null
+      decided.push({ sectionName: sec.name, decision: d.decision, editedText: edited })
+    }
+
+    if (decided.every((d) => d.decision === "rejected")) {
+      void handleReject()
+    } else {
+      void handleResolveSections(decided)
     }
   }
 
@@ -1118,7 +1219,7 @@ export default function InsightsPage() {
                   <p className="font-semibold text-sm" style={{ color: "var(--am-text)" }}>
                     {t("suggestion.bannerTitle")}
                   </p>
-                  {pending!.analysisStatus === 'processing' ? (
+                  {pending!.analysisStatus === 'processing' || busy === "resolve" ? (
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(94,179,255,0.15)", borderColor: "rgba(94,179,255,0.3)", color: "var(--am-blue)" }}>
                       <Loader2 size={10} className="animate-spin" />
                       {t("suggestion.analyzing")}
@@ -1126,6 +1227,11 @@ export default function InsightsPage() {
                   ) : (
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded border" style={{ background: "rgba(255,171,46,0.15)", borderColor: "rgba(255,171,46,0.3)", color: "var(--am-amber)" }}>
                       {t("suggestion.pendingApproval")}
+                    </span>
+                  )}
+                  {decisionProgress && busy !== "resolve" && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border" style={{ borderColor: "var(--am-bg4)", color: "var(--am-muted)" }}>
+                      {t("suggestion.decisionProgress", decisionProgress)}
                     </span>
                   )}
                 </div>
@@ -1149,8 +1255,19 @@ export default function InsightsPage() {
                 {(() => {
                   const analyzing = pending!.analysisStatus === 'processing'
                   const tooltip = analyzing ? t("suggestion.analyzingHint") : undefined
+                  // Todas as sugestões decididas mas o pending ainda aberto
+                  // (ex.: decisões persistidas antes da resolução automática
+                  // existir, ou a chamada anterior falhou) — botão explícito
+                  // pra aplicar sem precisar desfazer/refazer uma seção.
+                  const allDecided = !!decisionProgress && decisionProgress.decided === decisionProgress.total
                   return (
                     <>
+                      {allDecided && (
+                        <button type="button" onClick={() => maybeAutoResolve(suggestionDecisions)} disabled={!!busy || analyzing} title={t("suggestion.applyDecisionsHint")} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ background: "var(--am-accent)", color: "#fff" }}>
+                          {busy === "resolve" ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                          {t("suggestion.applyDecisions")}
+                        </button>
+                      )}
                       <button type="button" onClick={handleReject} disabled={!!busy || analyzing} title={tooltip} className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={{ borderColor: "rgba(255,94,94,0.3)", color: "var(--am-red)", background: "transparent" }}>
                         {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                         {t("suggestion.rejectAll")}
@@ -1216,6 +1333,7 @@ export default function InsightsPage() {
             onDecisionsChange={(d) => {
               setSuggestionDecisions(d)
               persistDecisions(d)
+              maybeAutoResolve(d)
             }}
             scriptSections={script?.sections ?? []}
             onSaveSection={async (index, updated) => {
