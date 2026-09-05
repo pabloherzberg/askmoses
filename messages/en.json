@@ -1715,6 +1715,8 @@
         "undoApprove": "Undo approval",
         "undoReject": "Undo rejection",
         "decisionProgress": "{decided} of {total} sections decided",
+        "applyDecisions": "Apply decisions",
+        "applyDecisionsHint": "Every section has a decision. Apply them to activate the merged script for your team.",
         "resolutionAcceptedTitle": "Suggestion approved successfully",
         "resolutionAcceptedBody": "The script \"{name}\" has been activated for your team.",
         "resolutionRejectedTitle": "Suggestion rejected",
