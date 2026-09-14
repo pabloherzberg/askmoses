@@ -40,7 +40,14 @@ export default async function OnboardingPlanPage({
 
   if (ctx.role !== 'owner') redirect(`/${locale}/login`)
 
-  if (ctx.subscriptionStatus === 'active') redirect(`/${locale}/dashboard`)
+  // Org admin-assisted (POST /api/organizations) já nasce com plano definido
+  // e sub 'active' — nunca deveria passar pelo step-2. planCode não-null é a
+  // rede de segurança: cobre também o caso raro em que subscriptionStatus
+  // ainda não refletiu 'active' (ex.: active_org_id desatualizado num convite
+  // multi-org) mas a org já tem um plano atribuído pelo Admin.
+  if (ctx.subscriptionStatus === 'active' || ctx.planCode !== null) {
+    redirect(`/${locale}/dashboard`)
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
