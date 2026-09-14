@@ -274,6 +274,11 @@ export interface Client {
 
 export interface TrendPoint {
   week: string;
+  // Data-calendário "YYYY-MM-DD" da segunda-feira que abre a semana. O eixo do
+  // gráfico mostra o range real ("11–17 de ago.") em vez do ordinal "W1", que
+  // não diz nada e muda de data toda segunda. Ausente no modo per-call
+  // (buildPerCallTrend) e em dados legados — aí o front cai em "Semana {n}".
+  weekStart?: string;
   closeRate: number;
   score: number;
 }
@@ -318,6 +323,8 @@ export type CallsByTrainerMap = Record<string, BestCall[]>;
 
 export interface PerformanceTrendPoint {
   week: string;
+  // "YYYY-MM-DD" da segunda-feira da semana — ver TrendPoint.weekStart.
+  weekStart?: string;
   // null = semana sem nenhuma call — vira lacuna no gráfico, não uma barra de 0%.
   closeRate: number | null;
   avgScore: number | null;

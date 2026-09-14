@@ -163,6 +163,7 @@ export async function getPerformanceTrends(
   const toPoints = (tp: TrendPoint[]): PerformanceTrendPoint[] =>
     tp.map((p) => ({
       week: p.week,
+      weekStart: p.weekStart,
       closeRate: p.score > 0 ? p.closeRate : null,
       avgScore: p.score > 0 ? p.score : null,
     }));

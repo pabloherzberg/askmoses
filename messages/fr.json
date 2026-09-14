@@ -424,7 +424,9 @@
       "title": "Tendance du taux de conversion",
       "team": "Équipe",
       "teamAvg": "Moyenne de l'équipe",
-      "closeRateLegend": "Taux de conversion",
+      "closeRateLegend": "Taux de conversion"
+    },
+    "trendAxis": {
       "weekLabel": "Semaine {n}",
       "callLabel": "Appel {n}"
     },
@@ -1713,6 +1715,8 @@
         "undoApprove": "Annuler l'approbation",
         "undoReject": "Annuler le rejet",
         "decisionProgress": "{decided} sur {total} sections décidées",
+        "applyDecisions": "Appliquer les décisions",
+        "applyDecisionsHint": "Chaque section a une décision. Appliquez-les pour activer le script fusionné pour votre équipe.",
         "resolutionAcceptedTitle": "Suggestion approuvée avec succès",
         "resolutionAcceptedBody": "Le script \"{name}\" a été activé pour votre équipe.",
         "resolutionRejectedTitle": "Suggestion rejetée",
