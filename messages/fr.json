@@ -1715,6 +1715,8 @@
         "undoApprove": "Annuler l'approbation",
         "undoReject": "Annuler le rejet",
         "decisionProgress": "{decided} sur {total} sections décidées",
+        "applyDecisions": "Appliquer les décisions",
+        "applyDecisionsHint": "Chaque section a une décision. Appliquez-les pour activer le script fusionné pour votre équipe.",
         "resolutionAcceptedTitle": "Suggestion approuvée avec succès",
         "resolutionAcceptedBody": "Le script \"{name}\" a été activé pour votre équipe.",
         "resolutionRejectedTitle": "Suggestion rejetée",

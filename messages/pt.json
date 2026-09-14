@@ -1715,6 +1715,8 @@
         "undoApprove": "Desfazer aprovação",
         "undoReject": "Desfazer rejeição",
         "decisionProgress": "{decided} de {total} seções decididas",
+        "applyDecisions": "Aplicar decisões",
+        "applyDecisionsHint": "Todas as seções têm decisão. Aplique-as para ativar o script combinado para o seu time.",
         "resolutionAcceptedTitle": "Sugestão aprovada com sucesso",
         "resolutionAcceptedBody": "O script \"{name}\" foi ativado para o seu time.",
         "resolutionRejectedTitle": "Sugestão rejeitada",
