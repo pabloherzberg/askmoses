@@ -5,7 +5,8 @@ import { generateText } from 'ai'
 import { getActiveLlmModel } from '@/lib/llm-provider'
 import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { recordLlmUsage, computeCostForModel } from '@/lib/services/llm-usage'
-import { dbGetCalls } from '@/lib/db/calls'
+import { dbGetCalls, type DbCall } from '@/lib/db/calls'
+import { toNumber5 } from '@/lib/score-display'
 import {
   dbGetLatestMarketingRun,
   dbInsertMarketingRun,
@@ -23,8 +24,39 @@ import type {
 const MODEL = 'gpt-4o-mini'
 const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000
 const TRANSCRIPT_CHAR_LIMIT = 3000
-const MIN_SAMPLE = 3
-const MAX_SAMPLE = 5
+
+// Janela de busca: as 200 calls mais recentes da org (dbGetCalls ordena por
+// created_at desc). Recorte de recencia deliberado — copy de anuncio a partir
+// de calls de dois anos atras e pior, nao melhor.
+const CALL_FETCH_LIMIT = 200
+
+// Amostra: 2/3 fechadas, 1/3 perdidas. As perdidas entram APENAS como
+// contraste no prompt — nunca como fonte de copy, nunca na lista de source
+// calls da UI (que rotula toda linha como "Closed").
+export const TARGET_CLOSED = 12
+export const TARGET_NOT_CLOSED = 6
+
+// ─── Faixa de palavras por minuto ────────────────────────────────────────────
+// Calibrada em 2026-09-19 contra a base de producao. O histograma e claramente
+// bimodal: 97 calls no bucket zero, nada relevante entre 10 e 100, e a massa
+// real entre 130 e 200 WPM.
+//
+// Piso 100 — descarta transcricao truncada (chunk perdido, stitching parcial).
+// Exclui 118 de 824 calls (14,3%), quase todas da org de demonstracao, cuja
+// mediana e 4,8 WPM. As orgs reais tem p05 entre 101 e 146, entao nenhuma call
+// legitima cai. A margem inferior e apertada de proposito: mexer neste numero
+// exige recalibrar contra a base, nao ajustar no olho.
+//
+// Teto 300 — transcricao VALIDA com duration_seconds corrompido (apareceram
+// duas com 8.600 e 22.134 WPM). Sem o teto elas entram no pool e ainda
+// carregam um rotulo de duracao absurdo para a UI.
+export const MIN_WPM = 100
+export const MAX_WPM = 300
+
+// duration_seconds nulo (tipico de upload manual) impede calcular WPM. Cai
+// para um minimo absoluto de palavras — ~2 min de fala a 150 WPM. Este numero
+// NAO foi calibrado contra a base; e um piso conservador.
+export const MIN_WORDS_WITHOUT_DURATION = 300
 
 export class NoClosedCallsError extends Error {
   constructor() {
@@ -102,7 +134,9 @@ interface SampleCall {
   id: string
   trainerName: string
   clientName: string
+  /** Escala canonica 0–100 (migration 043). Converter com toNumber5 na exibicao. */
   overallScore: number
+  outcome: 'closed' | 'not_closed'
   summary: string
   strengths: string[]
   transcript: string
@@ -111,11 +145,11 @@ interface SampleCall {
   createdAt: string
 }
 
-function pickRandomSample<T>(items: T[], min: number, max: number): T[] {
-  if (items.length === 0) return []
-  const desired = Math.min(items.length, min + Math.floor(Math.random() * (max - min + 1)))
-  const shuffled = [...items].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, desired)
+export interface SamplePartition {
+  /** Fonte da copy. E o que vai para sample_call_ids e para a UI. */
+  closed: SampleCall[]
+  /** Contraste no prompt. Nunca fonte de copy, nunca source call. */
+  notClosed: SampleCall[]
 }
 
 function levelFor(confidence: number): ConfidenceLevel {
@@ -208,22 +242,33 @@ function buildSourceCallsFromSample(samples: SampleCall[]): MarketingSourceCall[
     id: s.id,
     name: `${s.trainerName} — ${s.clientName}`,
     duration: durationLabel(s.durationSeconds),
-    score: Math.round(s.overallScore * 10) / 10,
+    // toNumber5: overallScore e 0–100 canonico; a UI exibe 0–5 como o resto do
+    // produto. Antes este caminho devolvia 0–100 cru enquanto o caminho de
+    // cache (buildSourceCallsFromIds) devolvia 0–5, e a MESMA call aparecia
+    // como "87.0" logo apos a run e "4.4" quando servida do cache.
+    score: Math.round(toNumber5(s.overallScore) * 10) / 10,
   }))
 }
 
 async function buildSourceCallsFromIds(orgId: string, ids: string[]): Promise<MarketingSourceCall[]> {
   if (ids.length === 0) return []
-  const all = await dbGetCalls({ orgId, callOutcome: 'closed', salesOnly: true, limit: 200 })
+  const all = await dbGetCalls({
+    orgId,
+    callOutcome: 'closed',
+    salesOnly: true,
+    limit: CALL_FETCH_LIMIT,
+  })
   const byId = new Map(all.map((c) => [c.id, c]))
   return ids
     .map((id) => byId.get(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c))
     .map((c) => {
-      const score = (() => {
-        const s = c.overall_score ?? 0
-        return Math.round((s > 5 ? s / 20 : s) * 10) / 10
-      })()
+      // `s > 5 ? s / 20 : s` saiu daqui. Era a ponte da janela de deploy da
+      // migration 043, que ja fez backfill (x20) e adicionou CHECK (0..100):
+      // nao existe linha em escala 0–5. O que a ponte fazia hoje era corromper
+      // call genuinamente ruim — score 3 (3/100) nao passava no `> 5` e era
+      // exibido como "3.0" de 5. Sao 51 calls na base.
+      const score = Math.round(toNumber5(c.overall_score ?? 0) * 10) / 10
       return {
         id: c.id,
         name: `${c.trainer_name} — ${c.client_name ?? '—'}`,
@@ -247,40 +292,128 @@ function toMarketingIntelligence(
   }
 }
 
-async function selectSample(orgId: string): Promise<SampleCall[]> {
-  const closed = await dbGetCalls({ orgId, callOutcome: 'closed', salesOnly: true, limit: 200 })
-  if (closed.length === 0) throw new NoClosedCallsError()
+export function wordCount(transcript: string): number {
+  const trimmed = transcript.trim()
+  return trimmed ? trimmed.split(/\s+/).length : 0
+}
 
-  // Prioriza calls com maior overall_score — copy gerado a partir das melhores
-  // execuções tende a capturar os argumentos mais eficazes.
-  const sorted = [...closed].sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0))
-  const topPool = sorted.slice(0, MAX_SAMPLE * 2) // top 10 como pool
-  const picked = pickRandomSample(topPool, MIN_SAMPLE, MAX_SAMPLE)
+/**
+ * A transcricao e aproveitavel para gerar copy?
+ *
+ * Descarta dois defeitos distintos que o pipeline produz:
+ *   - truncada (chunk perdido / stitching parcial) → WPM muito abaixo do piso;
+ *   - duracao corrompida (transcricao inteira, duration_seconds de segundos)
+ *     → WPM absurdamente acima do teto.
+ *
+ * Ver MIN_WPM / MAX_WPM para a calibracao contra a base real.
+ */
+export function hasUsableTranscript(call: Pick<DbCall, 'transcript' | 'duration_seconds'>): boolean {
+  const words = wordCount(call.transcript ?? '')
+  if (words === 0) return false
 
-  return picked.map((c) => {
-    const sectionsRaw = Array.isArray(c.sections) ? c.sections : []
-    const sections = sectionsRaw
-      .filter((s): s is Record<string, unknown> => Boolean(s) && typeof s === 'object')
-      .map((s) => ({
-        name: typeof s.name === 'string' ? s.name : '',
-        score: typeof s.score === 'number' ? s.score : Number(s.score) || 0,
-        feedback: typeof s.feedback === 'string' ? s.feedback : '',
-      }))
-      .filter((s) => s.name.length > 0)
+  // Sem duracao confiavel nao da para calcular WPM: cai para o piso absoluto.
+  const seconds = call.duration_seconds ?? 0
+  if (seconds <= 0) return words >= MIN_WORDS_WITHOUT_DURATION
 
-    return {
-      id: c.id,
-      trainerName: c.trainer_name,
-      clientName: c.client_name ?? '—',
-      overallScore: c.overall_score ?? 0,
-      summary: c.summary ?? '',
-      strengths: c.strengths ?? [],
-      transcript: c.transcript ?? '',
-      sections,
-      durationSeconds: c.duration_seconds,
-      createdAt: c.created_at,
+  const wpm = words / (seconds / 60)
+  return wpm >= MIN_WPM && wpm <= MAX_WPM
+}
+
+/**
+ * Ordem deterministica: score desc → mais recente → id.
+ *
+ * O id no fim nao e decoracao. Sem ele, duas calls com o mesmo score e o mesmo
+ * created_at saem em ordem arbitraria do Postgres e a amostra muda entre
+ * execucoes sobre dados identicos — exatamente o que esta selecao existe para
+ * evitar. `overall_score` e 0–100 em toda linha (migration 043), entao ordenar
+ * pelo valor cru esta correto.
+ */
+export function compareForSample(
+  a: Pick<DbCall, 'overall_score' | 'created_at' | 'id'>,
+  b: Pick<DbCall, 'overall_score' | 'created_at' | 'id'>,
+): number {
+  const byScore = (b.overall_score ?? 0) - (a.overall_score ?? 0)
+  if (byScore !== 0) return byScore
+  const byDate = Date.parse(b.created_at) - Date.parse(a.created_at)
+  if (byDate !== 0) return byDate
+  return a.id.localeCompare(b.id)
+}
+
+function toSampleCall(c: DbCall, outcome: SampleCall['outcome']): SampleCall {
+  const sectionsRaw = Array.isArray(c.sections) ? c.sections : []
+  const sections = sectionsRaw
+    .filter((s): s is Record<string, unknown> => Boolean(s) && typeof s === 'object')
+    .map((s) => ({
+      name: typeof s.name === 'string' ? s.name : '',
+      score: typeof s.score === 'number' ? s.score : Number(s.score) || 0,
+      feedback: typeof s.feedback === 'string' ? s.feedback : '',
+    }))
+    .filter((s) => s.name.length > 0)
+
+  return {
+    id: c.id,
+    trainerName: c.trainer_name,
+    clientName: c.client_name ?? '—',
+    overallScore: c.overall_score ?? 0,
+    outcome,
+    summary: c.summary ?? '',
+    strengths: c.strengths ?? [],
+    transcript: c.transcript ?? '',
+    sections,
+    durationSeconds: c.duration_seconds,
+    createdAt: c.created_at,
+  }
+}
+
+/**
+ * Seleciona a amostra de forma DETERMINISTICA — os mesmos dados produzem a
+ * mesma amostra. Antes havia um sorteio (`pickRandomSample`) sobre um pool de
+ * 10, o que fazia a mesma base render copy diferente a cada execucao.
+ */
+export function partitionSample(calls: DbCall[]): { closed: DbCall[]; notClosed: DbCall[] } {
+  // `salesOnly` ja excluiu is_sales_call = false na query. O que resta filtrar
+  // e call sem score (o pipeline nao chegou a pontuar) e sem transcricao
+  // aproveitavel — o que tambem cobre processing_status 'no_recording' e
+  // 'transcription_failed', que nao tem transcript e caem no wordCount === 0.
+  const eligible = calls.filter((c) => c.overall_score != null && hasUsableTranscript(c))
+
+  const closed = eligible
+    .filter((c) => c.call_outcome === 'closed')
+    .sort(compareForSample)
+    .slice(0, TARGET_CLOSED)
+
+  // Perdidas com o MAIOR score, nao as piores: sao prospects que ouviram uma
+  // execucao boa e ainda assim disseram nao. A objecao delas e de mercado, nao
+  // artefato de rep ruim — e esse o contraste que informa copy.
+  const notClosed = eligible
+    .filter((c) => c.call_outcome === 'not_closed')
+    .sort(compareForSample)
+    .slice(0, TARGET_NOT_CLOSED)
+
+  return { closed, notClosed }
+}
+
+async function selectSample(orgId: string): Promise<SamplePartition> {
+  const calls = await dbGetCalls({ orgId, salesOnly: true, limit: CALL_FETCH_LIMIT })
+  const { closed, notClosed } = partitionSample(calls)
+
+  if (closed.length === 0) {
+    // Distingue "org sem call fechada" de "tinha fechadas, nenhuma passou nos
+    // filtros de qualidade". O erro e o mesmo (a rota depende do tipo), mas o
+    // segundo caso e diagnosticavel no log em vez de virar mensagem enganosa.
+    const closedBeforeFilters = calls.filter((c) => c.call_outcome === 'closed').length
+    if (closedBeforeFilters > 0) {
+      console.warn(
+        `[marketing] org ${orgId}: ${closedBeforeFilters} call(s) fechada(s), nenhuma passou nos filtros de qualidade`,
+      )
     }
-  })
+    throw new NoClosedCallsError()
+  }
+
+  return {
+    closed: closed.map((c) => toSampleCall(c, 'closed')),
+    notClosed: notClosed.map((c) => toSampleCall(c, 'not_closed')),
+  }
 }
 
 export async function executeMarketingRun(params: {
@@ -290,7 +423,11 @@ export async function executeMarketingRun(params: {
 }): Promise<MarketingIntelligence> {
   const sample = await selectSample(params.orgId)
 
-  const prompt = buildPrompt(sample)
+  // So as fechadas vao para o prompt por enquanto. sample.notClosed ja esta
+  // selecionado, mas entra como contraste num passo seguinte, junto com a
+  // reescrita das instrucoes: a moldura atual ("closed sales calls... generate
+  // copy that resonates") transformaria call perdida em fonte de copy.
+  const prompt = buildPrompt(sample.closed)
   const { model, provider, modelId } = await getActiveLlmModel(MODEL)
   const tuning = await getModuleTuning('marketing_intelligence')
   const llmResult = await generateText({
@@ -315,7 +452,9 @@ export async function executeMarketingRun(params: {
 
   const run = await dbInsertMarketingRun({
     orgId: params.orgId,
-    sampleCallIds: sample.map((s) => s.id),
+    // Somente as fechadas: sample_call_ids alimenta a lista de source calls
+    // da UI, que rotula toda linha como "Closed".
+    sampleCallIds: sample.closed.map((s) => s.id),
     headlines,
     primaryTexts,
     modelUsed,
@@ -338,7 +477,7 @@ export async function executeMarketingRun(params: {
     ref: run.id,
   })
 
-  return toMarketingIntelligence(run, buildSourceCallsFromSample(sample))
+  return toMarketingIntelligence(run, buildSourceCallsFromSample(sample.closed))
 }
 
 /** Returns the latest run, executing a fresh one (trigger='auto') when the
