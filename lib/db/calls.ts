@@ -58,6 +58,11 @@ export interface DbCall {
   ghl_payload?: Record<string, unknown> | null
   // GHL contactId promovido a coluna — added in migration 091.
   contact_id?: string | null
+  // GHLUSERID (payload.userId) que fez a call — added in migration 096. Sempre
+  // gravado, vinculado ou não: é a chave da migração das calls do Front Desk
+  // pro rep real. NULL = payload do GHL sem userId (call não reatribuível) ou
+  // call anterior à 096. Opcional pelo mesmo motivo de script_id.
+  ghl_user_id?: string | null
   // Id da mensagem de call no GHL — added in migration 095. Identidade real da
   // gravação; UNIQUE (org, ghl_message_id) deduplica reentregas do webhook.
   ghl_message_id?: string | null
@@ -820,4 +825,112 @@ export async function dbGetUnlinkedCallsByGhlUser(
 
   if (error) throw new Error(`dbGetUnlinkedCallsByGhlUser: ${error.message}`)
   return (data ?? []) as UnlinkedCallRow[]
+}
+
+// ─── Reatribuição do Front Desk → rep real ───────────────────────────────────
+// Substitui a recuperação da 096. Lá a call entrava BLOQUEADA
+// (processing_status='unlinked_trainer') e o vínculo disparava o pipeline
+// inteiro do zero. Aqui ela já entrou, foi transcrita e pontuada sob o Front
+// Desk — reatribuir é trocar trainer_id e ressincronizar os dois reps.
+//
+// dbGetUnlinkedCallsByGhlUser acima ficou sem chamador em produção: nada mais
+// escreve 'unlinked_trainer'. Mantida porque as linhas escritas entre 30/06 e
+// 02/07 (quando o escritor existiu) ainda podem existir no banco e vão precisar
+// dela no backfill.
+
+/** Status em que o pipeline ainda está mexendo na call. Reatribuir no meio
+ *  disso intercalaria dois syncTrainerStats concorrentes no mesmo rep — a call
+ *  fica pro próximo gatilho, que é barato e idempotente. */
+const IN_FLIGHT_STATUSES: ProcessingStatus[] = [
+  'pending',
+  'processing',
+  'queued_for_chunking',
+  'chunking',
+  'awaiting_chunks',
+  'consolidating',
+]
+
+/** Call do Front Desk candidata a reatribuição. */
+export interface FrontDeskCallRow {
+  id: string
+  processing_status: ProcessingStatus | null
+}
+
+/** A call está em voo no pipeline (não reatribuir agora)? */
+export function isInFlightCall(status: ProcessingStatus | null): boolean {
+  return status != null && IN_FLIGHT_STATUSES.includes(status)
+}
+
+/**
+ * Calls atribuídas ao Front Desk da org que foram feitas por um GHLUSERID
+ * específico — as candidatas a migrar pro rep real quando ele for vinculado.
+ *
+ * O recorte é (trainer_id do Front Desk, ghl_user_id), não processing_status:
+ * é o índice calls_trainer_ghl_user_idx da 109. Call sem ghl_user_id (payload
+ * do GHL sem userId) nunca casa aqui — não há a quem atribuir, e é por isso
+ * que ela fica no Front Desk em definitivo.
+ */
+export async function dbGetFrontDeskCallsByGhlUser(
+  orgId: string,
+  frontDeskTrainerId: string,
+  ghlUserId: string,
+): Promise<FrontDeskCallRow[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('calls')
+    .select('id, processing_status')
+    .eq('org_id', orgId)
+    .eq('trainer_id', frontDeskTrainerId)
+    .eq('ghl_user_id', ghlUserId)
+
+  if (error) throw new Error(`dbGetFrontDeskCallsByGhlUser: ${error.message}`)
+  return (data ?? []) as FrontDeskCallRow[]
+}
+
+export interface ReassignTrainerInput {
+  trainerId: string
+  /** users.name do rep real — substitui o nome cru do payload, que no Front
+   *  Desk era a única pista de quem falou e agora deixa de ser necessário. */
+  trainerName: string
+  trainerEmail?: string | null
+}
+
+/**
+ * Troca o rep de um lote de calls. Um único UPDATE — o `.in()` mantém a
+ * operação atômica, então não existe estado intermediário em que metade das
+ * calls migrou.
+ *
+ * `updated_at` entra no patch de propósito: é ele que faz o carimbo semanal
+ * (stamp_call_stats_weekly, migration 107) reprocessar as semanas afetadas no
+ * próximo run e mover a call de rep também no histórico. Sem isso o
+ * call_stats_weekly continuaria contando a call sob o Front Desk pra sempre.
+ *
+ * Devolve quantas linhas mudaram.
+ */
+export async function dbReassignCallsToTrainer(
+  callIds: string[],
+  input: ReassignTrainerInput,
+): Promise<number> {
+  if (callIds.length === 0) return 0
+
+  const supabase = createAdminClient()
+
+  const patch: Record<string, unknown> = {
+    trainer_id: input.trainerId,
+    trainer_name: input.trainerName,
+    updated_at: new Date().toISOString(),
+  }
+  // Só sobrescreve o email quando temos um real — o do payload pode ser a
+  // única forma de contato registrada na call.
+  if (input.trainerEmail) patch.trainer_email = input.trainerEmail
+
+  const { data, error } = await supabase
+    .from('calls')
+    .update(patch)
+    .in('id', callIds)
+    .select('id')
+
+  if (error) throw new Error(`dbReassignCallsToTrainer: ${error.message}`)
+  return (data ?? []).length
 }

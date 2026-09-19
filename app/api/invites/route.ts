@@ -243,12 +243,17 @@ export async function POST(request: NextRequest) {
     const maxSeats = planNested?.max_sales_people
 
     if (typeof maxSeats === 'number') {
+      // users!inner + is_system=false: o Front Desk é uma linha NOSSA, não um
+      // assento que o cliente comprou — contá-lo faria uma org no limite perder
+      // um rep real pro rep de sistema. Espelha a mesma exclusão dentro de
+      // enforce_seat_limit() (migration 109), que é o gate atômico no banco.
       const { count, error: countErr } = await admin
         .from('memberships')
-        .select('*', { count: 'exact', head: true })
+        .select('*, users!inner(is_system)', { count: 'exact', head: true })
         .eq('org_id', targetOrgId)
         .eq('role', 'trainer')
         .in('invite_status', ['pending', 'accepted'])
+        .eq('users.is_system', false)
       if (countErr) return serverError('Não foi possível contar seats', countErr)
 
       if ((count ?? 0) >= maxSeats) {

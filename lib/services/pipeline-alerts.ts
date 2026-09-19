@@ -264,8 +264,8 @@ const STATUS_DISPLAY: Record<PipelineFailureStatus, StatusDisplay> = {
   },
   unlinked_trainer: {
     emoji: "🔗",
-    title: "Call de vendedor não vinculado",
-    hint: "A call foi recebida mas o vendedor (GHLUSERID) não está vinculado a um membro ativo do AskMoses. Ver o campo *Causa* — a call fica bloqueada (sem análise/custo) e é reprocessada automaticamente quando o vínculo + invite forem resolvidos.",
+    title: "Call atribuída ao Front Desk",
+    hint: "O vendedor (GHLUSERID) não está vinculado a nenhum membro, então a call foi atribuída ao *Front Desk* da org. Ela É analisada e pontuada normalmente e já aparece no dashboard do cliente — não fica bloqueada. Vincular o GHLUSERID a um membro ativo migra a call pro rep real, com a nota junto. Ver o campo *Causa*: sem GHLUSERID no payload não há como reatribuir depois.",
     color: "#ECB22E",
   },
 }

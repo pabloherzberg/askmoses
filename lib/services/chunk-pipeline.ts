@@ -27,6 +27,7 @@ import {
 } from '@/lib/services/call-audio-storage'
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
 import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
+import { reassignFrontDeskCalls } from '@/lib/services/ghl-call-recovery'
 import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
@@ -462,6 +463,27 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       meta: { note: 'Transcript está salvo. Re-rodar análise via admin ou re-disparar runGhlCallScoring.' },
     })
     return // sem score, não envia email
+  }
+
+  // Catch-up de atribuição. Se o rep foi vinculado ENQUANTO esta call estava no
+  // pipeline, a migração disparada naquele momento a pulou — ela estava em voo,
+  // e reatribuir no meio faria runGhlCallScoring ressincronizar o rep errado
+  // (ele lê a linha uma vez, no início). Como os dois gatilhos de migração são
+  // eventos ÚNICOS (vincular e aceitar), sem esta chamada a call ficaria presa
+  // no Front Desk pra sempre.
+  //
+  // Antes do email de propósito: migrando agora, o coaching vai pro rep real —
+  // sendGhlCoachingEmail relê a linha da call.
+  try {
+    const finished = await dbGetCallById(callId)
+    if (finished?.org_id && finished.ghl_user_id) {
+      await reassignFrontDeskCalls(finished.org_id, finished.ghl_user_id)
+    }
+  } catch (err) {
+    console.error('[chunk-pipeline] catch-up de atribuição falhou (non-fatal)', {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
+    })
   }
 
   try {

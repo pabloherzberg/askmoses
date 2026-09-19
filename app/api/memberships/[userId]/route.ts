@@ -11,7 +11,7 @@ import {
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbSetTrainerGhlUserId, dbUpsertOwnerCallProfile } from '@/lib/db/trainers'
-import { recoverUnlinkedCalls } from '@/lib/services/ghl-call-recovery'
+import { reassignFrontDeskCalls } from '@/lib/services/ghl-call-recovery'
 import {
   resolveGhlUserForOrg,
   GhlLinkValidationError,
@@ -104,7 +104,7 @@ export async function PATCH(
   // ─── Membership alvo existe? Qual o papel? ───────────────────────────────
   const { data: membership, error: memErr } = await admin
     .from('memberships')
-    .select('role')
+    .select('role, users!inner(is_system)')
     .eq('user_id', userId)
     .eq('org_id', orgId)
     .maybeSingle()
@@ -112,6 +112,25 @@ export async function PATCH(
   if (!membership) return notFound('Membro')
 
   const memberRole = membership.role as 'trainer' | 'owner'
+
+  // ─── Guard: Front Desk não se vincula a usuário do GHL ───────────────────
+  // O Front Desk aparece na lista de membros como qualquer rep, então este
+  // PATCH é alcançável pra ele. Vincular um GHLUSERID ao rep de sistema seria
+  // silencioso e difícil de diagnosticar depois: dbResolveTrainerForGhlCall
+  // passaria a casar aquele usuário DIRETO no Front Desk, as calls dele
+  // ficariam lá pra sempre e reassignFrontDeskCalls nunca dispararia (o rep
+  // resolvido já seria o próprio Front Desk).
+  //
+  // Limpar (ghlUserId === null) segue permitido: é a saída pra uma linha que
+  // tenha sido vinculada antes deste guard existir.
+  const memberUser = Array.isArray(membership.users)
+    ? membership.users[0]
+    : membership.users
+  if (ghlUserId !== null && (memberUser as { is_system?: boolean } | null)?.is_system) {
+    return badRequest(
+      'O Front Desk é um rep de sistema e não pode ser vinculado a um usuário do GHL.',
+    )
+  }
 
   // ─── Valida o ghlUserId contra o GHL (quando não for limpar) ─────────────
   // excludeUserId = userId: o próprio membro mantém o vínculo atual sem
@@ -150,14 +169,14 @@ export async function PATCH(
     return serverError('Não foi possível atualizar o vínculo GHL', err)
   }
 
-  // Vínculo gravado: se esse GHLUSERID já é um membro ativo, reprocessa em
-  // background as calls que entraram bloqueadas por falta dele. No-op se o
-  // invite ainda estiver pendente (a recuperação refaz a checagem). Não roda
-  // ao limpar o vínculo (ghlUserId === null).
+  // Vínculo gravado: se esse GHLUSERID já é um membro ativo, migra em background
+  // as calls que entraram no Front Desk por falta dele — troca de trainer_id, sem
+  // reprocessar áudio. No-op se o invite ainda estiver pendente (a migração refaz
+  // a checagem). Não roda ao limpar o vínculo (ghlUserId === null).
   if (ghlUserId !== null) {
     after(() =>
-      recoverUnlinkedCalls(orgId, ghlUserId).catch((err) =>
-        console.error('[memberships] recuperação de calls bloqueadas falhou', err),
+      reassignFrontDeskCalls(orgId, ghlUserId).catch((err) =>
+        console.error('[memberships] migração de calls do Front Desk falhou', err),
       ),
     )
   }
