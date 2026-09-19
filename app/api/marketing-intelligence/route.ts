@@ -5,6 +5,13 @@ import { translateMarketingIntelligence } from '@/lib/i18n/translate-coaching'
 import { routing } from '@/i18n/routing'
 import type { Locale } from '@/i18n/routing'
 
+// nodejs + teto explícito: o GET dispara uma run INLINE quando a última passou
+// de 7 dias (getOrRunLatest), então a chamada LLM inteira acontece dentro do
+// request de quem abriu a tela. Sem isto a rota herdava o default da
+// plataforma, muito abaixo dos 30–60s que a amostra maior leva.
+export const runtime = 'nodejs'
+export const maxDuration = 300
+
 // O conteúdo (headlines/textos) é gerado e cacheado em INGLÊS (marketing_runs).
 // A UI manda o idioma atual no header x-locale; traduzimos na leitura por locale.
 function resolveLocale(raw: string | null): Locale {

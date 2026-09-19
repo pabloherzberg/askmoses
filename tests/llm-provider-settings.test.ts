@@ -251,3 +251,45 @@ describe('resolveGeminiModelId › réplica pura', () => {
     expect(resolveGeminiModelId(null)).toBe(DEFAULT_GEMINI_MODEL)
   })
 })
+
+// ─── Janela de contexto por modelo ──────────────────────────────────────────
+// Adicionada porque os modelos do catálogo não são intercambiáveis: serviços
+// com prompt grande precisam rebaixar o modelo em vez de estourar em runtime.
+
+describe('PROVIDER_CATALOG › contextWindows', () => {
+  it('todo modelo selecionável tem janela declarada', async () => {
+    const { PROVIDER_CATALOG } = await import('@/lib/llm/catalog')
+    for (const [providerId, entry] of Object.entries(PROVIDER_CATALOG)) {
+      for (const model of entry.models) {
+        expect(
+          entry.contextWindows[model],
+          `${providerId}/${model} sem contextWindow — adicionar ao catálogo`,
+        ).toBeTypeOf('number')
+      }
+    }
+  })
+
+  it('o default de cada provider também tem janela', async () => {
+    const { PROVIDER_CATALOG, contextWindowFor } = await import('@/lib/llm/catalog')
+    for (const [providerId, entry] of Object.entries(PROVIDER_CATALOG)) {
+      expect(
+        contextWindowFor(providerId as 'openai' | 'gemini', entry.defaultModel),
+      ).toBeGreaterThan(0)
+    }
+  })
+
+  it('contextWindowFor devolve null para modelo fora do catálogo', async () => {
+    const { contextWindowFor } = await import('@/lib/llm/catalog')
+    expect(contextWindowFor('openai', 'gpt-5-imaginario')).toBeNull()
+    expect(contextWindowFor('gemini', 'gemini-9.9-pro')).toBeNull()
+  })
+
+  it('separa os modelos de janela pequena dos grandes', async () => {
+    const { contextWindowFor } = await import('@/lib/llm/catalog')
+    // Os dois que não comportam prompt grande — motivo do piso de contexto.
+    expect(contextWindowFor('openai', 'gpt-4')).toBeLessThan(100_000)
+    expect(contextWindowFor('openai', 'gpt-3.5-turbo')).toBeLessThan(100_000)
+    expect(contextWindowFor('openai', 'gpt-4o')).toBeGreaterThanOrEqual(128_000)
+    expect(contextWindowFor('gemini', 'gemini-2.5-flash')).toBeGreaterThan(1_000_000)
+  })
+})
