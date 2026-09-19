@@ -1,3 +1,20 @@
+-- ============================================================
+-- __bootstrap_prd.sql — bootstrap PARCIAL. NÃO monta um banco atual.
+--
+-- ⚠️ Este arquivo cobre a história até por volta da migration 039
+-- (merge de clients em organizations). Tudo que veio depois está AUSENTE —
+-- entre outros: contact_id/ghl_user_id (091, 096), intent_breakdown (084),
+-- stage2 (092), is_sales_call (104), call_outcome_enum_v2 (105),
+-- org_won_rate e call_stats_weekly (107), is_system / Front Desk (109).
+--
+-- Para montar um ambiente novo: rodar ESTE arquivo e, DEPOIS, a sequência
+-- numerada em scripts/ a partir de onde ele para. Rodar só o bootstrap produz
+-- um banco que a aplicação não sobe, e que parece completo.
+--
+-- Regenerá-lo é pendência conhecida, sem prioridade. Quem mexer aqui atualiza
+-- também o "Latest migration documented here" de SCHEMA.md.
+-- ============================================================
+
 -- AskMoses.AI — Profiles table + RLS + trigger
 
 CREATE TABLE IF NOT EXISTS public.profiles (
