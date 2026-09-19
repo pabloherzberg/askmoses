@@ -26,8 +26,7 @@ export function Navbar() {
     { key: "pricing", href: "#pricing" },
   ] as const;
 
-  // Pattern alinhado com components/navigation.tsx (usado em /presentation, /demobiz, /tech):
-  // nav fixa transparente, ganha background quando scrolled OR menu mobile aberto.
+  // Nav fixa transparente, ganha background quando scrolled OR menu mobile aberto.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);

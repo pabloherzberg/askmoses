@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Phone,
   Upload,
-  HelpCircle,
   Home,
   GraduationCap,
   UserPlus,
@@ -130,7 +129,6 @@ export function OwnerNavItems() {
   const toolsNav = [
     { label: t("billing"), href: "/dashboard/billing", icon: CreditCard },
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
-    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -188,7 +186,6 @@ export function AdminNavItems({
   ];
   const toolsNav = [
     { label: t("billing"), href: "/admin/billing", icon: CreditCard },
-    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
   return (
     <nav className="flex flex-col gap-1">
@@ -247,7 +244,6 @@ export function ImpersonateNavItems({
       ? [{ label: t("uploadCall"), href: "/dashboard/upload", icon: Upload }]
       : []),
     { label: t("members"), href: "/dashboard/settings/invite", icon: UserPlus },
-    { label: t("howToUse"), href: "/dashboard/guide", icon: HelpCircle },
   ];
   return (
     <nav className="flex flex-col gap-1">
