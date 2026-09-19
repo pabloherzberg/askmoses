@@ -13,7 +13,6 @@ import {
   History,
   Settings,
   BarChart3,
-  HelpCircle,
   Brain,
   Wand2,
 } from "lucide-react"
@@ -40,7 +39,6 @@ const navigation: NavItem[] = [
   { name: "Knowledge Base", href: "/dashboard/insights?rag=1", icon: Brain,  requires: "pro_rag", upsellLabel: "Pro + RAG", stubOnly: true },
   { name: "Script Builder", href: "/dashboard/script-builder", icon: Wand2,  requires: "pro",     upsellLabel: "Pro" },
   { name: "Rubric",         href: "/dashboard/settings",       icon: Settings },
-  { name: "How to Use",     href: "/dashboard/guide",          icon: HelpCircle },
 ]
 
 const PLAN_RANK: Record<PlanCode, number> = { starter: 0, pro: 1, pro_rag: 2 }

@@ -112,11 +112,27 @@ CREATE INDEX IF NOT EXISTS calls_trainer_ghl_user_idx
 -- Sem as duas metades o Front Desk ou impede o próprio insert (P0001 numa org
 -- no cap) ou rouba um assento pago do cliente.
 --
--- PREVENTIVO hoje: max_sales_people está NULL nos três planos, e além disso
--- esta função resolve o plano pelo caminho legado organizations → clients →
--- plans (o.client_id), enquanto o app usa organizations.plan_id. Mantido o
--- join original de propósito — corrigir o caminho é outro assunto, não deste
--- commit.
+-- PREVENTIVO hoje: max_sales_people está NULL nos três planos, então o gate
+-- não chega a disparar. Isso NÃO torna o corpo da função indiferente — ver
+-- abaixo.
+--
+-- ⚠️ CORRIGIDO APÓS O FATO (2026-09-19). A primeira versão deste arquivo
+-- copiou o corpo da 032, que resolvia o plano pelo caminho legado
+-- organizations → clients → plans (o.client_id), sob a justificativa de
+-- "manter o join original". A justificativa estava errada: a migration 039 já
+-- havia reescrito esta mesma função para ler direto de organizations.plan_id,
+-- justamente porque o step 7 dela DROPA public.clients. Manter o join antigo
+-- não era conservador — era reverter a 039.
+--
+-- Produção nunca chegou a rodar a versão quebrada: a divergência foi notada na
+-- hora de aplicar e a versão corrigida foi para o banco direto pelo editor do
+-- Supabase (confirmado por pg_get_functiondef). Este arquivo é que ficou para
+-- trás, e foi alinhado aqui.
+--
+-- Rodar a versão antiga num ambiente novo faria a função referenciar uma
+-- tabela inexistente, e o cadastro de QUALQUER membro novo quebraria com
+-- `relation "public.clients" does not exist` — exatamente o erro que a 039
+-- descreve no seu step 5.
 
 CREATE OR REPLACE FUNCTION public.enforce_seat_limit()
 RETURNS TRIGGER
@@ -144,9 +160,10 @@ BEGIN
 
     SELECT p.max_sales_people
     INTO   v_max
+    -- Caminho direto (039): organizations.plan_id. NÃO reintroduzir o join
+    -- via public.clients — a tabela foi dropada no step 7 da 039.
     FROM   public.organizations o
-    JOIN   public.clients       c ON c.id = o.client_id
-    JOIN   public.plans         p ON p.id = c.plan_id
+    JOIN   public.plans         p ON p.id = o.plan_id
     WHERE  o.id = NEW.org_id;
 
     -- NULL = ilimitado (Pro+RAG). Skip.

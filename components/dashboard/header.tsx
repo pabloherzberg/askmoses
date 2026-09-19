@@ -19,7 +19,6 @@ import {
   History,
   Settings,
   BarChart3,
-  HelpCircle,
   Brain,
   Wand2,
 } from "lucide-react";
@@ -32,7 +31,6 @@ const navigation = [
   { name: "Insights", href: "/dashboard/insights", icon: Brain },
   { name: "Script Builder", href: "/dashboard/script-builder", icon: Wand2 },
   { name: "Rubric", href: "/dashboard/settings", icon: Settings },
-  { name: "How to Use", href: "/dashboard/guide", icon: HelpCircle },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -43,7 +41,6 @@ const pageTitles: Record<string, string> = {
   "/dashboard/insights": "Insights",
   "/dashboard/script-builder": "Script Builder",
   "/dashboard/settings": "Rubric Settings",
-  "/dashboard/guide": "How to Use",
 };
 
 export function DashboardHeader() {
