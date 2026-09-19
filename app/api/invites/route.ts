@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
       // enforce_seat_limit() (migration 109), que é o gate atômico no banco.
       const { count, error: countErr } = await admin
         .from('memberships')
-        .select('*, users!inner(is_system)', { count: 'exact', head: true })
+        .select('*, users!memberships_user_id_fkey!inner(is_system)', { count: 'exact', head: true })
         .eq('org_id', targetOrgId)
         .eq('role', 'trainer')
         .in('invite_status', ['pending', 'accepted'])
