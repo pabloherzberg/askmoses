@@ -20,15 +20,28 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // vi.hoisted garante que as variáveis estejam disponíveis no momento do hoist
 // dos vi.mock (que rodam antes de qualquer import).
-const { mockDbGetCallById, mockDbUpdateGhlCallPipeline, mockResendSend } = vi.hoisted(() => ({
+const {
+  mockDbGetCallById,
+  mockDbUpdateGhlCallPipeline,
+  mockResendSend,
+  mockDbGetTrainerById,
+  mockDbGetTrainerDeliverability,
+} = vi.hoisted(() => ({
   mockDbGetCallById: vi.fn(),
   mockDbUpdateGhlCallPipeline: vi.fn(),
   mockResendSend: vi.fn(),
+  mockDbGetTrainerById: vi.fn(),
+  mockDbGetTrainerDeliverability: vi.fn(),
 }))
 
 vi.mock('@/lib/db/calls', () => ({
   dbGetCallById: mockDbGetCallById,
   dbUpdateGhlCallPipeline: mockDbUpdateGhlCallPipeline,
+}))
+
+vi.mock('@/lib/db/trainers', () => ({
+  dbGetTrainerById: mockDbGetTrainerById,
+  dbGetTrainerDeliverability: mockDbGetTrainerDeliverability,
 }))
 
 // Mock da classe Resend: usa função construtora regular para compatibilidade com `new`.
@@ -121,6 +134,44 @@ describe('sendGhlCoachingEmail', () => {
     await sendGhlCoachingEmail('call-abc')
 
     expect(mockResendSend).not.toHaveBeenCalled()
+  })
+
+  // ── Gate de destinatário (Front Desk / convite pendente) ──────────────────
+
+  it('skip se a call é do Front Desk, MESMO com trainer_email preenchido', async () => {
+    // O endereço no payload pode ser o de alguém que nem está na plataforma —
+    // é justamente quando o campo está preenchido que existe risco de mandar
+    // coaching não solicitado pra um terceiro.
+    mockDbGetCallById.mockResolvedValue(
+      makeCall({ trainer_id: 'front-desk-id', trainer_email: 'estranho@externo.com' }),
+    )
+    mockDbGetTrainerDeliverability.mockResolvedValue({ isSystem: true, inviteAccepted: true })
+
+    await sendGhlCoachingEmail('call-abc')
+
+    expect(mockResendSend).not.toHaveBeenCalled()
+    expect(mockDbUpdateGhlCallPipeline).not.toHaveBeenCalled()
+  })
+
+  it('skip se o trainer ainda não aceitou o convite', async () => {
+    // Receber a análise da própria call antes de ter login é estranho. Como
+    // email_sent fica false, dá pra disparar retroativamente no aceite.
+    mockDbGetCallById.mockResolvedValue(makeCall({ trainer_id: 'rep-1' }))
+    mockDbGetTrainerDeliverability.mockResolvedValue({ isSystem: false, inviteAccepted: false })
+
+    await sendGhlCoachingEmail('call-abc')
+
+    expect(mockResendSend).not.toHaveBeenCalled()
+    expect(mockDbUpdateGhlCallPipeline).not.toHaveBeenCalled()
+  })
+
+  it('envia normalmente para trainer real com convite aceito', async () => {
+    mockDbGetCallById.mockResolvedValue(makeCall({ trainer_id: 'rep-1' }))
+    mockDbGetTrainerDeliverability.mockResolvedValue({ isSystem: false, inviteAccepted: true })
+
+    await sendGhlCoachingEmail('call-abc')
+
+    expect(mockResendSend).toHaveBeenCalledOnce()
   })
 
   it('skip se trainer_email está ausente', async () => {

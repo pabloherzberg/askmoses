@@ -15,6 +15,7 @@ import {
   dbMarkTrainerNotificationsRead,
   dbResolveTrainerById,
 } from '@/lib/db/notifications'
+import { dbIsSystemTrainer } from '@/lib/db/trainers'
 import { sendCoachingRecEmail } from '@/lib/email/send-coaching-rec'
 
 function badRequest(message: string, reason?: string) {
@@ -100,6 +101,17 @@ export async function POST(request: NextRequest) {
     // Resolve por ID + valida que o trainer pertence à org do Owner.
     const trainer = await dbResolveTrainerById(ctx.activeOrgId, recipientId)
     if (!trainer) return notFound('Trainer não encontrado nesta organização', 'TRAINER_NOT_FOUND')
+
+    // Front Desk (rep de sistema) não tem destinatário: ninguém faz login como
+    // ele pra ver o sino, e o email em `users` é sintético. Bloqueia a POST
+    // inteira em vez de só pular o email — gravar a notificação faria o owner
+    // acreditar que entregou um coaching que ninguém vai ler.
+    if (await dbIsSystemTrainer(trainer.id)) {
+      return badRequest(
+        'O Front Desk é um rep de sistema e não recebe coaching — não há destinatário.',
+        'SYSTEM_TRAINER',
+      )
+    }
 
     // Canais ativos do destinatário (in-app / email).
     const prefs = await dbGetChannelPrefs(trainer.id)

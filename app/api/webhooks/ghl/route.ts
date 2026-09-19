@@ -1,7 +1,11 @@
 import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
 import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbUpdateGhlOpportunity, dbHasWonCall } from "@/lib/db/calls"
-import { dbResolveTrainerForGhlCall, type GhlCallTrainerLink } from "@/lib/db/trainers"
+import {
+  dbGetOrCreateFrontDeskTrainer,
+  dbResolveTrainerForGhlCall,
+  type GhlCallTrainerLink,
+} from "@/lib/db/trainers"
 import { dbGetOrgGhlConfigByLocation } from "@/lib/db/organizations"
 import { processGhlCall } from "@/lib/services/ghl-call-pipeline"
 import { notifyPipelineFailure } from "@/lib/services/pipeline-alerts"
@@ -19,6 +23,7 @@ import {
 } from "@/lib/services/ghl-helpers"
 import { dbUpsertGhlAppointment } from "@/lib/db/appointments"
 import { MIN_ANALYZABLE_CALL_SECONDS, isConfirmedShortCall } from "@/lib/constants/limits"
+import { FRONT_DESK_NAME } from "@/lib/constants/front-desk"
 
 export const runtime = "nodejs"
 // Vercel Teams + Fluid Compute permitem até 800s. O download da gravação agora
@@ -185,15 +190,14 @@ export async function POST(req: NextRequest) {
   const clientName = normalizeEmpty(callPayload.contactName)
   const leadSource = normalizeSource(callPayload.contactSource)
 
-  // 5c. Gate de vínculo + convite do trainer. Só ingerimos calls de quem está
-  //     DE FATO ativo na plataforma: um trainer vinculado a este usuário do
-  //     GHL (trainers.ghl_user_id) E com convite ACEITO. Se o usuário do GHL
-  //     não é membro nenhum da org, OU é membro mas o convite ainda está
-  //     pendente, a call é IGNORADA aqui: nada no banco, sem custo de LLM,
-  //     sem alerta — é o corte que impede o pipeline de gastar
-  //     download/Whisper/LLM com calls de gente que ainda não faz parte da
-  //     plataforma. Sem userId no payload não há como confirmar o vínculo →
-  //     mesmo tratamento (ignora).
+  // 5c. Lookup do vínculo (org, ghl_user_id). Só LEITURA — quem decide o rep é
+  //     o passo 5e, depois do gate de Won. Até 55a8f3b (02/07) era aqui que a
+  //     call sem vínculo era DESCARTADA: 200 OK, nada no banco, nenhum alerta.
+  //     150+ calls perdidas em 7 orgs em 4 dias, e uma cliente abriu ticket por
+  //     ver a lacuna sem explicação. A invisibilidade era o bug.
+  //
+  //     Sem userId no payload não há nem o que consultar: trainerLink fica null
+  //     e a call cai no Front Desk, sem possibilidade de reatribuição depois.
   const ghlUserId = normalizeEmpty(callPayload.userId)
   let trainerLink: GhlCallTrainerLink | null = null
   if (ghlUserId) {
@@ -218,44 +222,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!trainerLink) {
-    console.info("[ghl-webhook] call de trainer não vinculado — ignorando", {
-      orgId: orgConfig.orgId,
-      ghlUserId,
-      externalCallId,
-    })
-    return NextResponse.json({
-      data: { status: "skipped_unlinked_trainer" },
-      error: null,
-    })
-  }
-
-  // trainerLink vem de `users` (nossa fonte cadastral) e substitui o que veio
-  // cru do GHL: o payload pode trazer o nome/email da Location/Company em vez
-  // do usuário real (ex.: owner que também vende sem estar configurado como
-  // Phone System User individual no GHL) — users.name/email são confiáveis.
-  const resolvedTrainerName = trainerLink.name !== '—' ? trainerLink.name : trainerName
-  const resolvedTrainerEmail = trainerLink.email ?? trainerEmail
-
-  if (trainerLink.inviteStatus !== "accepted") {
-    console.info("[ghl-webhook] call de trainer com convite pendente — ignorando", {
-      orgId: orgConfig.orgId,
-      ghlUserId,
-      trainerId: trainerLink.trainerId,
-      inviteStatus: trainerLink.inviteStatus,
-      externalCallId,
-    })
-    return NextResponse.json({
-      data: { status: "skipped_trainer_invite_pending" },
-      error: null,
-    })
-  }
-
   // 5d. Lead já fechou (Won) — não registra mais calls dele. Depois do Won,
   //     dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls
   //     do contato; uma call nova do mesmo contactId só existiria por reagenda-
-  //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha) —
-  //     mesmo tratamento silencioso do gate de trainer não vinculado acima.
+  //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha).
+  //
+  //     Junto com o corte de call curta (5b), é um dos DOIS únicos descartes
+  //     silenciosos que sobraram no webhook. O terceiro — call de rep não
+  //     vinculado — deixou de existir: agora vai pro Front Desk (5e).
   try {
     const alreadyWon = await dbHasWonCall(orgConfig.orgId, contactId)
     if (alreadyWon) {
@@ -287,15 +261,96 @@ export async function POST(req: NextRequest) {
     return jsonError("Server error", 500)
   }
 
+  // 5e. Rep resolvido + os nomes que vão pra linha de `calls`.
+  //
+  //     DEPOIS do gate de Won de propósito: provisionar o Front Desk é uma
+  //     ESCRITA, e fazê-la antes deixaria a org com um rep "Front Desk, 0 calls"
+  //     no ranking sempre que uma call órfã de contato já fechado chegasse —
+  //     sem nunca ter havido call órfã de verdade.
+  //
+  //     COM vínculo: trainerLink vem de `users` (nossa fonte cadastral) e
+  //     substitui o que veio cru do GHL — o payload pode trazer o nome/email da
+  //     Location/Company em vez do usuário real (ex.: owner que também vende sem
+  //     estar configurado como Phone System User individual no GHL).
+  //
+  //     NO FRONT DESK grava-se o nome do próprio Front Desk, e não o nome cru do
+  //     payload. Consistência é o ponto: o cliente vendo "Kurt Dawang" na lista
+  //     enquanto as calls dele somam no Front Desk gera exatamente a dúvida que
+  //     originou esta investigação — alguém vê a inconsistência, cria uma teoria
+  //     e abre ticket. Pior ainda quando o GHL manda o nome da Location e ele
+  //     aparece como se fosse um vendedor. O nome cru continua em ghl_payload
+  //     pra quem precisar investigar.
+  //
+  //     Convite PENDENTE não é mais motivo de descarte (revertido de e86609d):
+  //     o rep existe e é conhecido, então a call vai pra ele e a pendência sai
+  //     como alerta informativo depois do insert.
+  let resolved: {
+    trainerId: string
+    trainerName: string
+    trainerEmail: string | null
+    isFrontDesk: boolean
+  }
+
+  if (trainerLink) {
+    resolved = {
+      trainerId: trainerLink.trainerId,
+      trainerName: trainerLink.name !== '—' ? trainerLink.name : trainerName,
+      trainerEmail: trainerLink.email ?? trainerEmail,
+      isFrontDesk: false,
+    }
+  } else {
+    let frontDeskTrainerId: string
+    try {
+      frontDeskTrainerId = await dbGetOrCreateFrontDeskTrainer(orgConfig.orgId)
+    } catch (err) {
+      // Falhar aqui é voltar a perder a call. Por isso 500 + alerta (o GHL
+      // reentrega) em vez do 200 silencioso que causou o problema original.
+      console.error("[ghl-webhook] front desk provisioning failed", { err, externalCallId })
+      void notifyPipelineFailure("webhook_failed", {
+        callId: `sync-error:front-desk:${externalCallId}`,
+        orgId: orgConfig.orgId,
+        orgName: orgConfig.orgName,
+        contactId,
+        clientName,
+        trainerName,
+        ghlUserId,
+        error: err instanceof Error ? `[front-desk] ${err.message}` : String(err),
+        stage: "webhook",
+        reason: "db_error",
+        meta: { externalCallId, operation: "dbGetOrCreateFrontDeskTrainer" },
+      })
+      return jsonError("Server error", 500)
+    }
+
+    console.info("[ghl-webhook] call sem rep vinculado — atribuindo ao Front Desk", {
+      orgId: orgConfig.orgId,
+      ghlUserId,
+      frontDeskTrainerId,
+      // Guardado no log porque a linha de `calls` passa a mostrar o nome do
+      // Front Desk — aqui fica o que o GHL mandou, sem abrir o ghl_payload.
+      payloadTrainerName: trainerName,
+      externalCallId,
+    })
+
+    resolved = {
+      trainerId: frontDeskTrainerId,
+      trainerName: FRONT_DESK_NAME,
+      // Sem email: o do payload pode ser de alguém que não está na plataforma, e
+      // deixá-lo aqui é convidar um caminho futuro a mandar mensagem pra ele.
+      trainerEmail: null,
+      isFrontDesk: true,
+    }
+  }
+
   let upsertResult
   try {
     upsertResult = await dbUpsertGhlCall({
       orgId: orgConfig.orgId,
       externalCallId,
       ghlPayload: rawBody as unknown as Record<string, unknown>,
-      trainerId: trainerLink.trainerId,
-      trainerName: resolvedTrainerName,
-      trainerEmail: resolvedTrainerEmail,
+      trainerId: resolved.trainerId,
+      trainerName: resolved.trainerName,
+      trainerEmail: resolved.trainerEmail,
       ghlUserId,
       contactId,
       clientName,
@@ -330,6 +385,46 @@ export async function POST(req: NextRequest) {
 
   const callId = upsertResult.call.id
   const accessToken = orgConfig.accessToken
+
+  // 5f. Alertas informativos. A call JÁ está no banco e o pipeline vai rodar —
+  //     nenhum dos dois é falha. Existem porque o SILÊNCIO nesses dois casos foi
+  //     exatamente o que fez 150+ calls desaparecerem sem ninguém notar. Ficam
+  //     depois do insert pra o alerta trazer o callId real e linkar a call.
+  if (resolved.isFrontDesk) {
+    void notifyPipelineFailure("unlinked_trainer", {
+      callId,
+      orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
+      contactId,
+      clientName,
+      trainerName,
+      ghlUserId,
+      stage: "webhook",
+      reason: "ghl_user_not_linked",
+      meta: {
+        frontDeskTrainerId: resolved.trainerId,
+        note: ghlUserId
+          ? "Atribuída ao Front Desk. Vincular este GHLUSERID a um membro ativo migra a call pro rep real automaticamente, com a nota junto."
+          : "Payload do GHL sem userId — sem GHLUSERID não há como reatribuir depois. Fica no Front Desk em definitivo.",
+      },
+    })
+  } else if (trainerLink && trainerLink.inviteStatus !== "accepted") {
+    void notifyPipelineFailure("trainer_invite_pending", {
+      callId,
+      orgId: orgConfig.orgId,
+      orgName: orgConfig.orgName,
+      contactId,
+      clientName,
+      trainerName: resolved.trainerName,
+      ghlUserId,
+      stage: "webhook",
+      reason: "trainer_invite_pending",
+      meta: {
+        trainerId: trainerLink.trainerId,
+        inviteStatus: trainerLink.inviteStatus,
+      },
+    })
+  }
 
   // 6. Dispara pipeline async com o token específico da org.
   after(async () => {

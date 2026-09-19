@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { billableMinutes } from "@/lib/billing";
+import { applySalesCallOnly, isCountableSalesCallRow } from "@/lib/sales-calls";
 import type {
   Client,
   GlobalMetrics,
@@ -243,9 +244,14 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
     const seenCall = new Set<string>();
     let callFrom = 0;
     for (;;) {
+      // is_sales_call vem no select, mas o filtro NÃO vai na query: este loop
+      // faz dupla função. `lastCall` é "última atividade da org" e tem que
+      // continuar contando qualquer call — filtrar aqui transformaria a coluna
+      // em "última call de venda" sem ninguém pedir. Só a soma de minutos
+      // faturáveis descarta não-venda (decisão de produto de 18/09/2026).
       const { data: callPage, error: callErr } = await supabase
         .from("calls")
-        .select("org_id, created_at, duration_seconds")
+        .select("org_id, created_at, duration_seconds, is_sales_call")
         .in("org_id", orgIds)
         .order("created_at", { ascending: false })
         .range(callFrom, callFrom + PG_MAX_ROWS - 1);
@@ -254,13 +260,14 @@ export async function dbListClients(query: ClientsQuery): Promise<ClientsPage> {
         org_id: string;
         created_at: string;
         duration_seconds: number | null;
+        is_sales_call: boolean | null;
       }[];
       for (const row of rows) {
         if (!seenCall.has(row.org_id)) {
           seenCall.add(row.org_id);
           lastCallByOrg.set(row.org_id, row.created_at);
         }
-        if (row.created_at >= monthStart) {
+        if (row.created_at >= monthStart && isCountableSalesCallRow(row)) {
           monthMinutesByOrg.set(
             row.org_id,
             (monthMinutesByOrg.get(row.org_id) ?? 0) +
@@ -423,12 +430,16 @@ async function dbGetOrgMonthBillableMinutes(
   let total = 0;
   let from = 0;
   for (;;) {
-    const { data, error } = await supabase
-      .from("calls")
-      .select("duration_seconds")
-      .eq("org_id", orgId)
-      .gte("created_at", monthStart)
-      .range(from, from + PG_MAX_ROWS - 1);
+    // Só venda é faturada (decisão de produto de 18/09/2026). Aqui o filtro vai
+    // na query porque esta função calcula UNICAMENTE minutos faturáveis — ao
+    // contrário do loop de dbListClients, que também deriva lastCall.
+    const { data, error } = await applySalesCallOnly(
+      supabase
+        .from("calls")
+        .select("duration_seconds")
+        .eq("org_id", orgId)
+        .gte("created_at", monthStart),
+    ).range(from, from + PG_MAX_ROWS - 1);
     if (error) throw new Error(`dbGetOrgMonthBillableMinutes: ${error.message}`);
     const rows = data ?? [];
     total += rows.reduce(
