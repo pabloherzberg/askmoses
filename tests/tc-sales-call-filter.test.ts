@@ -192,19 +192,55 @@ describe('listagens continuam exibindo calls não-venda', () => {
   })
 })
 
-// ─── Billing NÃO pode filtrar ────────────────────────────────────────────────
+// ─── Billing: receita filtra, custo não ──────────────────────────────────────
+//
+// REVERSÃO DELIBERADA. Este bloco antes exigia o oposto ("billing contabiliza
+// 100% das calls, inclusive não-venda"). A reunião de produto de 18/09/2026
+// decidiu que call não-venda NÃO é cobrada da organização, e o Front Desk
+// (migration 109) tornou isso urgente: até então call não-venda mal chegava ao
+// banco, e passou a chegar.
+//
+// O que NÃO mudou é a contrapartida: o custo de LLM de analisar essas calls
+// continua sendo integralmente nosso.
 
-describe('billing contabiliza 100% das calls, inclusive não-venda', () => {
-  it('lib/db/billing.ts não aplica o filtro de venda', () => {
+describe('billing cobra só call de venda, mas absorve o custo de todas', () => {
+  it('aggregateCalls (faturamento por minuto) filtra', () => {
     const s = src('lib/db/billing.ts')
-    expect(s).not.toMatch(/applySalesCallOnly/)
-    expect(s).not.toMatch(/is_sales_call/)
+    expect(s).toMatch(/applySalesCallOnly\(\s*supabase\s*\n?\s*\.from\("calls"\)/)
   })
 
-  it('dbGetOrgMonthSeconds (minutos faturáveis) não filtra', () => {
+  it('dbGetOrgMonthBillableMinutes (painel de clientes) filtra', () => {
+    // Existe pra mostrar o MESMO número que /admin/billing. Se uma filtrasse e
+    // a outra não, as duas telas divergiriam no mesmo mês — que é exatamente o
+    // que o comentário da função sempre tentou evitar.
+    expect(src('lib/db/clients.ts')).toMatch(/applySalesCallOnly\(/)
+  })
+
+  it('dbListClients filtra os MINUTOS sem estragar lastCall', () => {
+    // O loop faz dupla função. lastCall é "última atividade" e tem que contar
+    // qualquer call; só a soma de minutos descarta não-venda. Por isso o filtro
+    // é na acumulação, não na query.
     const s = src('lib/db/clients.ts')
-    expect(s).not.toMatch(/applySalesCallOnly/)
-    expect(s).not.toMatch(/is_sales_call/)
+    expect(s).toMatch(/is_sales_call/)
+    expect(s).toMatch(/created_at >= monthStart && isCountableSalesCallRow\(row\)/)
+    expect(s).toMatch(/lastCallByOrg\.set\(row\.org_id, row\.created_at\)/)
+  })
+
+  it('aggregateLlmCost (COGS) NÃO filtra — analisar não-venda é custo nosso', () => {
+    const s = src('lib/db/billing.ts')
+    const llmIdx = s.indexOf('async function aggregateLlmCost')
+    const orgMetaIdx = s.indexOf('async function fetchOrgMeta')
+    expect(llmIdx).toBeGreaterThan(-1)
+    expect(orgMetaIdx).toBeGreaterThan(llmIdx)
+    const body = s.slice(llmIdx, orgMetaIdx)
+    expect(body).toContain('llm_usage_events')
+    expect(body).not.toContain('applySalesCallOnly')
+  })
+
+  it('a copy de "How you\'re billed" declara a regra pro cliente', () => {
+    // Sem isso o owner vê N calls na lista, paga por menos que N e não acha
+    // explicação em lugar nenhum.
+    expect(src('lib/db/billing.ts')).toMatch(/aren't sales conversations aren't billed/)
   })
 
   it('o gate registra recordLlmUsage nos dois pipelines antes de sair', () => {

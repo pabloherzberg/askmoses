@@ -1,6 +1,15 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { applySalesCallOnly } from '@/lib/sales-calls'
+import {
+  FRONT_DESK_AVATAR,
+  FRONT_DESK_NAME,
+  frontDeskEmail,
+} from '@/lib/constants/front-desk'
 import type { Trainer, AvatarColor } from '@/lib/types'
+
+/** Unique violation do Postgres — o sinal de que outro request ganhou a
+ *  corrida do get-or-create do Front Desk. */
+const PG_UNIQUE_VIOLATION = '23505'
 
 // ─── Sync trainer stats from real calls ──────────────────────────────────────
 
@@ -358,6 +367,205 @@ export async function dbResolveTrainerForGhlCall(
     name: users?.name ?? '—',
     email: users?.email ?? null,
     inviteStatus: users?.invite_status ?? 'accepted',
+  }
+}
+
+// ─── Front Desk: o rep de sistema da org ─────────────────────────────────────
+// Ver lib/constants/front-desk.ts e migration 109. É quem recebe a call cujo
+// GHLUSERID não está vinculado a membro nenhum — antes ela era descartada no
+// webhook sem deixar rastro no banco. Atribuição PROVISÓRIA: vinculado o rep
+// real, a call migra (lib/services/ghl-call-recovery.ts).
+
+/** trainer_id do Front Desk da org, ou null se ainda não existe. */
+export async function dbGetFrontDeskTrainerId(orgId: string): Promise<string | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('is_system', true)
+    .maybeSingle()
+
+  if (error) throw new Error(`dbGetFrontDeskTrainerId: ${error.message}`)
+  return (data?.id as string | undefined) ?? null
+}
+
+/**
+ * Garante o Front Desk da org e devolve o trainer_id. Idempotente e seguro sob
+ * concorrência: dois webhooks simultâneos da mesma org não criam dois reps —
+ * quem perde a corrida leva 23505 (users.email UNIQUE ou
+ * trainers_org_system_uidx) e relê a linha do vencedor.
+ *
+ * Criação preguiçosa de propósito, no caminho do webhook: org sem GHL nunca
+ * precisa do rep, e org nova ganha o dela sem passo manual de setup.
+ *
+ * As três linhas, e por que cada uma:
+ *   • users ......... trainers.user_id é FK pra users; sem conta no Supabase
+ *                     Auth (não há FK pra auth.users) e com email sintético.
+ *                     invite_status='accepted' EXPLÍCITO — o default da coluna
+ *                     é 'pending', que faria dbGetTrainers filtrar o rep.
+ *   • memberships ... é o que faz o rep aparecer no dashboard. role='trainer',
+ *                     invite_status='accepted' (aqui o default já é 'accepted',
+ *                     mas explícito porque o de users é o oposto).
+ *   • trainers ...... o perfil de calls. ghl_user_id fica NULL: o Front Desk
+ *                     não representa um usuário do GHL, e vinculá-lo a um
+ *                     faria as calls daquele usuário nunca serem reatribuídas.
+ */
+export async function dbGetOrCreateFrontDeskTrainer(orgId: string): Promise<string> {
+  const existing = await dbGetFrontDeskTrainerId(orgId)
+  if (existing) return existing
+
+  const supabase = createAdminClient()
+  const email = frontDeskEmail(orgId)
+
+  // ── 1. users
+  let userId: string | null = null
+  const { data: insertedUser, error: userErr } = await supabase
+    .from('users')
+    .insert({
+      name: FRONT_DESK_NAME,
+      email,
+      avatar: FRONT_DESK_AVATAR,
+      avatar_color: 'blue',
+      role: 'trainer',
+      invite_status: 'accepted',
+      org_id: orgId,
+      is_system: true,
+    })
+    .select('id')
+    .maybeSingle()
+
+  if (userErr) {
+    if (userErr.code !== PG_UNIQUE_VIOLATION) {
+      throw new Error(`dbGetOrCreateFrontDeskTrainer(user): ${userErr.message}`)
+    }
+    // Outro request criou o user (ou uma execução anterior morreu entre os
+    // inserts). Relê por email — determinístico por org.
+    const { data: found, error: findErr } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+    if (findErr) {
+      throw new Error(`dbGetOrCreateFrontDeskTrainer(user-reread): ${findErr.message}`)
+    }
+    userId = (found?.id as string | undefined) ?? null
+  } else {
+    userId = (insertedUser?.id as string | undefined) ?? null
+  }
+
+  if (!userId) {
+    throw new Error('dbGetOrCreateFrontDeskTrainer: user de sistema não resolvido')
+  }
+
+  // ── 2. memberships — PK (user_id, org_id), então o 23505 aqui é benigno.
+  const { error: memErr } = await supabase.from('memberships').insert({
+    user_id: userId,
+    org_id: orgId,
+    role: 'trainer',
+    invite_status: 'accepted',
+  })
+  if (memErr && memErr.code !== PG_UNIQUE_VIOLATION) {
+    throw new Error(`dbGetOrCreateFrontDeskTrainer(membership): ${memErr.message}`)
+  }
+
+  // ── 3. trainers. owner_id segue o padrão dos inserts de convite (a linha de
+  //      `owners` da org). Nullable e sem FK — org sem owner resolvido grava
+  //      NULL em vez de abortar o provisionamento da call.
+  const { data: ownerRow } = await supabase
+    .from('owners')
+    .select('id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle()
+
+  const { data: insertedTrainer, error: trainerErr } = await supabase
+    .from('trainers')
+    .insert({
+      user_id: userId,
+      owner_id: (ownerRow?.id as string | undefined) ?? null,
+      org_id: orgId,
+      ghl_user_id: null,
+      is_system: true,
+    })
+    .select('id')
+    .maybeSingle()
+
+  if (trainerErr) {
+    if (trainerErr.code !== PG_UNIQUE_VIOLATION) {
+      throw new Error(`dbGetOrCreateFrontDeskTrainer(trainer): ${trainerErr.message}`)
+    }
+    // trainers_org_system_uidx: outro request chegou primeiro.
+    const won = await dbGetFrontDeskTrainerId(orgId)
+    if (!won) {
+      throw new Error('dbGetOrCreateFrontDeskTrainer: 23505 em trainers sem linha legível')
+    }
+    return won
+  }
+
+  const trainerId = insertedTrainer?.id as string | undefined
+  if (!trainerId) {
+    throw new Error('dbGetOrCreateFrontDeskTrainer: insert de trainer sem id')
+  }
+  return trainerId
+}
+
+/**
+ * O trainer é um rep de sistema? Consulta enxuta, para os dois gates de email
+ * de coaching e para o guard de ghl_user_id no PATCH de membership.
+ *
+ * Trainer inexistente devolve false: quem chama está decidindo "posso enviar /
+ * posso vincular", e um id que não resolve não é motivo pra bloquear — os
+ * caminhos que dependem da linha existir já falham por conta própria.
+ */
+export async function dbIsSystemTrainer(trainerId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('is_system')
+    .eq('id', trainerId)
+    .maybeSingle()
+
+  if (error) throw new Error(`dbIsSystemTrainer: ${error.message}`)
+  return data?.is_system === true
+}
+
+/** O que decide se uma call pode gerar email de coaching pro seu trainer. */
+export interface TrainerDeliverability {
+  /** Front Desk — não há destinatário (email sintético). */
+  isSystem: boolean
+  /** Convite aceito = a pessoa já tem login e consegue ver o próprio dashboard. */
+  inviteAccepted: boolean
+}
+
+/**
+ * Resolve is_system + invite_status num lookup só, pro gate do email de
+ * coaching automático.
+ *
+ * `users(...)` sem !inner de propósito: trainer sem linha de user é estado
+ * quebrado, e o resultado (inviteAccepted=false) bloqueia o envio — que é o
+ * lado seguro pra errar. Trainer inexistente devolve null.
+ */
+export async function dbGetTrainerDeliverability(
+  trainerId: string,
+): Promise<TrainerDeliverability | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from('trainers')
+    .select('is_system, users(invite_status)')
+    .eq('id', trainerId)
+    .maybeSingle()
+
+  if (error) throw new Error(`dbGetTrainerDeliverability: ${error.message}`)
+  if (!data) return null
+
+  const users = Array.isArray(data.users) ? data.users[0] : data.users
+  return {
+    isSystem: data.is_system === true,
+    inviteAccepted: (users as { invite_status?: string } | null)?.invite_status === 'accepted',
   }
 }
 

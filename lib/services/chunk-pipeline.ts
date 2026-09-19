@@ -27,6 +27,8 @@ import {
 } from '@/lib/services/call-audio-storage'
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
 import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
+import { reassignFrontDeskCalls } from '@/lib/services/ghl-call-recovery'
+import { dbGetFrontDeskTrainerId } from '@/lib/db/trainers'
 import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
@@ -437,8 +439,25 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       stage: 'consolidation',
       reason: inferFailureReason(err),
     })
+    // Mesmo sem transcript a call existe e pode estar atribuída ao Front Desk —
+    // sair daqui sem o catch-up a deixaria presa lá.
+    await frontDeskCatchUp(callId)
     return
   }
+
+  // Catch-up de atribuição, ANTES do scoring. Se o rep foi vinculado enquanto
+  // esta call estava no pipeline, a migração daquele instante a pulou (ela
+  // estava em voo) — e os dois gatilhos de migração são eventos ÚNICOS
+  // (vincular e aceitar), então sem esta chamada a call ficaria presa no Front
+  // Desk pra sempre.
+  //
+  // Antes do scoring, e não depois, por dois motivos:
+  //   • runGhlCallScoring lê a linha da call uma vez, no início — migrando
+  //     agora ele já captura o trainer_id certo e ressincroniza o rep certo;
+  //   • o catch de scoring faz `return`, então um catch-up posterior seria
+  //     pulado justamente nas calls que falharam, que são as que mais demoram
+  //     a ser notadas.
+  await frontDeskCatchUp(callId)
 
   // Fanout pós-transcribed: scoring + coaching email. Best-effort — erros não
   // afetam o transcript já salvo, MAS são alertados: uma call transcrita sem
@@ -477,6 +496,41 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       stage: 'consolidation',
       reason: 'email_error',
       meta: { note: 'Call já tem transcript + score. Só o email falhou — reenviar manualmente se necessário.' },
+    })
+  }
+}
+
+/**
+ * Tenta migrar esta call do Front Desk pro rep real, agora que ela saiu do
+ * estado "em voo".
+ *
+ * Existe porque os dois gatilhos de migração (vincular GHLUSERID, aceitar
+ * convite) são eventos ÚNICOS: se a call estava sendo processada quando um
+ * deles rodou, ela foi pulada e nunca mais teria uma segunda chance.
+ *
+ * Chamado nos DOIS caminhos de saída de finalizeCallIfReady — consolidação OK
+ * e consolidação falha. Uma call sem transcript continua existindo e atribuída,
+ * então também merece o catch-up.
+ *
+ * Best-effort: nunca propaga erro. Uma falha aqui não pode derrubar um pipeline
+ * que já entregou transcript e score.
+ */
+async function frontDeskCatchUp(callId: string): Promise<void> {
+  try {
+    const call = await dbGetCallById(callId)
+    if (!call?.org_id || !call.ghl_user_id || !call.trainer_id) return
+
+    // Gate barato antes dos 3 lookups de reassignFrontDeskCalls: só call
+    // estacionada no Front Desk tem o que migrar, e a esmagadora maioria das
+    // calls chega aqui já atribuída ao rep certo.
+    const frontDeskId = await dbGetFrontDeskTrainerId(call.org_id)
+    if (!frontDeskId || call.trainer_id !== frontDeskId) return
+
+    await reassignFrontDeskCalls(call.org_id, call.ghl_user_id)
+  } catch (err) {
+    console.error('[chunk-pipeline] catch-up de atribuição falhou (non-fatal)', {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
     })
   }
 }

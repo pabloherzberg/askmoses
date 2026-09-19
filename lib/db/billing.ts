@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { applySalesCallOnly } from "@/lib/sales-calls";
 import type {
   BillingCycle,
   BillingOrgRow,
@@ -15,10 +16,17 @@ import type {
 // Regras de cálculo (alinhadas ao handoff §6/§7):
 //  • Minutos faturáveis por call = ceil(duration_seconds / 60), e calls com
 //    duration_seconds < 30 NÃO são faturadas (0 min). NULL = não faturável.
+//  • Call classificada como NÃO-VENDA não é faturada (decisão de produto de
+//    18/09/2026). is_sales_call NULL = call legada, anterior ao gate de
+//    classificação, e CONTA — ver aggregateCalls.
 //  • Custo = minutos faturáveis × rate_per_minute (por org, da coluna).
 //  • LLM cost / COGS agora é REAL: soma de llm_usage_events.cost_usd por org
 //    (ver aggregateLlmCost + migrations 088/089). Substitui o antigo chute de
 //    30% do faturado. Admin only — owner nunca recebe cogs/llmCost.
+//
+// A assimetria entre as duas agregações é o ponto: receita conta só venda, COGS
+// conta tudo. Analisar um voicemail custa Whisper/LLM igual, e esse custo é
+// nosso — então a margem por org já aparece com ele descontado.
 
 const PG_MAX_ROWS = 1000;
 
@@ -37,6 +45,9 @@ export const BILLING_HOW_YOU_ARE_BILLED = [
   "$0.0667 per minute of analyzed calls (≈ $1 per 15-min call)",
   "Billed in whole minutes, rounded up",
   "Calls under 30 seconds aren't billed",
+  // Sem esta linha o cliente não consegue reconciliar a fatura: ele vê N calls
+  // na lista e paga por menos que N, sem explicação em lugar nenhum.
+  "Calls that aren't sales conversations aren't billed",
   "Charged monthly, on the calendar month",
 ];
 
@@ -102,6 +113,13 @@ type AdminSupabase = ReturnType<typeof createAdminClient>;
 /**
  * Agrega calls por org num intervalo [from, to). Pagina pra não truncar no
  * limite do PostgREST. orgIds vazio → agrega todas as orgs.
+ *
+ * FILTRA call não-venda (decisão de produto de 18/09/2026: voicemail, engano e
+ * logística não são cobrados da org). Até agora isso passava despercebido porque
+ * call não-venda mal chegava ao banco; com o Front Desk (migration 109) elas
+ * entram, e sem o filtro a fatura do cliente subiria com conversa que não é
+ * venda. O custo de LLM dessas calls continua sendo NOSSO — ver aggregateLlmCost,
+ * que de propósito NÃO filtra.
  */
 async function aggregateCalls(
   supabase: AdminSupabase,
@@ -112,11 +130,17 @@ async function aggregateCalls(
   const byOrg = new Map<string, CallAgg>();
   let offset = 0;
   for (;;) {
-    let q = supabase
-      .from("calls")
-      .select("org_id, duration_seconds, created_at")
-      .gte("created_at", from)
-      .not("org_id", "is", null)
+    // applySalesCallOnly = `.not('is_sales_call','is',false)`, ou seja
+    // `IS DISTINCT FROM false`: mantém true E NULL. O NULL importa — são as
+    // calls legadas, anteriores ao gate de classificação. Com `eq(true)` elas
+    // desapareceriam do faturamento retroativamente.
+    let q = applySalesCallOnly(
+      supabase
+        .from("calls")
+        .select("org_id, duration_seconds, created_at")
+        .gte("created_at", from)
+        .not("org_id", "is", null),
+    )
       .order("created_at", { ascending: false })
       .range(offset, offset + PG_MAX_ROWS - 1);
     if (to) q = q.lt("created_at", to);
@@ -148,6 +172,10 @@ async function aggregateCalls(
  * É a fonte do COGS (admin only). Pagina como aggregateCalls. Ignora eventos
  * sem org (org_id null = não atribuível, ex.: tradução i18n). orgIds vazio →
  * todas as orgs.
+ *
+ * NÃO filtra call não-venda, ao contrário de aggregateCalls — de propósito.
+ * Analisar um voicemail gasta Whisper/LLM igual; a org não paga por isso, nós
+ * pagamos. Filtrar aqui esconderia custo real e inflaria a margem aparente.
  */
 async function aggregateLlmCost(
   supabase: AdminSupabase,

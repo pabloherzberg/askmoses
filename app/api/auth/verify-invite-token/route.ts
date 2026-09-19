@@ -2,7 +2,7 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveDestination } from '@/lib/auth/post-verify'
-import { recoverUnlinkedCalls } from '@/lib/services/ghl-call-recovery'
+import { reassignFrontDeskCalls } from '@/lib/services/ghl-call-recovery'
 import type { Role } from '@/lib/types'
 
 // nodejs + folga de tempo: ao aceitar o invite, se o membro já tem GHLUSERID
@@ -95,10 +95,11 @@ export async function GET(request: NextRequest) {
     .update({ active_org_id: orgId })
     .eq('id', userId)
 
-  // ─── 3b. Recupera calls bloqueadas do membro (se já tem GHLUSERID) ─────
+  // ─── 3b. Migra pro membro as calls que foram pro Front Desk ────────────
   // O owner pode ter vinculado o GHLUSERID enquanto o invite estava pendente —
-  // as calls desse vendedor entraram bloqueadas. Agora que aceitou, reprocessa
-  // em background. No-op se o membro não tiver vínculo GHL.
+  // e calls anteriores a esse vínculo foram atribuídas ao Front Desk da org.
+  // Agora que aceitou, elas passam pra ele (com a nota junto) em background.
+  // No-op se o membro não tiver vínculo GHL.
   after(async () => {
     try {
       const { data: trainerRow } = await admin
@@ -108,9 +109,9 @@ export async function GET(request: NextRequest) {
         .eq('user_id', userId)
         .maybeSingle()
       const linkedGhlUserId = trainerRow?.ghl_user_id as string | null
-      if (linkedGhlUserId) await recoverUnlinkedCalls(orgId, linkedGhlUserId)
+      if (linkedGhlUserId) await reassignFrontDeskCalls(orgId, linkedGhlUserId)
     } catch (err) {
-      console.error('[verify-invite-token] recuperação de calls bloqueadas falhou', err)
+      console.error('[verify-invite-token] migração de calls do Front Desk falhou', err)
     }
   })
 
