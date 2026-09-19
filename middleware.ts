@@ -32,7 +32,7 @@ function redirectByRole(role: Role, locale: Locale, baseUrl: string) {
 // sessão. /forgot-password é público porque é onde o user pede recovery
 // quando ainda não conseguiu entrar. Logged-in users são redirecionados
 // via lógica no bloco isPublic.
-const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/presentation', '/demobiz', '/tech', '/success']
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/success']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
