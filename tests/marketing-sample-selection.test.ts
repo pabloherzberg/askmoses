@@ -20,12 +20,27 @@ import {
   clipTranscript,
   deriveAggregates,
   buildPrompt,
+  needsContextFloor,
   MIN_WPM,
   MAX_WPM,
   MIN_WORDS_WITHOUT_DURATION,
   TARGET_CLOSED,
   TARGET_NOT_CLOSED,
 } from '@/lib/services/marketing-intelligence'
+
+// ─── Leitura do fonte (sem comentarios) ──────────────────────────────────────
+// Varios testes afirmam sobre o CODIGO do servico. Os comentarios dele citam
+// de proposito o que foi removido (`pickRandomSample`, a chamada antiga com
+// modelo fixo) para registrar o porque — entao a varredura tem que ignorar
+// comentario, senao acusa justamente a documentacao da correcao.
+
+async function serviceCode(): Promise<string> {
+  const { readFileSync } = await import('fs')
+  const { resolve } = await import('path')
+  return readFileSync(resolve(__dirname, '..', 'lib/services/marketing-intelligence.ts'), 'utf-8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^[ \t]*\/\/.*$/gm, '')
+}
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -230,17 +245,7 @@ describe('partitionSample › determinismo', () => {
   })
 
   it('nao sobrou sorteio no modulo', async () => {
-    const { readFileSync } = await import('fs')
-    const { resolve } = await import('path')
-    const src = readFileSync(
-      resolve(__dirname, '..', 'lib/services/marketing-intelligence.ts'),
-      'utf-8',
-    )
-    // Tira comentarios antes de olhar: a doc de partitionSample cita
-    // `pickRandomSample` de proposito, para registrar o que saiu e por que.
-    const code = src
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^[ \t]*\/\/.*$/gm, '')
+    const code = await serviceCode()
     expect(code).not.toMatch(/Math\.random/)
     expect(code).not.toMatch(/pickRandomSample/)
   })
@@ -478,5 +483,37 @@ describe('buildPrompt › separacao ganhas/perdidas', () => {
     const prompt = buildPrompt(sample, ctx)
     expect(prompt).not.toContain('CONTRAST ONLY\n')
     expect(prompt).toContain('0 that did NOT')
+  })
+})
+
+// ─── Piso de contexto do modelo ──────────────────────────────────────────────
+
+describe('needsContextFloor', () => {
+  it('rebaixa os modelos que nao comportam o prompt', () => {
+    expect(needsContextFloor('openai', 'gpt-4')).toBe(true)
+    expect(needsContextFloor('openai', 'gpt-3.5-turbo')).toBe(true)
+  })
+
+  it('nao mexe nos modelos com janela suficiente', () => {
+    expect(needsContextFloor('openai', 'gpt-4o')).toBe(false)
+    expect(needsContextFloor('openai', 'gpt-4o-mini')).toBe(false)
+    expect(needsContextFloor('openai', 'gpt-4-turbo')).toBe(false)
+    expect(needsContextFloor('gemini', 'gemini-2.5-flash-lite')).toBe(false)
+  })
+
+  it('janela desconhecida nao rebaixa — desconhecido nao e o mesmo que pequeno', () => {
+    expect(needsContextFloor('openai', 'gpt-6-que-ainda-nao-existe')).toBe(false)
+  })
+})
+
+describe('resolucao de modelo', () => {
+  it('nao passa modelo fixo para getActiveLlmModel na chamada principal', async () => {
+    const code = await serviceCode()
+    // A unica chamada com argumento e o rebaixamento pelo piso de contexto.
+    const chamadas = code.match(/getActiveLlmModel\([^)]*\)/g) ?? []
+    expect(chamadas).toContain('getActiveLlmModel()')
+    for (const c of chamadas) {
+      expect(c === 'getActiveLlmModel()' || c.includes('CONTEXT_FLOOR_MODEL')).toBe(true)
+    }
   })
 })

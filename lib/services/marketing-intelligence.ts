@@ -2,7 +2,8 @@ import { generateText } from 'ai'
 // marketing_intelligence — este é o serviço do módulo marketing_intelligence
 // (ver lib/constants/ai-modules.ts). Provider/chave do provider ativo; tuning
 // (temperature/max_tokens) de marketing_intelligence.
-import { getActiveLlmModel } from '@/lib/llm-provider'
+import { getActiveLlmModel, type ResolvedLlmModel } from '@/lib/llm-provider'
+import { contextWindowFor } from '@/lib/llm/catalog'
 import { getModuleTuning } from '@/lib/db/ai-module-configs'
 import { recordLlmUsage, computeCostForModel } from '@/lib/services/llm-usage'
 import { dbGetCalls, dbGetOrgCloseRate, dbGetOrgWonRate, type DbCall } from '@/lib/db/calls'
@@ -20,9 +21,27 @@ import type {
   MarketingSourceCall,
   ConfidenceLevel,
   MarketingCopyType,
+  LlmProvider,
 } from '@/lib/types'
 
-const MODEL = 'gpt-4o-mini'
+// ─── Modelo ──────────────────────────────────────────────────────────────────
+// Este modulo NAO fixa modelo. Antes chamava getActiveLlmModel('gpt-4o-mini'),
+// e como `openai.ownsModel()` aceita qualquer id que nao seja Gemini, esse
+// argumento SOBRESCREVIA o modelo que o admin escolheu em /admin/llm-config
+// sempre que o provider ativo era OpenAI. Sem argumento, o modulo respeita
+// llm_provider_settings.model — que e o que a tela promete.
+//
+// Custo nao e argumento para economizar aqui: a run acontece uma vez por
+// semana por org, e a diferenca entre gpt-4o-mini e gpt-4o e de centavos.
+
+// Piso de contexto. O prompt com 18 calls e transcricao head+tail fica na casa
+// dos 40k tokens de entrada. `gpt-4` (8k) e `gpt-3.5-turbo` (16k) sao
+// selecionaveis em /admin/llm-config e nao comportam isso — antes, o
+// gpt-4o-mini fixo protegia contra essa escolha por acidente. Com o piso, um
+// modelo pequeno e rebaixado em vez de estourar em runtime numa tela que o
+// cliente acabou de abrir.
+const MIN_CONTEXT_WINDOW = 100_000
+const CONTEXT_FLOOR_MODEL = 'gpt-4o'
 const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000
 // ─── Corte da transcricao: inicio + fim ──────────────────────────────────────
 // O corte anterior era `slice(0, 3000)`. Numa consulta de venda de 30 minutos
@@ -369,6 +388,30 @@ export interface SamplePartition {
   derived: DerivedAggregates
 }
 
+/**
+ * O modelo resolvido comporta o prompt?
+ *
+ * Janela desconhecida (modelo fora do catalogo) NAO rebaixa: desconhecido
+ * significa "nao sei", e rebaixar um modelo possivelmente melhor e pior que
+ * deixar passar.
+ */
+export function needsContextFloor(provider: LlmProvider, modelId: string): boolean {
+  const window = contextWindowFor(provider, modelId)
+  return window != null && window < MIN_CONTEXT_WINDOW
+}
+
+async function resolveModelWithFloor(): Promise<ResolvedLlmModel> {
+  const resolved = await getActiveLlmModel()
+  if (!needsContextFloor(resolved.provider, resolved.modelId)) return resolved
+
+  console.warn(
+    `[marketing] modelo ativo "${resolved.modelId}" tem janela de ` +
+      `${contextWindowFor(resolved.provider, resolved.modelId)} tokens, abaixo dos ` +
+      `${MIN_CONTEXT_WINDOW} que este prompt exige — rebaixando para ${CONTEXT_FLOOR_MODEL}.`,
+  )
+  return getActiveLlmModel(CONTEXT_FLOOR_MODEL)
+}
+
 function levelFor(confidence: number): ConfidenceLevel {
   if (confidence >= 80) return 'high'
   if (confidence >= 60) return 'medium'
@@ -676,7 +719,7 @@ export async function executeMarketingRun(params: {
   const orgContext = await loadOrgContext(params.orgId, sample.derived)
 
   const prompt = buildPrompt(sample, orgContext)
-  const { model, provider, modelId } = await getActiveLlmModel(MODEL)
+  const { model, provider, modelId } = await resolveModelWithFloor()
   const tuning = await getModuleTuning('marketing_intelligence')
   const llmResult = await generateText({
     model,
