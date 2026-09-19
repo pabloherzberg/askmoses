@@ -106,21 +106,35 @@ describe('Contrato › lib/services/chunk-pipeline.ts — catch-up de atribuiç�
     expect(pipelineSource).toContain('reassignFrontDeskCalls')
   })
 
-  it('o catch-up vem ANTES do email — o coaching vai pro rep certo', () => {
-    const catchUpIdx = pipelineSource.indexOf('reassignFrontDeskCalls(')
-    const emailIdx = pipelineSource.indexOf('sendGhlCoachingEmail(callId)')
+  it('o catch-up roda ANTES do scoring', () => {
+    // Dois motivos. (1) runGhlCallScoring lê a linha da call uma vez, no
+    // início: migrando antes, ele já captura o trainer_id certo. (2) o catch
+    // de scoring faz `return` — um catch-up depois dele seria pulado
+    // justamente nas calls que falharam, e elas ficariam presas no Front Desk
+    // pra sempre, já que os dois gatilhos de migração são eventos únicos.
+    const scoringIdx = pipelineSource.indexOf('runGhlCallScoring(callId)')
+    expect(scoringIdx).toBeGreaterThan(-1)
+    // lastIndexOf a partir do scoring: robusto a reformatação, e prova que
+    // existe uma chamada de catch-up no caminho que chega até o scoring.
+    const catchUpIdx = pipelineSource.lastIndexOf('await frontDeskCatchUp(callId)', scoringIdx)
     expect(catchUpIdx).toBeGreaterThan(-1)
-    expect(emailIdx).toBeGreaterThan(-1)
-    expect(catchUpIdx).toBeLessThan(emailIdx)
   })
 
-  it('o catch-up vem DEPOIS do scoring — reatribuir antes ressincronizaria o rep errado', () => {
-    // runGhlCallScoring lê a linha da call uma vez, no início, e usa esse
-    // trainer_id capturado no syncTrainerStats do fim.
+  it('o caminho de falha de consolidação também chama o catch-up', () => {
+    // Call sem transcript continua existindo e atribuída — sair dali sem o
+    // catch-up a deixaria presa no Front Desk igual.
+    const consolidationFail = pipelineSource.indexOf("processingStatus: 'transcription_failed'")
     const scoringIdx = pipelineSource.indexOf('runGhlCallScoring(callId)')
-    const catchUpIdx = pipelineSource.indexOf('reassignFrontDeskCalls(')
-    expect(scoringIdx).toBeGreaterThan(-1)
-    expect(scoringIdx).toBeLessThan(catchUpIdx)
+    const catchUpInFail = pipelineSource.indexOf('await frontDeskCatchUp(callId)', consolidationFail)
+    expect(consolidationFail).toBeGreaterThan(-1)
+    expect(catchUpInFail).toBeGreaterThan(consolidationFail)
+    expect(catchUpInFail).toBeLessThan(scoringIdx)
+  })
+
+  it('o catch-up só paga os lookups de migração pra call parada no Front Desk', () => {
+    // Sem este gate, toda call normal pagaria os 3 round trips de
+    // reassignFrontDeskCalls no caminho quente do finalize.
+    expect(pipelineSource).toMatch(/call\.trainer_id !== frontDeskId/)
   })
 })
 

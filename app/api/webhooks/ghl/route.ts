@@ -225,8 +225,11 @@ export async function POST(req: NextRequest) {
   // 5d. Lead já fechou (Won) — não registra mais calls dele. Depois do Won,
   //     dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls
   //     do contato; uma call nova do mesmo contactId só existiria por reagenda-
-  //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha) —
-  //     mesmo tratamento silencioso do gate de trainer não vinculado acima.
+  //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha).
+  //
+  //     Junto com o corte de call curta (5b), é um dos DOIS únicos descartes
+  //     silenciosos que sobraram no webhook. O terceiro — call de rep não
+  //     vinculado — deixou de existir: agora vai pro Front Desk (5e).
   try {
     const alreadyWon = await dbHasWonCall(orgConfig.orgId, contactId)
     if (alreadyWon) {

@@ -799,44 +799,15 @@ export async function dbGetOrgWonRate(orgId: string): Promise<OrgWonRate> {
   return { ...org, byTrainer }
 }
 
-/** Call bloqueada por falta de vínculo — o mínimo pra reprocessar (id + payload). */
-export interface UnlinkedCallRow {
-  id: string
-  ghl_payload: Record<string, unknown> | null
-}
-
-/**
- * Calls de uma org que entraram BLOQUEADAS (processing_status='unlinked_trainer')
- * por terem sido feitas por um determinado GHLUSERID. A recuperação automática
- * usa isso pra reprocessar quando o GHLUSERID vira um membro ativo.
- */
-export async function dbGetUnlinkedCallsByGhlUser(
-  orgId: string,
-  ghlUserId: string,
-): Promise<UnlinkedCallRow[]> {
-  const supabase = createAdminClient()
-
-  const { data, error } = await supabase
-    .from('calls')
-    .select('id, ghl_payload')
-    .eq('org_id', orgId)
-    .eq('ghl_user_id', ghlUserId)
-    .eq('processing_status', 'unlinked_trainer')
-
-  if (error) throw new Error(`dbGetUnlinkedCallsByGhlUser: ${error.message}`)
-  return (data ?? []) as UnlinkedCallRow[]
-}
-
 // ─── Reatribuição do Front Desk → rep real ───────────────────────────────────
 // Substitui a recuperação da 096. Lá a call entrava BLOQUEADA
 // (processing_status='unlinked_trainer') e o vínculo disparava o pipeline
 // inteiro do zero. Aqui ela já entrou, foi transcrita e pontuada sob o Front
 // Desk — reatribuir é trocar trainer_id e ressincronizar os dois reps.
 //
-// dbGetUnlinkedCallsByGhlUser acima ficou sem chamador em produção: nada mais
-// escreve 'unlinked_trainer'. Mantida porque as linhas escritas entre 30/06 e
-// 02/07 (quando o escritor existiu) ainda podem existir no banco e vão precisar
-// dela no backfill.
+// O leitor daquele estado (dbGetUnlinkedCallsByGhlUser) foi removido junto: nada
+// escreve 'unlinked_trainer' desde 02/07, e uma função exportada com nome
+// plausível filtrando por um status morto é convite a chamá-la sem efeito.
 
 /** Status em que o pipeline ainda está mexendo na call. Reatribuir no meio
  *  disso intercalaria dois syncTrainerStats concorrentes no mesmo rep — a call
@@ -901,10 +872,14 @@ export interface ReassignTrainerInput {
  * operação atômica, então não existe estado intermediário em que metade das
  * calls migrou.
  *
- * `updated_at` entra no patch de propósito: é ele que faz o carimbo semanal
- * (stamp_call_stats_weekly, migration 107) reprocessar as semanas afetadas no
- * próximo run e mover a call de rep também no histórico. Sem isso o
- * call_stats_weekly continuaria contando a call sob o Front Desk pra sempre.
+ * O bump de `updated_at` é o que faz o carimbo semanal (stamp_call_stats_weekly,
+ * migration 107) reprocessar as semanas afetadas no próximo run e mover a call
+ * de rep também no histórico — sem ele o call_stats_weekly continuaria contando
+ * a call sob o Front Desk. Quem garante esse bump é o trigger
+ * `trg_calls_updated_at` (107), incondicional em todo UPDATE de `calls`, que
+ * inclusive sobrescreve o que a aplicação mandar. O campo aqui é redundância
+ * deliberada: segue a convenção de todos os outros caminhos de UPDATE do
+ * arquivo, mas NÃO é ele que sustenta o carimbo.
  *
  * Devolve quantas linhas mudaram.
  */

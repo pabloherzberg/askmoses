@@ -33,9 +33,15 @@
 -- vínculo. Aqui a call é transcrita e pontuada NA HORA. Uma call bloqueada e
 -- invisível não vale nada pro dono do negócio, e o custo unitário é ~US$0,018.
 -- A 096 não é revertida: calls.ghl_user_id continua sendo a espinha da
--- reatribuição. O status 'unlinked_trainer' fica no CHECK (pode haver linhas
--- reais do período 30/06–02/07, quando o escritor existiu) — a limpeza dele
--- sai em migration própria, depois de contar essas linhas em produção.
+-- reatribuição.
+--
+-- Estado do 'unlinked_trainer', para quem vier depois: o valor continua no
+-- CHECK de processing_status e NÃO tem escritor desde 02/07 (55a8f3b removeu o
+-- único, que existira por dois dias). Restaram 3 linhas reais, todas de
+-- 01/07, numa única org — nunca transcritas, e a gravação no GHL provavelmente
+-- já expirou. A decisão foi deixá-las como estão: ninguém sentiu falta delas em
+-- dois meses, e mexer em produção por 3 calls não se paga. Não há limpeza
+-- planejada; se um dia alguém quiser, é uma linha de SQL.
 --
 -- ─── is_system NÃO é filtro de exibição ─────────────────────────────────────
 -- Tem quatro usos, todos funcionais:
@@ -93,9 +99,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS trainers_org_system_uidx
 -- ─── 3. Índice da reatribuição ──────────────────────────────────────────────
 -- A busca deixou de ser por processing_status='unlinked_trainer' (096) e
 -- passou a ser "as calls deste Front Desk feitas por este GHLUSERID".
--- calls_unlinked_ghl_user_id_idx continua no banco até a migration de limpeza
--- — inútil, mas barato, e dropá-lo antes de contar as linhas presas seria
--- perder o índice que a própria contagem usa.
+-- calls_unlinked_ghl_user_id_idx fica no banco: é um índice parcial sobre 3
+-- linhas, custa praticamente nada manter, e dropá-lo não traz benefício nenhum.
 
 CREATE INDEX IF NOT EXISTS calls_trainer_ghl_user_idx
   ON public.calls(trainer_id, ghl_user_id)
