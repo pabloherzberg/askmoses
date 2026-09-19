@@ -104,7 +104,7 @@ export async function PATCH(
   // ─── Membership alvo existe? Qual o papel? ───────────────────────────────
   const { data: membership, error: memErr } = await admin
     .from('memberships')
-    .select('role, users!inner(is_system)')
+    .select('role, users!memberships_user_id_fkey!inner(is_system)')
     .eq('user_id', userId)
     .eq('org_id', orgId)
     .maybeSingle()
