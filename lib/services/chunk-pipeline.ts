@@ -33,7 +33,7 @@ import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeli
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
 import { diarizeTranscript } from '@/lib/services/whisper'
-import { transcribeAudioBuffer } from '@/lib/services/whisper'
+import { transcribeAudioDetailed } from '@/lib/services/whisper'
 import { selfBaseUrl } from '@/lib/internal-url'
 
 function truncateStr(s: string, max: number): string {
@@ -252,13 +252,32 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
       throw new Error('chunk sem storage_path')
     }
     const audio = await getChunkAudio(chunk.storage_path)
-    const transcript = await transcribeAudioBuffer(audio, chunk.mime_type, {
+    const result = await transcribeAudioDetailed(audio, chunk.mime_type, {
       diarize: false,
       filename: `chunk-${chunk.chunk_index}.mp3`,
     })
+    const transcript = result.text
+
+    // Razão medida em TODO chunk, não só nos rejeitados: o limiar de
+    // DEGENERATE_SENTENCE_RATIO é provisório (não foi calibrado por chunk —
+    // call_chunks.transcript é zerado após a costura), e sem a distribuição
+    // dos chunks que PASSAM não há como recalibrar sem viés.
+    console.info('[chunk-pipeline] qualidade do chunk', {
+      callId: chunk.call_id,
+      chunkId: chunk.id,
+      chunkIndex: chunk.chunk_index,
+      durationMs: (chunk.end_ms ?? 0) - (chunk.start_ms ?? 0),
+      degenerate: result.degenerate,
+      ...result.stats,
+    })
 
     const chunkCost = whisperChunkCost(chunk)
-    await dbMarkChunkDone(chunk.id, transcript, chunkCost)
+    await dbMarkChunkDone(chunk.id, transcript, chunkCost, {
+      ratio: result.stats.ratio,
+      // Só quando rejeitado — em chunk bom o texto já está em `transcript`,
+      // e duplicá-lo dobraria o armazenamento sem ganho.
+      rejectedTranscript: result.degenerate ? result.raw : null,
+    })
     await deleteChunkAudio(chunk.storage_path)
 
     // Telemetria de custo p/ COGS — Whisper é por-minuto, custo já computado.
@@ -404,6 +423,27 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
         overlapMs: c.overlap_ms,
       })),
     )
+
+    // Todos os chunks vazios — o guard de saída degenerada descartou tudo, ou o
+    // áudio não tinha fala nenhuma. Marcar 'transcribed' com texto vazio seria
+    // mentir no status: a call apareceria como transcrita e o scoring lançaria
+    // depois ("has no transcript"), alertando com o motivo errado. Falha aqui,
+    // com o motivo certo, e não segue pro scoring nem pro e-mail.
+    if (!stitched.trim()) {
+      await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+      await dbClearChunkPayloads(callId)
+      await deleteAllChunkAudioForCall(callId)
+      await notifyPipelineFailure('transcription_failed', {
+        callId,
+        orgId: call?.org_id ?? undefined,
+        stage: 'consolidation',
+        reason: 'whisper_degenerate_output',
+        error: new Error('todos os chunks vieram vazios após o guard de saída degenerada'),
+        meta: { totalChunks: chunks.length },
+      })
+      await frontDeskCatchUp(callId)
+      return
+    }
 
     let finalTranscript = stitched
     try {

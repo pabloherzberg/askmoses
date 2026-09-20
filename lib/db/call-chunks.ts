@@ -27,6 +27,10 @@ export interface DbCallChunk {
   attempts: number
   last_error: string | null
   transcription_cost_usd: number | null
+  // Instrumentação do guard de saída degenerada (migration 110). NULL em
+  // chunk anterior a ela. Sobrevivem ao dbClearChunkPayloads de propósito.
+  transcript_ratio?: number | null
+  rejected_transcript?: string | null
   next_attempt_at: string
   created_at: string
   updated_at: string
@@ -152,14 +156,28 @@ export async function dbGetChunkStatusCounts(callId: string): Promise<ChunkStatu
   return counts
 }
 
+/** Instrumentação do guard de saída degenerada — ver migration 110. */
+export interface ChunkQuality {
+  /** Razão de sentenças únicas medida neste chunk. null = sem amostra. */
+  ratio: number | null
+  /** Texto cru, gravado SOMENTE quando o guard rejeitou o chunk. */
+  rejectedTranscript?: string | null
+}
+
 /** Marca um chunk como transcrito com sucesso. */
 export async function dbMarkChunkDone(
   id: string,
   transcript: string,
   costUsd: number | null,
+  quality?: ChunkQuality,
 ): Promise<void> {
   const supabase = createAdminClient()
 
+  // Chunk rejeitado pelo guard também é 'done' com transcript vazio: ele não
+  // falhou, simplesmente não tinha fala. Manter 'done' preserva intacta a
+  // contabilidade de conclusão (dbGetChunkStatusCounts), e o stitcher já
+  // descarta transcript vazio. A evidência vai nas colunas próprias, que o
+  // dbClearChunkPayloads não toca.
   const { error } = await supabase
     .from('call_chunks')
     .update({
@@ -167,6 +185,8 @@ export async function dbMarkChunkDone(
       transcript,
       transcription_cost_usd: costUsd,
       last_error: null,
+      transcript_ratio: quality?.ratio ?? null,
+      rejected_transcript: quality?.rejectedTranscript ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -326,6 +346,9 @@ export async function dbClearChunkPayloads(callId: string): Promise<void> {
 
   const { error } = await supabase
     .from('call_chunks')
+    // NÃO zera transcript_ratio nem rejected_transcript (migration 110): são a
+    // amostra de calibração do guard de saída degenerada e a evidência de
+    // rejeição. Ocupam pouco e precisam sobreviver à costura de propósito.
     .update({
       transcript: null,
       storage_path: null,
