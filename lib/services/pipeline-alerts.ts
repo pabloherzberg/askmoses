@@ -62,6 +62,7 @@ export type PipelineFailureReason =
   | "whisper_quota_exhausted"      // 429 insufficient_quota — créditos OpenAI acabaram
   | "whisper_invalid_format"       // Extensão/formato de áudio rejeitado pelo Whisper
   | "whisper_empty_response"       // Whisper retornou body vazio ou text: ""
+  | "whisper_degenerate_output"    // Whisper alucinou repetição em vez de transcrever
   // ── ffmpeg / Chunking ─────────────────────────────────────────────────────
   | "ffmpeg_not_found"             // ffmpeg-static não encontrado no bundle
   | "ffmpeg_error"                 // ffmpeg saiu com código não-zero
@@ -290,6 +291,8 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "URL de recording retornou 404/410 — GHL expirou ou removeu o arquivo. A call precisa ser re-processada manualmente a partir de um novo webhook.",
   recording_too_large:
     "Arquivo de áudio maior que 200 MB. Verificar duração da call. Para calls muito longas (>4h), considerar aumentar o limite ou pré-comprimir no GHL.",
+  whisper_degenerate_output:
+    "TODOS os chunks devolveram repetição degenerada em vez de transcrição — o áudio provavelmente não tem fala (caixa postal, ninguém atendeu, gravação muda). O guard de lib/services/whisper.ts descartou tudo, então não há transcript. Conferir a gravação no GHL antes de reprocessar: se não houver fala, reprocessar dá o mesmo resultado.",
   whisper_timeout:
     "Whisper não respondeu em 120s em 3 tentativas consecutivas. Pode ser instabilidade OpenAI ou chunk muito grande. Verificar status.openai.com. A call pode ser re-tentada.",
   whisper_http_4xx:
@@ -351,6 +354,7 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   recording_not_ready: "⏳",
   recording_url_expired: "🗑️",
   recording_too_large: "📦",
+  whisper_degenerate_output: "🔁",
   whisper_timeout: "⏱️",
   whisper_http_4xx: "❌",
   whisper_http_5xx: "💥",
