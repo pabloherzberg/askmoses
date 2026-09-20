@@ -17,8 +17,8 @@ import { formatDuration } from '@/lib/format'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import { sectionFeedbackFallback } from '@/lib/mock-data'
 import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
-import { deriveIntentBreakdownForCall } from '@/lib/services/intent'
-import { computeIntentIndex, intentIndexToDisplay, resolveIntentWeights } from '@/lib/utils/intentScore'
+import { resolveIntentWeights } from '@/lib/utils/intentScore'
+import { callState, showsEvaluation, type CallState } from '@/lib/call-state'
 import type { Call, Role, RubricColor, IntentSignal } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
@@ -32,6 +32,22 @@ const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: 
 const SECTION_COLORS: RubricColor[] = ['blue', 'amber', 'green', 'red', 'accent2']
 
 const GREEN_BG = 'var(--am-green-bg, rgba(34,217,160,0.12))'
+
+/**
+ * Qual frase explica a ausência de avaliação.
+ *
+ * Separada por MOTIVO porque os motivos são acionáveis de formas diferentes:
+ * "não houve gravação" é definitivo, "falhou a transcrição" pode ser
+ * reprocessado, e "não era conversa de venda" é o sistema tendo acertado ao
+ * não medir — não é falha nenhuma.
+ */
+function stateMessageKey(state: CallState, processingStatus: string | null): string {
+  if (state === 'not_sales') return 'stateNotSalesCall'
+  if (state === 'analyzing') return 'stateAnalyzing'
+  if (processingStatus === 'no_recording') return 'stateNoRecording'
+  if (processingStatus === 'transcription_failed') return 'stateTranscriptionFailed'
+  return 'stateUnavailable'
+}
 
 interface CallDetailProps {
   call: Call
@@ -56,10 +72,19 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
   const showAll = expanded || transcriptLines.length <= 4
   const visibleLines = showAll ? transcriptLines : transcriptLines.slice(0, 4)
 
-  // Phase 3: Use intent scores from IA (c.intentBreakdown), fallback to derived scores
-  const intentBreakdown = call.intentBreakdown && typeof call.intentBreakdown === 'object'
-    ? call.intentBreakdown
-    : deriveIntentBreakdownForCall(call.score, intentSignals)
+  // Em que estado esta call está (lib/call-state.ts). Os blocos de avaliação —
+  // score, pill de desfecho, rubrica, intent, strengths — só aparecem quando há
+  // medição real. Antes, uma call recém-chegada mostrava rubrica 0.0 nas cinco
+  // seções, Intent Index fabricado e a pill vermelha "Not Closed": três
+  // afirmações sobre uma conversa que ninguém avaliou.
+  const state = callState(call)
+  const showsEval = showsEvaluation(state)
+
+  // Sem fallback sintético. `deriveIntentBreakdownForCall` devolvia 5 fixo nos
+  // quatro sinais ignorando os parâmetros, e era daí que saía o Intent Index
+  // 2.5. Ausência de breakdown agora significa ausência: o bloco não renderiza.
+  const intentBreakdown =
+    call.intentBreakdown && typeof call.intentBreakdown === 'object' ? call.intentBreakdown : null
 
   // Use stored weights from analysis time, fallback to current org weights.
   // O índice é invariante à base: snapshots antigos (base 10) seguem corretos.
@@ -76,7 +101,6 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
     : intentSignals
 
   const finalIntentBreakdown = intentBreakdown
-  const intentIndex = computeIntentIndex(finalIntentBreakdown, weights)
 
   return (
     <div>
@@ -146,21 +170,26 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
           )}
         </div>
 
-        {/* Score + result */}
-        <div className="flex items-center gap-3">
-          <span
-            className="text-5xl font-semibold font-mono leading-none"
-            style={{ color: scoreColorVar(call.score) }}
-          >
-            {toDisplay5(call.score)}
-          </span>
-          <span
-            className="text-xs font-medium px-2.5 py-1 rounded-full font-mono"
-            style={{ background: result.bg, color: result.color }}
-          >
-            {outcomeLabel}
-          </span>
-        </div>
+        {/* Score + result. A pill sai junto do score de propósito: call_outcome
+            NULL vira 'not_closed' no mapper (lib/services/calls.ts), então numa
+            call sem análise a pill afirmaria um desfecho que nenhuma análise
+            inferiu. */}
+        {showsEval && (
+          <div className="flex items-center gap-3">
+            <span
+              className="text-5xl font-semibold font-mono leading-none"
+              style={{ color: scoreColorVar(call.score) }}
+            >
+              {toDisplay5(call.score)}
+            </span>
+            <span
+              className="text-xs font-medium px-2.5 py-1 rounded-full font-mono"
+              style={{ background: result.bg, color: result.color }}
+            >
+              {outcomeLabel}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Stage 2 (Actual Close / paying client) — owner/admin only. Separado
@@ -180,7 +209,11 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
           <p className="text-[13px] font-medium mb-4" style={{ color: 'var(--am-text)' }}>
             {t('rubricScores')}
           </p>
-          {call.sections && call.sections.length > 0 ? (
+          {!showsEval ? (
+            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
+              {t(stateMessageKey(state, call.processingStatus ?? null))}
+            </p>
+          ) : call.sections && call.sections.length > 0 ? (
             <div className="flex flex-col gap-4">
               {call.sections.map((section, i) => {
                 const isCriticalAlert = section.critical && section.score <= 40
@@ -227,8 +260,8 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
           )}
         </div>
 
-        {/* Ask Moses Intent Index */}
-        {signalsWithHistoricalWeights.length > 0 && (
+        {/* Ask Moses Intent Index — só com breakdown real gravado pela análise. */}
+        {showsEval && finalIntentBreakdown && signalsWithHistoricalWeights.length > 0 && (
           <IntentBreakdownComponent
             signals={signalsWithHistoricalWeights}
             scores={finalIntentBreakdown}
@@ -238,7 +271,9 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
         )}
       </div>
 
-      {/* Strengths + improvements (full width) */}
+      {/* Strengths + improvements — são saída da análise; sem ela, listas vazias
+          rotuladas "Strengths" sugeririam que a IA não achou nenhum ponto forte. */}
+      {showsEval && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div
           className="rounded-2xl p-5 border"
@@ -282,6 +317,8 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
           </ul>
         </div>
       </div>
+
+      )}
 
       {/* Transcript */}
       <div

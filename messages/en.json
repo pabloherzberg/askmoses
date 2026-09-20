@@ -409,7 +409,12 @@
       "coachingNotesFooter": "Notes are for reference only and are not saved.",
       "leadName": "Lead",
       "scriptUsed": "Script used",
-      "legacyScriptHint": "legacy"
+      "legacyScriptHint": "legacy",
+      "stateAnalyzing": "This call is being analyzed. Scores and insights will appear here once it's ready.",
+      "stateNoRecording": "No recording was available for this call, so it couldn't be analyzed.",
+      "stateTranscriptionFailed": "The recording couldn't be transcribed, so this call has no analysis.",
+      "stateUnavailable": "This call couldn't be processed, so it has no analysis.",
+      "stateNotSalesCall": "This call wasn't a sales conversation, so it wasn't scored."
     },
     "performanceTrend": {
       "noCalls": "No calls",
