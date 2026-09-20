@@ -409,7 +409,12 @@
       "coachingNotesFooter": "Las notas son solo de referencia y no se guardan.",
       "leadName": "Lead",
       "scriptUsed": "Script utilizado",
-      "legacyScriptHint": "legado"
+      "legacyScriptHint": "legado",
+      "stateAnalyzing": "Esta llamada se está analizando. Las puntuaciones e insights aparecerán aquí cuando estén listos.",
+      "stateNoRecording": "No había grabación para esta llamada, así que no se pudo analizar.",
+      "stateTranscriptionFailed": "No se pudo transcribir la grabación, así que esta llamada no tiene análisis.",
+      "stateUnavailable": "No se pudo procesar esta llamada, así que no tiene análisis.",
+      "stateNotSalesCall": "Esta llamada no era una conversación de venta, así que no se puntuó."
     },
     "performanceTrend": {
       "noCalls": "Sin llamadas",

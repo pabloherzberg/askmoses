@@ -14,7 +14,13 @@ import { computeIntentIndex, resolveIntentWeights } from '@/lib/utils/intentScor
 
 interface IntentBreakdownProps {
   signals: IntentSignal[]
-  scores: IntentBreakdown
+  /**
+   * Aceita o Record cru além do tipo nominal: os scores vêm do banco
+   * (calls.intent_breakdown, JSONB) como Record<string, number>, e o acesso
+   * abaixo já é por chave com fallback. Mesma escolha de computeIntentIndex
+   * em lib/utils/intentScore.ts, pelo mesmo motivo.
+   */
+  scores: IntentBreakdown | Record<string, number>
   variant?: 'compact' | 'detailed' | 'accordion'
   className?: string
   showTitle?: boolean

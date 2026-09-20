@@ -120,15 +120,27 @@ function parseLeadSource(raw: string | null | undefined): LeadSource | null {
 // gravado no banco — aqui apenas lemos, sem recalcular nem arredondar.
 //   - valor numérico válido → usado como está, clampado a 0–5;
 //   - ausente (calls antigas sem backfill) → fallback por resultado/IA.
-export function readStoredIntent(raw: unknown, result: CallResult): IntentScore {
-  // Intent ausente → fallback por resultado. Trata null/""/undefined antes do
-  // Number() porque `Number(null) === 0` (finito) mostraria 0 indevidamente.
-  if (raw === null || raw === undefined || raw === "") {
-    return resolveIntent(raw, result);
-  }
+/**
+ * Lê o intent GRAVADO da call. Ausência devolve `null` — não um número.
+ *
+ * O guard antigo já tentava tratar null/""/undefined antes do `Number()`,
+ * justamente porque `Number(null) === 0` é finito. Mas ele delegava a
+ * `resolveIntent`, que refaz o mesmo `Number()` dentro de `clampIntent` e
+ * devolve o MÍNIMO da escala. Resultado: toda call sem intent — em análise,
+ * sem gravação, não-venda — aparecia com intent 1, e esse 1 chegava à lista de
+ * calls e à ordenação de agendamentos como se fosse medição.
+ *
+ * Fabricar um valor por desfecho não faz sentido na leitura: `INTENT_BY_RESULT`
+ * pertence ao momento da ANÁLISE (app/api/analyze/route.ts ainda o usa via
+ * resolveIntent), onde houve inferência. Na leitura, ausência é ausência —
+ * quem exibe decide como mostrar (hoje, um traço).
+ */
+export function readStoredIntent(raw: unknown, result: CallResult): IntentScore | null {
+  void result; // mantido na assinatura: os dois call sites já passam o outcome.
+  if (raw === null || raw === undefined || raw === "") return null;
   const n = typeof raw === "number" ? raw : Number(raw);
-  if (Number.isFinite(n)) return Math.max(0, Math.min(5, n));
-  return resolveIntent(raw, result);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(5, n));
 }
 
 function toCall(db: DbCall): Call {

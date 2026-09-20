@@ -409,7 +409,12 @@
       "coachingNotesFooter": "Les notes sont fournies à titre indicatif et ne sont pas enregistrées.",
       "leadName": "Lead",
       "scriptUsed": "Script utilisé",
-      "legacyScriptHint": "ancien"
+      "legacyScriptHint": "ancien",
+      "stateAnalyzing": "Cet appel est en cours d'analyse. Les scores et insights apparaîtront ici une fois prêts.",
+      "stateNoRecording": "Aucun enregistrement n'était disponible pour cet appel, il n'a donc pas pu être analysé.",
+      "stateTranscriptionFailed": "L'enregistrement n'a pas pu être transcrit, cet appel n'a donc pas d'analyse.",
+      "stateUnavailable": "Cet appel n'a pas pu être traité, il n'a donc pas d'analyse.",
+      "stateNotSalesCall": "Cet appel n'était pas une conversation de vente, il n'a donc pas été noté."
     },
     "performanceTrend": {
       "noCalls": "Aucun appel",
