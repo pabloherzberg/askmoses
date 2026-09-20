@@ -90,7 +90,9 @@ export interface Call {
   durationSeconds: number | null;
   score: number;
   result: CallResult;
-  intent: IntentScore;
+  /** Intent gravado pela análise. null = não houve medição (em análise, falha
+   *  de pipeline, ou não-venda). Ver readStoredIntent. */
+  intent: IntentScore | null;
   prospect: string;
   lead_name?: string | null;
   lead_source?: LeadSource | null;

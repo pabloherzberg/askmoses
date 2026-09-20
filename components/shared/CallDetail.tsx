@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle, ArrowUpRight, AlertTriangle, FileText, Info } from 'lucide-react'
@@ -18,7 +19,8 @@ import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/c
 import { sectionFeedbackFallback } from '@/lib/mock-data'
 import { scoreColorVar, toDisplay5, feedbackTier } from '@/lib/score-display'
 import { resolveIntentWeights } from '@/lib/utils/intentScore'
-import { callState, showsEvaluation, type CallState } from '@/lib/call-state'
+import { callState, showsEvaluation, canReprocess, type CallState } from '@/lib/call-state'
+import { ReprocessButton } from '@/components/shared/ReprocessButton'
 import type { Call, Role, RubricColor, IntentSignal } from '@/lib/types'
 
 const rubricFields: { key: keyof Call['rubricScores']; labelKey: string; color: RubricColor }[] = [
@@ -62,6 +64,7 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
   const tOutcomes = useTranslations('Shared.outcomes')
   const tIntent = useTranslations('Intent')
   const locale = useLocale()
+  const router = useRouter()
   const [expanded, setExpanded] = useState(false)
   const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
   const outcomeLabel = call.result in RESULT_STYLES
@@ -210,9 +213,21 @@ export function CallDetail({ call, viewerRole, backHref, intentSignals = [] }: C
             {t('rubricScores')}
           </p>
           {!showsEval ? (
-            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
-              {t(stateMessageKey(state, call.processingStatus ?? null))}
-            </p>
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--am-muted)' }}>
+                {t(stateMessageKey(state, call.processingStatus ?? null))}
+              </p>
+              {/* A ação aparece só onde faz sentido (canReprocess): falha de
+                  pipeline. Dizer "não foi possível transcrever" e não oferecer
+                  a ação seria mandar a pessoa procurar a call na tabela. */}
+              {(viewerRole === 'owner' || viewerRole === 'admin') && canReprocess(call) && (
+                <ReprocessButton
+                  callId={call.id}
+                  hasSections={Array.isArray(call.sections) && call.sections.length > 0}
+                  onRefresh={() => router.refresh()}
+                />
+              )}
+            </div>
           ) : call.sections && call.sections.length > 0 ? (
             <div className="flex flex-col gap-4">
               {call.sections.map((section, i) => {

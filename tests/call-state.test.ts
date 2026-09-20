@@ -148,3 +148,41 @@ describe('caso real › badd86bb-1cf9-4498-9298-23b0fe85b468', () => {
     expect(canReprocess(call)).toBe(false)
   })
 })
+
+// ─── readStoredIntent: ausência é ausência ───────────────────────────────────
+
+describe('readStoredIntent', () => {
+  it('null devolve null, não o mínimo da escala', async () => {
+    // O guard antigo tratava null explicitamente mas delegava a resolveIntent,
+    // que refaz Number(null) === 0 dentro de clampIntent e devolve 1. Esse 1
+    // chegava à CallsTable e à ordenação de agendamentos como se fosse medição.
+    const { readStoredIntent } = await import('@/lib/services/calls')
+    expect(readStoredIntent(null, 'not_closed')).toBeNull()
+    expect(readStoredIntent(undefined, 'not_closed')).toBeNull()
+    expect(readStoredIntent('', 'closed')).toBeNull()
+  })
+
+  it('valor gravado é preservado', async () => {
+    const { readStoredIntent } = await import('@/lib/services/calls')
+    expect(readStoredIntent(3.4, 'closed')).toBe(3.4)
+    expect(readStoredIntent('2.5', 'not_closed')).toBe(2.5)
+  })
+
+  it('zero gravado é medição, não ausência', async () => {
+    // 49 calls na base têm intent 0 com os quatro sinais zerados — conversa
+    // curta em que o lead não demonstrou sinal nenhum. É medição legítima.
+    const { readStoredIntent } = await import('@/lib/services/calls')
+    expect(readStoredIntent(0, 'not_closed')).toBe(0)
+  })
+
+  it('clampa fora da escala', async () => {
+    const { readStoredIntent } = await import('@/lib/services/calls')
+    expect(readStoredIntent(9, 'closed')).toBe(5)
+    expect(readStoredIntent(-2, 'not_closed')).toBe(0)
+  })
+
+  it('lixo não-numérico devolve null, não um default por desfecho', async () => {
+    const { readStoredIntent } = await import('@/lib/services/calls')
+    expect(readStoredIntent('abc', 'closed')).toBeNull()
+  })
+})
