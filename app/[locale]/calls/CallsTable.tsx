@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone, FileText, History, X, Clock } from 'lucide-react'
+import { ChevronRight, ChevronDown, Phone, FileText, History, X, Clock } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { NotSalesCallPill } from '@/components/shared/NotSalesCallPill'
@@ -15,7 +15,13 @@ import {
   canReprocess as callIsReprocessable,
 } from '@/lib/call-state'
 import { SectionLabel } from '@/components/shared/SectionLabel'
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu'
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
 // Os conjuntos de status moraram aqui como constantes locais e foram pra
@@ -28,6 +34,26 @@ const REFRESH_MAX = 45 // ~6 minutos
 /** Ausência de medição. Mesmo símbolo que a coluna de score já usava. */
 function MutedDash() {
   return <span style={{ color: 'var(--am-muted)' }}>—</span>
+}
+
+// Categoria da call no filtro de resultado e na quebra do cabeçalho. Sai do
+// callState, não de `result`: toCall normaliza call_outcome NULL para
+// 'not_closed', então `result` sozinho junta venda perdida, não-venda e call
+// sem análise sob o mesmo "Not Closed".
+type ResultCategory = 'closed' | 'not_closed' | 'not_sales' | 'unanalyzed'
+type FilterableCategory = Exclude<ResultCategory, 'unanalyzed'>
+
+const FILTERABLE_CATEGORIES: readonly FilterableCategory[] = ['closed', 'not_closed', 'not_sales']
+
+// Não-venda (recado, caixa postal, engano) fica fora por padrão: em org com
+// muito inbound ela é a maioria das linhas e enterra as calls de venda.
+const DEFAULT_RESULT_FILTER: ReadonlySet<FilterableCategory> = new Set(['closed', 'not_closed'])
+
+function resultCategory(call: Call): ResultCategory {
+  const state = callState(call)
+  if (state === 'not_sales') return 'not_sales'
+  if (!showsEvaluation(state)) return 'unanalyzed'
+  return call.result === 'closed' ? 'closed' : 'not_closed'
 }
 
 // Call está completamente analisada se tem sections (rubrica preenchida pela IA).
@@ -92,7 +118,7 @@ export function CallsTable({
   const locale = useLocale()
   const t = useTranslations('Owner.calls')
   const tOutcomes = useTranslations('Shared.outcomes')
-  const [resultFilter, setResultFilter] = useState<string>('all')
+  const [resultFilter, setResultFilter] = useState<ReadonlySet<FilterableCategory>>(DEFAULT_RESULT_FILTER)
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
   // Source filter removido da UI (sem funcionalidade real ainda).
   // const [sourceFilter, setSourceFilter] = useState<string>('all')
@@ -122,17 +148,45 @@ export function CallsTable({
   const hasScripts = scriptsInCalls.length > 0
   const activeScript = scriptsInCalls.find((s) => s.isActive) ?? null
 
-  const filtered = useMemo(
+  // Os outros filtros definem a base do cabeçalho; o de resultado só decide o
+  // que aparece na tabela. Assim o total e a quebra por categoria continuam
+  // visíveis com categorias escondidas — ninguém procura uma call, não acha e
+  // conclui que ela sumiu.
+  const baseFiltered = useMemo(
     () => calls.filter((c) => {
-      if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
       if (scriptFilter !== 'all' && (c.scriptId ?? null) !== scriptFilter) return false
       if (wonFilter === 'won' && c.ghlWonStatus !== 'won') return false
       if (wonFilter === 'lost' && c.ghlWonStatus !== 'lost') return false
       return true
     }),
-    [calls, resultFilter, trainerFilter, scriptFilter, wonFilter]
+    [calls, trainerFilter, scriptFilter, wonFilter]
   )
+
+  // Call sem análise aparece sempre: não é Closed, nem Not Closed, nem
+  // não-venda — e escondê-la seria voltar a dizer algo que ninguém mediu.
+  const filtered = useMemo(
+    () => baseFiltered.filter((c) => {
+      const category = resultCategory(c)
+      return category === 'unanalyzed' || resultFilter.has(category)
+    }),
+    [baseFiltered, resultFilter]
+  )
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<ResultCategory, number> = { closed: 0, not_closed: 0, not_sales: 0, unanalyzed: 0 }
+    for (const c of baseFiltered) counts[resultCategory(c)]++
+    return counts
+  }, [baseFiltered])
+
+  const toggleResult = (category: FilterableCategory, checked: boolean) => {
+    setResultFilter((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(category)
+      else next.delete(category)
+      return next
+    })
+  }
 
   // Agrupa as calls filtradas por contactId — um registro por cliente. Dentro
   // do grupo as calls ficam em ordem temporal (mais nova primeiro) e os grupos
@@ -173,9 +227,31 @@ export function CallsTable({
     t('thDuration'), t('thIntent'), t('thScore'), t('thResult'), t('thWon'), '',
   ]
 
-  const countLabel = filtered.length === 1
-    ? t('callsAnalyzedOne', { count: filtered.length })
-    : t('callsAnalyzedOther', { count: filtered.length })
+  // Rótulos vêm das mesmas chaves das pílulas da tabela, não de texto próprio
+  // da mensagem: se o resumo dissesse "não são de venda" e a pílula "Não é
+  // venda", pareceriam categorias diferentes.
+  const summaryValues = {
+    total: baseFiltered.length,
+    closed: categoryCounts.closed,
+    closedLabel: tOutcomes('short.closed'),
+    notClosed: categoryCounts.not_closed,
+    notClosedLabel: tOutcomes('short.not_closed'),
+    notSales: categoryCounts.not_sales,
+    notSalesLabel: tOutcomes('notSalesCall'),
+    unanalyzed: categoryCounts.unanalyzed,
+  }
+  const countLabel = categoryCounts.unanalyzed > 0
+    ? t('callsSummaryWithUnanalyzed', summaryValues)
+    : t('callsSummary', summaryValues)
+
+  const categoryLabel = (category: FilterableCategory) =>
+    category === 'not_sales' ? tOutcomes('notSalesCall') : tOutcomes(`full.${category}`)
+  const resultFilterLabel =
+    resultFilter.size === FILTERABLE_CATEGORIES.length
+      ? tOutcomes('all')
+      : resultFilter.size === 0
+        ? t('filterNoResults')
+        : FILTERABLE_CATEGORIES.filter((c) => resultFilter.has(c)).map(categoryLabel).join(', ')
 
   // Renderiza a linha do cliente (call mais recente do contactId). Quando o
   // cliente tem histórico (>1 call), um botão abre o modal com todas as calls.
@@ -315,12 +391,27 @@ export function CallsTable({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <select className={selectClass} style={selectStyle} value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
-          <option value="all">{tOutcomes('all')}</option>
-          {CALL_OUTCOMES.map((o) => (
-            <option key={o.value} value={o.value}>{tOutcomes(`full.${o.value}`)}</option>
-          ))}
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={`${selectClass} inline-flex items-center gap-2`} style={selectStyle}>
+              {resultFilterLabel}
+              <ChevronDown size={14} style={{ color: 'var(--am-muted)' }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {FILTERABLE_CATEGORIES.map((category) => (
+              <DropdownMenuCheckboxItem
+                key={category}
+                checked={resultFilter.has(category)}
+                onCheckedChange={(checked) => toggleResult(category, checked === true)}
+                // Mantém o menu aberto: marcar várias opções seguidas é o uso normal.
+                onSelect={(e) => e.preventDefault()}
+              >
+                {categoryLabel(category)}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {showTrainerColumn && trainers.length > 0 && (
           <select className={selectClass} style={selectStyle} value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)}>
             <option value="all">{t('filterAllSalesPeople')}</option>
