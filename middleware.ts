@@ -156,7 +156,6 @@ export async function middleware(request: NextRequest) {
     if (!onPasswordPage) {
       const target = new URL(`/${locale}/password`, request.url)
       target.searchParams.set('welcome', '1')
-      target.searchParams.set('forced', '1')
       target.searchParams.set('next', role === 'trainer' ? '/me' : '/dashboard')
       return NextResponse.redirect(target)
     }

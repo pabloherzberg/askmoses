@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
   const homePath = resolveDestination(role, nextRaw)
 
   // Primeiro acesso após invite aceito: redireciona pra /password?welcome=1
-  // com next=<home original>. Página mostra banner "definir senha agora ou
-  // pular" — decisão Victor 2026-05-13: magic link continua funcionando, a
-  // senha é opcional.
-  // Cobre tanto type=invite (fluxo legado OTP) quanto type=magiclink gerado
-  // pelo verify-invite-token — ambos chegam aqui com password_set=false quando
-  // é o primeiro acesso do owner.
+  // com next=<home original>. Senha é obrigatória (decisão Victor 2026-09-22);
+  // o banner não tem "Pular" e o middleware trava em /password enquanto
+  // password_set === false.
+  // Cobre type=magiclink gerado pelo verify-invite-token (todo convite, desde
+  // 2026-09-22, nasce com password_set=false) e type=invite — links do token
+  // do Supabase enviados antes disso, que ainda podem estar no prazo.
   const passwordNotSet = data.session.user.app_metadata?.password_set === false
   if (typeRaw === 'invite' || (typeRaw === 'magiclink' && passwordNotSet)) {
     return NextResponse.redirect(

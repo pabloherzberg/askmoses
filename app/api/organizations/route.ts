@@ -1,8 +1,6 @@
 import { type NextRequest } from 'next/server'
-import { Resend } from 'resend'
 import { getSession, ok, unauthorized, forbidden } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
 import { checkRateLimitDb, rateLimitedResponse } from '@/lib/auth/rate-limit'
 import { requireSameOrigin } from '@/lib/auth/csrf'
@@ -130,8 +128,8 @@ export async function GET() {
 //   depois de criar.
 //
 //   Branches por estado do email:
-//   - Email não existe (caso comum): generateLink('invite') cria auth.users
-//     + token Supabase; email enviado via Resend com buildInviteEmail.
+//   - Email não existe (caso comum): createUser cria auth.users; convite
+//     via invite_tokens (034) + sendInviteEmail, igual ao reenvio.
 //   - Email já existe (Owner de outra org migrando, edge case): cria
 //     membership pending + invite_tokens isolado (034) via sendInviteEmail.
 //
@@ -338,25 +336,25 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // ─── 3B. Novo email: full bootstrap (auth.users + Supabase invite) ──────
+  // ─── 3B. Novo email: full bootstrap (auth.users + invite_tokens) ────────
+  // createUser em vez de generateLink({ type: 'invite' }): o token do
+  // Supabase fica preso ao teto do "Email OTP Expiration" (máx 24h) e o
+  // aceite dependia do type que chegava no verify-otp. Com invite_tokens o
+  // TTL é do código e o aceite passa sempre pelo verify-invite-token.
+  // app_metadata.role: lido por middleware/redirects pra rotear após login.
+  // app_metadata.password_set=false: senha obrigatória no primeiro acesso.
+  // app_metadata.org_id: NÃO setamos — fonte de verdade é users.active_org_id.
 
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: 'invite',
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email: ownerEmail,
-    options: {
-      redirectTo: `${origin}/api/auth/verify-otp?next=/dashboard`,
-      data: { name: ownerName, role: 'owner' },
-    },
+    user_metadata: { name: ownerName },
+    app_metadata: { role: 'owner', password_set: false },
   })
-  if (linkErr || !linkData?.user || !linkData.properties?.hashed_token) {
+  if (createErr || !created?.user) {
     await rollbackOrg()
-    return serverError('Não foi possível gerar o convite', linkErr)
+    return serverError('Não foi possível gerar o convite', createErr)
   }
-  const newUserId = linkData.user.id
-  const tokenHash = linkData.properties.hashed_token
-  // orgId no link: markInviteAccepted (verify-otp) aceita SÓ a membership
-  // dessa org — coerente com o handling multi-org de /api/invites Branch B.
-  const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&orgId=${encodeURIComponent(org.id)}&next=${encodeURIComponent('/dashboard')}`
+  const newUserId = created.user.id
 
   const rollbackFull = async () => {
     await admin.from('owners').delete().eq('user_id', newUserId)
@@ -364,17 +362,6 @@ export async function POST(request: NextRequest) {
     await admin.from('users').delete().eq('id', newUserId)
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
     await rollbackOrg()
-  }
-
-  // app_metadata.role: lido por middleware/redirects pra rotear após login.
-  // app_metadata.org_id: NÃO setamos — fonte de verdade é users.active_org_id.
-  const { error: metaErr } = await admin.auth.admin.updateUserById(newUserId, {
-    app_metadata: { role: 'owner' },
-  })
-  if (metaErr) {
-    await admin.auth.admin.deleteUser(newUserId).catch(() => {})
-    await rollbackOrg()
-    return serverError('Não foi possível criar o convite', metaErr)
   }
 
   // users.role + users.invite_status são deprecated mas ainda existem.
@@ -420,59 +407,31 @@ export async function POST(request: NextRequest) {
     return serverError('Não foi possível concluir o convite', ownerInsertErr)
   }
 
-  const { data: inviterRow } = await admin
-    .from('users')
-    .select('name')
-    .eq('id', session.user.id)
-    .maybeSingle()
-  const inviterName = inviterRow?.name ?? null
+  // Falha no envio: rollbackFull apaga a membership, e o FK ON DELETE CASCADE
+  // de invite_tokens leva junto o token que sendInviteEmail já gravou.
+  try {
+    const result = await sendInviteEmail({
+      userId: newUserId,
+      orgId: org.id,
+      role: 'owner',
+      inviteeName: ownerName,
+      inviteeEmail: ownerEmail,
+      orgName: org.name,
+      inviterId: session.user.id,
+      origin,
+      locale: body.locale,
+    })
 
-  const { subject, html } = buildInviteEmail({
-    inviteeName: ownerName,
-    role: 'owner',
-    orgName: org.name,
-    inviterName,
-    actionLink,
-    locale: body.locale,
-  })
-
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.warn(`[organizations] RESEND_API_KEY ausente — convite criado em modo mock. action_link=${actionLink}`)
     return ok({
       id: org.id,
       name: org.name,
       planCode: plan.code,
       ownerId: newUserId,
       ownerEmail,
-      emailDelivery: 'mocked',
+      ...result,
     })
-  }
-
-  const resend = new Resend(apiKey)
-  const devOverride = process.env.DEV_EMAIL_OVERRIDE
-  const toAddress = devOverride ?? ownerEmail
-
-  const { data: emailResult, error: sendErr } = await resend.emails.send({
-    from: 'AskMoses.AI <noreply@askmoses.ai>',
-    to: toAddress,
-    subject,
-    html,
-  })
-
-  if (sendErr) {
-    console.error('[organizations] Resend falhou — desfazendo criação completa', sendErr)
+  } catch (err) {
     await rollbackFull()
-    return serverError('Não foi possível enviar o email do convite', sendErr)
+    return serverError('Não foi possível enviar o email do convite', err)
   }
-
-  return ok({
-    id: org.id,
-    name: org.name,
-    planCode: plan.code,
-    ownerId: newUserId,
-    ownerEmail,
-    emailDelivery: 'sent',
-    emailId: emailResult?.id ?? null,
-  })
 }
