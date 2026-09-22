@@ -409,7 +409,12 @@
       "coachingNotesFooter": "Notes are for reference only and are not saved.",
       "leadName": "Lead",
       "scriptUsed": "Script used",
-      "legacyScriptHint": "legacy"
+      "legacyScriptHint": "legacy",
+      "stateAnalyzing": "This call is being analyzed. Scores and insights will appear here once it's ready.",
+      "stateNoRecording": "No recording was available for this call, so it couldn't be analyzed.",
+      "stateTranscriptionFailed": "The recording couldn't be transcribed, so this call has no analysis.",
+      "stateUnavailable": "This call couldn't be processed, so it has no analysis.",
+      "stateNotSalesCall": "This call wasn't a sales conversation, so it wasn't scored."
     },
     "performanceTrend": {
       "noCalls": "No calls",
@@ -566,12 +571,8 @@
     "recoverySubtitle": "You're verified. Set a new password to finish signing in.",
     "welcome": {
       "aria": "Welcome",
-      "close": "Close",
-      "title": "Welcome! Want to set a password now?",
-      "body": "You can skip and keep signing in via magic link. If you prefer, set a password here in seconds.",
-      "skip": "Skip for now",
-      "forcedTitle": "Set a password to continue",
-      "forcedBody": "As the organization owner, a password is required before you can access the dashboard. Choose one below — it should take less than a minute."
+      "title": "Set a password to continue",
+      "body": "A password is required before you can access AskMoses. Choose one below — it should take less than a minute."
     },
     "form": {
       "newLabel": "New password",

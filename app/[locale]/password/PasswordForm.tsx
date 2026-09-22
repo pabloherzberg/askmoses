@@ -9,9 +9,12 @@ interface Props {
   // Caso de uso: primeiro login pós-invite (?welcome=1) — após salvar a senha,
   // leva o Owner/Trainer direto pro home da role em vez de ficar na página.
   welcomeRedirect?: string | null
+  // "Você pode continuar entrando por magic link" — escondida no primeiro
+  // acesso, onde a senha é obrigatória e a nota contradiria o banner.
+  showMagicLinkNote?: boolean
 }
 
-export function PasswordForm({ welcomeRedirect }: Props = {}) {
+export function PasswordForm({ welcomeRedirect, showMagicLinkNote = true }: Props = {}) {
   const t = useTranslations('Password.form')
   const locale = useLocale()
 
@@ -119,9 +122,11 @@ export function PasswordForm({ welcomeRedirect }: Props = {}) {
         >
           {submitting ? t('submitting') : t('submit')}
         </button>
-        <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-          {t('magicLinkNote')}
-        </span>
+        {showMagicLinkNote && (
+          <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
+            {t('magicLinkNote')}
+          </span>
+        )}
       </div>
 
       {success && (

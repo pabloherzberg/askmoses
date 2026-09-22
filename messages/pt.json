@@ -409,7 +409,12 @@
       "coachingNotesFooter": "As notas são apenas para referência e não são salvas.",
       "leadName": "Lead",
       "scriptUsed": "Script utilizado",
-      "legacyScriptHint": "legado"
+      "legacyScriptHint": "legado",
+      "stateAnalyzing": "Esta chamada está sendo analisada. As notas e insights aparecem aqui quando ficarem prontos.",
+      "stateNoRecording": "Não havia gravação para esta chamada, então não foi possível analisá-la.",
+      "stateTranscriptionFailed": "Não foi possível transcrever a gravação, então esta chamada não tem análise.",
+      "stateUnavailable": "Não foi possível processar esta chamada, então ela não tem análise.",
+      "stateNotSalesCall": "Esta chamada não era uma conversa de venda, então não foi pontuada."
     },
     "performanceTrend": {
       "noCalls": "Sem chamadas",
@@ -566,12 +571,8 @@
     "recoverySubtitle": "Você foi verificado. Defina uma nova senha para concluir o acesso.",
     "welcome": {
       "aria": "Bem-vindo",
-      "close": "Fechar",
-      "title": "Bem-vindo! Que tal definir uma senha agora?",
-      "body": "Você pode pular e continuar entrando por magic link. Se preferir, define uma senha aqui em segundos.",
-      "skip": "Pular por enquanto",
-      "forcedTitle": "Defina uma senha para continuar",
-      "forcedBody": "Como owner da organização, uma senha é obrigatória antes de acessar o dashboard. Defina uma abaixo — leva menos de um minuto."
+      "title": "Defina uma senha para continuar",
+      "body": "Uma senha é obrigatória antes de acessar o AskMoses. Defina uma abaixo — leva menos de um minuto."
     },
     "form": {
       "newLabel": "Nova senha",

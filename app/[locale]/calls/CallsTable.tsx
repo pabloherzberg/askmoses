@@ -3,119 +3,37 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle, History, X, Clock } from 'lucide-react'
+import { ChevronRight, Phone, FileText, History, X, Clock } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { NotSalesCallPill } from '@/components/shared/NotSalesCallPill'
 import { IntentCell } from '@/components/shared/IntentCell'
+import { ReprocessButton } from '@/components/shared/ReprocessButton'
+import {
+  callState,
+  showsEvaluation,
+  canReprocess as callIsReprocessable,
+} from '@/lib/call-state'
 import { SectionLabel } from '@/components/shared/SectionLabel'
 import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
-const FAILED_STATUSES = new Set(['transcription_failed', 'no_recording', 'auth_expired', 'webhook_failed'])
-const IN_PROGRESS_STATUSES = new Set(['processing', 'queued_for_chunking', 'chunking', 'awaiting_chunks', 'consolidating', 'transcribed'])
+// Os conjuntos de status moraram aqui como constantes locais e foram pra
+// lib/call-state.ts — client-safe, compartilhado com o CallDetail. As cópias
+// divergiam: esta não tinha 'pending', e a de lib/db/calls.ts não tem
+// 'transcribed'. Ver a nota lá sobre por que a do servidor continua separada.
 const REFRESH_INTERVAL_MS = 8_000
 const REFRESH_MAX = 45 // ~6 minutos
+
+/** Ausência de medição. Mesmo símbolo que a coluna de score já usava. */
+function MutedDash() {
+  return <span style={{ color: 'var(--am-muted)' }}>—</span>
+}
 
 // Call está completamente analisada se tem sections (rubrica preenchida pela IA).
 // Score 0.0 sozinho não é critério — pode ser score legítimo.
 function isAnalysisComplete(call: Call): boolean {
   return Array.isArray(call.sections) && call.sections.length > 0
-}
-
-// Mostra o botão se a call falhou OU está em progresso sem análise completa.
-function shouldShowReprocessButton(call: Call): boolean {
-  const status = call.processingStatus ?? null
-  if (status && FAILED_STATUSES.has(status)) return true
-  if (status && IN_PROGRESS_STATUSES.has(status) && !isAnalysisComplete(call)) return true
-  return false
-}
-
-type ReprocessState = 'idle' | 'loading' | 'queued' | 'error'
-
-function ReprocessButton({ callId, hasSections, onRefresh }: { callId: string; hasSections: boolean; onRefresh: () => void }) {
-  const [state, setState] = useState<ReprocessState>('idle')
-  const [errorMsg, setErrorMsg] = useState<string>('')
-  const t = useTranslations('Owner.calls.reprocess')
-
-  // Quando em 'queued', faz refresh periódico. O pai para de renderizar
-  // este botão quando sections chegarem (análise finalizada).
-  useEffect(() => {
-    if (state !== 'queued') return
-    let count = 0
-    const id = setInterval(() => {
-      count++
-      onRefresh()
-      if (count >= REFRESH_MAX) clearInterval(id)
-    }, REFRESH_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [state, onRefresh])
-
-  // Sections chegaram — o pai vai desmontar este componente, mas se por algum
-  // motivo ainda estiver montado, muda estado local para idle.
-  useEffect(() => {
-    if (state === 'queued' && hasSections) setState('idle')
-  }, [hasSections, state])
-
-  const handleClick = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (state !== 'idle') return
-    setState('loading')
-    setErrorMsg('')
-    try {
-      const res = await fetch(`/api/calls/${callId}/reprocess`, { method: 'POST' })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(body?.error?.message ?? `HTTP ${res.status}`)
-      }
-      setState('queued')
-      onRefresh()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error('[reprocess]', callId, msg)
-      setErrorMsg(msg)
-      setState('error')
-      setTimeout(() => setState('idle'), 6000)
-    }
-  }, [callId, state, onRefresh])
-
-  if (state === 'queued') {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap"
-        style={{ color: 'var(--am-blue)', background: 'rgba(94,179,255,0.12)' }}
-      >
-        <RefreshCw size={11} className="animate-spin" />
-        {t('processing')}
-      </span>
-    )
-  }
-
-  if (state === 'error') {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap cursor-help"
-        style={{ color: 'var(--am-red)', background: 'rgba(255,94,94,0.12)' }}
-        title={errorMsg}
-      >
-        <AlertCircle size={12} />
-        {t('error')}
-      </span>
-    )
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={state === 'loading'}
-      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
-      style={{ color: 'var(--am-amber)', background: 'rgba(255,171,46,0.12)', border: '1px solid rgba(255,171,46,0.25)' }}
-      title={t('tooltip')}
-    >
-      <RefreshCw size={11} className={state === 'loading' ? 'animate-spin' : ''} />
-      {state === 'loading' ? t('queuing') : t('label')}
-    </button>
-  )
 }
 
 // Mesmo badge/cores do Intent Analysis (components/shared/IntentDashboard.tsx) —
@@ -262,6 +180,8 @@ export function CallsTable({
   // Renderiza a linha do cliente (call mais recente do contactId). Quando o
   // cliente tem histórico (>1 call), um botão abre o modal com todas as calls.
   const renderRow = (call: Call, group: CallGroup) => {
+    const state = callState(call)
+    const showsEval = showsEvaluation(state)
     const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
     const outcomeLabel = call.result in RESULT_STYLES
       ? tOutcomes(`short.${call.result}`)
@@ -327,23 +247,30 @@ export function CallsTable({
             {formatDuration(call.durationSeconds)}
           </span>
         </td>
-        {/* Intent (1–5): só o número + tooltip com a mensagem fixa.
-            Sem estrelas, sem badge colorido (decisão Task C). */}
+        {/* Intent, score e desfecho só aparecem com medição real. Antes, call
+            em análise ou com falha de pipeline mostrava Intent 1 (fabricado por
+            readStoredIntent), score 0.0 e a pill "Not Closed" — três afirmações
+            sobre uma conversa que ninguém avaliou. Traço é o mesmo símbolo que
+            a coluna de score já usava na não-venda. */}
         <td className="px-4 py-3">
-          <IntentCell score={call.intent} />
+          {showsEval ? <IntentCell score={call.intent} /> : <MutedDash />}
         </td>
-        {call.isSalesCall === false ? (
-          <>
-            <td className="px-4 py-3"><span style={{ color: 'var(--am-muted)' }}>—</span></td>
-            <td className="px-4 py-3"><NotSalesCallPill label={tOutcomes('notSalesCall')} /></td>
-          </>
-        ) : (
+        {showsEval ? (
           <>
             <td className="px-4 py-3"><ScorePill score={call.score} /></td>
             <td className="px-4 py-3">
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
                 {outcomeLabel}
               </span>
+            </td>
+          </>
+        ) : (
+          <>
+            <td className="px-4 py-3"><MutedDash /></td>
+            <td className="px-4 py-3">
+              {state === 'not_sales'
+                ? <NotSalesCallPill label={tOutcomes('notSalesCall')} />
+                : <MutedDash />}
             </td>
           </>
         )}
@@ -364,7 +291,7 @@ export function CallsTable({
                 {t('groupViewAll', { count: group.calls.length })}
               </button>
             )}
-            {canReprocess && shouldShowReprocessButton(call) ? (
+            {canReprocess && callIsReprocessable(call) ? (
               <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
             ) : (
               <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
@@ -491,7 +418,7 @@ export function CallsTable({
                 const label = call.result in RESULT_STYLES
                   ? tOutcomes(`short.${call.result}`)
                   : tOutcomes('unknown')
-                const showReprocess = canReprocess && shouldShowReprocessButton(call)
+                const showReprocess = canReprocess && callIsReprocessable(call)
                 const goToDetail = () => router.push(`/${locale}/calls/${call.id}`)
                 return (
                   // Linha como <div> (não <button>) para permitir aninhar o
@@ -558,7 +485,7 @@ export function CallsTable({
                         </span>
                         <span className="inline-flex items-center gap-1">
                           {t('thIntent')}
-                          <IntentCell score={call.intent} />
+                          {showsEvaluation(callState(call)) ? <IntentCell score={call.intent} /> : <MutedDash />}
                         </span>
                         <span className="inline-flex items-center gap-1">
                           {t('thWon')}
@@ -567,7 +494,7 @@ export function CallsTable({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {call.isSalesCall !== false && <ScorePill score={call.score} />}
+                      {showsEvaluation(callState(call)) && <ScorePill score={call.score} />}
                       {showReprocess ? (
                         <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
                       ) : (

@@ -31,8 +31,9 @@ export interface SendInviteResult {
 }
 
 // Gera token próprio (tabela invite_tokens, migration 034) + envia email.
-// Compartilhado entre POST /api/invites Branch A (user existente convidado
-// pra nova org) e POST /api/invites/[id]/resend (reenvio).
+// Único caminho de convite: POST /api/invites (user novo e existente),
+// POST /api/organizations (owner novo e existente), reenvio
+// (POST /api/invites/[id]/resend) e troca de email do owner pelo admin.
 //
 // Sequência (idempotente — pode chamar várias vezes pra mesma membership):
 //   1) invalida tokens ativos da (user, org) via RPC — se 2 reenvios
