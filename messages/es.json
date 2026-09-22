@@ -571,12 +571,8 @@
     "recoverySubtitle": "Te hemos verificado. Define una nueva contraseña para terminar el acceso.",
     "welcome": {
       "aria": "Bienvenido",
-      "close": "Cerrar",
-      "title": "¡Bienvenido! ¿Quieres definir una contraseña ahora?",
-      "body": "Puedes saltarte este paso y seguir entrando por magic link. Si lo prefieres, define una contraseña aquí en segundos.",
-      "skip": "Saltar por ahora",
-      "forcedTitle": "Define una contraseña para continuar",
-      "forcedBody": "Como owner de la organización, una contraseña es obligatoria antes de acceder al dashboard. Define una abajo — toma menos de un minuto."
+      "title": "Define una contraseña para continuar",
+      "body": "Una contraseña es obligatoria antes de acceder a AskMoses. Define una abajo — toma menos de un minuto."
     },
     "form": {
       "newLabel": "Nueva contraseña",
