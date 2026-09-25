@@ -36,6 +36,18 @@ export function toNumber5(s100: number): number {
   return s100 / 20
 }
 
+// Section scores from `calls.sections[].score` come in a mixed scale: the AI
+// writes 0–100 (canonical, post migration 038), but rows seeded/backfilled
+// before that still carry 0–5. `raw > 5` disambiguates which scale a given
+// value is already in and normalizes to 0–100. Only correct while every
+// value ≤ 5 in the wild is legitimately a pre-038 row — a real 0–100 score
+// of e.g. 3 (a very bad call) would be misread as "3 on the old 0–5 scale"
+// and inflated to 60. See checklist §5.2 — dormant while all such values are
+// exactly 0, but will misfire the day a real low score appears in this range.
+export function normalizeSectionScore(raw: number): number {
+  return raw > 5 ? raw : raw * 20
+}
+
 export function toDisplay5(s100: number): string {
   return (s100 / 20).toFixed(1)
 }

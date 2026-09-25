@@ -74,6 +74,7 @@ const SCHEMA = `
     is_sales_call boolean,
     intent smallint,
     call_date date,
+    scoring_status text,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
   );
