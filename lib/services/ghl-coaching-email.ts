@@ -1,6 +1,6 @@
 import { Resend } from "resend"
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
-import { dbGetTrainerById } from "@/lib/db/trainers"
+import { dbGetTrainerById, dbGetTrainerDeliverability } from "@/lib/db/trainers"
 import { buildCoachingEmail } from "@/lib/email/coaching-template"
 
 interface DbSectionRow {
@@ -32,6 +32,40 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
   }
   if (call.email_sent) {
     return
+  }
+
+  // Dois motivos pra NÃO existir destinatário. Vale pro GHL e pro upload manual
+  // (este arquivo é chamado do chunk-pipeline, compartilhado pelos dois).
+  //
+  //   1. FRONT DESK — o email em `users` é sintético (@system.askmoses.ai) e o
+  //      calls.trainer_email podia ser o endereço REAL de alguém que não está na
+  //      plataforma. Por isso o gate é por is_system, e NÃO por "trainer_email
+  //      vazio": é justamente quando o campo está preenchido que existe risco de
+  //      mandar coaching não solicitado pra um terceiro.
+  //
+  //   2. CONVITE PENDENTE — a pessoa ainda não entrou no sistema. Receber a
+  //      análise da própria call por email antes de ter login é estranho: ela
+  //      recebe quando aceitar. Como email_sent fica false, dá pra disparar
+  //      retroativamente depois sem perder nada.
+  //
+  // Call sem trainer_id (legado / upload antigo) não passa por aqui — segue o
+  // caminho antigo, decidido só por trainer_email.
+  if (call.trainer_id) {
+    const deliverability = await dbGetTrainerDeliverability(call.trainer_id)
+    if (deliverability?.isSystem) {
+      console.info("[ghl-coaching-email] skip — call do Front Desk (rep de sistema)", {
+        callId,
+        trainerId: call.trainer_id,
+      })
+      return
+    }
+    if (deliverability && !deliverability.inviteAccepted) {
+      console.info("[ghl-coaching-email] skip — trainer ainda não aceitou o convite", {
+        callId,
+        trainerId: call.trainer_id,
+      })
+      return
+    }
   }
 
   // Fallback: trainer_email pode vir vazio do GHL (ex.: merge tag que não

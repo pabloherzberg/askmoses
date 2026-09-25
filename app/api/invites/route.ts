@@ -1,9 +1,7 @@
 import { type NextRequest } from 'next/server'
-import { Resend } from 'resend'
 import { getSession, getActiveOrgContext, ok, unauthorized, forbidden, requireActiveSubscription, requireOwnerWrite } from '@/lib/auth'
 import { requireSameOrigin } from '@/lib/auth/csrf'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { buildInviteEmail } from '@/lib/email/invite-template'
 import { sendInviteEmail } from '@/lib/email/send-invite'
 import { dbGetMemberGhlUserIdsByOrg } from '@/lib/db/trainers'
 import {
@@ -243,12 +241,17 @@ export async function POST(request: NextRequest) {
     const maxSeats = planNested?.max_sales_people
 
     if (typeof maxSeats === 'number') {
+      // users!inner + is_system=false: o Front Desk é uma linha NOSSA, não um
+      // assento que o cliente comprou — contá-lo faria uma org no limite perder
+      // um rep real pro rep de sistema. Espelha a mesma exclusão dentro de
+      // enforce_seat_limit() (migration 109), que é o gate atômico no banco.
       const { count, error: countErr } = await admin
         .from('memberships')
-        .select('*', { count: 'exact', head: true })
+        .select('*, users!memberships_user_id_fkey!inner(is_system)', { count: 'exact', head: true })
         .eq('org_id', targetOrgId)
         .eq('role', 'trainer')
         .in('invite_status', ['pending', 'accepted'])
+        .eq('users.is_system', false)
       if (countErr) return serverError('Não foi possível contar seats', countErr)
 
       if ((count ?? 0) >= maxSeats) {
@@ -392,27 +395,24 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // ─── Branch B: new user → full invite flow ───────────────────────────────
+  // ─── Branch B: new user → createUser + invite_tokens ─────────────────────
+  // Mesmo racional do POST /api/organizations 3B: createUser em vez de
+  // generateLink({ type: 'invite' }) tira o convite do teto de 24h do token
+  // do Supabase; o TTL passa a ser o de invite_tokens e o aceite passa
+  // sempre pelo verify-invite-token (só aquela membership).
+  // app_metadata.role: lido por middleware/redirects pra rotear após login.
+  // app_metadata.password_set=false: senha obrigatória no primeiro acesso.
+  // app_metadata.org_id: NÃO setamos — fonte de verdade é users.active_org_id.
 
-  const origin = request.nextUrl.origin
-  const homePath = targetRole === 'trainer' ? '/me' : '/dashboard'
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: 'invite',
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email,
-    options: {
-      redirectTo: `${origin}/api/auth/verify-otp?next=${homePath}`,
-      data: { name, role: targetRole },
-    },
+    user_metadata: { name },
+    app_metadata: { role: targetRole, password_set: false },
   })
-  if (linkErr || !linkData?.user || !linkData.properties?.hashed_token) {
-    return serverError('Não foi possível gerar o convite', linkErr)
+  if (createErr || !created?.user) {
+    return serverError('Não foi possível gerar o convite', createErr)
   }
-  const newUserId = linkData.user.id
-  const tokenHash = linkData.properties.hashed_token
-  // orgId no link: markInviteAccepted (verify-otp) aceita SÓ a membership
-  // dessa org. Sem isso, voltaria a aceitar todas as pendentes do user de
-  // uma vez (bug histórico do multi-org).
-  const actionLink = `${origin}/api/auth/verify-otp?token_hash=${encodeURIComponent(tokenHash)}&type=invite&orgId=${encodeURIComponent(targetOrgId)}&next=${encodeURIComponent(homePath)}`
+  const newUserId = created.user.id
 
   const rollback = async () => {
     if (targetRole === 'trainer') {
@@ -423,16 +423,6 @@ export async function POST(request: NextRequest) {
     await admin.from('memberships').delete().eq('user_id', newUserId)
     await admin.from('users').delete().eq('id', newUserId)
     await admin.auth.admin.deleteUser(newUserId).catch(() => {})
-  }
-
-  // app_metadata.role: lido por middleware/redirects pra rotear após login.
-  // app_metadata.org_id: NÃO setamos — fonte de verdade é users.active_org_id.
-  const { error: metaErr } = await admin.auth.admin.updateUserById(newUserId, {
-    app_metadata: { role: targetRole },
-  })
-  if (metaErr) {
-    await admin.auth.admin.deleteUser(newUserId).catch(() => {})
-    return serverError('Não foi possível criar o convite', metaErr)
   }
 
   // users.role + users.invite_status são deprecated mas ainda existem.
@@ -497,25 +487,21 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { data: inviterRow } = await admin
-    .from('users')
-    .select('name')
-    .eq('id', callerId)
-    .maybeSingle()
-  const inviterName = inviterRow?.name ?? null
+  // Falha no envio: rollback apaga a membership, e o FK ON DELETE CASCADE
+  // de invite_tokens leva junto o token que sendInviteEmail já gravou.
+  try {
+    const result = await sendInviteEmail({
+      userId: newUserId,
+      orgId: targetOrgId,
+      role: targetRole,
+      inviteeName: name,
+      inviteeEmail: email,
+      orgName: org.name,
+      inviterId: callerId,
+      origin: request.nextUrl.origin,
+      locale: body.locale,
+    })
 
-  const { subject, html } = buildInviteEmail({
-    inviteeName: name,
-    role: targetRole,
-    orgName: org.name,
-    inviterName,
-    actionLink,
-    locale: body.locale,
-  })
-
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    console.warn(`[invites] RESEND_API_KEY ausente — convite criado em modo mock. action_link=${actionLink}`)
     return ok({
       id: newUserId,
       email,
@@ -523,37 +509,12 @@ export async function POST(request: NextRequest) {
       role: targetRole,
       orgId: targetOrgId,
       inviteStatus: 'pending',
-      emailDelivery: 'mocked',
+      ...result,
     })
-  }
-
-  const resend = new Resend(apiKey)
-  const devOverride = process.env.DEV_EMAIL_OVERRIDE
-  const toAddress = devOverride ?? email
-
-  const { data: emailResult, error: sendErr } = await resend.emails.send({
-    from: 'AskMoses.AI <noreply@askmoses.ai>',
-    to: toAddress,
-    subject,
-    html,
-  })
-
-  if (sendErr) {
-    console.error('[invites] Resend falhou — desfazendo o convite', sendErr)
+  } catch (err) {
     await rollback()
-    return serverError('Não foi possível enviar o email do convite', sendErr)
+    return serverError('Não foi possível enviar o email do convite', err)
   }
-
-  return ok({
-    id: newUserId,
-    email,
-    name,
-    role: targetRole,
-    orgId: targetOrgId,
-    inviteStatus: 'pending',
-    emailDelivery: 'sent',
-    emailId: emailResult?.id ?? null,
-  })
 }
 
 // ─── GET /api/invites — lista usuários convidados (pendentes + aceitos) ────

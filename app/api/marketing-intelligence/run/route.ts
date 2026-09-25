@@ -5,6 +5,11 @@ import { translateMarketingIntelligence } from '@/lib/i18n/translate-coaching'
 import { routing } from '@/i18n/routing'
 import type { Locale } from '@/i18n/routing'
 
+// nodejs + teto explícito: RUN NOW executa a chamada LLM inteira no request.
+// Mesmo teto do GET, que também roda inline via getOrRunLatest.
+export const runtime = 'nodejs'
+export const maxDuration = 300
+
 function resolveLocale(raw: string | null): Locale {
   if (raw && (routing.locales as readonly string[]).includes(raw)) return raw as Locale
   return 'en'

@@ -341,6 +341,33 @@ ORDER BY f.call_date DESC;
 
 ---
 
+## Writing a migration that touches an existing function
+
+> **Never copy a function body out of an older migration.** Recreating a function
+> with `CREATE OR REPLACE` replaces it whole, so any correction applied between
+> that older migration and today is silently reverted — "keeping the original
+> body" is not the conservative choice, it is a rollback.
+>
+> Before recreating a function, read `pg_get_functiondef` on the live database and
+> start from what is actually running:
+>
+> ```sql
+> SELECT pg_get_functiondef('public.enforce_seat_limit'::regproc);
+> ```
+>
+> This is not hypothetical. `109_front_desk_system_rep.sql` recreated
+> `enforce_seat_limit()` from the body in `032`, which resolved the plan through
+> `organizations → clients → plans`. Migration `039` had already rewritten that
+> same function to read `organizations.plan_id` precisely because its step 7
+> **drops `public.clients`**. The 109 file therefore referenced a table that no
+> longer exists, and running it on a fresh environment would break every new
+> member insert with `relation "public.clients" does not exist`. Production was
+> never affected — the divergence was caught while applying and the corrected
+> version went straight to the database — but the file carried the defect until
+> it was fixed on 2026-09-19.
+
+---
+
 ## Migration history (schema-relevant)
 
 | File | What changed |

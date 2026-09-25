@@ -27,11 +27,13 @@ import {
 } from '@/lib/services/call-audio-storage'
 import { runGhlCallScoring } from '@/lib/services/ghl-call-scoring'
 import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
+import { reassignFrontDeskCalls } from '@/lib/services/ghl-call-recovery'
+import { dbGetFrontDeskTrainerId } from '@/lib/db/trainers'
 import { inferFailureReason, notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { stitchChunkTranscripts } from '@/lib/services/transcript-stitcher'
 import { diarizeTranscript } from '@/lib/services/whisper'
-import { transcribeAudioBuffer } from '@/lib/services/whisper'
+import { transcribeAudioDetailed } from '@/lib/services/whisper'
 import { selfBaseUrl } from '@/lib/internal-url'
 
 function truncateStr(s: string, max: number): string {
@@ -250,13 +252,32 @@ export async function transcribeChunk(chunk: DbCallChunk): Promise<string> {
       throw new Error('chunk sem storage_path')
     }
     const audio = await getChunkAudio(chunk.storage_path)
-    const transcript = await transcribeAudioBuffer(audio, chunk.mime_type, {
+    const result = await transcribeAudioDetailed(audio, chunk.mime_type, {
       diarize: false,
       filename: `chunk-${chunk.chunk_index}.mp3`,
     })
+    const transcript = result.text
+
+    // Razão medida em TODO chunk, não só nos rejeitados: o limiar de
+    // DEGENERATE_SENTENCE_RATIO é provisório (não foi calibrado por chunk —
+    // call_chunks.transcript é zerado após a costura), e sem a distribuição
+    // dos chunks que PASSAM não há como recalibrar sem viés.
+    console.info('[chunk-pipeline] qualidade do chunk', {
+      callId: chunk.call_id,
+      chunkId: chunk.id,
+      chunkIndex: chunk.chunk_index,
+      durationMs: (chunk.end_ms ?? 0) - (chunk.start_ms ?? 0),
+      degenerate: result.degenerate,
+      ...result.stats,
+    })
 
     const chunkCost = whisperChunkCost(chunk)
-    await dbMarkChunkDone(chunk.id, transcript, chunkCost)
+    await dbMarkChunkDone(chunk.id, transcript, chunkCost, {
+      ratio: result.stats.ratio,
+      // Só quando rejeitado — em chunk bom o texto já está em `transcript`,
+      // e duplicá-lo dobraria o armazenamento sem ganho.
+      rejectedTranscript: result.degenerate ? result.raw : null,
+    })
     await deleteChunkAudio(chunk.storage_path)
 
     // Telemetria de custo p/ COGS — Whisper é por-minuto, custo já computado.
@@ -403,6 +424,27 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       })),
     )
 
+    // Todos os chunks vazios — o guard de saída degenerada descartou tudo, ou o
+    // áudio não tinha fala nenhuma. Marcar 'transcribed' com texto vazio seria
+    // mentir no status: a call apareceria como transcrita e o scoring lançaria
+    // depois ("has no transcript"), alertando com o motivo errado. Falha aqui,
+    // com o motivo certo, e não segue pro scoring nem pro e-mail.
+    if (!stitched.trim()) {
+      await dbUpdateGhlCallPipeline(callId, { processingStatus: 'transcription_failed' })
+      await dbClearChunkPayloads(callId)
+      await deleteAllChunkAudioForCall(callId)
+      await notifyPipelineFailure('transcription_failed', {
+        callId,
+        orgId: call?.org_id ?? undefined,
+        stage: 'consolidation',
+        reason: 'whisper_degenerate_output',
+        error: new Error('todos os chunks vieram vazios após o guard de saída degenerada'),
+        meta: { totalChunks: chunks.length },
+      })
+      await frontDeskCatchUp(callId)
+      return
+    }
+
     let finalTranscript = stitched
     try {
       finalTranscript = await diarizeTranscript(stitched, {
@@ -440,8 +482,25 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       stage: 'consolidation',
       reason: inferFailureReason(err),
     })
+    // Mesmo sem transcript a call existe e pode estar atribuída ao Front Desk —
+    // sair daqui sem o catch-up a deixaria presa lá.
+    await frontDeskCatchUp(callId)
     return
   }
+
+  // Catch-up de atribuição, ANTES do scoring. Se o rep foi vinculado enquanto
+  // esta call estava no pipeline, a migração daquele instante a pulou (ela
+  // estava em voo) — e os dois gatilhos de migração são eventos ÚNICOS
+  // (vincular e aceitar), então sem esta chamada a call ficaria presa no Front
+  // Desk pra sempre.
+  //
+  // Antes do scoring, e não depois, por dois motivos:
+  //   • runGhlCallScoring lê a linha da call uma vez, no início — migrando
+  //     agora ele já captura o trainer_id certo e ressincroniza o rep certo;
+  //   • o catch de scoring faz `return`, então um catch-up posterior seria
+  //     pulado justamente nas calls que falharam, que são as que mais demoram
+  //     a ser notadas.
+  await frontDeskCatchUp(callId)
 
   // Fanout pós-transcribed: scoring + coaching email. Best-effort — erros não
   // afetam o transcript já salvo, MAS são alertados: uma call transcrita sem
@@ -480,6 +539,41 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
       stage: 'consolidation',
       reason: 'email_error',
       meta: { note: 'Call já tem transcript + score. Só o email falhou — reenviar manualmente se necessário.' },
+    })
+  }
+}
+
+/**
+ * Tenta migrar esta call do Front Desk pro rep real, agora que ela saiu do
+ * estado "em voo".
+ *
+ * Existe porque os dois gatilhos de migração (vincular GHLUSERID, aceitar
+ * convite) são eventos ÚNICOS: se a call estava sendo processada quando um
+ * deles rodou, ela foi pulada e nunca mais teria uma segunda chance.
+ *
+ * Chamado nos DOIS caminhos de saída de finalizeCallIfReady — consolidação OK
+ * e consolidação falha. Uma call sem transcript continua existindo e atribuída,
+ * então também merece o catch-up.
+ *
+ * Best-effort: nunca propaga erro. Uma falha aqui não pode derrubar um pipeline
+ * que já entregou transcript e score.
+ */
+async function frontDeskCatchUp(callId: string): Promise<void> {
+  try {
+    const call = await dbGetCallById(callId)
+    if (!call?.org_id || !call.ghl_user_id || !call.trainer_id) return
+
+    // Gate barato antes dos 3 lookups de reassignFrontDeskCalls: só call
+    // estacionada no Front Desk tem o que migrar, e a esmagadora maioria das
+    // calls chega aqui já atribuída ao rep certo.
+    const frontDeskId = await dbGetFrontDeskTrainerId(call.org_id)
+    if (!frontDeskId || call.trainer_id !== frontDeskId) return
+
+    await reassignFrontDeskCalls(call.org_id, call.ghl_user_id)
+  } catch (err) {
+    console.error('[chunk-pipeline] catch-up de atribuição falhou (non-fatal)', {
+      callId,
+      err: err instanceof Error ? err.message : String(err),
     })
   }
 }

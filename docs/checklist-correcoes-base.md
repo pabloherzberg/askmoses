@@ -37,11 +37,11 @@ A auditoria pede que toda correção preserve o valor original. **Essa convenç�
 
 Em vez de colunas `_original` espalhadas por `calls`, uma tabela única de auditoria. Precedente de forma no projeto: `org_intent_weight_history` ([scripts/085](../scripts/085_org_intent_weight_history.sql)).
 
-- ✅ **0.1** — Criar `scripts/109_calls_data_corrections.sql`:
+- ✅ **0.1** — Criar `scripts/111_calls_data_corrections.sql` (renumerada de 109 no merge com dev em 25/09 — colisão com `109_front_desk_system_rep.sql`, já mergeado em dev):
 
 ```sql
 -- ============================================================
--- 109_calls_data_corrections.sql
+-- 111_calls_data_corrections.sql
 --
 -- Trilha de auditoria para correções manuais de dados em `calls`.
 --
@@ -286,7 +286,7 @@ Vetor secundário: [whisper.ts:15-16](../lib/services/whisper.ts#L15-L16) passa 
 **Consequência:** repontuar as 18 exige **re-transcrever o áudio original**. Se a gravação não estiver mais disponível, o dado é perda definitiva e essas calls devem ser marcadas e excluídas das médias, não repontuadas.
 
 - ✅ **3.2.1 — Fix de código primeiro** (senão o vazamento continua crescendo): validar o retorno de `assignSpeakerLabels` — rejeitar se contiver `<<<TRANSCRIPT_BEGIN>>>`, `Output rules`, ou se for suspeito de eco; em caso de rejeição, cair no transcript bruto em vez de gravar o lixo. **Feito** — `looksLikePromptLeak()` em [lib/services/whisper.ts](../lib/services/whisper.ts).
-- ✅ **3.2.2 — Parar de descartar o bruto** em [chunk-pipeline.ts:428-429](../lib/services/chunk-pipeline.ts#L428-L429), ou persistir o transcript pré-diarização. Sem isso, o próximo vazamento também será irrecuperável. **Concluído em 24/09/2026** — coluna `calls.raw_transcript` ([scripts/110_calls_raw_transcript.sql](../scripts/110_calls_raw_transcript.sql)) aplicada em produção; `chunk-pipeline.ts` já grava o bruto antes de limpar os chunks.
+- ✅ **3.2.2 — Parar de descartar o bruto** em [chunk-pipeline.ts:428-429](../lib/services/chunk-pipeline.ts#L428-L429), ou persistir o transcript pré-diarização. Sem isso, o próximo vazamento também será irrecuperável. **Concluído em 24/09/2026** — coluna `calls.raw_transcript` ([scripts/112_calls_raw_transcript.sql](../scripts/112_calls_raw_transcript.sql), renumerada de 110 no merge com dev em 25/09 — colisão com `110_call_chunks_transcript_quality.sql`) aplicada em produção; `chunk-pipeline.ts` já grava o bruto antes de limpar os chunks.
 - ✅ **3.2.3 — Identificar as 29**:
 
 ```sql

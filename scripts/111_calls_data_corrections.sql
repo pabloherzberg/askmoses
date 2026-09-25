@@ -1,7 +1,14 @@
 -- ============================================================
--- 109_calls_data_corrections.sql
+-- 111_calls_data_corrections.sql
 --
 -- Trilha de auditoria para correções manuais de dados em `calls`.
+--
+-- NOTA: originalmente numerada 109. Renumerada durante o merge com dev
+-- (2026-09-25), que já ocupava 109 (front_desk_system_rep) e 110
+-- (call_chunks_transcript_quality) com migrations não relacionadas. Já
+-- aplicada em produção sob o nome antigo antes da renumeração — o SQL em
+-- si é idempotente (CREATE TABLE/ADD COLUMN IF NOT EXISTS), então reaplicar
+-- sob este arquivo não tem efeito.
 --
 -- MOTIVO: os backfills históricos (043, 087, 090, 105, 108) sobrescrevem
 -- valores em lugar, sem preservar o anterior. A migration 105 registra a

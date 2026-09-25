@@ -62,6 +62,7 @@ export type PipelineFailureReason =
   | "whisper_quota_exhausted"      // 429 insufficient_quota — créditos OpenAI acabaram
   | "whisper_invalid_format"       // Extensão/formato de áudio rejeitado pelo Whisper
   | "whisper_empty_response"       // Whisper retornou body vazio ou text: ""
+  | "whisper_degenerate_output"    // Whisper alucinou repetição em vez de transcrever
   // ── ffmpeg / Chunking ─────────────────────────────────────────────────────
   | "ffmpeg_not_found"             // ffmpeg-static não encontrado no bundle
   | "ffmpeg_error"                 // ffmpeg saiu com código não-zero
@@ -264,8 +265,8 @@ const STATUS_DISPLAY: Record<PipelineFailureStatus, StatusDisplay> = {
   },
   unlinked_trainer: {
     emoji: "🔗",
-    title: "Call de vendedor não vinculado",
-    hint: "A call foi recebida mas o vendedor (GHLUSERID) não está vinculado a um membro ativo do AskMoses. Ver o campo *Causa* — a call fica bloqueada (sem análise/custo) e é reprocessada automaticamente quando o vínculo + invite forem resolvidos.",
+    title: "Call atribuída ao Front Desk",
+    hint: "O vendedor (GHLUSERID) não está vinculado a nenhum membro, então a call foi atribuída ao *Front Desk* da org. Ela É analisada e pontuada normalmente e já aparece no dashboard do cliente — não fica bloqueada. Vincular o GHLUSERID a um membro ativo migra a call pro rep real, com a nota junto. Ver o campo *Causa*: sem GHLUSERID no payload não há como reatribuir depois.",
     color: "#ECB22E",
   },
 }
@@ -290,6 +291,8 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
     "URL de recording retornou 404/410 — GHL expirou ou removeu o arquivo. A call precisa ser re-processada manualmente a partir de um novo webhook.",
   recording_too_large:
     "Arquivo de áudio maior que 200 MB. Verificar duração da call. Para calls muito longas (>4h), considerar aumentar o limite ou pré-comprimir no GHL.",
+  whisper_degenerate_output:
+    "TODOS os chunks devolveram repetição degenerada em vez de transcrição — o áudio provavelmente não tem fala (caixa postal, ninguém atendeu, gravação muda). O guard de lib/services/whisper.ts descartou tudo, então não há transcript. Conferir a gravação no GHL antes de reprocessar: se não houver fala, reprocessar dá o mesmo resultado.",
   whisper_timeout:
     "Whisper não respondeu em 120s em 3 tentativas consecutivas. Pode ser instabilidade OpenAI ou chunk muito grande. Verificar status.openai.com. A call pode ser re-tentada.",
   whisper_http_4xx:
@@ -331,9 +334,9 @@ const REASON_HINT: Partial<Record<PipelineFailureReason, string>> = {
   pipeline_stalled:
     "Call presa em status intermediário há mais tempo que o tolerável — provavelmente o processo serverless morreu sem marcar erro. Verificar a call no admin e re-processar.",
   trainer_invite_pending:
-    "A call veio de um trainer vinculado a um usuário do GHL, mas cujo convite ainda está pendente. Foi analisada e salva normalmente; só falta o trainer aceitar o convite para acessar o próprio dashboard. Reenviar o convite em /dashboard/settings/invite se necessário.",
+    "A call veio de um trainer vinculado a um usuário do GHL, mas cujo convite ainda está pendente. Foi analisada e salva normalmente, atribuída a ele. Falta o trainer aceitar o convite para acessar o próprio dashboard — e o email de coaching NÃO é enviado até lá (email_sent fica false, então dá pra disparar depois). Reenviar o convite em /dashboard/settings/invite se necessário.",
   ghl_user_not_linked:
-    "O GHLUSERID que fez a call NÃO está vinculado a nenhum membro desta org. Verificar se o vendedor existe no AskMoses e vincular o GHLUSERID a ele (gestão de membros). A call fica bloqueada até o vínculo + invite aceito — aí é reanalisada automaticamente.",
+    "O GHLUSERID que fez a call NÃO está vinculado a nenhum membro desta org, então ela foi atribuída ao *Front Desk*. A call NÃO está bloqueada: já foi analisada, pontuada e aparece no dashboard do cliente. Vincular o GHLUSERID a um membro ativo (gestão de membros) migra a call pro vendedor real com a nota junto — sem reanálise. Se o payload veio sem GHLUSERID, não há como reatribuir e ela fica no Front Desk.",
   ghl_user_invite_pending:
     "O GHLUSERID está vinculado a um membro, mas o invite ainda NÃO foi aceito. Assim que o membro aceitar o convite, a call bloqueada é reanalisada automaticamente.",
   unknown:
@@ -351,6 +354,7 @@ const REASON_EMOJI: Partial<Record<PipelineFailureReason, string>> = {
   recording_not_ready: "⏳",
   recording_url_expired: "🗑️",
   recording_too_large: "📦",
+  whisper_degenerate_output: "🔁",
   whisper_timeout: "⏱️",
   whisper_http_4xx: "❌",
   whisper_http_5xx: "💥",

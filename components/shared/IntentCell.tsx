@@ -8,7 +8,8 @@ import { intentFeedback } from '@/lib/utils/intentFeedback'
 import type { IntentScore } from '@/lib/types'
 
 interface IntentCellProps {
-  score: IntentScore
+  /** null = sem medição. Renderiza traço, o mesmo símbolo da coluna de score. */
+  score: IntentScore | null
 }
 
 const TOOLTIP_WIDTH = 256 // w-64
@@ -34,7 +35,8 @@ interface Coords {
 // horizontal no viewport.
 export function IntentCell({ score }: IntentCellProps) {
   const locale = useLocale()
-  const message = intentFeedback(score, locale)
+  // Hooks antes do early return — a ordem tem que ser estável entre renders.
+  const message = intentFeedback(score ?? 0, locale)
   const triggerRef = useRef<HTMLSpanElement>(null)
   const [coords, setCoords] = useState<Coords | null>(null)
 
@@ -79,6 +81,13 @@ export function IntentCell({ score }: IntentCellProps) {
       window.removeEventListener('resize', update)
     }
   }, [coords, computeCoords])
+
+  // Sem medição: traço, sem tooltip. O tooltip explica o que o número significa
+  // — não havendo número, não há o que explicar. Depois dos hooks, para não
+  // alterar a ordem deles entre renders.
+  if (score == null) {
+    return <span style={{ color: 'var(--am-muted)' }}>—</span>
+  }
 
   return (
     <span className="inline-flex items-center gap-1.5">

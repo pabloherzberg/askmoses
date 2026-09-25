@@ -12,8 +12,37 @@ import { recordLlmUsage } from "@/lib/services/llm-usage";
 const WHISPER_TRANSLATE_ENDPOINT =
   "https://api.openai.com/v1/audio/translations";
 
-const DEFAULT_PROMPT =
-  "This is a sales call between a salesperson and a prospect. Provide a clean, natural English translation of the call.";
+// ─── Por que NÃO enviamos `prompt` por padrão ────────────────────────────────
+// Havia aqui um DEFAULT_PROMPT: "This is a sales call between a salesperson and
+// a prospect. Provide a clean, natural English translation of the call."
+//
+// Ele causou 30 calls com transcrição corrompida entre junho e setembro de 2026,
+// e foi removido em 2026-09-19. Duas razões, nesta ordem:
+//
+// 1. NÃO FAZIA O QUE DIZIA. O `prompt` do Whisper não é canal de instrução — é
+//    texto de CONDICIONAMENTO, prepended ao contexto do decoder como amostra do
+//    vocabulário esperado. O modelo nunca leu aquilo como comando. E a segunda
+//    frase era inócua de qualquer forma: este é o endpoint /audio/translations,
+//    que sempre devolve inglês (ver nota acima), então pedir "English
+//    translation" não mudava nada.
+//
+// 2. VIRAVA A SAÍDA quando o áudio não tinha fala. Sem sinal acústico
+//    competindo — silêncio, música de espera, lado mudo, cauda da gravação
+//    depois do desligamento — a continuação mais provável dos tokens do prompt
+//    é o próprio prompt. O decoder entra em loop e emite a frase dezenas de
+//    vezes. A API devolve 200 com um `text` bem formado: do ponto de vista dela
+//    não houve erro.
+//
+// Como toda call do GHL passa pelo chunking (ghl-call-pipeline.ts) em janelas
+// de 10 min, e cada chunk era condicionado separadamente, a exposição crescia
+// com a duração: 4,3x mais corrupção em call acima de 30 min que em call de até
+// 10 min. Um terço dos casos, porém, foi em chunk ÚNICO — call curta quase sem
+// fala (caixa postal, ninguém atendeu). Não é um problema de call longa: é uma
+// chance de corromper a cada 10 minutos de áudio.
+//
+// `options.prompt` continua existindo como escape hatch deliberado. O que não
+// volta é um default global — se algum caller precisar condicionar, que assuma
+// a escolha explicitamente, ciente do que está acima.
 
 // Timeout POR TENTATIVA da chamada ao Whisper. Um chunk é ~10min de áudio
 // (~5MB) e o translate volta em ~1min; 120s dá folga. Sem isto, o fetch herda
@@ -79,29 +108,67 @@ export interface TranscribeOptions {
   callId?: string | null;
 }
 
+export interface TranscriptionResult {
+  /** Texto aproveitável. "" quando o Whisper devolveu saída degenerada. */
+  text: string;
+  /** O que o Whisper devolveu, sempre — inclusive quando rejeitado. É a
+   *  evidência que permite conferir falso positivo do guard. */
+  raw: string;
+  degenerate: boolean;
+  stats: DegenerateStats;
+}
+
+/**
+ * Transcreve e devolve a medida de qualidade junto.
+ *
+ * Existe porque o pipeline de chunks precisa de três coisas que o retorno
+ * simples esconde: a razão medida (pra calibrar o limiar com dados reais), o
+ * texto cru (evidência quando rejeitado) e o veredito. Quem não precisa disso
+ * usa transcribeAudioBuffer.
+ */
+export async function transcribeAudioDetailed(
+  buffer: Buffer,
+  mimeType: string,
+  options: TranscribeOptions = {},
+): Promise<TranscriptionResult> {
+  const raw = await callWhisperTranslate(buffer, mimeType, options);
+  const stats = degenerateStats(raw);
+
+  if (!raw) return { text: "", raw, degenerate: false, stats };
+
+  if (isDegenerateTranscript(raw)) {
+    // Sem fala aproveitável. Texto VAZIO em vez de exceção: o trecho não tinha
+    // conteúdo, e o stitcher já descarta chunk vazio. Lançar queimaria as 3
+    // tentativas e derrubaria a call inteira por causa de um pedaço que nunca
+    // teve nada — inclusive nas longas, onde o resto é conversa boa.
+    console.warn("[whisper] saída degenerada descartada", {
+      filename: options.filename,
+      ...stats,
+    });
+    return { text: "", raw, degenerate: true, stats };
+  }
+
+  if (options.diarize === false) {
+    return { text: raw, raw, degenerate: false, stats };
+  }
+
+  try {
+    return { text: await assignSpeakerLabels(raw, options), raw, degenerate: false, stats };
+  } catch (err) {
+    console.warn("[whisper] diarization step failed, returning raw transcript", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return { text: raw, raw, degenerate: false, stats };
+  }
+}
+
 export async function transcribeAudioBuffer(
   buffer: Buffer,
   mimeType: string,
   options: TranscribeOptions = {},
 ): Promise<string> {
-  const rawTranscript = await callWhisperTranslate(buffer, mimeType, options);
-  if (!rawTranscript) return "";
-
-  if (options.diarize === false) {
-    return rawTranscript;
-  }
-
-  try {
-    return await assignSpeakerLabels(rawTranscript, options);
-  } catch (err) {
-    console.warn(
-      "[whisper] diarization step failed, returning raw transcript",
-      {
-        err: err instanceof Error ? err.message : String(err),
-      },
-    );
-    return rawTranscript;
-  }
+  const { text } = await transcribeAudioDetailed(buffer, mimeType, options);
+  return text;
 }
 
 /**
@@ -148,7 +215,7 @@ async function callWhisperTranslate(
     const form = new FormData();
     form.append("file", blob, filename);
     form.append("model", "whisper-1");
-    form.append("prompt", options.prompt ?? DEFAULT_PROMPT);
+    if (options.prompt) form.append("prompt", options.prompt);
 
     let rateLimited = false;
     let retryAfterMs: number | null = null;
@@ -212,6 +279,70 @@ async function callWhisperTranslate(
   throw lastErr instanceof Error
     ? lastErr
     : new Error(`Whisper falhou após ${WHISPER_MAX_ATTEMPTS} tentativas`);
+}
+
+// ─── Detecção de saída degenerada ────────────────────────────────────────────
+// Mede a razão de SENTENÇAS únicas, não de palavras. A razão por palavra cai
+// naturalmente com o tamanho do texto (textos longos repetem vocabulário), então
+// um limiar único erraria em chunk curto ou longo. Já repetir uma SENTENÇA
+// inteira é o que conversa real praticamente nunca faz — e é exatamente o que a
+// alucinação do Whisper produz.
+//
+// Aplicada POR CHUNK, aqui dentro, e não no transcript consolidado: medido em
+// 2026-09-19 sobre 1.436 transcrições consolidadas, as duas populações se
+// sobrepõem (normal com 0,002; corrompida com 0,976), porque uma call longa com
+// um chunk ruim tem conversa real diluindo a razão. Antes da costura a separação
+// é limpa — um chunk inteiramente degenerado não tem texto legítimo a diluir.
+//
+// LIMIAR PROVISÓRIO. 0,3 é conservador: pega o caso claro (frase repetida
+// dezenas de vezes fica perto de zero) sem risco de descartar chunk legítimo.
+// Não foi calibrado contra dados de chunk porque o banco só guarda o
+// consolidado — os chunks são apagados após a costura. O console.warn acima
+// existe pra isso: acumular razões reais de chunk e permitir recalibrar.
+const DEGENERATE_SENTENCE_RATIO = 0.3;
+
+// Abaixo disto a razão é ruído: um chunk com 3 sentenças pode legitimamente ter
+// uma repetida. Só medimos quando há amostra suficiente.
+const DEGENERATE_MIN_SENTENCES = 5;
+
+function splitSentences(text: string): string[] {
+  return text
+    .split(/[.!?\n]+/)
+    .map((s) => s.trim().toLowerCase().replace(/\s+/g, " "))
+    // Fragmentos curtos ("ok", "yeah", "mm-hmm") repetem à vontade em conversa
+    // real — contá-los derrubaria a razão de transcrição legítima.
+    .filter((s) => s.length > 12);
+}
+
+export interface DegenerateStats {
+  sentences: number;
+  unique: number;
+  /** Sentenças únicas / total. null quando não há amostra pra medir. */
+  ratio: number | null;
+}
+
+export function degenerateStats(text: string): DegenerateStats {
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) return { sentences: 0, unique: 0, ratio: null };
+  const unique = new Set(sentences).size;
+  return {
+    sentences: sentences.length,
+    unique,
+    ratio: Math.round((unique / sentences.length) * 1000) / 1000,
+  };
+}
+
+/**
+ * O Whisper devolveu repetição degenerada em vez de transcrição?
+ *
+ * Texto vazio NÃO é degenerado — é ausência, e o caller já trata. Amostra
+ * pequena também não: sem sentenças suficientes a razão não significa nada.
+ */
+export function isDegenerateTranscript(text: string): boolean {
+  const { sentences, ratio } = degenerateStats(text);
+  if (ratio === null) return false;
+  if (sentences < DEGENERATE_MIN_SENTENCES) return false;
+  return ratio < DEGENERATE_SENTENCE_RATIO;
 }
 
 /** Espera entre tentativas: pista lenta pra 429, pista rápida pro resto. */
@@ -304,10 +435,13 @@ ${rawTranscript}
 
   const labeled = result.text.trim();
 
-  // O modelo pode ecoar o próprio prompt em vez de seguir as instruções
-  // (mais comum em áudio silencioso/ruído). Sem essa checagem, o eco vira
-  // o transcript "oficial" da call — ver checklist §3.2. Cai no bruto em
-  // vez de gravar lixo.
+  // Camada separada de isDegenerateTranscript (que guarda a TRANSCRIÇÃO do
+  // Whisper, por chunk). Este ponto é a DIARIZAÇÃO — um segundo modelo
+  // (gpt-4o-mini) que reescreve o texto já transcrito com labels de speaker,
+  // e pode ecoar as próprias instruções do prompt de diarização em vez de
+  // segui-las (checklist §3.2). Sem essa checagem, o eco vira o transcript
+  // "oficial" da call. Cai no bruto (já validado por isDegenerateTranscript)
+  // em vez de gravar o eco.
   if (looksLikePromptLeak(labeled)) {
     console.warn("[whisper] diarização ecoou o prompt, usando transcript bruto", {
       callId: options.callId,

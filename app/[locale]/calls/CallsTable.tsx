@@ -3,119 +3,63 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Phone, FileText, RefreshCw, AlertCircle, History, X, Clock } from 'lucide-react'
+import { ChevronRight, ChevronDown, Phone, FileText, History, X, Clock } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 import { ScorePill } from '@/components/shared/ScorePill'
 import { NotSalesCallPill } from '@/components/shared/NotSalesCallPill'
 import { IntentCell } from '@/components/shared/IntentCell'
+import { ReprocessButton } from '@/components/shared/ReprocessButton'
+import {
+  callState,
+  showsEvaluation,
+  canReprocess as callIsReprocessable,
+} from '@/lib/call-state'
 import { SectionLabel } from '@/components/shared/SectionLabel'
-import { RESULT_STYLES, DEFAULT_RESULT_STYLE, CALL_OUTCOMES, LEAD_SOURCE_LABELS } from '@/lib/constants'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu'
+import { RESULT_STYLES, DEFAULT_RESULT_STYLE, LEAD_SOURCE_LABELS } from '@/lib/constants'
 import type { Call } from '@/lib/types'
 
-const FAILED_STATUSES = new Set(['transcription_failed', 'no_recording', 'auth_expired', 'webhook_failed'])
-const IN_PROGRESS_STATUSES = new Set(['processing', 'queued_for_chunking', 'chunking', 'awaiting_chunks', 'consolidating', 'transcribed'])
+// Os conjuntos de status moraram aqui como constantes locais e foram pra
+// lib/call-state.ts — client-safe, compartilhado com o CallDetail. As cópias
+// divergiam: esta não tinha 'pending', e a de lib/db/calls.ts não tem
+// 'transcribed'. Ver a nota lá sobre por que a do servidor continua separada.
 const REFRESH_INTERVAL_MS = 8_000
 const REFRESH_MAX = 45 // ~6 minutos
+
+/** Ausência de medição. Mesmo símbolo que a coluna de score já usava. */
+function MutedDash() {
+  return <span style={{ color: 'var(--am-muted)' }}>—</span>
+}
+
+// Categoria da call no filtro de resultado e na quebra do cabeçalho. Sai do
+// callState, não de `result`: toCall normaliza call_outcome NULL para
+// 'not_closed', então `result` sozinho junta venda perdida, não-venda e call
+// sem análise sob o mesmo "Not Closed".
+type ResultCategory = 'closed' | 'not_closed' | 'not_sales' | 'unanalyzed'
+type FilterableCategory = Exclude<ResultCategory, 'unanalyzed'>
+
+const FILTERABLE_CATEGORIES: readonly FilterableCategory[] = ['closed', 'not_closed', 'not_sales']
+
+// Não-venda (recado, caixa postal, engano) fica fora por padrão: em org com
+// muito inbound ela é a maioria das linhas e enterra as calls de venda.
+const DEFAULT_RESULT_FILTER: ReadonlySet<FilterableCategory> = new Set(['closed', 'not_closed'])
+
+function resultCategory(call: Call): ResultCategory {
+  const state = callState(call)
+  if (state === 'not_sales') return 'not_sales'
+  if (!showsEvaluation(state)) return 'unanalyzed'
+  return call.result === 'closed' ? 'closed' : 'not_closed'
+}
 
 // Call está completamente analisada se tem sections (rubrica preenchida pela IA).
 // Score 0.0 sozinho não é critério — pode ser score legítimo.
 function isAnalysisComplete(call: Call): boolean {
   return Array.isArray(call.sections) && call.sections.length > 0
-}
-
-// Mostra o botão se a call falhou OU está em progresso sem análise completa.
-function shouldShowReprocessButton(call: Call): boolean {
-  const status = call.processingStatus ?? null
-  if (status && FAILED_STATUSES.has(status)) return true
-  if (status && IN_PROGRESS_STATUSES.has(status) && !isAnalysisComplete(call)) return true
-  return false
-}
-
-type ReprocessState = 'idle' | 'loading' | 'queued' | 'error'
-
-function ReprocessButton({ callId, hasSections, onRefresh }: { callId: string; hasSections: boolean; onRefresh: () => void }) {
-  const [state, setState] = useState<ReprocessState>('idle')
-  const [errorMsg, setErrorMsg] = useState<string>('')
-  const t = useTranslations('Owner.calls.reprocess')
-
-  // Quando em 'queued', faz refresh periódico. O pai para de renderizar
-  // este botão quando sections chegarem (análise finalizada).
-  useEffect(() => {
-    if (state !== 'queued') return
-    let count = 0
-    const id = setInterval(() => {
-      count++
-      onRefresh()
-      if (count >= REFRESH_MAX) clearInterval(id)
-    }, REFRESH_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [state, onRefresh])
-
-  // Sections chegaram — o pai vai desmontar este componente, mas se por algum
-  // motivo ainda estiver montado, muda estado local para idle.
-  useEffect(() => {
-    if (state === 'queued' && hasSections) setState('idle')
-  }, [hasSections, state])
-
-  const handleClick = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (state !== 'idle') return
-    setState('loading')
-    setErrorMsg('')
-    try {
-      const res = await fetch(`/api/calls/${callId}/reprocess`, { method: 'POST' })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(body?.error?.message ?? `HTTP ${res.status}`)
-      }
-      setState('queued')
-      onRefresh()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error('[reprocess]', callId, msg)
-      setErrorMsg(msg)
-      setState('error')
-      setTimeout(() => setState('idle'), 6000)
-    }
-  }, [callId, state, onRefresh])
-
-  if (state === 'queued') {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap"
-        style={{ color: 'var(--am-blue)', background: 'rgba(94,179,255,0.12)' }}
-      >
-        <RefreshCw size={11} className="animate-spin" />
-        {t('processing')}
-      </span>
-    )
-  }
-
-  if (state === 'error') {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap cursor-help"
-        style={{ color: 'var(--am-red)', background: 'rgba(255,94,94,0.12)' }}
-        title={errorMsg}
-      >
-        <AlertCircle size={12} />
-        {t('error')}
-      </span>
-    )
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={state === 'loading'}
-      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg whitespace-nowrap transition-opacity hover:opacity-80 disabled:opacity-50"
-      style={{ color: 'var(--am-amber)', background: 'rgba(255,171,46,0.12)', border: '1px solid rgba(255,171,46,0.25)' }}
-      title={t('tooltip')}
-    >
-      <RefreshCw size={11} className={state === 'loading' ? 'animate-spin' : ''} />
-      {state === 'loading' ? t('queuing') : t('label')}
-    </button>
-  )
 }
 
 // Mesmo badge/cores do Intent Analysis (components/shared/IntentDashboard.tsx) —
@@ -174,7 +118,7 @@ export function CallsTable({
   const locale = useLocale()
   const t = useTranslations('Owner.calls')
   const tOutcomes = useTranslations('Shared.outcomes')
-  const [resultFilter, setResultFilter] = useState<string>('all')
+  const [resultFilter, setResultFilter] = useState<ReadonlySet<FilterableCategory>>(DEFAULT_RESULT_FILTER)
   const [trainerFilter, setTrainerFilter] = useState<string>('all')
   // Source filter removido da UI (sem funcionalidade real ainda).
   // const [sourceFilter, setSourceFilter] = useState<string>('all')
@@ -204,17 +148,45 @@ export function CallsTable({
   const hasScripts = scriptsInCalls.length > 0
   const activeScript = scriptsInCalls.find((s) => s.isActive) ?? null
 
-  const filtered = useMemo(
+  // Os outros filtros definem a base do cabeçalho; o de resultado só decide o
+  // que aparece na tabela. Assim o total e a quebra por categoria continuam
+  // visíveis com categorias escondidas — ninguém procura uma call, não acha e
+  // conclui que ela sumiu.
+  const baseFiltered = useMemo(
     () => calls.filter((c) => {
-      if (resultFilter !== 'all' && c.result !== resultFilter) return false
       if (trainerFilter !== 'all' && c.trainerId !== trainerFilter) return false
       if (scriptFilter !== 'all' && (c.scriptId ?? null) !== scriptFilter) return false
       if (wonFilter === 'won' && c.ghlWonStatus !== 'won') return false
       if (wonFilter === 'lost' && c.ghlWonStatus !== 'lost') return false
       return true
     }),
-    [calls, resultFilter, trainerFilter, scriptFilter, wonFilter]
+    [calls, trainerFilter, scriptFilter, wonFilter]
   )
+
+  // Call sem análise aparece sempre: não é Closed, nem Not Closed, nem
+  // não-venda — e escondê-la seria voltar a dizer algo que ninguém mediu.
+  const filtered = useMemo(
+    () => baseFiltered.filter((c) => {
+      const category = resultCategory(c)
+      return category === 'unanalyzed' || resultFilter.has(category)
+    }),
+    [baseFiltered, resultFilter]
+  )
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<ResultCategory, number> = { closed: 0, not_closed: 0, not_sales: 0, unanalyzed: 0 }
+    for (const c of baseFiltered) counts[resultCategory(c)]++
+    return counts
+  }, [baseFiltered])
+
+  const toggleResult = (category: FilterableCategory, checked: boolean) => {
+    setResultFilter((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(category)
+      else next.delete(category)
+      return next
+    })
+  }
 
   // Agrupa as calls filtradas por contactId — um registro por cliente. Dentro
   // do grupo as calls ficam em ordem temporal (mais nova primeiro) e os grupos
@@ -255,13 +227,37 @@ export function CallsTable({
     t('thDuration'), t('thIntent'), t('thScore'), t('thResult'), t('thWon'), '',
   ]
 
-  const countLabel = filtered.length === 1
-    ? t('callsAnalyzedOne', { count: filtered.length })
-    : t('callsAnalyzedOther', { count: filtered.length })
+  // Rótulos vêm das mesmas chaves das pílulas da tabela, não de texto próprio
+  // da mensagem: se o resumo dissesse "não são de venda" e a pílula "Não é
+  // venda", pareceriam categorias diferentes.
+  const summaryValues = {
+    total: baseFiltered.length,
+    closed: categoryCounts.closed,
+    closedLabel: tOutcomes('short.closed'),
+    notClosed: categoryCounts.not_closed,
+    notClosedLabel: tOutcomes('short.not_closed'),
+    notSales: categoryCounts.not_sales,
+    notSalesLabel: tOutcomes('notSalesCall'),
+    unanalyzed: categoryCounts.unanalyzed,
+  }
+  const countLabel = categoryCounts.unanalyzed > 0
+    ? t('callsSummaryWithUnanalyzed', summaryValues)
+    : t('callsSummary', summaryValues)
+
+  const categoryLabel = (category: FilterableCategory) =>
+    category === 'not_sales' ? tOutcomes('notSalesCall') : tOutcomes(`full.${category}`)
+  const resultFilterLabel =
+    resultFilter.size === FILTERABLE_CATEGORIES.length
+      ? tOutcomes('all')
+      : resultFilter.size === 0
+        ? t('filterNoResults')
+        : FILTERABLE_CATEGORIES.filter((c) => resultFilter.has(c)).map(categoryLabel).join(', ')
 
   // Renderiza a linha do cliente (call mais recente do contactId). Quando o
   // cliente tem histórico (>1 call), um botão abre o modal com todas as calls.
   const renderRow = (call: Call, group: CallGroup) => {
+    const state = callState(call)
+    const showsEval = showsEvaluation(state)
     const result = RESULT_STYLES[call.result] ?? DEFAULT_RESULT_STYLE
     const outcomeLabel = call.result in RESULT_STYLES
       ? tOutcomes(`short.${call.result}`)
@@ -327,23 +323,30 @@ export function CallsTable({
             {formatDuration(call.durationSeconds)}
           </span>
         </td>
-        {/* Intent (1–5): só o número + tooltip com a mensagem fixa.
-            Sem estrelas, sem badge colorido (decisão Task C). */}
+        {/* Intent, score e desfecho só aparecem com medição real. Antes, call
+            em análise ou com falha de pipeline mostrava Intent 1 (fabricado por
+            readStoredIntent), score 0.0 e a pill "Not Closed" — três afirmações
+            sobre uma conversa que ninguém avaliou. Traço é o mesmo símbolo que
+            a coluna de score já usava na não-venda. */}
         <td className="px-4 py-3">
-          <IntentCell score={call.intent} />
+          {showsEval ? <IntentCell score={call.intent} /> : <MutedDash />}
         </td>
-        {call.isSalesCall === false ? (
-          <>
-            <td className="px-4 py-3"><span style={{ color: 'var(--am-muted)' }}>—</span></td>
-            <td className="px-4 py-3"><NotSalesCallPill label={tOutcomes('notSalesCall')} /></td>
-          </>
-        ) : (
+        {showsEval ? (
           <>
             <td className="px-4 py-3"><ScorePill score={call.score} /></td>
             <td className="px-4 py-3">
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full font-mono" style={{ background: result.bg, color: result.color }}>
                 {outcomeLabel}
               </span>
+            </td>
+          </>
+        ) : (
+          <>
+            <td className="px-4 py-3"><MutedDash /></td>
+            <td className="px-4 py-3">
+              {state === 'not_sales'
+                ? <NotSalesCallPill label={tOutcomes('notSalesCall')} />
+                : <MutedDash />}
             </td>
           </>
         )}
@@ -364,7 +367,7 @@ export function CallsTable({
                 {t('groupViewAll', { count: group.calls.length })}
               </button>
             )}
-            {canReprocess && shouldShowReprocessButton(call) ? (
+            {canReprocess && callIsReprocessable(call) ? (
               <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
             ) : (
               <ChevronRight size={16} style={{ color: 'var(--am-muted)' }} />
@@ -388,12 +391,27 @@ export function CallsTable({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <select className={selectClass} style={selectStyle} value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
-          <option value="all">{tOutcomes('all')}</option>
-          {CALL_OUTCOMES.map((o) => (
-            <option key={o.value} value={o.value}>{tOutcomes(`full.${o.value}`)}</option>
-          ))}
-        </select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={`${selectClass} inline-flex items-center gap-2`} style={selectStyle}>
+              {resultFilterLabel}
+              <ChevronDown size={14} style={{ color: 'var(--am-muted)' }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {FILTERABLE_CATEGORIES.map((category) => (
+              <DropdownMenuCheckboxItem
+                key={category}
+                checked={resultFilter.has(category)}
+                onCheckedChange={(checked) => toggleResult(category, checked === true)}
+                // Mantém o menu aberto: marcar várias opções seguidas é o uso normal.
+                onSelect={(e) => e.preventDefault()}
+              >
+                {categoryLabel(category)}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {showTrainerColumn && trainers.length > 0 && (
           <select className={selectClass} style={selectStyle} value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)}>
             <option value="all">{t('filterAllSalesPeople')}</option>
@@ -491,7 +509,7 @@ export function CallsTable({
                 const label = call.result in RESULT_STYLES
                   ? tOutcomes(`short.${call.result}`)
                   : tOutcomes('unknown')
-                const showReprocess = canReprocess && shouldShowReprocessButton(call)
+                const showReprocess = canReprocess && callIsReprocessable(call)
                 const goToDetail = () => router.push(`/${locale}/calls/${call.id}`)
                 return (
                   // Linha como <div> (não <button>) para permitir aninhar o
@@ -558,7 +576,7 @@ export function CallsTable({
                         </span>
                         <span className="inline-flex items-center gap-1">
                           {t('thIntent')}
-                          <IntentCell score={call.intent} />
+                          {showsEvaluation(callState(call)) ? <IntentCell score={call.intent} /> : <MutedDash />}
                         </span>
                         <span className="inline-flex items-center gap-1">
                           {t('thWon')}
@@ -567,7 +585,7 @@ export function CallsTable({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {call.isSalesCall !== false && <ScorePill score={call.score} />}
+                      {showsEvaluation(callState(call)) && <ScorePill score={call.score} />}
                       {showReprocess ? (
                         <ReprocessButton callId={call.id} hasSections={isAnalysisComplete(call)} onRefresh={router.refresh} />
                       ) : (
