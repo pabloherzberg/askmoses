@@ -541,7 +541,13 @@ async function handleOpportunity(
   }
 
   try {
-    const matched = await dbUpdateGhlOpportunity(orgId, contactId, opportunityId, status)
+    const matched = await dbUpdateGhlOpportunity(
+      orgId,
+      contactId,
+      opportunityId,
+      status,
+      normalizeEmpty(opp.lastStatusChangeAt),
+    )
 
     // Zero calls casadas é legítimo (contato sem call ingerida), mas é também a
     // assinatura exata do bug do contact_id NULL — que passou despercebido porque

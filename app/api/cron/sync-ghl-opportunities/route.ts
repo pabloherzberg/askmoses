@@ -54,7 +54,13 @@ export async function GET(request: NextRequest) {
         for (const opp of opportunities) {
           if (!opp.contactId || !opp.status) continue
           try {
-            await dbUpdateGhlOpportunity(org.orgId, opp.contactId, opp.id, opp.status)
+            await dbUpdateGhlOpportunity(
+              org.orgId,
+              opp.contactId,
+              opp.id,
+              opp.status,
+              opp.lastStatusChangeAt,
+            )
             updated += 1
           } catch (err) {
             errored += 1
