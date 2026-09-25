@@ -54,6 +54,8 @@ export interface GhlOpportunityPayload {
   pipelineStageName?: string | null
   monetaryValue?: number | null
   locationId?: string | null
+  // Só vem se o workflow do GHL incluir o campo no customData; senão, now().
+  lastStatusChangeAt?: string | null
 }
 
 // Tipos de evento de agendamento que aceitamos. O Pepper pode salvar com
