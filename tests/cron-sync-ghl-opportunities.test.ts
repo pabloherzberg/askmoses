@@ -108,7 +108,12 @@ describe('GET /api/cron/sync-ghl-opportunities', () => {
       if (status === 'won') {
         return jsonResponse({
           opportunities: [
-            { id: 'opp-1', contactId: 'contact-1', status: 'won' },
+            {
+              id: 'opp-1',
+              contactId: 'contact-1',
+              status: 'won',
+              lastStatusChangeAt: '2026-09-20T14:30:00.000Z',
+            },
             { id: 'opp-2', contactId: 'contact-2', status: 'won' },
           ],
         })
@@ -132,9 +137,12 @@ describe('GET /api/cron/sync-ghl-opportunities', () => {
     })
 
     expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledTimes(3)
-    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-1', 'opp-1', 'won')
-    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-2', 'opp-2', 'won')
-    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-3', 'opp-3', 'lost')
+    // lastStatusChangeAt da API segue pro update; ausente vira null (→ now()).
+    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith(
+      'org-1', 'contact-1', 'opp-1', 'won', '2026-09-20T14:30:00.000Z',
+    )
+    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-2', 'opp-2', 'won', null)
+    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-3', 'opp-3', 'lost', null)
 
     // Uma chamada de fetch por status (won, lost) — sem paginação extra pois
     // cada batch veio menor que o limite de página.
@@ -160,7 +168,7 @@ describe('GET /api/cron/sync-ghl-opportunities', () => {
     const body = await res.json()
 
     expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledTimes(1)
-    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-3', 'opp-3', 'won')
+    expect(mockDbUpdateGhlOpportunity).toHaveBeenCalledWith('org-1', 'contact-3', 'opp-3', 'won', null)
     // opportunitiesFound conta tudo que veio da API, updated só o que passou no filtro.
     expect(body.opportunitiesFound).toBeGreaterThanOrEqual(3)
     expect(body.updated).toBe(1)

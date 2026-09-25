@@ -388,6 +388,7 @@ export interface GhlOpportunityResult {
   pipelineStageId?: string | null
   pipelineStageName?: string | null
   monetaryValue?: number | null
+  lastStatusChangeAt?: string | null
 }
 
 const OPPORTUNITIES_PAGE_LIMIT = 100
@@ -443,6 +444,7 @@ export async function fetchOpportunitiesByStatus(
         pipelineStageId?: string
         pipelineStageName?: string
         monetaryValue?: number
+        lastStatusChangeAt?: string
       }>
       meta?: { startAfter?: string | number; startAfterId?: string }
     }
@@ -457,6 +459,7 @@ export async function fetchOpportunitiesByStatus(
         pipelineStageId: opp.pipelineStageId ?? null,
         pipelineStageName: opp.pipelineStageName ?? null,
         monetaryValue: opp.monetaryValue ?? null,
+        lastStatusChangeAt: opp.lastStatusChangeAt ?? null,
       })
     }
 

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 import { applySalesCallOnly } from '@/lib/sales-calls'
 
 export interface DbCall {
@@ -225,34 +226,104 @@ export async function dbGetCallById(id: string, scope?: GetCallByIdScope): Promi
 }
 
 // Atualiza o status de oportunidade GHL em todas as calls do contato na org.
-// Chamado pelo webhook OpportunityStageChanged via contact_id.
+// Chamado pelo webhook OpportunityStageChanged e pelo cron
+// sync-ghl-opportunities, ambos via contact_id.
 //
 // Retorna quantas calls foram casadas. Casar ZERO é um resultado legítimo (o
 // contato pode não ter nenhuma call ingerida: lead que só agendou, call < 30s
 // cortada no webhook, call de vendedor não vinculado). Mas era exatamente assim
 // que o bug do contact_id NULL se escondia — o UPDATE não casava nada, ninguém
 // olhava, e o webhook respondia 200. Devolver o count força o caller a decidir.
+//
+// ghl_won_at só é gravado quando a call ENTRA em won (status anterior diferente
+// de 'won') ou quando ainda está NULL. Antes era regravado com now() a cada
+// sync — e o cron sincroniza todas as won todo dia, então a coluna virava
+// "última vez que vimos won". `statusChangedAt` é a data da mudança de status
+// vinda do GHL (lastStatusChangeAt), quando o payload traz; senão, now().
+//
+// Status 'won' também marca o Stage 2 (paying) numa call do contato, via
+// mark_stage2_paying_from_won (migration 117). Status diferente de 'won' não
+// mexe no Stage 2.
 export async function dbUpdateGhlOpportunity(
   orgId: string,
   contactId: string,
   opportunityId: string,
   status: string,
+  statusChangedAt?: string | null,
 ): Promise<number> {
   const supabase = createAdminClient()
   const normalizedStatus = status.trim().toLowerCase()
+  const isWon = normalizedStatus === 'won'
+
+  if (isWon) {
+    const { error: wonAtError } = await supabase
+      .from('calls')
+      .update({ ghl_won_at: resolveStatusChangedAt(statusChangedAt) })
+      .eq('org_id', orgId)
+      .eq('contact_id', contactId)
+      .or('ghl_won_at.is.null,ghl_won_status.is.null,ghl_won_status.neq.won')
+    if (wonAtError) throw new Error(`dbUpdateGhlOpportunity (ghl_won_at): ${wonAtError.message}`)
+  }
+
   const patch: Record<string, unknown> = {
     ghl_opportunity_id: opportunityId,
     ghl_won_status: normalizedStatus,
-    ghl_won_at: normalizedStatus === 'won' ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   }
+  if (!isWon) patch.ghl_won_at = null
   const { error, count } = await supabase
     .from('calls')
     .update(patch, { count: 'exact' })
     .eq('org_id', orgId)
     .eq('contact_id', contactId)
   if (error) throw new Error(`dbUpdateGhlOpportunity: ${error.message}`)
+
+  if (isWon) await markStage2PayingFromWon(supabase, orgId, contactId, opportunityId)
+
   return count ?? 0
+}
+
+// Stage 2 é derivado do WON — falhar aqui não pode derrubar o sync do status
+// (o webhook responderia 500 e o GHL reenviaria um evento já gravado). Loga,
+// alerta e segue; o próximo sync do mesmo contato tenta de novo, e a função
+// é idempotente.
+async function markStage2PayingFromWon(
+  supabase: ReturnType<typeof createAdminClient>,
+  orgId: string,
+  contactId: string,
+  opportunityId: string,
+): Promise<void> {
+  let failure: unknown = null
+  try {
+    const { error } = await supabase.rpc('mark_stage2_paying_from_won', {
+      p_org_id: orgId,
+      p_contact_id: contactId,
+    })
+    if (error) failure = new Error(`mark_stage2_paying_from_won: ${error.message}`)
+  } catch (err) {
+    failure = err
+  }
+  if (!failure) return
+
+  console.error('[dbUpdateGhlOpportunity] Stage 2 não marcado', { orgId, contactId, opportunityId, err: failure })
+  await notifyPipelineFailure('webhook_failed', {
+    callId: `sync-error:stage2:${opportunityId}`,
+    orgId,
+    contactId,
+    error: failure,
+    stage: 'webhook',
+    reason: 'db_error',
+    meta: { operation: 'mark_stage2_paying_from_won', contactId, opportunityId },
+  }).catch(() => {})
+}
+
+// Data da mudança de status vinda do GHL, se for um timestamp válido; senão now().
+function resolveStatusChangedAt(raw: string | null | undefined): string {
+  if (raw) {
+    const parsed = new Date(raw)
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString()
+  }
+  return new Date().toISOString()
 }
 
 // Já existe alguma call WON para este contato na org? Usado pelo webhook do
