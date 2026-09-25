@@ -27,6 +27,9 @@
 -- Chamada por dbUpdateGhlOpportunity (lib/db/calls.ts) quando status = 'won',
 -- com o client service_role. Retorna o id da call marcada, ou NULL.
 --
+-- DEPENDE DE: 116a (calls_data_corrections). A função é LANGUAGE sql, então o
+-- corpo é validado no CREATE — sem a tabela, a 117 falha.
+--
 -- DEPLOY: 117 → 118 (backfill) → código que chama .rpc(). O código antes da
 -- 118 faria o cron marcar os won antigos com a data errada (ver 118).
 -- Idempotente: CREATE OR REPLACE.

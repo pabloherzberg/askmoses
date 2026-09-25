@@ -43,17 +43,13 @@ const SCHEMA = `
     ghl_won_at timestamptz,
     stage2_outcome text check (stage2_outcome is null or stage2_outcome in ('paying','not_paying','pending')),
     became_paying_at timestamptz);
-
-  create table public.calls_data_corrections (
-    id uuid primary key default gen_random_uuid(),
-    call_id uuid not null references public.calls(id),
-    column_name text not null,
-    old_value jsonb,
-    new_value jsonb,
-    applied_by text not null,
-    reason text,
-    created_at timestamptz default now());
 `
+
+// A trilha vem do arquivo versionado, não de uma cópia no teste.
+const CORRECTIONS_SQL = readFileSync(
+  resolve(process.cwd(), 'scripts/116a_calls_data_corrections.sql'),
+  'utf8',
+)
 
 let db: PGlite
 
@@ -112,6 +108,8 @@ const id = (n: number) => `aaaaaaaa-0000-0000-0000-${String(n).padStart(12, '0')
 beforeAll(async () => {
   db = await PGlite.create()
   await db.exec(SCHEMA)
+  await db.exec(CORRECTIONS_SQL)
+  await db.exec(CORRECTIONS_SQL) // idempotente
 })
 
 afterAll(async () => {
@@ -185,10 +183,14 @@ describe('117 — mark_stage2_paying_from_won', () => {
     for (const role of ['anon', 'authenticated']) {
       await db.exec(`set role ${role}`)
       await expect(mark('A')).rejects.toThrow(/permission denied/)
+      // 116a: a trilha também é fechada para eles.
+      await expect(db.query('select 1 from public.calls_data_corrections')).rejects.toThrow(
+        /permission denied/,
+      )
       await db.exec('reset role')
     }
-    await db.exec(`grant select, update on public.calls to service_role;
-                   grant insert on public.calls_data_corrections to service_role;`)
+    // A trilha já tem o grant da 116a; calls é do schema mínimo do teste.
+    await db.exec(`grant select, update on public.calls to service_role;`)
     await db.exec('set role service_role')
     await expect(mark('A')).resolves.toBeNull()
     await db.exec('reset role')
