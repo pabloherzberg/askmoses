@@ -593,6 +593,9 @@ export interface UpdateGhlPipelineInput {
   durationSeconds?: number | null
   transcript?: string | null
   transcriptSource?: 'whisper' | 'manual' | 'ghl'
+  /** Transcript bruto pré-diarização — salvaguarda contra corrupção no passo
+   *  de diarização (ver checklist §3.2). Gravado antes de limpar call_chunks. */
+  rawTranscript?: string | null
   // Campos populados pela fase de scoring (após o transcribed).
   rubricId?: string | null
   scriptId?: string | null
@@ -636,6 +639,7 @@ export async function dbUpdateGhlCallPipeline(
   if (input.durationSeconds !== undefined) patch.duration_seconds = input.durationSeconds
   if (input.transcript !== undefined) patch.transcript = input.transcript
   if (input.transcriptSource !== undefined) patch.transcript_source = input.transcriptSource
+  if (input.rawTranscript !== undefined) patch.raw_transcript = input.rawTranscript
   if (input.rubricId !== undefined) patch.rubric_id = input.rubricId
   if (input.scriptId !== undefined) patch.script_id = input.scriptId
   if (input.overallScore !== undefined) patch.overall_score = input.overallScore

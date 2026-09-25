@@ -106,7 +106,7 @@ Core table. One row per analyzed call. **Primary source for the ML pipeline.**
 | `trainer_email` | TEXT | NO | Denormalized for email routing |
 | `org_id` | UUID FK → `organizations.id` | YES | |
 | `transcript` | TEXT | NO | Raw transcript |
-| `overall_score` | NUMERIC(4,1) | NO | **0–100** weighted average of section scores. Widened and rescaled from 0.0–5.0 by migration 043 — the 0–5 you see in the UI is display only, produced by `toDisplay5()` (`s / 20`). Do not divide by 20 outside `lib/score-display.ts`. |
+| `overall_score` | NUMERIC(4,1) | NO | **0–100** weighted average of section scores when every section has a configured `weight` (rubric_criteria/script weights, 0–100, summing to 100); falls back to a simple average when any section is missing a weight or weights sum to 0 (legacy rubrics/scripts). See `computeOverallScore()` in `lib/services/overall-score.ts`. Widened and rescaled from 0.0–5.0 by migration 043 — the 0–5 you see in the UI is display only, produced by `toDisplay5()` (`s / 20`). Do not divide by 20 outside `lib/score-display.ts`. |
 | `summary` | TEXT | NO | AI-generated summary |
 | `strengths` | TEXT[] | NO | Array of strength observations |
 | `improvements` | TEXT[] | NO | Array of improvement suggestions |

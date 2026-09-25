@@ -48,15 +48,6 @@ export const INTENT_DISPLAY = {
   MAX_DISPLAY: 5.0, // Máximo na escala 0-5
 } as const;
 
-// Regras de negócio
-export const INTENT_RULES = {
-  /**
-   * Se uma call está fechada, o Intent é sempre 5.0 (máximo).
-   * Isso independe dos scores dos sinais.
-   */
-  CLOSED_CALL_INTENT: 5.0,
-} as const;
-
 /**
  * Validar se weights são válidos
  */

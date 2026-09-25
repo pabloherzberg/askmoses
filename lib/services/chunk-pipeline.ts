@@ -420,6 +420,9 @@ export async function finalizeCallIfReady(callId: string): Promise<void> {
 
     await dbUpdateGhlCallPipeline(callId, {
       transcript: finalTranscript,
+      // Salvaguarda contra corrupção na diarização (ver checklist §3.2) —
+      // grava o bruto ANTES de limpar os chunks, que é o ponto sem volta.
+      rawTranscript: stitched,
       transcriptSource: 'whisper',
       processingStatus: 'transcribed',
     })

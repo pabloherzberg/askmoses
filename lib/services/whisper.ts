@@ -302,5 +302,29 @@ ${rawTranscript}
     callId: options.callId ?? null,
   });
 
-  return result.text.trim();
+  const labeled = result.text.trim();
+
+  // O modelo pode ecoar o próprio prompt em vez de seguir as instruções
+  // (mais comum em áudio silencioso/ruído). Sem essa checagem, o eco vira
+  // o transcript "oficial" da call — ver checklist §3.2. Cai no bruto em
+  // vez de gravar lixo.
+  if (looksLikePromptLeak(labeled)) {
+    console.warn("[whisper] diarização ecoou o prompt, usando transcript bruto", {
+      callId: options.callId,
+    });
+    return rawTranscript;
+  }
+
+  return labeled;
+}
+
+const PROMPT_LEAK_MARKERS = [
+  "<<<TRANSCRIPT_BEGIN>>>",
+  "<<<TRANSCRIPT_END>>>",
+  "Output rules:",
+  "This is a sales call between a salesperson and a prospect",
+];
+
+function looksLikePromptLeak(text: string): boolean {
+  return PROMPT_LEAK_MARKERS.some((marker) => text.includes(marker));
 }

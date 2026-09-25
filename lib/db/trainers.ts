@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { applySalesCallOnly } from '@/lib/sales-calls'
+import { applySalesCallOnly, excludeFailedScoring } from '@/lib/sales-calls'
+import { normalizeSectionScore } from '@/lib/score-display'
 import type { Trainer, AvatarColor } from '@/lib/types'
 
 // ─── Sync trainer stats from real calls ──────────────────────────────────────
@@ -23,11 +24,13 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
   // (TrainerTabs) e o /dashboard. Calls não-venda entram com overall_score e
   // call_outcome NULL — sem este filtro, `?? 0` as contaria como score 0 e
   // como "não fechou", puxando as duas métricas para baixo.
-  const { data: calls, error } = await applySalesCallOnly(
-    supabase
-      .from('calls')
-      .select('overall_score, call_outcome, created_at, sections')
-      .eq('trainer_id', trainerId),
+  const { data: calls, error } = await excludeFailedScoring(
+    applySalesCallOnly(
+      supabase
+        .from('calls')
+        .select('overall_score, call_outcome, created_at, sections')
+        .eq('trainer_id', trainerId),
+    ),
   ).order('created_at', { ascending: false })
 
   if (error) {
@@ -86,7 +89,7 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
       if (!col) continue
       if (!sectionSums[col]) sectionSums[col] = { sum: 0, count: 0 }
       const raw = item.score ?? 0
-      sectionSums[col].sum += raw > 5 ? raw : raw * 20
+      sectionSums[col].sum += normalizeSectionScore(raw)
       sectionSums[col].count += 1
     }
   }

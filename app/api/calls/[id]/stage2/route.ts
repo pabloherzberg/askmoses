@@ -40,9 +40,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (stage2Outcome === 'paying') {
     const call = await getCallById(id, { orgId })
     if (!call) return notFound('Call')
-    if (call.result === 'closed') {
-      intentAtClose = 5
-    } else if (call.intentBreakdown) {
+    if (call.intentBreakdown) {
       const signals = await getIntentSignals().catch(() => [])
       const weights = call.intentWeights ?? resolveIntentWeights(signals)
       intentAtClose = computeIntentIndex(call.intentBreakdown, weights)
