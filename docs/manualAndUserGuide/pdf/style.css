@@ -100,6 +100,11 @@ th, td {
   text-align: left;
 }
 
+/* Caminhos longos em `code` (coluna Evidence do §16) não têm espaço para
+   quebrar e empurravam a tabela para fora da página. "anywhere" só no code:
+   na célula inteira, quebrava palavras e números ("Coachi-ng", "1/5"). */
+td code { overflow-wrap: anywhere; }
+
 th { background: var(--code-bg); font-weight: 600; }
 
 blockquote {

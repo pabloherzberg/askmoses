@@ -2,8 +2,8 @@
 
 **Understanding your sales coaching platform — what every screen shows and how to read it**
 
-Version 1.2 · September 2026
-Supersedes v1.1 (August 2026). Revised against `dev` @ `18807ca` (30 September 2026).
+Version 1.3 · September 2026
+Supersedes v1.2 (September 2026). Revised against `dev` @ `66cf2c6` (30 September 2026).
 
 ---
 
@@ -66,7 +66,10 @@ Every call follows the same journey, whether you upload it by hand or it arrives
 
 > **GOOD TO KNOW**
 >
-> If a call comes from a CRM user who is not yet linked to a rep in AskMoses, the call is **not** lost: it is analysed like any other and assigned to a system rep called **Front Desk - AskMoses**. As soon as that CRM user is linked to a rep, their Front Desk calls move to the real rep automatically.
+> A call is never lost because of who it belongs to. When AskMoses cannot match a call to one of your reps, it is analysed like any other and assigned to a system rep called **Front Desk - AskMoses**. There are two cases:
+>
+> - **The CRM user is not linked to a rep yet.** The call waits in Front Desk. As soon as that CRM user is linked to a rep who has accepted their invitation, their Front Desk calls move to the rep automatically.
+> - **The CRM sent no user at all.** This is typical of an inbound call from a brand-new lead whose contact has no owner in the CRM yet. With no user to match, the call **stays in Front Desk permanently**.
 
 ---
 
@@ -292,6 +295,10 @@ Browse and search your team's calls, filter by rep or outcome, and open any call
 >
 > The **Calls** screen opens filtered to **Closed** and **Not Closed**. Calls identified as *Not a Sales Call* are hidden until you tick them in the result filter, and calls still being analysed always appear. If a call seems to be missing, check the result filter first.
 
+> **GOOD TO KNOW — Calls that are not scored**
+>
+> Voicemails, messages left for someone, and logistics calls or calls with existing customers (rescheduling, directions, questions about a service already booked) are usually classified as **Not a Sales Call**. They get no score and are hidden by the default filter. This is intentional: there is no selling in them to coach, and counting them would drag down your close rate. The classification is the AI's judgement of whether any selling took place, so an occasional call can land on the other side.
+
 ---
 
 ## 9. Your Personal Dashboard `REP`
@@ -441,6 +448,17 @@ In the product, scores are always shown on a **0–5** scale. Internally the pla
 
 Most figures update as soon as a call is analysed. A few team summaries refresh when new calls come in rather than on every page load, so immediately after a large upload you may briefly see the previous values. Appointment data from your CRM syncs on a schedule.
 
+**A client says a call is missing or wasn't scored. What do I do?**
+
+1. **Ask for the specific call:** date, time, the rep, and who they were talking to.
+2. **Open Calls, filter by that rep, and tick *Not a Sales Call*** in the result filter. The list shows the most recent calls first. Calls with the same customer are grouped, so the call may be behind **View All** on that customer's row.
+3. **If it is there without a score, open it and read the transcript.** It is almost always a voicemail, a logistics call or an existing customer (see section 8).
+4. **Escalate only if the call really is not in the list**, and attach the specific call from step 1.
+
+**An inbound call shows up under the wrong rep. Why?**
+
+For inbound calls, the CRM does not record who actually answered the phone. The user it sends with the call is the one **assigned to the contact** — the lead's owner — so the call goes to that person, even if a teammate picked up. If the contact has no owner yet, the call goes to Front Desk (see section 2.2). To have inbound calls land with the right rep, keep contact ownership up to date in the CRM.
+
 **Can I change what "good" means for my team?**
 
 Yes. Your script defines what good looks like inside each of the five stages — your questions, your offer, your objection responses — and how much each stage weighs in the overall score. Every call is scored against it, so the platform coaches to your standard, not a generic one. The five stages themselves stay the same for every client.
@@ -449,4 +467,4 @@ Yes. Your script defines what good looks like inside each of the five stages —
 
 ---
 
-*AskMoses.AI — User Guide v1.2 · September 2026 · For questions not covered here, contact your account team.*
+*AskMoses.AI — User Guide v1.3 · September 2026 · For questions not covered here, contact your account team.*

@@ -4,9 +4,9 @@
 
 *Reference guide for answering rule questions and telling intended behaviour apart from real defects*
 
-Version 1.2 · September 2026
-Supersedes v1.1 (August 2026, verified against `dev` @ `aafcf10`).
-**v1.2 updates §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17. Only the passages changed in v1.2 were re-verified, against `dev` @ `18807ca` (30 September 2026).** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
+Version 1.3 · September 2026
+Supersedes v1.2 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
+**v1.3 updates §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6` (30 September 2026). v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -219,7 +219,18 @@ Two ingestion paths, both ending in the same place:
 
 Automatic ingestion can fail for reasons that have nothing to do with selling: no recording available yet, or a transcription failure.
 
-A call from a CRM user who is **not linked** to any active member is no longer dropped. It is ingested, transcribed and scored like any other, and assigned to the organisation's system rep **Front Desk - AskMoses** (`lib/constants/front-desk.ts` — `FRONT_DESK_NAME`, migration `109_front_desk_system_rep.sql`). When that CRM user is later linked to a member, their Front Desk calls move to the real rep automatically (`reassignFrontDeskCalls`, `lib/services/ghl-call-recovery.ts`). This assignment is only logged (Vercel); it no longer sends a Slack alert.
+A call that cannot be matched to a rep is no longer dropped. It is ingested, transcribed and scored like any other, and assigned to the organisation's system rep **Front Desk - AskMoses** (`lib/constants/front-desk.ts` — `FRONT_DESK_NAME`, migration `109_front_desk_system_rep.sql`; `app/api/webhooks/ghl/route.ts:296-343`). The assignment is only logged (Vercel); it no longer sends a Slack alert. There are two cases, and only the first one is temporary:
+
+| Case | What happens |
+|---|---|
+| **The payload has a `userId`, but it is not linked to any member** | The call goes to Front Desk with its `ghl_user_id` stored. When that GHL user is linked to a member whose invite is accepted, their Front Desk calls move to the real rep automatically (`reassignFrontDeskCalls`, `lib/services/ghl-call-recovery.ts:42-55`). Migration is triggered by linking (`app/api/memberships/[userId]/route.ts:178`), by accepting the invite (`app/api/auth/verify-invite-token/route.ts:112`), and by a catch-up for calls that were still in the pipeline (`lib/services/chunk-pipeline.ts:572`). |
+| **The payload has no `userId`** (typical of an inbound call from a new lead whose contact has no owner in GHL) | The call goes to Front Desk **permanently**. Migration selects calls by `(Front Desk trainer_id, ghl_user_id)`, and a call with no `ghl_user_id` never matches (`lib/db/calls.ts:910-918` — `dbGetFrontDeskCallsByGhlUser`). |
+
+In production, over the last 30 days to 30 September 2026, 123 of 271 inbound calls (45%) arrived with no `userId`, against 22 of 1,072 outbound calls (2%).
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
+> **An inbound call is attributed to the contact's owner, not to whoever answered.** The GHL workflow sends `userId` from the merge tag `{{phoneCall.user.id}}` (`docs/AskMoses-GHL-StepByStep.md`). For inbound calls, GHL does not record who picked up, so that user is the one **assigned to the contact** (the lead's owner), and the call goes to that rep. If the contact has no owner, `userId` is empty and the call goes to Front Desk permanently (table above). "The call went to the wrong rep" on an inbound call is usually contact ownership in GHL, not a defect in AskMoses. It also affects the transcript's speaker labels (§16 #15).
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
@@ -487,6 +498,16 @@ The detail screen shows the overall score, per-section bars with the AI's writte
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
+> **Calls that are not scored, by design.** Before scoring, the AI classifies each call as a sales call or not (the *SALES CALL GATE* in `lib/services/scoring.ts:135-140`, same criterion in `lib/services/sales-call-classifier.ts`). The prompt treats any recording "where no selling activity is taking place" as not a sales call, and says to prefer *true* when in doubt. In practice this catches voicemails, messages left for someone, and logistics calls or calls with existing customers.
+>
+> Such calls are saved with `is_sales_call = false`, no score, outcome or sections (`lib/services/ghl-call-scoring.ts:212-221`), and show as *Not a Sales Call*, hidden by the default filter. They are excluded from the close rate (`dbGetOrgCloseRate`, `lib/db/calls.ts:768` — `applySalesCallOnly`) and from every other aggregate that uses `applySalesCallOnly`. This is intentional: counted as `not_closed`, they would drag the close rate down for reasons that have nothing to do with selling.
+>
+> This is the model's judgement, not a hard rule. Since 20 September 2026, 204 of the 210 transcripts that look like a voicemail were classified as not a sales call. The other 6 were scored.
+>
+> **Triage:** filter Calls by the rep and tick *Not a Sales Call*. The list is newest first, and calls with the same contact are grouped behind **View All**. Open the call: the transcript is shown even when there is no score. Escalate only if the call is not in the list at all.
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
 > A section marked **critical** raises a red alert when it scores **40 or below** on this screen (`components/shared/CallDetail.tsx:186` — `section.critical && section.score <= 40`). The coaching email uses a different threshold — **60** (`lib/email/coaching-template.ts:115,123`) — so the email flags calls the screen does not. Same concept, two numbers, because they were built separately.
 
 > **KNOWN DEFECT — ALREADY REPORTED**
@@ -744,7 +765,7 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 
 ## 16. Known Defects — Do Not Report These
 
-*Every item below was re-verified against `dev` @ `aafcf10` at the `file:line` given; #1 and #13 again at `18807ca`. They are already identified. Reporting them again costs everyone time — but if you see behaviour that is not on this list and not explained elsewhere in this manual, that is worth raising.*
+*Every item below was re-verified against `dev` @ `aafcf10` at the `file:line` given; #1 and #13 again at `18807ca`, #15 at `66cf2c6`. They are already identified. Reporting them again costs everyone time — but if you see behaviour that is not on this list and not explained elsewhere in this manual, that is worth raising.*
 
 | # | Where | What is wrong | Evidence | Impact |
 |---|---|---|---|---|
@@ -762,8 +783,20 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 | 12 | Analytics → Rising Star | Compares organisation-wide first/last calls, credits the most recent rep | `app/[locale]/dashboard/analytics/page.tsx:168-180` | **Low** — demo-grade heuristic |
 | 13 | Stage 2 (Actual Close) | Filled automatically as `paying` on a CRM Won (manual value prevails), but no report consumes Stage 2 or `intent_at_close` — only the call detail marker shows it | `scripts/117_stage2_from_ghl_won.sql`, `app/api/calls/[id]/stage2/route.ts:39-56` | **Low** — incomplete, not broken |
 | 14 | Buying Intent | Each signal is defined one way in the AI prompt and described another way in the on-screen help | `lib/services/scoring.ts:402` vs `messages/en.json` → `signals.financial.question` | **Low** — the AI may not score exactly what the UI claims |
+| 15 | Transcripts | Speaker labels (**Trainer** / **Prospect**) are sometimes swapped. Reported more often on inbound calls. | `lib/services/whisper.ts:392-414` — `assignSpeakerLabels()`; name hint from `lib/services/chunk-pipeline.ts:451` | **Medium** — scoring reads the labelled transcript, so the AI can credit or blame the rep for what the customer said |
 
-*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up. v1.2 keeps the numbering: #1 and #13 were reworded, not removed.*
+*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up. v1.2 keeps the numbering: #1 and #13 were reworded, not removed. v1.3 adds #15.*
+
+### A note on speaker labels (#15)
+
+Whisper does not separate speakers. The labels come from a second, **text-only** pass: an LLM (the active model, default `gpt-4o-mini`) reads the plain transcript and decides who said each line (`lib/services/whisper.ts:381-414`). It has no acoustic cues. It infers roles from content, from two optional name hints ("The salesperson's name is …", "The prospect's name is …"), and from a default: a line it cannot place is labelled `Trainer:`, because "sales call recordings usually start with the salesperson".
+
+Inbound calls are where each of those inputs is weakest:
+
+- the salesperson name hint is the call's `trainer_name`, which on an inbound call is the contact's owner and not necessarily who answered (§2.6), or `Front Desk - AskMoses` when the call went to Front Desk;
+- an inbound call opens with the customer explaining why they are calling, which reads like the salesperson's discovery.
+
+The frequency on inbound is reported from use, not measured. The mechanism above is what the code shows.
 
 ### A note on scale drift
 
@@ -829,4 +862,4 @@ The `/overview` screen has been removed. The owner's home is `/dashboard`. Old l
 
 ---
 
-*AskMoses.AI — System Manual v1.2 · 30 September 2026 · Changed passages verified against `dev` @ `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
+*AskMoses.AI — System Manual v1.3 · 30 September 2026 · v1.3 passages verified against `dev` @ `66cf2c6`, v1.2 passages against `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
