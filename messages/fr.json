@@ -444,10 +444,6 @@
       "scriptBuilderAuto": {
         "title": "Générez des scripts automatiquement à partir d'appels réels",
         "description": "Le Script Builder transforme vos meilleurs appels en un script + une rubrique réutilisables en quelques minutes — réservé aux forfaits Pro et Pro + RAG. Le forfait Starter n'inclut que le Script Manager manuel."
-      },
-      "insightsRag": {
-        "title": "Coachez avec votre propre matériel pédagogique",
-        "description": "Pro + RAG indexe vos scripts, PDFs de méthodologie et transcriptions des meilleurs appels, pour que les insights citent exactement le playbook que votre équipe devrait suivre."
       }
     },
     "correlationEngine": {

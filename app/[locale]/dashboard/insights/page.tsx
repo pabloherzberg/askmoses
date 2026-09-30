@@ -10,8 +10,6 @@ import {
   ChevronDown,
   FileText,
 } from "lucide-react"
-import { UpsellCard } from "@/components/shared/UpsellCard"
-import { useCurrentClient } from "@/lib/hooks/use-current-client"
 import { Badge } from "@/components/ui/badge"
 import type { ScriptSection } from "@/lib/db/scripts"
 import { scoreColorVar, toBarWidth, toDisplay5, scoreLevel } from "@/lib/score-display"
@@ -688,7 +686,6 @@ function ActiveScriptPanel({
 
 export default function InsightsPage() {
   const t = useTranslations("Dashboard.insights")
-  const tUpsell = useTranslations("Shared.upsell.insightsRag")
   // Idioma atual — mandado no header x-locale pras rotas de script intelligence
   // traduzirem o conteúdo AI-generated na leitura (cache fica canônico em inglês).
   const locale = useLocale()
@@ -715,9 +712,6 @@ export default function InsightsPage() {
   const [firstApproval, setFirstApproval] = useState(false)
   const [suggestionDecisions, setSuggestionDecisions] = useState<Array<{ index: number; decision: "pending" | "accepted" | "rejected"; editedText: string }>>([])
   const [orgScriptIdCache, setOrgScriptIdCache] = useState<string | null>(null)
-
-  const { client: currentClient, loading: clientLoading } = useCurrentClient()
-  const showRagUpsell = !clientLoading && !!currentClient && !currentClient.plan.hasRag
 
   // Carregamento inicial: busca script ativo + pending em paralelo
   useEffect(() => {
@@ -1158,14 +1152,6 @@ export default function InsightsPage() {
           </p>
         </div>
       </div>
-
-      {showRagUpsell && (
-        <UpsellCard
-          requires="pro_rag"
-          title={tUpsell("title")}
-          description={tUpsell("description")}
-        />
-      )}
 
       {/* ── Sugestão Pendente / Resolução ── */}
       {(pending || resolution) && (
