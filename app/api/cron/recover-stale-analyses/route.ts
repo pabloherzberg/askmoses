@@ -71,7 +71,11 @@ export async function GET(request: NextRequest) {
       ) {
         await admin
           .from('script_intelligence_cache')
-          .update({ analysis_status: 'error', updated_at: new Date().toISOString() })
+          .update({
+            analysis_status: 'error',
+            error_reason: 'Pendente órfã: o org_script não existe mais, foi fechado ou não está pending',
+            updated_at: new Date().toISOString(),
+          })
           .eq('org_id', orgId)
           .eq('org_script_id', orgScriptId)
         cleaned += 1
@@ -86,7 +90,11 @@ export async function GET(request: NextRequest) {
       if (!previousScriptId) {
         await admin
           .from('script_intelligence_cache')
-          .update({ analysis_status: 'error', updated_at: new Date().toISOString() })
+          .update({
+            analysis_status: 'error',
+            error_reason: 'Org sem script ativo (previous_script_id) para comparar',
+            updated_at: new Date().toISOString(),
+          })
           .eq('org_id', orgId)
           .eq('org_script_id', orgScriptId)
         errored += 1

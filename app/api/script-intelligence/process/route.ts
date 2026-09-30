@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
     result: finalResult,
     decisions: [],
     analysis_status: finalStatus,
+    // Motivo no banco, não só no console (migration 121). Ex.: "No calls with
+    // transcripts found" — org sem call para comparar.
+    error_reason: analysis.ok ? null : analysis.error,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'org_id,org_script_id' })
 
@@ -98,6 +101,7 @@ export async function POST(request: NextRequest) {
     if (nextMatch) {
       await admin.from('script_intelligence_cache').update({
         analysis_status: 'error',
+        error_reason: 'Org sem script ativo (previous_script_id) para comparar',
         updated_at: new Date().toISOString(),
       }).eq('org_script_id', nextMatch.id)
       console.warn(`[sic/process] next org ${nextMatch.org_id} has no previous_script_id, skipping`)
