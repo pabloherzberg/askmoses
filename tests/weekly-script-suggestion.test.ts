@@ -460,63 +460,89 @@ describe('error_reason — o motivo do erro vai para o banco', () => {
   })
 })
 
-// ─── Anonimização conferida antes de gravar ──────────────────────────────────
+// ─── Anonimização aplicada antes de gravar (substitui, não barra) ────────────
 
-describe('anonimização — vazamento barra a rodada', () => {
+describe('anonimização — substitui antes de gravar, sem barrar a rodada', () => {
   const namedCalls = (orgId: string) =>
     calls(orgId, [90, 80, 70]).map((c) => ({ ...c, trainer_name: 'Austin Ackerman', client_name: 'Jenna Maier' }))
 
-  it('valor monetário → erro com trecho, script NÃO é gravado', async () => {
-    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
-    const s = validScript()
-    s.sections[2].instructions = 'Present the 6-week program for $1,200.'
-    ai.text = JSON.stringify(s)
-    const r = await generateWeeklySuggestedScript()
-    expect(r).toMatchObject({ ok: false, kind: 'error' })
-    expect((r as { error: string }).error).toBe(
-      'Anonimização: valor monetário "$1,200" em sections[Offer Presentation].instructions: "Present the 6-week program for $1,200."',
-    )
-    expect(dbCreateScript).not.toHaveBeenCalled()
-  })
+  const savedScript = () =>
+    (dbCreateScript.mock.calls[0] as unknown as [{
+      name: string
+      description: string
+      full_script: string
+      sections: { name: string; instructions: string; weight: number }[]
+    }])[0]
 
-  it('nome do trainer de uma call usada → erro, script NÃO é gravado', async () => {
-    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
-    const s = validScript()
-    s.full_script = 'Hi, this is Austin calling about your dog.'
-    ai.text = JSON.stringify(s)
-    const r = await generateWeeklySuggestedScript()
-    expect((r as { error: string }).error).toMatch(/^Anonimização: nome de trainer "Austin" em full_script/)
-    expect(dbCreateScript).not.toHaveBeenCalled()
-  })
-
-  it('nome de uma org incluída → erro', async () => {
+  it('valor monetário, trainer e org viram placeholders no script gravado', async () => {
     seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
     const s = validScript()
     s.description = 'What works at Alpha Dogs'
+    s.sections[2].instructions = 'Present the 6-week program for $1,200.'
+    s.full_script = 'Hi, this is Austin calling about your dog.'
     ai.text = JSON.stringify(s)
+
     const r = await generateWeeklySuggestedScript()
-    expect((r as { error: string }).error).toMatch(/^Anonimização: nome de org "Alpha Dogs" em description/)
+    expect(r.ok).toBe(true)
+    expect(dbCreateScript).toHaveBeenCalledTimes(1)
+    const saved = savedScript()
+    expect(saved.description).toBe('What works at [business name]')
+    expect(saved.sections[2].instructions).toBe('Present the 6-week program for [price].')
+    expect(saved.full_script).toBe('Hi, this is [name] calling about your dog.')
+    // Estrutura e pesos intactos.
+    expect(saved.sections.map((x) => x.name)).toEqual([...WEEKLY_SECTION_NAMES])
+    expect(saved.sections.map((x) => x.weight)).toEqual([20, 20, 20, 20, 20])
   })
 
-  it('cron: registra "error" com motivo e trecho em script_suggestion_runs e não envia', async () => {
+  it('palavra comum de sobrenome não é substituída sozinha', async () => {
+    seedDb(
+      [org('a', 'Alpha Dogs')],
+      calls('a', [90, 80, 70]).map((c) => ({ ...c, trainer_name: 'Jane Stiff', client_name: null })),
+    )
+    const s = validScript()
+    s.sections[0].instructions = 'Notice stiff body language. Jane Stiff confirmed.'
+    ai.text = JSON.stringify(s)
+    await generateWeeklySuggestedScript()
+    expect(savedScript().sections[0].instructions).toBe('Notice stiff body language. [name] confirmed.')
+  })
+
+  it('cron: rodada "sent", envia, e registra as substituições sem o termo original', async () => {
     seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
     const s = validScript()
     s.sections[4].instructions = 'Tell Jenna the deposit is 200 dollars.'
     ai.text = JSON.stringify(s)
-    db.results.script_suggestion_runs = { data: { id: 'run-leak' }, error: null }
+    db.results.organizations = [
+      { data: [org('a', 'Alpha Dogs')], error: null },
+      { data: [{ id: 'a' }], error: null },
+    ]
+    db.results.script_suggestion_runs = { data: { id: 'run-redacted' }, error: null }
 
     const res = await GET(cronRequest())
-    expect(res.status).toBe(500)
-    expect(sendScriptToOrgs).not.toHaveBeenCalled()
-    expect(dbCreateScript).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(sendScriptToOrgs).toHaveBeenCalledTimes(1)
+    expect(savedScript().sections[4].instructions).toBe('Tell [name] the deposit is [price].')
 
     const run = db.inserts.find((i) => i.table === 'script_suggestion_runs')!.row as Record<string, unknown>
-    expect(run.status).toBe('error')
-    expect(run.script_id).toBeNull()
-    expect(String(run.error)).toBe(
-      'Anonimização: valor monetário "200 dollars" em sections[Close & Next Steps].instructions: "Tell Jenna the deposit is 200 dollars."',
+    expect(run.status).toBe('sent')
+    expect(run.error).toBeNull()
+    expect(run.redactions).toEqual(
+      expect.arrayContaining([
+        { kind: 'money', field: 'sections[Close & Next Steps].instructions', count: 1 },
+        { kind: 'lead', field: 'sections[Close & Next Steps].instructions', count: 1 },
+      ]),
     )
-    expect(run.call_ids).toEqual(['a-c0', 'a-c1', 'a-c2'])
+    expect(JSON.stringify(run.redactions)).not.toMatch(/Jenna|200 dollars/)
+  })
+
+  it('rodada com erro (seções inválidas) grava redactions vazio', async () => {
+    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
+    ai.text = JSON.stringify({ ...validScript(), sections: [] })
+    db.results.script_suggestion_runs = { data: { id: 'run-err' }, error: null }
+    const res = await GET(cronRequest())
+    expect(res.status).toBe(500)
+    const run = db.inserts.find((i) => i.table === 'script_suggestion_runs')!.row as Record<string, unknown>
+    expect(run.status).toBe('error')
+    expect(run.redactions).toEqual([])
   })
 
   it('a query traz trainer_name e client_name das calls', async () => {

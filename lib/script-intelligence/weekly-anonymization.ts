@@ -1,40 +1,65 @@
-// Checagem de anonimização do script semanal da rede (antes de gravar).
+// Anonimização do script semanal da rede, aplicada pelo CÓDIGO antes de gravar.
 //
 // O prompt (weekly-prompt.ts) já manda anonimizar, mas é só instrução ao
-// modelo. Aqui o código confere o resultado: se o script trouxer um valor
-// monetário ou o nome de uma org incluída, de um trainer ou de um lead das
-// calls usadas, a rodada vira erro e nada é gravado nem enviado.
+// modelo. Aqui o código SUBSTITUI o que escapou:
+//   - valor monetário              → [price]
+//   - nome de org incluída          → [business name]
+//   - nome de trainer ou lead das calls usadas → [name]
+// A rodada não é barrada por isso; o que foi substituído fica registrado em
+// script_suggestion_runs.redactions (tipo, campo e quantidade — nunca o termo
+// original, para não guardar o dado que foi removido).
 //
 // Regras de nome (case-insensitive, palavras inteiras, espaços normalizados):
 //   - org: nome completo, e sem sufixo societário (LLC, Inc…);
 //   - pessoa (trainer e lead): nome completo + primeiro e último nome com 3+
 //     letras. Os nomes no CRM vêm sujos ("Cheryl SADIE Golden Retriever
-//     Davis": o lead com o cão e a raça no meio); comparar palavra por
-//     palavra barraria "Golden"/"Retriever" em qualquer script de
-//     adestramento. É pelo primeiro/último nome que o modelo costuma vazar.
+//     Davis": o lead com o cão e a raça no meio); as palavras do meio ficam
+//     de fora, senão "Golden"/"Retriever" sumiriam de qualquer script;
+//   - primeiro/último nome que também é palavra comum em inglês
+//     (COMMON_WORD_NAMES) não é substituído sozinho — só o nome completo;
 //   - placeholders de sistema ("Front Desk - AskMoses", "Unknown trainer",
 //     "—") não contam.
 //
-// Campos conferidos: os que são gravados e chegam ao cliente — name,
-// description, sections (name/instructions/tips) e full_script.
+// Campos tratados: name, description, sections[].instructions/tips e
+// full_script. sections[].name fica de fora — são os 5 nomes fixos já
+// validados.
 
 import { FRONT_DESK_NAME } from '@/lib/constants/front-desk'
 
-export type LeakKind = 'money' | 'org' | 'trainer' | 'lead'
+export type RedactionKind = 'money' | 'org' | 'trainer' | 'lead'
 
 export interface AnonymizationTerm {
-  kind: Exclude<LeakKind, 'money'>
-  /** O termo como aparece no aviso (nome já normalizado). */
+  kind: Exclude<RedactionKind, 'money'>
+  /** O termo normalizado (só em memória — nunca é gravado). */
   term: string
   pattern: RegExp
 }
 
-export interface AnonymizationLeak {
-  kind: LeakKind
-  term: string
+/** Uma linha por (tipo, campo). Sem o termo original, de propósito. */
+export interface Redaction {
+  kind: RedactionKind
   field: string
-  excerpt: string
+  count: number
 }
+
+export const PLACEHOLDER: Record<RedactionKind, string> = {
+  money: '[price]',
+  org: '[business name]',
+  trainer: '[name]',
+  lead: '[name]',
+}
+
+// Primeiro/último nome que também é palavra comum em inglês não é substituído
+// sozinho — só o nome completo. Sem esta lista, "stiff body language"
+// viraria "[name] body language" por causa de um lead chamado Matthew Stiff.
+// Lista curta e explícita: cores, adjetivos e substantivos que aparecem em
+// script de adestramento ou são nomes frequentes.
+export const COMMON_WORD_NAMES: ReadonlySet<string> = new Set([
+  'stiff', 'white', 'lamp', 'golden', 'brown', 'young', 'black', 'green', 'gray', 'grey',
+  'little', 'long', 'short', 'small', 'strong', 'sharp', 'rich', 'wise', 'early', 'love',
+  'hope', 'grace', 'joy', 'faith', 'will', 'may', 'bell', 'king', 'park', 'hill',
+  'stone', 'wood', 'field', 'lane', 'story', 'walker', 'baker', 'fisher', 'hunter', 'miller',
+])
 
 const IGNORED_NAMES = new Set(
   [FRONT_DESK_NAME, 'Unknown trainer', '—', '-'].map((n) => n.toLowerCase()),
@@ -43,11 +68,11 @@ const IGNORED_NAMES = new Set(
 const LEGAL_SUFFIX = /[\s,]+(llc|l\.l\.c\.|inc\.?|ltd\.?|co\.?|corp\.?)$/i
 
 // Valor monetário: símbolo + número ($150, US$ 1,200, R$ 99, € 50, £30, $2k)
-// ou número + moeda por extenso (150 dollars, 99 bucks, 50 USD).
-// O número termina sempre em dígito — "$1,200." não leva o ponto final junto.
+// ou número + moeda por extenso (150 dollars, 99 bucks, 50 USD). O número
+// termina sempre em dígito — "$1,200." não leva o ponto final junto.
 const MONEY_PATTERNS: RegExp[] = [
-  /(?:US\$|R\$|\$|€|£)\s?\d(?:[\d.,]*\d)?(?:\s?[kK]\b)?/,
-  /\b\d(?:[\d.,]*\d)?\s?(?:dollars?|bucks|usd|reais|euros?)\b/i,
+  /(?:US\$|R\$|\$|€|£)\s?\d(?:[\d.,]*\d)?(?:\s?[kK]\b)?/g,
+  /\b\d(?:[\d.,]*\d)?\s?(?:dollars?|bucks|usd|reais|euros?)\b/gi,
 ]
 
 // new RegExp em vez de literal: o tsconfig mira ES6 e o TS recusa \p{…} em literal.
@@ -64,7 +89,7 @@ function escapeRegex(s: string): string {
 /** Palavra(s) inteira(s), sem diferenciar maiúsculas; espaço no nome casa com qualquer espaço. */
 function wholeWords(term: string): RegExp {
   const body = term.split(' ').map(escapeRegex).join('\\s+')
-  return new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'iu')
+  return new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'giu')
 }
 
 function isUsableName(name: string): boolean {
@@ -79,8 +104,9 @@ function personTerms(raw: string | null | undefined, kind: 'trainer' | 'lead'): 
   const terms = new Set<string>([full])
   const tokens = full.split(' ').filter((t) => LETTERS_ONLY_3PLUS.test(t))
   if (tokens.length > 0) {
-    terms.add(tokens[0])
-    terms.add(tokens[tokens.length - 1])
+    for (const t of [tokens[0], tokens[tokens.length - 1]]) {
+      if (!COMMON_WORD_NAMES.has(t.toLowerCase())) terms.add(t)
+    }
   }
   return [...terms].map((term) => ({ kind, term, pattern: wholeWords(term) }))
 }
@@ -95,6 +121,11 @@ function orgTerms(raw: string): AnonymizationTerm[] {
   return [...terms].map((term) => ({ kind: 'org' as const, term, pattern: wholeWords(term) }))
 }
 
+/**
+ * Termos a substituir, do mais longo para o mais curto — o nome completo
+ * ("Austin Ackerman") é trocado antes do primeiro nome ("Austin"), senão o
+ * texto viraria "[name] [name]".
+ */
 export function buildAnonymizationTerms(
   included: {
     orgName: string
@@ -103,7 +134,8 @@ export function buildAnonymizationTerms(
 ): AnonymizationTerm[] {
   const byKey = new Map<string, AnonymizationTerm>()
   const add = (t: AnonymizationTerm) => {
-    const key = `${t.kind}|${t.term.toLowerCase()}`
+    const key = t.term.toLowerCase()
+    // Mesmo termo como org e como pessoa: vale o primeiro (org entra antes).
     if (!byKey.has(key)) byKey.set(key, t)
   }
   for (const org of included) {
@@ -113,74 +145,69 @@ export function buildAnonymizationTerms(
       personTerms(call.clientName, 'lead').forEach(add)
     }
   }
-  return [...byKey.values()]
+  return [...byKey.values()].sort((a, b) => b.term.length - a.term.length)
 }
 
-function excerptAround(text: string, index: number, length: number): string {
-  const start = Math.max(0, index - 40)
-  const end = Math.min(text.length, index + length + 40)
-  const core = text.slice(start, end).replace(/\s+/g, ' ').trim()
-  return `${start > 0 ? '…' : ''}${core}${end < text.length ? '…' : ''}`
+export interface RedactableScript {
+  name?: unknown
+  description?: unknown
+  sections?: unknown
+  full_script?: unknown
 }
 
-function textFields(parsed: unknown): { field: string; text: string }[] {
-  const p = (parsed ?? {}) as {
-    name?: unknown
-    description?: unknown
-    full_script?: unknown
-    sections?: unknown
+/**
+ * Devolve uma cópia do script com os termos substituídos e a lista do que
+ * foi substituído (tipo, campo, quantidade). O script de entrada não é
+ * alterado.
+ */
+export function redactScript<T extends RedactableScript>(
+  parsed: T,
+  terms: AnonymizationTerm[],
+): { script: T; redactions: Redaction[] } {
+  const counts = new Map<string, Redaction>()
+  const bump = (kind: RedactionKind, field: string, n: number) => {
+    if (n === 0) return
+    const key = `${kind}|${field}`
+    const r = counts.get(key) ?? { kind, field, count: 0 }
+    r.count += n
+    counts.set(key, r)
   }
-  const out: { field: string; text: string }[] = []
-  const push = (field: string, v: unknown) => {
-    if (typeof v === 'string' && v.length > 0) out.push({ field, text: v })
+
+  const redactText = (field: string, text: string): string => {
+    let out = text
+    for (const re of MONEY_PATTERNS) {
+      out = out.replace(re, () => {
+        bump('money', field, 1)
+        return PLACEHOLDER.money
+      })
+    }
+    for (const t of terms) {
+      out = out.replace(t.pattern, () => {
+        bump(t.kind, field, 1)
+        return PLACEHOLDER[t.kind]
+      })
+    }
+    return out
   }
-  push('name', p.name)
-  push('description', p.description)
-  if (Array.isArray(p.sections)) {
-    p.sections.forEach((s, i) => {
-      const sec = (s ?? {}) as { name?: unknown; instructions?: unknown; tips?: unknown }
+
+  const redactField = (field: string, value: unknown): unknown =>
+    typeof value === 'string' ? redactText(field, value) : value
+
+  const script: Record<string, unknown> = { ...(parsed as unknown as Record<string, unknown>) }
+  script.name = redactField('name', parsed.name)
+  script.description = redactField('description', parsed.description)
+  script.full_script = redactField('full_script', parsed.full_script)
+  if (Array.isArray(parsed.sections)) {
+    script.sections = parsed.sections.map((s: unknown, i: number) => {
+      const sec = (s ?? {}) as Record<string, unknown>
       const label = typeof sec.name === 'string' ? sec.name : `#${i + 1}`
-      push(`sections[${label}].name`, sec.name)
-      push(`sections[${label}].instructions`, sec.instructions)
-      push(`sections[${label}].tips`, sec.tips)
+      return {
+        ...sec,
+        instructions: redactField(`sections[${label}].instructions`, sec.instructions),
+        tips: redactField(`sections[${label}].tips`, sec.tips),
+      }
     })
   }
-  push('full_script', p.full_script)
-  return out
-}
 
-/** Primeiro vazamento encontrado, ou null. Valor monetário é conferido antes dos nomes. */
-export function findAnonymizationLeak(
-  parsed: unknown,
-  terms: AnonymizationTerm[],
-): AnonymizationLeak | null {
-  const fields = textFields(parsed)
-
-  for (const { field, text } of fields) {
-    for (const re of MONEY_PATTERNS) {
-      const m = re.exec(text)
-      if (m) return { kind: 'money', term: m[0], field, excerpt: excerptAround(text, m.index, m[0].length) }
-    }
-  }
-
-  for (const { field, text } of fields) {
-    for (const t of terms) {
-      const m = t.pattern.exec(text)
-      if (m) return { kind: t.kind, term: t.term, field, excerpt: excerptAround(text, m.index, m[0].length) }
-    }
-  }
-
-  return null
-}
-
-const KIND_LABEL: Record<LeakKind, string> = {
-  money: 'valor monetário',
-  org: 'nome de org',
-  trainer: 'nome de trainer',
-  lead: 'nome de lead',
-}
-
-/** Texto gravado em script_suggestion_runs.error. */
-export function describeLeak(leak: AnonymizationLeak): string {
-  return `Anonimização: ${KIND_LABEL[leak.kind]} "${leak.term}" em ${leak.field}: "${leak.excerpt}"`
+  return { script: script as T, redactions: [...counts.values()] }
 }
