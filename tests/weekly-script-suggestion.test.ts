@@ -48,7 +48,7 @@ function builder(table: string) {
     if (name === 'insert') db.inserts.push({ table, row: args[0] })
     return b
   }
-  for (const m of ['select', 'eq', 'not', 'gte', 'is', 'in', 'order', 'range', 'limit', 'update', 'insert', 'upsert']) {
+  for (const m of ['select', 'eq', 'not', 'or', 'gte', 'is', 'in', 'order', 'range', 'limit', 'update', 'insert', 'upsert']) {
     b[m] = chain(m)
   }
   b.maybeSingle = async () => next(table)
@@ -231,7 +231,9 @@ describe('fetchWeeklyCandidateCalls — filtros da query', () => {
     expect(has('eq', 'call_outcome', 'closed')).toBe(true)
     expect(has('eq', 'ghl_won_status', 'won')).toBe(true)
     expect(has('not', 'is_sales_call', 'is', false)).toBe(true)
-    expect(has('not', 'scoring_status', 'in', '(scoring_failed,transcript_leaked)')).toBe(true)
+    // Mantém scoring_status NULL (IS DISTINCT FROM) — ver tc-exclude-failed-scoring-sql.test.ts.
+    expect(has('or', 'scoring_status.is.null,scoring_status.not.in.(scoring_failed,transcript_leaked)')).toBe(true)
+    expect(has('not', 'scoring_status', 'in', '(scoring_failed,transcript_leaked)')).toBe(false)
     expect(has('not', 'overall_score', 'is', null)).toBe(true)
     expect(has('not', 'transcript', 'is', null)).toBe(true)
     expect(has('gte', 'created_at', '2026-07-02T12:00:00.000Z')).toBe(true)
