@@ -10,6 +10,20 @@ const supabase = createClient(
 const DRY_RUN = process.argv.includes('--dry-run')
 const ORG_ID = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1])
 const DEFAULT_WEIGHTS = { financial: 25, urgency: 25, authority: 25, engagement: 25 }
+const APPLIED_BY = '110_recalc_intent'
+const REASON = "Remoção da regra fixa 'closed => intent 5' (checklist §1)"
+
+async function recordCorrection(callId: string, oldValue: number | null, newValue: number) {
+  const { error: corrErr } = await supabase.from('calls_data_corrections').insert({
+    call_id: callId,
+    column_name: 'intent',
+    old_value: oldValue,
+    new_value: newValue,
+    applied_by: APPLIED_BY,
+    reason: REASON,
+  })
+  if (corrErr) console.error(`    AVISO: falha ao gravar auditoria: ${corrErr.message}`)
+}
 
 if (!ORG_ID) {
   console.error('Uso: npx tsx --env-file=.env scripts/recalc-org-intent.mts <ORG_ID> [--dry-run]')
@@ -66,6 +80,7 @@ for (const c of calls ?? []) {
     console.log(`  [fórmula] ${c.id}: intent ${c.intent} -> ${newIntent} (breakdown já existente: ${JSON.stringify(breakdown)})`)
     recalculatedFromBreakdown++
     if (!DRY_RUN) {
+      await recordCorrection(c.id, c.intent, newIntent)
       const { error: updErr } = await supabase
         .from('calls')
         .update({ intent: newIntent, updated_at: new Date().toISOString() })
@@ -122,6 +137,7 @@ for (const c of calls ?? []) {
     continue
   }
 
+  await recordCorrection(c.id, c.intent, newIntent)
   const { error: updErr } = await supabase
     .from('calls')
     .update({

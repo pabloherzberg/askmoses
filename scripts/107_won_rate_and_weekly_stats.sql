@@ -365,6 +365,11 @@ BEGIN
         ON   s.org_id = c.org_id
        AND   s.wk = date_trunc('week', COALESCE(c.call_date, c.created_at::date))::date
       WHERE  c.is_sales_call IS DISTINCT FROM false
+        -- scoring_status: exclui calls com falha de scoring (§3.1) ou
+        -- transcript vazado (§3.2) — zero nessas calls não é avaliação
+        -- real, entraria em score_sum/score_count como se fosse (§0.3).
+        AND  c.scoring_status IS DISTINCT FROM 'scoring_failed'
+        AND  c.scoring_status IS DISTINCT FROM 'transcript_leaked'
     ),
     won AS (
       SELECT DISTINCT c.org_id, c.contact_id AS cid

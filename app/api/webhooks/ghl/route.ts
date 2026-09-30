@@ -386,12 +386,12 @@ export async function POST(req: NextRequest) {
   const callId = upsertResult.call.id
   const accessToken = orgConfig.accessToken
 
-  // 5f. Alertas informativos. A call JÁ está no banco e o pipeline vai rodar —
-  //     nenhum dos dois é falha. Existem porque o SILÊNCIO nesses dois casos foi
-  //     exatamente o que fez 150+ calls desaparecerem sem ninguém notar. Ficam
-  //     depois do insert pra o alerta trazer o callId real e linkar a call.
+  // 5f. Sinais informativos. A call JÁ está no banco e o pipeline vai rodar —
+  //     nenhum dos dois é falha. Ficam depois do insert pra trazer o callId real.
+  //     Front Desk: só log (Vercel), o alerta no Slack foi desativado. Convite
+  //     pendente: continua indo pro Slack.
   if (resolved.isFrontDesk) {
-    void notifyPipelineFailure("unlinked_trainer", {
+    console.warn("[ghl-webhook] call atribuída ao Front Desk (ghl_user_not_linked)", {
       callId,
       orgId: orgConfig.orgId,
       orgName: orgConfig.orgName,
@@ -399,14 +399,8 @@ export async function POST(req: NextRequest) {
       clientName,
       trainerName,
       ghlUserId,
-      stage: "webhook",
-      reason: "ghl_user_not_linked",
-      meta: {
-        frontDeskTrainerId: resolved.trainerId,
-        note: ghlUserId
-          ? "Atribuída ao Front Desk. Vincular este GHLUSERID a um membro ativo migra a call pro rep real automaticamente, com a nota junto."
-          : "Payload do GHL sem userId — sem GHLUSERID não há como reatribuir depois. Fica no Front Desk em definitivo.",
-      },
+      frontDeskTrainerId: resolved.trainerId,
+      hasGhlUserId: Boolean(ghlUserId),
     })
   } else if (trainerLink && trainerLink.inviteStatus !== "accepted") {
     void notifyPipelineFailure("trainer_invite_pending", {

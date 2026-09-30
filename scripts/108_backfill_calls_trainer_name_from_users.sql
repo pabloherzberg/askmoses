@@ -19,9 +19,20 @@
 -- dbResolveTrainerForGhlCall em lib/db/trainers.ts). Este script repara o
 -- histórico já gravado antes da correção.
 --
--- Escopo: só toca calls com trainer_id preenchido (vínculo confiável) cujo
--- trainer_name diverge do nome cadastrado, ou cujo trainer_email está vazio
--- enquanto o trainer tem email cadastrado.
+-- Escopo: RESTRITO à org "Progressive Dog Training". Um preview rodado antes
+-- deste script mostrou que outras orgs (ex.: Centurion K9) têm o mesmo
+-- trainer_name aparecendo com VÁRIOS emails diferentes por call (ex.: "David
+-- Gladora" com lindy@, david@, Emily@, lmallory2977@gmail.com...) — isso não
+-- é o mesmo bug (payload cru do GHL sobrescrevendo nome/email de owner); pode
+-- ser trainer_id compartilhado entre vendedores reais distintos, e rodar este
+-- UPDATE lá apagaria emails de pessoas diferentes. Essas orgs precisam de
+-- investigação própria antes de qualquer backfill — NÃO ampliar o escopo
+-- deste script sem antes entender esse padrão.
+--
+-- Dentro do escopo (Progressive Dog Training): só toca calls com trainer_id
+-- preenchido (vínculo confiável) cujo trainer_name diverge do nome
+-- cadastrado, ou cujo trainer_email está vazio enquanto o trainer tem email
+-- cadastrado. Nunca sobrescreve um trainer_email já preenchido.
 --
 -- Idempotente: reexecutar não altera nada além do que ainda estiver divergente.
 -- ============================================================
@@ -34,6 +45,7 @@ SET trainer_name = u.name,
 FROM public.trainers t
 JOIN public.users u ON u.id = t.user_id
 WHERE c.trainer_id = t.id
+  AND c.org_id = (SELECT id FROM public.organizations WHERE name = 'Progressive Dog Training')
   AND u.name IS NOT NULL
   AND u.name <> ''
   AND c.trainer_name IS DISTINCT FROM u.name;
@@ -44,6 +56,7 @@ SET trainer_email = u.email,
 FROM public.trainers t
 JOIN public.users u ON u.id = t.user_id
 WHERE c.trainer_id = t.id
+  AND c.org_id = (SELECT id FROM public.organizations WHERE name = 'Progressive Dog Training')
   AND u.email IS NOT NULL
   AND u.email <> ''
   AND (c.trainer_email IS NULL OR c.trainer_email = '');
@@ -51,10 +64,12 @@ WHERE c.trainer_id = t.id
 COMMIT;
 
 -- Conferência (rodar depois do COMMIT) — não deve sobrar divergência entre
--- calls.trainer_name/trainer_email e users.name/email para calls vinculadas:
+-- calls.trainer_name/trainer_email e users.name/email para calls vinculadas
+-- da Progressive Dog Training:
 --   SELECT c.id, c.trainer_name, u.name AS real_name, c.trainer_email, u.email AS real_email
 --   FROM public.calls c
 --   JOIN public.trainers t ON t.id = c.trainer_id
 --   JOIN public.users u ON u.id = t.user_id
---   WHERE c.trainer_name IS DISTINCT FROM u.name
---      OR (u.email IS NOT NULL AND u.email <> '' AND (c.trainer_email IS NULL OR c.trainer_email = ''));
+--   WHERE c.org_id = (SELECT id FROM public.organizations WHERE name = 'Progressive Dog Training')
+--     AND (c.trainer_name IS DISTINCT FROM u.name
+--      OR (u.email IS NOT NULL AND u.email <> '' AND (c.trainer_email IS NULL OR c.trainer_email = '')));

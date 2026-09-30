@@ -77,8 +77,9 @@ describe('Contrato › app/api/webhooks/ghl/route.ts — resolução do rep', ()
     expect(alertIdx).toBeGreaterThan(insertIdx)
   })
 
-  it('a call do Front Desk gera alerta — o silêncio era a causa do bug', () => {
-    expect(webhookRouteSource).toContain('notifyPipelineFailure("unlinked_trainer"')
+  it('a call do Front Desk vai só pro log, não pro Slack', () => {
+    expect(webhookRouteSource).not.toContain('notifyPipelineFailure("unlinked_trainer"')
+    expect(webhookRouteSource).toMatch(/console\.warn\([^)]*ghl_user_not_linked/)
   })
 
   it('falha ao provisionar o Front Desk devolve erro, não 200 silencioso', () => {

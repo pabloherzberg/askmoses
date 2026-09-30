@@ -41,6 +41,7 @@ import { getOrgIntentWeightsForScoring } from "@/lib/services/intent";
 import { LLM_TEMPERATURE_RETRY, PROMPT_VERSION } from "@/lib/constants/llm";
 import { translateStrings } from "@/lib/i18n/translate";
 import { routing, type Locale } from "@/i18n/routing";
+import { computeOverallScore } from "@/lib/services/overall-score";
 
 // A call é SEMPRE persistida em inglês (source of truth). Só a RESPOSTA
 // devolvida pra UI é traduzida quando a interface não está em inglês — mesmo
@@ -661,15 +662,12 @@ export async function POST(request: NextRequest) {
     // ── 3b. Get current org weights for intent scoring (will be stored with call) ──
     const currentOrgWeights = await getOrgIntentWeightsForScoring(orgId);
 
-    // ── 4. Compute overallScore (0–100, integer): média simples das sections.
-    //       Sem cap por outcome — o score reflete qualidade de execução; o
-    //       outcome (badge) é metadado independente.
-    const scores = parsed.sections.map((s) => s.score);
-    const avg =
-      scores.length > 0
-        ? scores.reduce((sum, s) => sum + s, 0) / scores.length
-        : 0;
-    const overallScore = Math.round(avg);
+    // ── 4. Compute overallScore (0–100, integer): média ponderada pelos pesos
+    //       configurados (weightByName), com fallback pra média simples quando
+    //       a rubric/script não tem peso em toda seção. Sem cap por outcome —
+    //       o score reflete qualidade de execução; o outcome (badge) é
+    //       metadado independente. Ver checklist §5.1.
+    const overallScore = computeOverallScore(parsed.sections, weightByName);
     const detectedOutcome = coerceOutcome(parsed.detectedOutcome);
 
     // Intent breakdown (4 signals: financial, urgency, authority, engagement).
@@ -1049,7 +1047,6 @@ ready they were to move forward — based on what they said and did in the call:
 - 3 — Moderate: engaged but unsure or non-committal.
 - 2 — Low: weak fit, stalling, or likely not the decision-maker.
 - 1 — No buying intent at all.
-If the deal closed, intent is 5.
 
 ## Chain-of-thought (do this internally for each section, then write the final JSON)
 For each section in "Sections to Score", in order:

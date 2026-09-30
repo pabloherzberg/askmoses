@@ -433,5 +433,32 @@ ${rawTranscript}
     callId: options.callId ?? null,
   });
 
-  return result.text.trim();
+  const labeled = result.text.trim();
+
+  // Camada separada de isDegenerateTranscript (que guarda a TRANSCRIÇÃO do
+  // Whisper, por chunk). Este ponto é a DIARIZAÇÃO — um segundo modelo
+  // (gpt-4o-mini) que reescreve o texto já transcrito com labels de speaker,
+  // e pode ecoar as próprias instruções do prompt de diarização em vez de
+  // segui-las (checklist §3.2). Sem essa checagem, o eco vira o transcript
+  // "oficial" da call. Cai no bruto (já validado por isDegenerateTranscript)
+  // em vez de gravar o eco.
+  if (looksLikePromptLeak(labeled)) {
+    console.warn("[whisper] diarização ecoou o prompt, usando transcript bruto", {
+      callId: options.callId,
+    });
+    return rawTranscript;
+  }
+
+  return labeled;
+}
+
+const PROMPT_LEAK_MARKERS = [
+  "<<<TRANSCRIPT_BEGIN>>>",
+  "<<<TRANSCRIPT_END>>>",
+  "Output rules:",
+  "This is a sales call between a salesperson and a prospect",
+];
+
+function looksLikePromptLeak(text: string): boolean {
+  return PROMPT_LEAK_MARKERS.some((marker) => text.includes(marker));
 }

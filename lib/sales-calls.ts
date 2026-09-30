@@ -58,3 +58,15 @@ export function applySalesCallOnly<T extends { not(column: string, operator: str
 ): T {
   return query.not('is_sales_call', 'is', false)
 }
+
+/**
+ * Exclui calls com scoring_status = 'scoring_failed' ou 'transcript_leaked'
+ * (checklist §0/§3) — zero nessas calls é falha de análise, não avaliação
+ * real, e não deve entrar em médias/agregações. NULL passa (não avaliado
+ * por este gate, ou call anterior à migration 109 — trata como 'ok').
+ */
+export function excludeFailedScoring<T extends { not(column: string, operator: string, value: unknown): T }>(
+  query: T,
+): T {
+  return query.not('scoring_status', 'in', '(scoring_failed,transcript_leaked)')
+}

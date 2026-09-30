@@ -5,6 +5,7 @@ import { generateText } from 'ai'
 import { getActiveLlmModel } from '@/lib/llm-provider'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { normaliseOutcome } from '@/lib/constants'
+import { normalizeSectionScore } from '@/lib/score-display'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
 import type {
   BehavioralDimension,
@@ -36,11 +37,9 @@ const SECTIONS: { key: keyof RubricScores; label: string }[] = [
   { key: 'closeAndNextSteps', label: 'Close & Next Steps' },
 ]
 
-// Section scores chegam em escala mista (IA 0–5, seeds 0–100). Normaliza pra
-// 0–100 — mesma heurística do syncTrainerStats.
-function norm(v: number): number {
-  return v > 5 ? v : v * 20
-}
+// normalizeSectionScore (lib/score-display.ts) — mesma heurística do
+// syncTrainerStats, unificada aqui (checklist §5.2).
+const norm = normalizeSectionScore
 
 // ─── Trainer stats computed LIVE from the trainer's calls ────────────────────
 // O cache em `trainers.*` (close_rate, score, score_discovery, …) só atualiza

@@ -19,6 +19,7 @@ import { getModuleTuning } from "@/lib/db/ai-module-configs"
 import { computeCostForModel } from "@/lib/services/llm-usage"
 import { LLM_TEMPERATURE_RETRY, PROMPT_VERSION } from "@/lib/constants/llm"
 import { normaliseOutcome, type CallOutcome } from "@/lib/constants"
+import { computeOverallScore } from "@/lib/services/overall-score"
 
 // ── Tipos ──────────────────────────────────────────────────────────────
 
@@ -529,12 +530,12 @@ export async function scoreTranscript(
 
   const parsed = reorderSectionsToRubric(validation.data, allowedSections)
 
-  // Overall = média simples das sections (0–100). Sem cap por outcome — o
-  // score reflete qualidade de execução; o outcome (badge) é metadado
-  // independente. Ver fix/call-overall-vs-section-scores.
-  const scores = parsed.sections.map((s) => s.score)
-  const avg = scores.length > 0 ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0
-  const overallScore = Math.round(avg)
+  // Overall = média ponderada pelos pesos configurados (weightByName), com
+  // fallback pra média simples quando a rubric/script não tem peso em toda
+  // seção. Sem cap por outcome — o score reflete qualidade de execução; o
+  // outcome (badge) é metadado independente. Ver fix/call-overall-vs-section-scores
+  // e checklist §5.1 (pesos eram gravados mas nunca usados no cálculo).
+  const overallScore = computeOverallScore(parsed.sections, weightByName)
 
   let detectedOutcome = coerceOutcome(parsed.detectedOutcome)
   // Override determinístico: LLM (gpt-4o-mini sobretudo) às vezes escreve nas
