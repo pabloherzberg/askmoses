@@ -444,10 +444,6 @@
       "scriptBuilderAuto": {
         "title": "Gere scripts automaticamente a partir das suas calls",
         "description": "O Script Builder transforma suas melhores calls em um script + rubrica reutilizáveis em minutos — exclusivo dos planos Pro e Pro + RAG. O Starter inclui apenas o Script Manager manual."
-      },
-      "insightsRag": {
-        "title": "Treine com o seu próprio material de coaching",
-        "description": "O Pro + RAG indexa seus scripts, PDFs de metodologia e transcrições das melhores calls, então os insights citam exatamente o playbook que o seu time deveria estar seguindo."
       }
     },
     "correlationEngine": {
