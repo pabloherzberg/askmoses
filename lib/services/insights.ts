@@ -1,5 +1,6 @@
 import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
 import { getCalls, avgRubricScores, getOrgCloseRate } from "@/lib/services/calls";
+import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
 import { generateText } from "ai";
 // correlation_engine — o motor de insights faz parte do módulo
 // correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
@@ -95,22 +96,10 @@ function buildInsightsFromData(
   // Compute close rate for calls with low vs high score on weakest section (0–5 scale)
   const callsWithLow = calls.filter((c) => c.rubricScores[weakest.key] < 3.5);
   const callsWithHigh = calls.filter((c) => c.rubricScores[weakest.key] >= 3.5);
-  const closeRateLow =
-    callsWithLow.length > 0
-      ? Math.round(
-          (callsWithLow.filter((c) => c.result === "closed").length /
-            callsWithLow.length) *
-            100,
-        )
-      : 0;
-  const closeRateHigh =
-    callsWithHigh.length > 0
-      ? Math.round(
-          (callsWithHigh.filter((c) => c.result === "closed").length /
-            callsWithHigh.length) *
-            100,
-        )
-      : 0;
+  // closeRateOf: só calls com resultado. Call sem resultado tem rubrica 0 e
+  // cairia em callsWithLow como "não fechou", inflando o contraste.
+  const closeRateLow = closeRateOf(callsWithLow);
+  const closeRateHigh = closeRateOf(callsWithHigh);
 
   insights.push({
     id: "insight-revenue-leak",
@@ -133,11 +122,7 @@ function buildInsightsFromData(
       : sorted[sorted.length - 1]; // lowest overall score
 
   const atRiskCalls = calls.filter((c) => c.trainerId === atRisk.id);
-  const atRiskClosed = atRiskCalls.filter((c) => c.result === "closed").length;
-  const atRiskCloseRate =
-    atRiskCalls.length > 0
-      ? Math.round((atRiskClosed / atRiskCalls.length) * 100)
-      : 0;
+  const atRiskCloseRate = closeRateOf(atRiskCalls);
 
   if (atRisk.scoreDelta < 0) {
     insights.push({
@@ -215,12 +200,11 @@ export async function generateInsights(scriptId?: string) {
   const orgId = await getOrgId();
   const calls = orgId ? await getCalls({ limit: 50, orgId, salesOnly: true }) : [];
 
-  const closedCalls    = calls.filter((c) => c.result === "closed");
-  const notClosedCalls = calls.filter((c) => c.result === "not_closed");
-  const closeRate =
-    calls.length > 0
-      ? Math.round((closedCalls.length / calls.length) * 100)
-      : 0;
+  // Contagem de desfecho e close rate só sobre calls com resultado; `total`
+  // continua sendo o volume do lote.
+  const closedCalls    = calls.filter((c) => hasOutcome(c) && c.result === "closed");
+  const notClosedCalls = calls.filter((c) => hasOutcome(c) && c.result === "not_closed");
+  const closeRate = closeRateOf(calls);
 
   const metrics = {
     total: calls.length,

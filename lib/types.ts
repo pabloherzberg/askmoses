@@ -90,6 +90,11 @@ export interface Call {
   durationSeconds: number | null;
   score: number;
   result: CallResult;
+  /** false quando call_outcome é NULL no banco (call nunca avaliada: falha de
+   *  pipeline ou ainda em processamento). `result` vira 'not_closed' só para
+   *  exibição; close rate exclui essas calls (hasOutcome em lib/sales-calls).
+   *  undefined = Call montado fora do toCall (mocks) — conta como com resultado. */
+  hasOutcome?: boolean;
   /** Intent gravado pela análise. null = não houve medição (em análise, falha
    *  de pipeline, ou não-venda). Ver readStoredIntent. */
   intent: IntentScore | null;

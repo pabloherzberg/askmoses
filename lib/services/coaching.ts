@@ -6,6 +6,7 @@ import { getActiveLlmModel } from '@/lib/llm-provider'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { normaliseOutcome } from '@/lib/constants'
 import { normalizeSectionScore } from '@/lib/score-display'
+import { closeRateOf } from '@/lib/sales-calls'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
 import type {
   BehavioralDimension,
@@ -75,8 +76,8 @@ export function withLiveTrainerStats(
   }
 
   const total = calls.length
-  const closed = calls.filter((c) => c.result === 'closed').length
-  const closeRate = Math.round((closed / total) * 100)
+  // Só calls com resultado — mesma base do close rate do dashboard.
+  const closeRate = closeRateOf(calls)
   const score = Math.round(
     calls.reduce((s, c) => s + (c.score ?? 0), 0) / total,
   )
@@ -315,8 +316,7 @@ export async function generateCoachingRecs(
 
   // Sinais AGREGADOS — o sales person não tem como rastrear uma call
   // individual ("Call 3"), então nada de identidade por call no prompt.
-  const closed = recent.filter((c) => c.result === 'closed').length
-  const closeRate = Math.round((closed / recent.length) * 100)
+  const closeRate = closeRateOf(recent)
   const avgScore = Math.round(
     recent.reduce((s, c) => s + c.score, 0) / recent.length,
   )

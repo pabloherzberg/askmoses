@@ -18,6 +18,7 @@ import type {
 import { getOrgId } from "@/lib/auth";
 import { getCalls } from "@/lib/services/calls";
 import { toCorrelationLevel } from "@/lib/score-display";
+import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
 import type {
   RubricSection,
   RubricScores,
@@ -96,7 +97,7 @@ function toDateKey(d: Date): string {
 }
 
 export function buildWeeklyTrend(
-  calls: { date: string; score: number; result: string }[],
+  calls: { date: string; score: number; result: string; hasOutcome?: boolean }[],
   weeks: number,
 ): TrendPoint[] {
   if (calls.length === 0) return [];
@@ -130,8 +131,9 @@ export function buildWeeklyTrend(
       continue;
     }
 
-    const closed = weekCalls.filter((c) => c.result === "closed").length;
-    const closeRate = Math.round((closed / weekCalls.length) * 100);
+    // Close rate só sobre calls com resultado (closeRateOf); o score da semana
+    // ainda usa todas — ver o PR do score médio.
+    const closeRate = closeRateOf(weekCalls);
     const avgScore = Math.round(
       weekCalls.reduce((s, c) => s + c.score, 0) / weekCalls.length,
     );
@@ -157,8 +159,8 @@ export function buildWeeklyTrend(
 // O label é prefixado com "C" pra o tradutor de eixos (PerformanceTrend.tsx
 // labelWeek) tratar como label de call e não confundir com "W"/Week.
 export function buildPerCallTrend(
-  calls: { date: string; score: number; result: string }[],
-  teamCalls?: { date: string; score: number; result: string }[],
+  calls: { date: string; score: number; result: string; hasOutcome?: boolean }[],
+  teamCalls?: { date: string; score: number; result: string; hasOutcome?: boolean }[],
 ): { trainer: TrendPoint[]; team: TrendPoint[] } {
   if (calls.length === 0) return { trainer: [], team: [] };
 
@@ -170,15 +172,19 @@ export function buildPerCallTrend(
   // ─── Trainer: single-pass running totals ──────────────────────────────
   const trainerTrend: TrendPoint[] = [];
   let tClosed = 0;
+  let tDecided = 0; // denominador do close rate: só calls com resultado
   let tScoreSum = 0;
   for (let i = 0; i < sortedTrainer.length; i++) {
     const c = sortedTrainer[i];
-    if (c.result === "closed") tClosed += 1;
+    if (hasOutcome(c)) {
+      tDecided += 1;
+      if (c.result === "closed") tClosed += 1;
+    }
     tScoreSum += c.score;
     const n = i + 1;
     trainerTrend.push({
       week: `C${n}`,
-      closeRate: Math.round((tClosed / n) * 100),
+      closeRate: tDecided > 0 ? Math.round((tClosed / tDecided) * 100) : 0,
       score: Math.round(tScoreSum / n),
     });
   }
@@ -196,11 +202,15 @@ export function buildPerCallTrend(
 
     let p = 0;
     let teamClosed = 0;
+    let teamDecided = 0;
     let teamScoreSum = 0;
 
     teamTrend = sortedTrainer.map((c, i) => {
       while (p < sortedTeam.length && sortedTeam[p]._ts <= c._ts) {
-        if (sortedTeam[p].result === "closed") teamClosed += 1;
+        if (hasOutcome(sortedTeam[p])) {
+          teamDecided += 1;
+          if (sortedTeam[p].result === "closed") teamClosed += 1;
+        }
         teamScoreSum += sortedTeam[p].score;
         p += 1;
       }
@@ -210,7 +220,7 @@ export function buildPerCallTrend(
       }
       return {
         week: `C${n}`,
-        closeRate: Math.round((teamClosed / p) * 100),
+        closeRate: teamDecided > 0 ? Math.round((teamClosed / teamDecided) * 100) : 0,
         score: Math.round(teamScoreSum / p),
       };
     });

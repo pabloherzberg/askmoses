@@ -3,6 +3,7 @@
 import type { Call } from "@/lib/types";
 import { useLocale, useTranslations } from "next-intl";
 import { PERFECT_CALL_THRESHOLD, toDisplay5 } from "@/lib/score-display";
+import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -211,14 +212,16 @@ export default function AnalyticsPage() {
       }
       setInsights(insightsList);
 
-      const closed = sorted.filter((c) => c.result === "closed").length;
-      const notClosed = sorted.filter((c) => c.result === "not_closed").length;
-      const closeRate =
-        sorted.length > 0 ? Math.round((closed / sorted.length) * 100) : 0;
+      // Só calls com resultado: call sem resultado (falha de pipeline, em
+      // processamento) vem com result 'not_closed' só de exibição.
+      const decided = sorted.filter(hasOutcome);
+      const closed = decided.filter((c) => c.result === "closed").length;
+      const notClosed = decided.filter((c) => c.result === "not_closed").length;
+      const closeRate = closeRateOf(decided);
       setOutcomeMetrics({ closed, notClosed, closeRate });
 
       const trainerMap = new Map<string, { closed: number; total: number }>();
-      sorted.forEach((call) => {
+      decided.forEach((call) => {
         if (!trainerMap.has(call.trainerName))
           trainerMap.set(call.trainerName, { closed: 0, total: 0 });
         const tr = trainerMap.get(call.trainerName)!;
