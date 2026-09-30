@@ -60,6 +60,105 @@ export function applySalesCallOnly<T extends { not(column: string, operator: str
 }
 
 /**
+ * Base do CLOSE RATE: call de venda (mesma regra de applySalesCallOnly) que
+ * TEM resultado (`call_outcome IS NOT NULL`).
+ *
+ * Call sem resultado nunca foi avaliada — no_recording, transcription_failed,
+ * presa em status intermediário ou ainda no pipeline. Ela não é "não fechou":
+ * não se sabe. No denominador, derrubava o close rate por falha de pipeline
+ * (em prod, 30/09/2026: 45,1% → 50,7% no agregado; numa org, 11,7% → 52,9%).
+ *
+ * Só para close rate. Contagem de calls, score e billing continuam em
+ * applySalesCallOnly — call sem resultado é call que existiu (e pode ser
+ * faturada).
+ */
+export function applySalesCallWithOutcome<T extends { not(column: string, operator: string, value: unknown): T }>(
+  query: T,
+): T {
+  return applySalesCallOnly(query).not('call_outcome', 'is', null)
+}
+
+/**
+ * Predicado em memória do close rate, para listas de `Call` (toCall).
+ *
+ * `toCall` transforma call_outcome NULL em `result: 'not_closed'` para
+ * exibição e marca `hasOutcome: false`. Quem calcula close rate filtra por
+ * aqui antes de contar. `hasOutcome` undefined (Call montado fora do toCall,
+ * ex.: mocks) conta como com resultado.
+ */
+export function hasOutcome(call: { hasOutcome?: boolean }): boolean {
+  return call.hasOutcome !== false
+}
+
+/** Versão para linhas cruas do Supabase (snake_case), antes do mapper. */
+export function hasOutcomeRow(row: { call_outcome?: string | null }): boolean {
+  return row.call_outcome != null
+}
+
+/**
+ * Close rate (%) inteiro de uma lista: `closed / com resultado`. 0 quando
+ * nenhuma call tem resultado. Os chamadores em memória usam esta função para
+ * que a regra do denominador fique num lugar só.
+ */
+export function closeRateOf(calls: { result: string; hasOutcome?: boolean }[]): number {
+  const decided = calls.filter(hasOutcome)
+  if (decided.length === 0) return 0
+  const closed = decided.filter((c) => c.result === 'closed').length
+  return Math.round((closed / decided.length) * 100)
+}
+
+/** scoring_status que não são avaliação real (checklist §0/§3). */
+export const FAILED_SCORING_STATUSES: readonly string[] = ['scoring_failed', 'transcript_leaked']
+
+function isFailedScoring(status: string | null | undefined): boolean {
+  return status != null && FAILED_SCORING_STATUSES.includes(status)
+}
+
+/**
+ * Base do SCORE MÉDIO, em memória: a call tem score (overall_score não NULL)
+ * e o score é avaliação real (scoring_status fora de scoring_failed /
+ * transcript_leaked).
+ *
+ * `toCall` põe `score: 0` na call sem score, só pra exibição. Somada numa
+ * média, ela puxava o número pra baixo por falha de pipeline (prod,
+ * 30/09/2026: média das calls de venda 53,4 → 60,1; numa org o card Team Avg
+ * ia de 0,5 a 2,0). `hasScore` undefined (mocks) conta como com score.
+ *
+ * Mesma regra do syncTrainerStats (excludeFailedScoring na query +
+ * hasScoreRow), pra leaderboard e /me baterem.
+ */
+export function hasScore(call: { hasScore?: boolean; scoringStatus?: string | null }): boolean {
+  return call.hasScore !== false && !isFailedScoring(call.scoringStatus)
+}
+
+/** Versão para linhas cruas do Supabase (snake_case), antes do mapper. */
+export function hasScoreRow(row: { overall_score?: number | null; scoring_status?: string | null }): boolean {
+  return row.overall_score != null && !isFailedScoring(row.scoring_status)
+}
+
+/**
+ * Média (sem arredondar) do score das calls com score. 0 quando nenhuma tem —
+ * os chamadores arredondam do jeito que já arredondavam.
+ */
+export function avgScoreOf(
+  calls: { score: number; hasScore?: boolean; scoringStatus?: string | null }[],
+): number {
+  const scored = calls.filter(hasScore)
+  if (scored.length === 0) return 0
+  return scored.reduce((s, c) => s + c.score, 0) / scored.length
+}
+
+/**
+ * Base das médias POR SEÇÃO: a call tem sections e o scoring não falhou. Call
+ * sem sections tem rubricScores todo 0 (parseSectionsToRubricScores) — entrar
+ * na média derrubava cada seção. `hasSections` undefined (Call montado fora
+ * do toCall, ex.: mocks) conta como com seção.
+ */
+export function hasRubric(call: { hasSections?: boolean; scoringStatus?: string | null }): boolean {
+  return call.hasSections !== false && !isFailedScoring(call.scoringStatus)
+}
+
+/**
  * Exclui calls com scoring_status = 'scoring_failed' ou 'transcript_leaked'
  * (checklist §0/§3) — zero nessas calls é falha de análise, não avaliação
  * real, e não deve entrar em médias/agregações. NULL passa (não avaliado

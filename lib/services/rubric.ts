@@ -18,6 +18,7 @@ import type {
 import { getOrgId } from "@/lib/auth";
 import { getCalls } from "@/lib/services/calls";
 import { toCorrelationLevel } from "@/lib/score-display";
+import { avgScoreOf, closeRateOf, hasOutcome, hasScore } from "@/lib/sales-calls";
 import type {
   RubricSection,
   RubricScores,
@@ -95,8 +96,19 @@ function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+// O que as tendências leem de cada call. hasOutcome / hasScore / scoringStatus
+// vêm do toCall e definem as bases do close rate e do score (lib/sales-calls).
+type TrendCall = {
+  date: string;
+  score: number;
+  result: string;
+  hasOutcome?: boolean;
+  hasScore?: boolean;
+  scoringStatus?: string | null;
+};
+
 export function buildWeeklyTrend(
-  calls: { date: string; score: number; result: string }[],
+  calls: TrendCall[],
   weeks: number,
 ): TrendPoint[] {
   if (calls.length === 0) return [];
@@ -130,11 +142,9 @@ export function buildWeeklyTrend(
       continue;
     }
 
-    const closed = weekCalls.filter((c) => c.result === "closed").length;
-    const closeRate = Math.round((closed / weekCalls.length) * 100);
-    const avgScore = Math.round(
-      weekCalls.reduce((s, c) => s + c.score, 0) / weekCalls.length,
-    );
+    // Close rate só sobre calls com resultado; score só sobre calls com score.
+    const closeRate = closeRateOf(weekCalls);
+    const avgScore = Math.round(avgScoreOf(weekCalls));
 
     trend.push({
       week: label,
@@ -157,8 +167,8 @@ export function buildWeeklyTrend(
 // O label é prefixado com "C" pra o tradutor de eixos (PerformanceTrend.tsx
 // labelWeek) tratar como label de call e não confundir com "W"/Week.
 export function buildPerCallTrend(
-  calls: { date: string; score: number; result: string }[],
-  teamCalls?: { date: string; score: number; result: string }[],
+  calls: TrendCall[],
+  teamCalls?: TrendCall[],
 ): { trainer: TrendPoint[]; team: TrendPoint[] } {
   if (calls.length === 0) return { trainer: [], team: [] };
 
@@ -170,16 +180,24 @@ export function buildPerCallTrend(
   // ─── Trainer: single-pass running totals ──────────────────────────────
   const trainerTrend: TrendPoint[] = [];
   let tClosed = 0;
+  let tDecided = 0; // denominador do close rate: só calls com resultado
   let tScoreSum = 0;
+  let tScored = 0; // denominador do score: só calls com score
   for (let i = 0; i < sortedTrainer.length; i++) {
     const c = sortedTrainer[i];
-    if (c.result === "closed") tClosed += 1;
-    tScoreSum += c.score;
+    if (hasOutcome(c)) {
+      tDecided += 1;
+      if (c.result === "closed") tClosed += 1;
+    }
+    if (hasScore(c)) {
+      tScored += 1;
+      tScoreSum += c.score;
+    }
     const n = i + 1;
     trainerTrend.push({
       week: `C${n}`,
-      closeRate: Math.round((tClosed / n) * 100),
-      score: Math.round(tScoreSum / n),
+      closeRate: tDecided > 0 ? Math.round((tClosed / tDecided) * 100) : 0,
+      score: tScored > 0 ? Math.round(tScoreSum / tScored) : 0,
     });
   }
 
@@ -196,12 +214,20 @@ export function buildPerCallTrend(
 
     let p = 0;
     let teamClosed = 0;
+    let teamDecided = 0;
     let teamScoreSum = 0;
+    let teamScored = 0;
 
     teamTrend = sortedTrainer.map((c, i) => {
       while (p < sortedTeam.length && sortedTeam[p]._ts <= c._ts) {
-        if (sortedTeam[p].result === "closed") teamClosed += 1;
-        teamScoreSum += sortedTeam[p].score;
+        if (hasOutcome(sortedTeam[p])) {
+          teamDecided += 1;
+          if (sortedTeam[p].result === "closed") teamClosed += 1;
+        }
+        if (hasScore(sortedTeam[p])) {
+          teamScored += 1;
+          teamScoreSum += sortedTeam[p].score;
+        }
         p += 1;
       }
       const n = i + 1;
@@ -210,8 +236,8 @@ export function buildPerCallTrend(
       }
       return {
         week: `C${n}`,
-        closeRate: Math.round((teamClosed / p) * 100),
-        score: Math.round(teamScoreSum / p),
+        closeRate: teamDecided > 0 ? Math.round((teamClosed / teamDecided) * 100) : 0,
+        score: teamScored > 0 ? Math.round(teamScoreSum / teamScored) : 0,
       };
     });
   }

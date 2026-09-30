@@ -1,0 +1,134 @@
+/* Estilo dos PDFs dos manuais (npm run docs:pdf).
+   Aproxima o preview de Markdown do VS Code, que gerou a v1.0/v1.1
+   (Segoe UI + Consolas no Windows); fora do Windows cai nas fontes do sistema. */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm 18mm 16mm;
+}
+
+:root {
+  --text: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+  --code-bg: #f3f4f6;
+  --quote-border: #c8ccd1;
+  --quote-bg: #f7f8fa;
+  --important: #c62828;
+  --important-bg: #fdecea;
+  --link: #0969da;
+}
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: #fff;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+}
+
+.doc {
+  max-width: 180mm;
+  margin: 0 auto;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 1.4em 0 0.5em;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+h1 { font-size: 22pt; margin-top: 0; }
+h2 { font-size: 15pt; padding-bottom: 0.25em; border-bottom: 1px solid var(--border); }
+h3 { font-size: 12.5pt; }
+h4 { font-size: 11pt; }
+
+/* Cada seção numerada começa em página nova; o sumário (primeiro h2) fica
+   na capa, logo abaixo do título. */
+h2 { break-before: page; page-break-before: always; }
+.doc > h2:first-of-type { break-before: auto; page-break-before: auto; }
+
+p, ul, ol, table, blockquote, pre { margin: 0 0 0.8em; }
+
+a { color: var(--link); text-decoration: none; }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 1.2em 0; }
+
+code, pre {
+  font-family: Consolas, "SF Mono", Menlo, "Liberation Mono", monospace;
+  font-size: 9pt;
+}
+
+code {
+  background: var(--code-bg);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  break-inside: avoid;
+}
+
+pre code { background: none; padding: 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  break-inside: auto;
+}
+
+tr { break-inside: avoid; page-break-inside: avoid; }
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+  vertical-align: top;
+  text-align: left;
+}
+
+/* Caminhos longos em `code` (coluna Evidence do §16) não têm espaço para
+   quebrar e empurravam a tabela para fora da página. "anywhere" só no code:
+   na célula inteira, quebrava palavras e números ("Coachi-ng", "1/5"). */
+td code { overflow-wrap: anywhere; }
+
+th { background: var(--code-bg); font-weight: 600; }
+
+blockquote {
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--quote-border);
+  background: var(--quote-bg);
+  break-inside: avoid;
+}
+
+blockquote > :last-child { margin-bottom: 0; }
+
+/* Caixa "IMPORTANT": o script marca o blockquote cujo primeiro parágrafo é
+   **IMPORTANT** com a classe .callout-important. */
+blockquote.callout-important {
+  border: 2px solid var(--important);
+  border-left-width: 6px;
+  background: var(--important-bg);
+}
+
+blockquote.callout-important > p:first-child strong {
+  color: var(--important);
+  letter-spacing: 0.04em;
+}
+
+img { max-width: 100%; }

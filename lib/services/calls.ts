@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/calls";
 import { getOrgId } from "@/lib/auth";
 import { normaliseOutcome } from "@/lib/constants";
+import { hasRubric } from "@/lib/sales-calls";
 import { resolveIntent } from "@/lib/utils/intent";
 import { translateCall, translateCalls } from "@/lib/i18n/translate-coaching";
 import type { Locale } from "@/i18n/routing";
@@ -160,6 +161,12 @@ function toCall(db: DbCall): Call {
     durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result,
+    // NULL vira 'not_closed' acima só pra exibição; close rate exclui (hasOutcome).
+    hasOutcome: db.call_outcome != null,
+    // Idem pro score: NULL vira 0 só pra exibição; médias excluem (hasScore).
+    hasScore: db.overall_score != null,
+    hasSections: Array.isArray(db.sections) && db.sections.length > 0,
+    scoringStatus: db.scoring_status ?? null,
     // intent (0–5 decimal) definido na análise (Intent Index do breakdown) e lido aqui.
     intent: readStoredIntent(db.intent, result),
     prospect: db.client_name ?? "—",
@@ -211,12 +218,15 @@ export function avgRubricScores(calls: Call[]): RubricScores {
     objectionHandling: 0,
     closeAndNextSteps: 0,
   };
-  if (calls.length === 0) return defaults;
+  // Só calls com sections e scoring válido (hasRubric): call sem sections tem
+  // rubricScores todo 0 e derrubava a média de cada seção.
+  const rated = calls.filter(hasRubric);
+  if (rated.length === 0) return defaults;
   const result = { ...defaults };
   for (const key of keys) {
     result[key] =
       Math.round(
-        (calls.reduce((s, c) => s + c.rubricScores[key], 0) / calls.length) *
+        (rated.reduce((s, c) => s + c.rubricScores[key], 0) / rated.length) *
           10,
       ) / 10;
   }

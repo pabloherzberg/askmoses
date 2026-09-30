@@ -1,17 +1,35 @@
 import { generateText } from 'ai'
-import { getOpenAIModel } from '@/lib/openai'
+import { getOpenAIModel, resolveOpenAIModelId } from '@/lib/openai'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { applySalesCallOnly } from '@/lib/sales-calls'
+import { applySalesCallOnly, excludeFailedScoring } from '@/lib/sales-calls'
 import { dbCreateScript } from '@/lib/db/scripts'
-import { recordLlmUsage } from '@/lib/services/llm-usage'
-import { SYSTEM_PROMPT, buildUserPrompt } from '@/lib/script-intelligence/generate-script-prompt'
+import { computeCostForModel, recordLlmUsage } from '@/lib/services/llm-usage'
+import {
+  WEEKLY_SYSTEM_PROMPT,
+  buildWeeklyUserPrompt,
+  validateWeeklyScript,
+} from '@/lib/script-intelligence/weekly-prompt'
+import {
+  buildAnonymizationTerms,
+  redactScript,
+  type Redaction,
+} from '@/lib/script-intelligence/weekly-anonymization'
+import {
+  WEEKLY_WINDOW_DAYS,
+  selectWeeklyCalls,
+  type WeeklyCandidateCall,
+  type WeeklyOrg,
+  type WeeklySelection,
+} from '@/lib/script-intelligence/weekly-selection'
 
 // Geração automática semanal do script sugerido enviado a todas as
-// organizações (ver app/api/cron/weekly-script-suggestion/route.ts). Espelha
-// o fluxo manual (admin gera no Script Builder + envia via SaaS Panel), mas
-// usa como matéria-prima as 5 melhores calls fechadas (closed, maior
-// overall_score) de TODA a base — não de uma org específica — pra refletir
-// os padrões de sucesso mais recentes observados no conjunto de clientes.
+// organizações (ver app/api/cron/weekly-script-suggestion/route.ts).
+//
+// Continua GLOBAL (um script para todas as orgs), mas a matéria-prima mudou
+// (30/09/2026): antes eram as 5 calls de maior score da base inteira — na
+// prática, todas da org de demonstração. Agora são 3 calls vencedoras
+// (fechadas E ganhas no GHL) de CADA org elegível, sem orgs is_demo. Seleção
+// em weekly-selection.ts; prompt e validação das 5 seções em weekly-prompt.ts.
 
 // Rubric usada como estrutura-base do script gerado (AskMoses Demo Org).
 // Fallback fixo: nenhuma org "dona" real do script gerado — ele é um
@@ -19,45 +37,82 @@ import { SYSTEM_PROMPT, buildUserPrompt } from '@/lib/script-intelligence/genera
 // referência estável para herdar rubric_version_snapshot/minor_version.
 const FALLBACK_RUBRIC_ID = '5ad2a6c7-7d50-4640-a01d-b7f3db3b3a81'
 
-const MIN_TRANSCRIPT_LENGTH = 100
-const CALLS_TO_USE = 5
-const CALLS_OVER_FETCH = 30
+const MODEL = 'gpt-4o-mini'
+const PAGE_SIZE = 1000
+
+export interface WeeklyUsage {
+  model: string
+  inputTokens: number
+  outputTokens: number
+  costUsd: number
+}
 
 export type WeeklySuggestionResult =
-  | { ok: true; scriptId: string; callIds: string[] }
-  | { ok: false; error: string }
+  | {
+      ok: true
+      scriptId: string
+      selection: WeeklySelection
+      usage: WeeklyUsage
+      /** O que o código substituiu antes de gravar (tipo, campo, quantidade). */
+      redactions: Redaction[]
+    }
+  | {
+      ok: false
+      /** skipped: nenhuma org elegível (não é erro). error: falhou. */
+      kind: 'skipped' | 'error'
+      error: string
+      selection?: WeeklySelection
+      usage?: WeeklyUsage
+    }
 
-async function pickTopClosedCalls(): Promise<{ id: string; transcript: string }[]> {
-  const admin = createAdminClient()
+type Admin = ReturnType<typeof createAdminClient>
 
-  // salesOnly é redundante hoje (o gate zera call_outcome, e o .eq('closed')
-  // já descarta não-venda), mas explicitar protege contra qualquer backfill
-  // futuro de call_outcome e documenta a intenção.
-  const { data: callsRaw, error } = await applySalesCallOnly(
-    admin
-      .from('calls')
-      .select('id, transcript, overall_score')
-      .eq('call_outcome', 'closed')
-      .not('transcript', 'is', null),
-  )
-    .order('overall_score', { ascending: false, nullsFirst: false })
-    .limit(CALLS_OVER_FETCH)
-
-  if (error) throw error
-
-  const eligible = (callsRaw ?? []).filter(
-    (c: { transcript: string | null }) => c.transcript && c.transcript.length > MIN_TRANSCRIPT_LENGTH,
-  )
-
-  return eligible.slice(0, CALLS_TO_USE).map((c) => ({
-    id: c.id as string,
-    transcript: c.transcript as string,
+export async function fetchWeeklyOrgs(admin: Admin): Promise<WeeklyOrg[]> {
+  const { data, error } = await admin.from('organizations').select('id, name, is_demo')
+  if (error) throw new Error(`organizations: ${error.message}`)
+  return (data ?? []).map((o: { id: string; name: string | null; is_demo: boolean | null }) => ({
+    id: o.id,
+    name: o.name ?? o.id,
+    is_demo: o.is_demo === true,
   }))
 }
 
-async function resolveBaseRubricId(): Promise<string> {
-  const admin = createAdminClient()
+/**
+ * Candidatas de TODAS as orgs: fechadas, ganhas no GHL (NÃO Stage 2), de
+ * venda, com score válido e transcrição, nos últimos 90 dias. O corte de 3
+ * por org e o tamanho mínimo da transcrição ficam em selectWeeklyCalls.
+ */
+export async function fetchWeeklyCandidateCalls(admin: Admin, now: Date = new Date()): Promise<WeeklyCandidateCall[]> {
+  const since = new Date(now.getTime() - WEEKLY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const rows: WeeklyCandidateCall[] = []
 
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await excludeFailedScoring(
+      applySalesCallOnly(
+        admin
+          .from('calls')
+          .select('id, org_id, overall_score, transcript, created_at, trainer_name, client_name')
+          .eq('call_outcome', 'closed')
+          .eq('ghl_won_status', 'won')
+          .not('overall_score', 'is', null)
+          .not('transcript', 'is', null)
+          .gte('created_at', since),
+      ),
+    )
+      .order('overall_score', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) throw new Error(`calls (offset ${from}): ${error.message}`)
+    const page = (data ?? []) as WeeklyCandidateCall[]
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) break
+  }
+
+  return rows.map((r) => ({ ...r, overall_score: Number(r.overall_score) }))
+}
+
+async function resolveBaseRubricId(admin: Admin): Promise<string> {
   // Rubric do script atualmente ativo (qualquer org que tenha org_scripts
   // ativo hoje) — best-effort; se não encontrar, cai no fallback fixo.
   const { data: activeOrgScript } = await admin
@@ -90,66 +145,77 @@ interface GeneratedScriptPayload {
   explanation: string
 }
 
-function parseGeneratedScript(text: string): GeneratedScriptPayload {
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
-  const parsed = JSON.parse(cleaned) as GeneratedScriptPayload
-  if (!parsed.name || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
-    throw new Error('Invalid structure')
-  }
-  return parsed
-}
-
 /**
- * Gera e persiste o script sugerido semanal. Não envia às orgs — isso é
- * responsabilidade do caller (cron route), via lib/services/send-script.ts,
- * já que "gerar" e "enviar" são passos logicamente distintos e o cron
- * precisa da lista de orgs (não resolvida aqui).
+ * Seleciona, gera, valida e persiste o script sugerido semanal. Não envia às
+ * orgs — isso é do caller (cron route), via lib/services/send-script.ts.
  */
 export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionResult> {
   const admin = createAdminClient()
 
-  let selectedCalls: { id: string; transcript: string }[]
+  let selection: WeeklySelection
   try {
-    selectedCalls = await pickTopClosedCalls()
+    const [orgs, candidates] = await Promise.all([fetchWeeklyOrgs(admin), fetchWeeklyCandidateCalls(admin)])
+    selection = selectWeeklyCalls(orgs, candidates)
   } catch (err) {
-    return { ok: false, error: `Failed to fetch calls: ${err instanceof Error ? err.message : 'unknown'}` }
+    return { ok: false, kind: 'error', error: `Falha na seleção de calls: ${err instanceof Error ? err.message : 'unknown'}` }
   }
 
-  if (selectedCalls.length === 0) {
-    return { ok: false, error: 'No closed calls with eligible transcripts found' }
+  if (selection.included.length === 0) {
+    return { ok: false, kind: 'skipped', error: 'Nenhuma org com calls vencedoras suficientes', selection }
   }
-
-  const transcripts = selectedCalls.map((c) => c.transcript)
 
   let text: string
+  let usage: WeeklyUsage
   try {
     const aiResult = await generateText({
-      model: getOpenAIModel('gpt-4o-mini'),
-      system: SYSTEM_PROMPT,
-      prompt: buildUserPrompt(transcripts, null),
+      model: getOpenAIModel(MODEL),
+      system: WEEKLY_SYSTEM_PROMPT,
+      prompt: buildWeeklyUserPrompt(selection.included),
     })
     text = aiResult.text
+
+    const inputTokens = aiResult.usage?.inputTokens ?? 0
+    const outputTokens = aiResult.usage?.outputTokens ?? 0
+    usage = {
+      model: MODEL,
+      inputTokens,
+      outputTokens,
+      costUsd: await computeCostForModel('openai', resolveOpenAIModelId(MODEL), inputTokens, outputTokens),
+    }
 
     void recordLlmUsage({
       orgId: null,
       surface: 'script_generation',
-      model: 'gpt-4o-mini',
-      inputTokens: aiResult.usage?.inputTokens ?? 0,
-      outputTokens: aiResult.usage?.outputTokens ?? 0,
+      model: MODEL,
+      inputTokens,
+      outputTokens,
       ref: 'weekly-script-suggestion',
     })
   } catch (err) {
-    return { ok: false, error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}` }
+    return { ok: false, kind: 'error', error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}`, selection }
   }
 
   let parsed: GeneratedScriptPayload
   try {
-    parsed = parseGeneratedScript(text)
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    parsed = JSON.parse(cleaned) as GeneratedScriptPayload
   } catch {
-    return { ok: false, error: 'AI returned invalid JSON' }
+    return { ok: false, kind: 'error', error: 'AI returned invalid JSON', selection, usage }
   }
 
-  const rubricId = await resolveBaseRubricId()
+  // As 5 seções fixas, nessa ordem — senão não grava nem envia.
+  const invalid = validateWeeklyScript(parsed)
+  if (invalid) {
+    return { ok: false, kind: 'error', error: `Script inválido: ${invalid}`, selection, usage }
+  }
+
+  // Anonimização aplicada pelo código, não só pedida no prompt: valor
+  // monetário → [price], org incluída → [business name], trainer/lead das
+  // calls usadas → [name]. Não barra a rodada; o que foi trocado vai para
+  // script_suggestion_runs.redactions (sem o termo original).
+  const { script: clean, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+
+  const rubricId = await resolveBaseRubricId(admin)
 
   // Herda rubric_version_snapshot/minor_version do script mais recente dessa
   // rubric, incrementando minor_version — mesmo padrão de
@@ -170,15 +236,22 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
   try {
     newScript = await dbCreateScript({
       rubricId,
-      name: parsed.name,
-      description: parsed.description,
-      sections: parsed.sections,
-      full_script: parsed.full_script,
+      name: clean.name,
+      description: clean.description,
+      // Pesos exatamente como antes: o que a IA devolveu.
+      sections: clean.sections,
+      full_script: clean.full_script,
       criteria: [],
       isActive: false,
     })
   } catch (err) {
-    return { ok: false, error: `Failed to persist script: ${err instanceof Error ? err.message : 'unknown'}` }
+    return {
+      ok: false,
+      kind: 'error',
+      error: `Failed to persist script: ${err instanceof Error ? err.message : 'unknown'}`,
+      selection,
+      usage,
+    }
   }
 
   const { error: versionErr } = await admin
@@ -193,5 +266,5 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
     console.error('[weekly-suggestion] failed to set version columns (non-fatal):', versionErr)
   }
 
-  return { ok: true, scriptId: newScript.id, callIds: selectedCalls.map((c) => c.id) }
+  return { ok: true, scriptId: newScript.id, selection, usage, redactions }
 }

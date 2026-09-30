@@ -107,6 +107,8 @@ export async function sendScriptToOrgs(params: {
       result: {},
       decisions: [],
       analysis_status: i === 0 ? 'processing' : 'queued',
+      // Reenvio do mesmo script reusa a linha — limpa o motivo de um erro anterior.
+      error_reason: null,
       updated_at: new Date(baseTime + i).toISOString(),
     }, { onConflict: 'org_id,org_script_id' })
   }

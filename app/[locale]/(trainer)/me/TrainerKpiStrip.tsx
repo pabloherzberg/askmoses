@@ -6,12 +6,18 @@ import { KpiCard } from '@/components/shared/KpiCard'
 import { toDisplay5 } from '@/lib/score-display'
 
 export interface WeeklyBucket {
-  /** Score 0–100 médio das calls da semana. 0 se a semana foi vazia. */
+  /** Score 0–100 médio das calls da semana COM score. 0 se não há nenhuma. */
   score: number
-  /** Close rate 0–100 das calls da semana. 0 se vazia. */
+  /** Calls da semana com score válido — peso do score na média da janela.
+   *  Call sem score conta em `calls`, não aqui. */
+  scored: number
+  /** Close rate 0–100 das calls da semana COM resultado. 0 se não há nenhuma. */
   closeRate: number
   /** Volume de calls na semana. */
   calls: number
+  /** Calls da semana com resultado — denominador do close rate. Call sem
+   *  resultado (falha de pipeline, em processamento) conta em `calls`, não aqui. */
+  decided: number
   /** Volume de wins (closed) na semana. */
   wins: number
   /** Marca semana sem dados — diferencia "0% real" de "sem amostras". */
@@ -65,10 +71,13 @@ function aggregate(buckets: WeeklyBucket[], window: WindowSize): WindowAggregate
 
   const callsSum = slice.reduce((s, b) => s + b.calls, 0)
   const winsSum = slice.reduce((s, b) => s + b.wins, 0)
-  const scoreAvg = callsSum > 0
-    ? Math.round(slice.reduce((s, b) => s + (b.score * b.calls), 0) / callsSum)
+  const decidedSum = slice.reduce((s, b) => s + b.decided, 0)
+  const scoredSum = slice.reduce((s, b) => s + b.scored, 0)
+  // Ponderado pelas calls COM score de cada semana (b.score já é a média delas).
+  const scoreAvg = scoredSum > 0
+    ? Math.round(slice.reduce((s, b) => s + (b.score * b.scored), 0) / scoredSum)
     : 0
-  const closeAvg = callsSum > 0 ? Math.round((winsSum / callsSum) * 100) : 0
+  const closeAvg = decidedSum > 0 ? Math.round((winsSum / decidedSum) * 100) : 0
 
   return {
     score: scoreAvg,

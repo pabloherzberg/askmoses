@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
-import { applySalesCallOnly } from '@/lib/sales-calls'
+import { applySalesCallOnly, applySalesCallWithOutcome } from '@/lib/sales-calls'
 
 export interface DbCall {
   id: string
@@ -83,6 +83,10 @@ export interface DbCall {
   // detectedOutcome. null = call analisada antes desta migration (legado,
   // não classificada — diferente de false).
   is_sales_call?: boolean | null
+  // Qualidade do scoring (migration 119): ok | scoring_failed |
+  // transcript_leaked. NULL = não avaliado pelo gate. Médias de score excluem
+  // os dois estados de falha (excludeFailedScoring / hasScore).
+  scoring_status?: string | null
 }
 
 export interface CreateCallInput {
@@ -743,11 +747,12 @@ export async function dbUpdateGhlCallPipeline(
 
 /** Close rate global da org — ver dbGetOrgCloseRate. */
 export interface OrgCloseRate {
-  /** Todas as calls da org (denominador). */
+  /** Calls de venda COM resultado (denominador). Não é a contagem de calls da
+   *  org — falhas de pipeline e calls em processamento ficam de fora. */
   totalCalls: number
   /** Subconjunto de totalCalls com call_outcome='closed' (numerador). */
   closedCalls: number
-  /** closedCalls / totalCalls em %, inteiro. 0 quando a org não tem calls. */
+  /** closedCalls / totalCalls em %, inteiro. 0 quando não há call com resultado. */
   closeRate: number
 }
 
@@ -756,11 +761,16 @@ export interface OrgCloseRate {
  * A média por trainer dava peso igual a quem fez 1 call e a quem fez 50; aqui
  * cada call pesa o mesmo.
  *
- * Regra deliberadamente simples: denominador = TODAS as calls da org, sem
- * exceção. Entram também as que ainda não têm desfecho — não analisadas
- * (transcription_failed, no_recording, pending) ou sem outcome confirmado.
- * O trade-off é conhecido e aceito: falha de pipeline derruba o close rate.
- * Se o número cair sem explicação de venda, é aqui que se olha primeiro.
+ * Denominador = calls de VENDA com RESULTADO (applySalesCallWithOutcome):
+ *   - sai a não-venda (is_sales_call = false) — não houve venda a medir;
+ *   - sai a call sem resultado (call_outcome NULL: no_recording,
+ *     transcription_failed, presa em status intermediário ou ainda no
+ *     pipeline). Ela não "não fechou" — ninguém sabe. Contada, fazia falha de
+ *     pipeline derrubar o close rate (prod, 30/09/2026: 45,1% → 50,7%).
+ *   - call legada com is_sales_call NULL e resultado preenchido continua
+ *     contando.
+ * Falha de pipeline agora aparece como VOLUME (a call existe, sem resultado),
+ * não como queda de close rate — o sinal pra investigá-la é o processing_status.
  *
  * Global e sem recorte de período: todas as calls da org desde sempre.
  * Usa count-only (head: true) — nenhuma linha trafega.
@@ -768,19 +778,17 @@ export interface OrgCloseRate {
 export async function dbGetOrgCloseRate(orgId: string): Promise<OrgCloseRate> {
   const supabase = createAdminClient()
 
-  // salesOnly nas DUAS contagens: é o card "Avg Close Rate" do /dashboard e a
-  // base do insight de ROI. Calls não-venda têm call_outcome NULL — sem o
-  // filtro no total, elas inflariam só o denominador e derrubariam o close
-  // rate. O filtro precisa bater com o de syncTrainerStats pra os números
-  // do dashboard e do leaderboard fecharem.
+  // Card "Avg Close Rate" do /dashboard, /api/trainers, contexto do Marketing
+  // Intelligence e insight de ROI. A regra precisa bater com o close rate de
+  // syncTrainerStats pra dashboard e leaderboard fecharem.
   const [total, closed] = await Promise.all([
-    applySalesCallOnly(
+    applySalesCallWithOutcome(
       supabase
         .from('calls')
         .select('id', { count: 'exact', head: true })
         .eq('org_id', orgId),
     ),
-    applySalesCallOnly(
+    applySalesCallWithOutcome(
       supabase
         .from('calls')
         .select('id', { count: 'exact', head: true })
