@@ -2,8 +2,8 @@
 
 **Understanding your sales coaching platform — what every screen shows and how to read it**
 
-Version 1.3 · September 2026
-Supersedes v1.2 (September 2026). Revised against `dev` @ `66cf2c6` (30 September 2026).
+Version 1.4 · September 2026
+Supersedes v1.3 (September 2026). Section 6.1 revised against the weekly Script Intelligence of PR #238 (`77915b5`, 30 September 2026).
 
 ---
 
@@ -221,13 +221,27 @@ AskMoses reads your real conversations and helps you keep your sales playbook sh
 
 ### 6.1 Script Intelligence
 
-The platform reviews your recent calls and suggests refinements to your script — sharper language, stronger transitions, sections that could be tightened. When it proposes a new version of your playbook, you review it and decide whether to adopt it. Nothing changes until you approve.
+Every week, AskMoses proposes the **AskMoses network script**: one shared script, generated automatically from what is working across the businesses on the platform. You review it next to your current script and decide whether to adopt it. Nothing changes until you approve.
+
+**How the weekly suggestion is built**
+
+- **Source:** the **3 best calls** of each business on the platform that closed on the call **and** became a Won deal in the CRM in the last **90 days**. "Best" means the highest-scoring calls.
+- **Who contributes:** a business needs at least 3 such calls to take part that week. Demonstration and test accounts never take part.
+- **One script for everyone:** the AI reads those winning calls, extracts the patterns they have in common (the discovery questions, how objections were answered, how the close was made) and writes **one** script in the 5 standard sections: Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps.
+- **Anonymized:** the script never contains the names of businesses, people, dogs, brands or places, nor prices. Where it needs one, it uses a placeholder such as *[price]* or *[program name]*.
+- **Every week:** a new suggestion replaces the one from the previous week if you did not act on it.
+
+> **IMPORTANT**
+>
+> - **This is not an analysis of your calls only.** The suggested script is the network standard: every business receives the same one, built from winning calls across the network. Your own calls may or may not be among them.
+> - **Your active script never changes on its own.** It changes only when you approve the suggestion.
+> - **Adopting it replaces your playbook.** Calls from then on are scored against the network script. If your business sells differently, keep your own script and use the suggestion as a source of ideas.
 
 > **GOOD TO KNOW**
 >
-> Think of this as a second pair of eyes on your playbook, grounded in what is actually being said on your calls. You always stay in control — every suggestion is a recommendation for you to accept or decline.
+> Next to the suggestion, the screen shows the AI's comparison of your current script and the suggested one, read against your own recent calls. Treat the scores and percentages there as the AI's **qualitative read**, not as measurements. The health score and the uplift figures beside suggested phrases are the model's assessment — they are not derived from your close-rate data. The value is in the language suggestions; weigh those on their merits.
 >
-> Treat the scores and percentages on this screen as the AI's **qualitative read**, not as measurements. The health score and the uplift figures beside suggested phrases are the model's assessment of your script — they are not derived from your close-rate data. The value here is in the language suggestions; weigh those on their merits.
+> If your business has no calls yet, the suggestion still arrives, but without that comparison.
 
 ### 6.2 Script Gap Detection
 
@@ -470,4 +484,4 @@ Yes. Your script defines what good looks like inside each of the five stages —
 
 ---
 
-*AskMoses.AI — User Guide v1.3 · September 2026 · For questions not covered here, contact your account team.*
+*AskMoses.AI — User Guide v1.4 · September 2026 · For questions not covered here, contact your account team.*
