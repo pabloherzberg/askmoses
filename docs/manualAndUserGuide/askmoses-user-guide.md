@@ -134,9 +134,12 @@ Your command centre. In one screen it answers the three questions you ask most: 
 
 ### 4.1 Average Close Rate
 
-> **Close Rate = closed calls ÷ sales calls**
+> **Close Rate = closed calls ÷ sales calls with a result**
 >
-> Counted across every sales call the team has ever made. Calls identified as *Not a Sales Call* (voicemails, logistics, existing customers — see section 8) are left out.
+> Counted across every sales call the team has ever made that has a result (closed or not closed). Two kinds of call are left out:
+>
+> - calls identified as *Not a Sales Call* (voicemails, logistics, existing customers — see section 8);
+> - calls that never got a result, because the recording was missing, the transcription failed, or the call is still being processed. Nobody knows yet whether they closed, so they don't count as "not closed".
 
 This is your headline number: of all the sales calls your team has made, what share resulted in a closed deal.
 
@@ -150,7 +153,7 @@ The average quality of your team's calls, on the 0–5 scale. Read together with
 
 > **GOOD TO KNOW**
 >
-> Reps who have not yet made a call are left out of this average, so inviting a new team member never makes your team score suddenly drop.
+> Only calls that were actually scored count. A call that has no score yet (missing recording, failed transcription, still processing) is left out rather than counted as zero. Likewise, a rep only counts toward this average once they have at least one scored call, so inviting a new team member never makes your team score suddenly drop.
 
 ### 4.3 Total Calls and Active Sales People
 

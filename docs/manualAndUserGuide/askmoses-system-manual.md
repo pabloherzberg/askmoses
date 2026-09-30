@@ -238,7 +238,7 @@ In production, over the last 30 days to 30 September 2026, 123 of 271 inbound ca
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> Calls that failed to process **still count in the Avg Close Rate denominator**. They never reach the sales-call classifier, so `is_sales_call` stays `NULL`, which the close-rate filter keeps (`applySalesCallOnly` excludes only `false`). Their `call_outcome` is also `NULL`, so they can never count as closed. In production on 30 September 2026, all 95 `no_recording` calls and 31 of the 33 `transcription_failed` calls were in this state. A batch of failed transcriptions therefore pulls the close rate down. If the close rate drops with no sales explanation, pipeline failures are the first thing to check.
+> **Calls that failed to process do not move the close rate or the score average.** They never reach the classifier or the scorer: `is_sales_call`, `call_outcome` and `overall_score` stay `NULL`. They count in Total Calls, but are left out of the close-rate denominator (§3.1) and of every score average (§3.2). In production on 30 September 2026, all 95 `no_recording` calls and 31 of the 33 `transcription_failed` calls were in this state. A batch of failures shows up as volume without a result, so check `processing_status` when Total Calls grows and close rate and score stay flat.
 
 ### 2.7 Organisation scoping and roles
 
@@ -260,11 +260,13 @@ Owners never see LLM cost or gross margin — those are filtered out of the bill
 
 ### 3.1 Avg Close Rate `CALCULATED`
 
-> `Avg Close Rate = closed sales calls ÷ sales calls × 100`
+> `Avg Close Rate = closed sales calls ÷ sales calls with a result × 100`
 >
 > Scope: the entire organisation, all time. Every counted call weighs exactly the same.
 >
-> "Sales calls" = `is_sales_call IS DISTINCT FROM false` — calls classified as sales **and** calls never classified (`NULL`). Only calls explicitly classified as *Not a Sales Call* are left out. Numerator: the same set with `call_outcome = 'closed'`. (`lib/db/calls.ts:768-796` — `dbGetOrgCloseRate`, both counts wrapped in `applySalesCallOnly`, `lib/sales-calls.ts`.)
+> Denominator = `is_sales_call IS DISTINCT FROM false` **and** `call_outcome IS NOT NULL`. That keeps calls classified as sales and legacy calls never classified (`NULL`) that have a result. It leaves out calls classified as *Not a Sales Call* and calls with no result. Numerator: the same set with `call_outcome = 'closed'`. (`lib/db/calls.ts:778-811` — `dbGetOrgCloseRate`, both counts wrapped in `applySalesCallWithOutcome`, `lib/sales-calls.ts`.)
+>
+> Every close rate in the product uses the same base: the card, the `trainers.close_rate` cache and its delta (`syncTrainerStats`), the Team Command Center, the trend lines, the rep's My Page, the Analytics outcome breakdown and leaderboard, and the AI insights. In-memory calculations use `closeRateOf` / `hasOutcome`. `toCall` still shows a call without a result as `not_closed` on screen, and marks it `hasOutcome: false`.
 
 > **WHY THIS EXISTS**
 >
@@ -274,7 +276,15 @@ There is no date filter — it is deliberately a lifetime figure, so it is stabl
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> The denominator is **every sales call**, and that includes calls that never got analysed. A call that failed before classification (`no_recording`, `transcription_failed`, still `pending`) has `is_sales_call = NULL` and `call_outcome = NULL`: it stays in the denominator and can never be in the numerator, so pipeline failures depress the number (§2.6). Calls classified as *Not a Sales Call* are the only ones excluded (§9). The comment above `dbGetOrgCloseRate` still says "TODAS as calls, sem exceção"; the code applies the sales-call filter.
+> **Calls without a result are not in the denominator.** A call that failed before it got a result (`no_recording`, `transcription_failed`, stuck in an intermediate status, or still `pending`) has `call_outcome = NULL`. It is not "not closed" — nobody knows — so it is left out. Before this change those calls counted as not closed, and in production (30 September 2026) they dragged the aggregate from 50.7% down to 45.1%, and one organisation from 52.9% down to 11.7%.
+>
+> Pipeline failures therefore no longer move the close rate. They show up as calls without a result (volume and `processing_status`), which is where to look for them (§2.6).
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
+> **The close-rate base and the call count are different.** Total Calls (the sum of `trainers.total_calls`) counts every sales call, including those without a result. `closedCalls ÷ totalCalls` from Total Calls will not match the card.
+>
+> The same applies to `call_stats_weekly` (`stamp_call_stats_weekly`, migration 107): its `total_calls` includes calls without a result, so `closed_calls ÷ total_calls` there is **not** the product's close rate. No screen reads that table today.
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
@@ -283,11 +293,17 @@ There is no date filter — it is deliberately a lifetime figure, so it is stabl
 ### 3.2 Team Avg Call Score `CALCULATED`
 
 > `Team Avg Call Score = average of each rep's average score`
-> (only reps who have made at least one call)
+> (only reps with at least one **scored** call)
+>
+> Each rep's average (`trainers.score`, `syncTrainerStats`) covers only calls with a valid score. A call is left out if its `overall_score` is `NULL`, or if its `scoring_status` is `scoring_failed` or `transcript_leaked` (`lib/db/trainers.ts:90` — `hasScoreRow`, plus `excludeFailedScoring` on the query).
+>
+> A rep with no scored call is stored with score 0. The card leaves out reps with `score = 0` (`app/[locale]/dashboard/page.tsx:74`). That is equivalent to "no scored call", because a real average of 0 cannot happen: failed scoring is already excluded, and an evaluated call scores above 0.
 
 > **WHY THIS EXISTS**
 >
-> Reps with zero calls have a stored score of 0. Including them would drag the team average down every time someone new is invited, making the metric jump for reasons that have nothing to do with performance.
+> Reps with zero calls have a stored score of 0. Including them would drag the team average down every time someone new is invited, making the metric jump for reasons that have nothing to do with performance. The same goes for calls without a score: counted as 0, they dragged the production average of sales calls from 60.1 down to 53.4 (30 September 2026), and one organisation's card from 2.0 down to 0.5.
+>
+> Every score average in the product uses the same base: the rep's score and delta, the Team Command Center, the trend lines, the rep's My Page, and Analytics (trend, Master Coach, Rising Star, overall average). In-memory calculations use `avgScoreOf` / `hasScore`. Section averages (`avgRubricScores`, Analytics' weakest sections, the revenue-leak insight) count only calls that have sections and valid scoring (`hasRubric`). Before this change, a call without sections counted as 0 in every section.
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
@@ -471,8 +487,10 @@ Calls from the same contact are grouped into a single row with a "View All" acti
 Score, Close Rate, Calls, and Closed — each with a window selector of 2, 4, or 6 weeks, defaulting to 6.
 
 > Within the selected window:
-> `score` = weighted by call volume, not a plain average of weeks
-> `close rate` = total wins ÷ total calls in the window
+> `score` = weighted by the number of **scored** calls each week, not a plain average of weeks
+> `close rate` = total wins ÷ total calls **with a result** in the window
+>
+> The Calls card still shows every call in the window. Calls without a score or a result are left out only of the score and close-rate figures (§3.1, §3.2).
 
 > **WHY THIS EXISTS**
 >
