@@ -451,34 +451,16 @@
       }
     },
     "correlationEngine": {
-      "title": "Correlation Engine — O que leva ao fechamento",
-      "titleNoVolume": "Coaching Drivers — Médias do time por dimensão",
-      "mockBadge": "apenas dados mock",
-      "legend": {
-        "highCorrelation": "Correlação alta",
-        "medCorrelation": "Correlação média",
-        "lowCorrelation": "Correlação baixa",
-        "rubric": "Rubrica",
-        "behavioral": "Comportamental"
-      },
+      "title": "Coaching Drivers — Médias do time por dimensão",
       "th": {
         "score": "Nota",
-        "percent": "Score",
-        "correlation": "Corr.",
-        "impact": "Impacto",
-        "source": "Fonte"
+        "percent": "Score"
       },
       "levels": {
         "High": "Alta",
         "Med": "Média",
         "Low": "Baixa"
-      },
-      "sources": {
-        "Rubric": "Rubrica",
-        "Behavioral": "Comportamental"
-      },
-      "disclaimer": "Quando houver volume suficiente de calls, o AskMoses identificará quais dimensões mais correlacionam com fechamentos.",
-      "mockFooter": "† todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+      }
     },
     "behavioralProfile": {
       "title": "Perfil de correlação comportamental",

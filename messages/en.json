@@ -451,34 +451,16 @@
       }
     },
     "correlationEngine": {
-      "title": "Correlation Engine — What Drives Closes",
-      "titleNoVolume": "Coaching Drivers — Team Averages by Dimension",
-      "mockBadge": "mock data only",
-      "legend": {
-        "highCorrelation": "High correlation",
-        "medCorrelation": "Med correlation",
-        "lowCorrelation": "Low correlation",
-        "rubric": "Rubric",
-        "behavioral": "Behavioral"
-      },
+      "title": "Coaching Drivers — Team Averages by Dimension",
       "th": {
         "score": "Score",
-        "percent": "Score",
-        "correlation": "Corr.",
-        "impact": "Impact",
-        "source": "Source"
+        "percent": "Score"
       },
       "levels": {
         "High": "High",
         "Med": "Med",
         "Low": "Low"
-      },
-      "sources": {
-        "Rubric": "Rubric",
-        "Behavioral": "Behavioral"
-      },
-      "disclaimer": "After sufficient call volume, AskMoses will identify which dimensions correlate most with closes.",
-      "mockFooter": "† all values sourced from mock-data.ts — no real calculation on the frontend"
+      }
     },
     "behavioralProfile": {
       "title": "Behavioral Correlation Profile",
