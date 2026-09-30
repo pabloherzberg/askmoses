@@ -4,9 +4,9 @@
 
 *Reference guide for answering rule questions and telling intended behaviour apart from real defects*
 
-Version 1.1 · August 2026
-Supersedes `askmoses-system-manual.pdf` (v1.0, based on `fix/dashboardData`).
-**Re-verified against `dev` @ `aafcf10` (31 July 2026).** Every claim below carries a `file:line` reference so it can be re-checked.
+Version 1.2 · September 2026
+Supersedes v1.1 (August 2026, verified against `dev` @ `aafcf10`).
+**v1.2 updates §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17. Only the passages changed in v1.2 were re-verified, against `dev` @ `18807ca` (30 September 2026).** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -82,14 +82,21 @@ Every call, regardless of how it enters the system, follows the same path:
 4. The AI returns, in one structured response: a score from **0 to 100** for each section, a written justification per section, strengths, improvements, a summary, and its reading of how the call ended.
 5. The overall score is computed from those section scores.
 
-The rubric's five default sections are Discovery, Problem Agitation, Offer Presentation, Objection Handling, and Close & Next Steps (`lib/services/scoring.ts:119-123`). An organisation can define its own sections through the Script Builder, and the system adapts — nothing is hardcoded to those five names.
+The five sections are Discovery, Problem Agitation, Offer Presentation, Objection Handling, and Close & Next Steps (defaults at `lib/services/scoring.ts:120-124`).
 
-**The overall score is a simple average**
-
-> `overall_score = average of all section scores`
-> (plain arithmetic mean — every section counts equally)
+> **CONVENTION — NOT ENFORCED BY THE SYSTEM**
 >
-> `lib/services/scoring.ts:536` — `scores.reduce((sum, s) => sum + s, 0) / scores.length`
+> Every client script must have **exactly these five sections, with these names, in this order**, and no section may be left empty. This is an operating rule (User Guide §7), not something the product checks: the database has no constraint on `scripts.sections` (no CHECK, no trigger), `POST /api/scripts` stores whatever it receives (`app/api/scripts/route.ts:64-76`), and the Rubric Config form lets you rename sections and add more with **Add Section**. A script that breaks the convention is accepted and scored as-is — an empty section scores low and drags down every call.
+
+**The overall score is a weighted average**
+
+> `overall_score = Σ (section score × section weight) ÷ Σ weights`, rounded to an integer
+>
+> Falls back to a **plain average** when any section has no weight, or when the weights add up to 0.
+>
+> `lib/services/overall-score.ts` — `computeOverallScore()`, used by both scoring paths (`lib/services/scoring.ts:538`, `app/api/analyze/route.ts:670`)
+
+Weights are looked up by section name (case-insensitive), using the names configured in the script. A section the AI returns under a name the script has no weight for sends the whole call to the plain average.
 
 > **WHY THIS EXISTS**
 >
@@ -140,15 +147,21 @@ The scoring bands the AI is given are: 90–100 textbook, 75–89 strong, 60–7
 
 ### 2.4 Section weight and "critical" flags
 
-When an owner builds a script, they can assign each section a weight and mark sections as critical. Both are saved with every call (`lib/services/scoring.ts:554-555`).
+When a script is built, each section can be given a weight and marked as critical. Both are saved with every call (`lib/services/scoring.ts:555-556`).
+
+**Weight** now drives the overall score, as described in §2.1. With five sections weighted 20 / 5 / 25 / 25 / 25 and scored 90 / 40 / 80 / 80 / 80, the overall is 80; a plain average would give 74.
+
+> **CONVENTION — NOT ENFORCED BY THE SYSTEM**
+>
+> Weights are expected to add up to **exactly 100%**. Only the create-script form checks this: on Rubric Config and in the Script Builder, the save button stays disabled until the total is 100 (`app/[locale]/(admin)/admin/settings/page.tsx:413-418`). Neither the API (`POST /api/scripts`) nor the database checks it, so a script created or edited any other way can carry any total.
+>
+> The formula divides by the sum of the weights, so a total other than 100 still yields a valid score — the weights simply act as proportions. The rule exists so that the numbers on screen read as percentages.
 
 > **KNOWN DEFECT — ALREADY REPORTED**
 >
-> **Neither field currently affects the overall score.** The score is a plain average regardless of the weights configured, and marking a section critical does not penalise the call. The fields are captured, stored, and displayed — but never multiplied into the result. An owner who sets "Closing = 50% weight" will see no change in any score.
->
-> Verified at `lib/services/scoring.ts:536`: the mean is taken over `scores` with no reference to `weightByName` (built at line 472) or `criticalNames` (built at line 465). Those two maps are used only to decorate the stored output. **Still present as of `dev` @ `aafcf10`.**
+> **The critical flag still does not affect the overall score.** Marking a section critical does not penalise the call; the flag is only stored and used for display and alerts (§9). `criticalNames` (`lib/services/scoring.ts:466`) decorates the stored output and is never passed to `computeOverallScore()`.
 
-`SCHEMA.md` describes the overall score as a "weighted average of section scores". That documentation is wrong and predates the current implementation. This manual reflects the actual behaviour.
+`SCHEMA.md` describes the overall score as a "weighted average of section scores". That is now the actual behaviour.
 
 ### 2.5 Call outcome: Stage 1 and Stage 2
 
@@ -182,7 +195,12 @@ How the call ended. **As of migration `105_call_outcome_2_values.sql` there are 
 
 #### Stage 2 — Actual Close
 
-Whether the client actually paid. Marked manually by the owner on the call detail screen: `paying`, `not_paying`, or `pending` (`lib/types.ts:119`, `app/api/calls/[id]/stage2/route.ts`).
+Whether the client actually paid: `paying`, `not_paying`, or `pending` (`lib/types.ts:119`). It is set in two ways:
+
+- **Automatically from the CRM.** When a GoHighLevel opportunity becomes **Won** — through the webhook or the daily `sync-ghl-opportunities` cron — one call of that contact is marked `paying`: the most recent sales call, or the most recent call if there is none. `became_paying_at` is set to the Won date. This happens only if that call has no Stage 2 value yet and no call of the same contact is already `paying`. Each marking writes to `calls_data_corrections` with `applied_by = 'ghl_won_sync'` (`public.mark_stage2_paying_from_won`, migration `117_stage2_from_ghl_won.sql`).
+- **Manually by the owner**, on the call detail screen (`app/api/calls/[id]/stage2/route.ts`).
+
+**The manual value always prevails.** The automatic path never overwrites a call that already has a Stage 2 value, `pending` included.
 
 > **WHY THIS EXISTS**
 >
@@ -190,7 +208,7 @@ Whether the client actually paid. Marked manually by the owner on the call detai
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> Stage 2 can be set, and the marker shows its current value. The route does compute and persist an `intent_at_close` snapshot when the outcome is `paying` (`app/api/calls/[id]/stage2/route.ts:39-56`) — but **nothing reads it back**. There is no report comparing predicted intent against who actually paid. If someone asks "where do I see my Stage 2 numbers?", the honest answer today is "nowhere yet". This is an incomplete feature, not a broken one.
+> Stage 2 is shown on the call detail screen and nowhere else. When the owner marks a call `paying` by hand, the route also stores an `intent_at_close` snapshot computed from the call's intent breakdown (`app/api/calls/[id]/stage2/route.ts:39-56`). A closed call is no longer forced to 5; that rule was removed. The automatic CRM path does **not** store `intent_at_close`. Nothing reads either value back: there is no report comparing predicted intent against who actually paid. If someone asks "where do I see my Stage 2 numbers?", the honest answer today is "nowhere yet". This is an incomplete feature, not a broken one.
 
 ### 2.6 Where calls come from
 
@@ -199,7 +217,9 @@ Two ingestion paths, both ending in the same place:
 - **Manual upload** — the owner uploads an audio file or transcript through the upload screen.
 - **CRM webhook** — GoHighLevel notifies the system when a call is recorded, and the pipeline fetches, transcribes, and analyses it automatically. This is the Pro plan feature.
 
-Automatic ingestion can fail for reasons that have nothing to do with selling: no recording available yet, transcription failure, the rep not linked to a CRM user.
+Automatic ingestion can fail for reasons that have nothing to do with selling: no recording available yet, or a transcription failure.
+
+A call from a CRM user who is **not linked** to any active member is no longer dropped. It is ingested, transcribed and scored like any other, and assigned to the organisation's system rep **Front Desk - AskMoses** (`lib/constants/front-desk.ts` — `FRONT_DESK_NAME`, migration `109_front_desk_system_rep.sql`). When that CRM user is later linked to a member, their Front Desk calls move to the real rep automatically (`reassignFrontDeskCalls`, `lib/services/ghl-call-recovery.ts`). This assignment is only logged (Vercel); it no longer sends a Slack alert.
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
@@ -463,6 +483,10 @@ The detail screen shows the overall score, per-section bars with the AI's writte
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
+> The Calls list opens filtered to **Closed** and **Not Closed** (`app/[locale]/calls/CallsTable.tsx:50` — `DEFAULT_RESULT_FILTER`). Calls classified as *Not a Sales Call* are hidden until they are ticked in the result filter. Calls still being analysed are always shown, whatever the filter says. "A call is missing from the list" is usually the default filter.
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
 > A section marked **critical** raises a red alert when it scores **40 or below** on this screen (`components/shared/CallDetail.tsx:186` — `section.critical && section.score <= 40`). The coaching email uses a different threshold — **60** (`lib/email/coaching-template.ts:115,123`) — so the email flags calls the screen does not. Same concept, two numbers, because they were built separately.
 
 > **KNOWN DEFECT — ALREADY REPORTED**
@@ -531,11 +555,17 @@ The four weights default to 25% each (`lib/constants/intent.ts` — `DEFAULT_INT
 
 ### 11.2 When intent cannot be measured
 
-> **OFTEN MISTAKEN FOR A BUG**
+> **FIXED SINCE v1.1**
 >
-> If the AI fails to return an intent reading, the system derives one from the outcome instead (`lib/utils/intentScore.ts` — `deriveCallIntentBreakdown()`): a closed call is assigned a flat 10/10/10/10, and everything else is derived arithmetically from the stored intent value. This is a fixed rule, not a measurement — the number looks like an assessment of the prospect but is really a restatement of the result.
+> **The rule "closed ⇒ intent 5" no longer exists.** It lived in three places, and all three were removed:
 >
-> *Note: the old four-value outcome mapping described in v1.0 of this manual (closed→4, partial→3, not closed→2, no outcome→1) no longer applies — `partial` and `no_outcome` no longer exist.*
+> - the scoring prompt (`If the deal closed, intent is 5.`, formerly in `app/api/analyze/route.ts`);
+> - the Stage 2 route, which forced `intent_at_close = 5` for closed calls;
+> - the constant `INTENT_RULES.CLOSED_CALL_INTENT` in `lib/constants/intent.ts`.
+>
+> Intent for a closed call is now read from the conversation like any other. The helper `deriveCallIntentBreakdown()` (`lib/utils/intentScore.ts`), which turned a closed call into a flat 10/10/10/10, is still in the file but has no callers.
+>
+> Calls analysed before the change may still carry intent 5 from the old rule (migration `087` also set `intent = 5` on every closed call) unless they were recalculated since.
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
@@ -545,7 +575,7 @@ The four weights default to 25% each (`lib/constants/intent.ts` — `DEFAULT_INT
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> The Won column on the priority leads table reads the **CRM's opportunity status** (`ghlWonStatus`), not the Stage 2 `paying` marker. Two different notions of "won" exist in the product and this table uses the automatic one. A call marked as paying by the owner will not necessarily show as won here.
+> The Won column on the priority leads table reads the **CRM's opportunity status** (`ghlWonStatus`), not the Stage 2 `paying` marker. Since migration 117 a CRM Won also marks one call of the contact as `paying` (§2.5), so the two usually agree. They can still differ: a call marked `paying` by hand without a Won in the CRM does not show as won here. And when a contact has several calls, only one of them becomes `paying`.
 
 ---
 
@@ -699,10 +729,13 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 
 ## 15. Fixed Since v1.0
 
-*If you are working from the previous PDF, unlearn these three entries. They are no longer defects.*
+*If you are working from a previous PDF, unlearn these entries. They are no longer defects.*
 
-| # in v1.0 | What it was | Status now |
+| # in earlier edition | What it was | Status now |
 |---|---|---|
+| **1** (v1.1) | Section weights saved but never used; overall score was a plain average | **Fixed for weights.** Overall score is the weighted average, with a plain-average fallback (`lib/services/overall-score.ts`, §2.1). The critical flag is still unused — it stays in §16 as #1. |
+| *(§11.2, v1.1)* | Closed calls forced to intent 5 (prompt, Stage 2 route, `INTENT_RULES`) | **Removed.** See §11.2. |
+| **13** (v1.1) | Stage 2 set only by hand | **Partly changed.** A CRM Won now marks a call `paying` automatically (§2.5). The missing report is still open — §16 #13. |
 | **4** | Admin organisations grid calculated cost at $2.00/min against the real $0.0667/min — two admin screens disagreeing by ~30× | **Fixed.** `COST_PER_MINUTE_USD` deleted from `lib/billing.ts`; COST column removed from the SaaS Panel (`a4df35a`); the grid now shows billable **minutes** and money lives only in `/admin/billing`. See §14.2. |
 | **5** | Intent Analysis dashboard ignored configured weights, always using 25/25/25/25, because it fetched from an endpoint that did not exist in production | **Fixed.** `components/shared/IntentDashboard.tsx:84` now resolves weights in-process via `resolveIntentWeights(signals)` (`lib/utils/intentScore.ts:33`) with a documented default, and `app/api/stage-config/route.ts` is a real, auth-scoped route. |
 | *(scale drift note)* | The `value <= 5 → multiply by 20` rule was described as present "in several places" | **Largely cleaned.** `lib/score-display.ts` was introduced as the single source of truth for scale conversion, and its header forbids inline `/ 20` or `* 20` elsewhere. Two sites still apply the legacy rule — see §16. |
@@ -711,11 +744,11 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 
 ## 16. Known Defects — Do Not Report These
 
-*Every item below was re-verified against `dev` @ `aafcf10` at the `file:line` given. They are already identified. Reporting them again costs everyone time — but if you see behaviour that is not on this list and not explained elsewhere in this manual, that is worth raising.*
+*Every item below was re-verified against `dev` @ `aafcf10` at the `file:line` given; #1 and #13 again at `18807ca`. They are already identified. Reporting them again costs everyone time — but if you see behaviour that is not on this list and not explained elsewhere in this manual, that is worth raising.*
 
 | # | Where | What is wrong | Evidence | Impact |
 |---|---|---|---|---|
-| 1 | Scoring engine | Section weights and "critical" flags are saved but never affect the overall score, which is a plain average | `lib/services/scoring.ts:536` | **High** — script configuration silently does nothing |
+| 1 | Scoring engine | The "critical" flag is saved but never affects the overall score (weights now do — see §15) | `lib/services/scoring.ts:466,538` | **Medium** — a configuration option that silently does nothing |
 | 2 | Dashboard → Correlation Engine | Calculates no correlation; shows average score with correlation labels | `lib/services/rubric.ts:327` | **High** — can point coaching in the wrong direction |
 | 3 | Dashboard → Revenue Leak insight | Compares 0–100 scores against a 3.5 threshold meant for the 0–5 scale; prints "92/5" | `lib/services/insights.ts:88,96,97,122` | **High** — card is statistically meaningless |
 | 4 | Script Intelligence | Health score, section scores and "+18%" uplifts are AI opinion presented as measurement; effectiveness label never validated | `lib/script-intelligence/analyze.ts:25,47,55,231` | **High** — drives a real script-activation decision |
@@ -727,10 +760,10 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 | 10 | Admin panel | Average Score renders as "4.2%" — a 0–5 value with a percent sign | `app/[locale]/(admin)/admin/page.tsx:68` | **Low** — cosmetic |
 | 11 | Critical section alerts | Screen alerts below 40, coaching email alerts below 60 | `components/shared/CallDetail.tsx:186` vs `lib/email/coaching-template.ts:115,123` | **Low** — email over-alerts relative to the app |
 | 12 | Analytics → Rising Star | Compares organisation-wide first/last calls, credits the most recent rep | `app/[locale]/dashboard/analytics/page.tsx:168-180` | **Low** — demo-grade heuristic |
-| 13 | Stage 2 (Actual Close) | Marker shows its own value and persists `intent_at_close`, but no report consumes either | `app/api/calls/[id]/stage2/route.ts:39-56` | **Low** — incomplete, not broken |
+| 13 | Stage 2 (Actual Close) | Filled automatically as `paying` on a CRM Won (manual value prevails), but no report consumes Stage 2 or `intent_at_close` — only the call detail marker shows it | `scripts/117_stage2_from_ghl_won.sql`, `app/api/calls/[id]/stage2/route.ts:39-56` | **Low** — incomplete, not broken |
 | 14 | Buying Intent | Each signal is defined one way in the AI prompt and described another way in the on-screen help | `lib/services/scoring.ts:402` vs `messages/en.json` → `signals.financial.question` | **Low** — the AI may not score exactly what the UI claims |
 
-*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up.*
+*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up. v1.2 keeps the numbering: #1 and #13 were reworded, not removed.*
 
 ### A note on scale drift
 
@@ -779,7 +812,9 @@ The rule **inverts precisely the worst calls**: a genuinely catastrophic section
 | Displayed score scale | 0–5 (stored ÷ 20) |
 | Green / amber / red | ≥85 / 70–84 / <70 |
 | Perfect call | ≥95 |
-| Overall score | Simple average of sections |
+| Overall score | Weighted average of sections (plain average if any weight is missing) |
+| Script sections | Exactly 5, fixed names and order — convention, not enforced |
+| Section weights | Sum to 100% — checked only by the create-script form |
 | Call outcomes | 2 values: `closed`, `not_closed` |
 | Billing rate (default) | $0.0667 per minute |
 | Minimum billable call | 30 seconds |
@@ -794,4 +829,4 @@ The `/overview` screen has been removed. The owner's home is `/dashboard`. Old l
 
 ---
 
-*AskMoses.AI — System Manual v1.1 · Re-verified against `dev` @ `aafcf10`, 31 July 2026.*
+*AskMoses.AI — System Manual v1.2 · 30 September 2026 · Changed passages verified against `dev` @ `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
