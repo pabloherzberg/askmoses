@@ -107,6 +107,57 @@ export function closeRateOf(calls: { result: string; hasOutcome?: boolean }[]): 
   return Math.round((closed / decided.length) * 100)
 }
 
+/** scoring_status que não são avaliação real (checklist §0/§3). */
+export const FAILED_SCORING_STATUSES: readonly string[] = ['scoring_failed', 'transcript_leaked']
+
+function isFailedScoring(status: string | null | undefined): boolean {
+  return status != null && FAILED_SCORING_STATUSES.includes(status)
+}
+
+/**
+ * Base do SCORE MÉDIO, em memória: a call tem score (overall_score não NULL)
+ * e o score é avaliação real (scoring_status fora de scoring_failed /
+ * transcript_leaked).
+ *
+ * `toCall` põe `score: 0` na call sem score, só pra exibição. Somada numa
+ * média, ela puxava o número pra baixo por falha de pipeline (prod,
+ * 30/09/2026: média das calls de venda 53,4 → 60,1; numa org o card Team Avg
+ * ia de 0,5 a 2,0). `hasScore` undefined (mocks) conta como com score.
+ *
+ * Mesma regra do syncTrainerStats (excludeFailedScoring na query +
+ * hasScoreRow), pra leaderboard e /me baterem.
+ */
+export function hasScore(call: { hasScore?: boolean; scoringStatus?: string | null }): boolean {
+  return call.hasScore !== false && !isFailedScoring(call.scoringStatus)
+}
+
+/** Versão para linhas cruas do Supabase (snake_case), antes do mapper. */
+export function hasScoreRow(row: { overall_score?: number | null; scoring_status?: string | null }): boolean {
+  return row.overall_score != null && !isFailedScoring(row.scoring_status)
+}
+
+/**
+ * Média (sem arredondar) do score das calls com score. 0 quando nenhuma tem —
+ * os chamadores arredondam do jeito que já arredondavam.
+ */
+export function avgScoreOf(
+  calls: { score: number; hasScore?: boolean; scoringStatus?: string | null }[],
+): number {
+  const scored = calls.filter(hasScore)
+  if (scored.length === 0) return 0
+  return scored.reduce((s, c) => s + c.score, 0) / scored.length
+}
+
+/**
+ * Base das médias POR SEÇÃO: a call tem sections e o scoring não falhou. Call
+ * sem sections tem rubricScores todo 0 (parseSectionsToRubricScores) — entrar
+ * na média derrubava cada seção. `hasSections` undefined (Call montado fora
+ * do toCall, ex.: mocks) conta como com seção.
+ */
+export function hasRubric(call: { hasSections?: boolean; scoringStatus?: string | null }): boolean {
+  return call.hasSections !== false && !isFailedScoring(call.scoringStatus)
+}
+
 /**
  * Exclui calls com scoring_status = 'scoring_failed' ou 'transcript_leaked'
  * (checklist §0/§3) — zero nessas calls é falha de análise, não avaliação

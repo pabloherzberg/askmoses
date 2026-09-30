@@ -6,7 +6,7 @@ import { getActiveLlmModel } from '@/lib/llm-provider'
 import { recordLlmUsage } from '@/lib/services/llm-usage'
 import { normaliseOutcome } from '@/lib/constants'
 import { normalizeSectionScore } from '@/lib/score-display'
-import { closeRateOf } from '@/lib/sales-calls'
+import { avgScoreOf, closeRateOf } from '@/lib/sales-calls'
 import type { Call, Trainer, BestCall, RubricScores } from '@/lib/types'
 import type {
   BehavioralDimension,
@@ -78,9 +78,8 @@ export function withLiveTrainerStats(
   const total = calls.length
   // Só calls com resultado — mesma base do close rate do dashboard.
   const closeRate = closeRateOf(calls)
-  const score = Math.round(
-    calls.reduce((s, c) => s + (c.score ?? 0), 0) / total,
-  )
+  // Só calls com score válido — mesma base do syncTrainerStats.
+  const score = Math.round(avgScoreOf(calls))
 
   // Rubric por seção: tenta primeiro o array `sections` (já em 0-100 do
   // banco); fallback pro objeto `rubricScores` parseado (mistura 0-5 / 0-100,
@@ -317,9 +316,7 @@ export async function generateCoachingRecs(
   // Sinais AGREGADOS — o sales person não tem como rastrear uma call
   // individual ("Call 3"), então nada de identidade por call no prompt.
   const closeRate = closeRateOf(recent)
-  const avgScore = Math.round(
-    recent.reduce((s, c) => s + c.score, 0) / recent.length,
-  )
+  const avgScore = Math.round(avgScoreOf(recent))
   const strengths = recent.flatMap((c) => c.strengths).filter(Boolean)
   const improvements = recent.flatMap((c) => c.improvements).filter(Boolean)
   const sectionAvgs = SECTIONS.map(({ key, label }) => {

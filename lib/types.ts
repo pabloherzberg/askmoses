@@ -95,6 +95,16 @@ export interface Call {
    *  exibição; close rate exclui essas calls (hasOutcome em lib/sales-calls).
    *  undefined = Call montado fora do toCall (mocks) — conta como com resultado. */
   hasOutcome?: boolean;
+  /** false quando overall_score é NULL no banco. `score` vira 0 só para
+   *  exibição; médias de score excluem essas calls (hasScore em lib/sales-calls).
+   *  undefined = Call montado fora do toCall (mocks) — conta como com score. */
+  hasScore?: boolean;
+  /** false quando calls.sections é NULL ou vazio: rubricScores vem todo 0 só
+   *  para exibição; médias por seção excluem (hasRubric em lib/sales-calls). */
+  hasSections?: boolean;
+  /** calls.scoring_status (migration 119). 'scoring_failed' e
+   *  'transcript_leaked' ficam fora das médias de score e de seção. */
+  scoringStatus?: string | null;
   /** Intent gravado pela análise. null = não houve medição (em análise, falha
    *  de pipeline, ou não-venda). Ver readStoredIntent. */
   intent: IntentScore | null;

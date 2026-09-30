@@ -3,7 +3,7 @@
 import type { Call } from "@/lib/types";
 import { useLocale, useTranslations } from "next-intl";
 import { PERFECT_CALL_THRESHOLD, toDisplay5 } from "@/lib/score-display";
-import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
+import { avgScoreOf, closeRateOf, hasOutcome, hasRubric, hasScore } from "@/lib/sales-calls";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -85,28 +85,34 @@ export default function AnalyticsPage() {
       const rubricLabel = (key: string) =>
         (RUBRIC_KEYS as readonly string[]).includes(key) ? tRubric(key) : key
 
-      // Trend data — group by date, average score per day
-      const trends = new Map<string, { total: number; count: number }>();
+      // Trend data — group by date, average score per day. A média usa só
+      // calls com score válido (hasScore); `calls` continua sendo o volume.
+      const trends = new Map<string, { total: number; scored: number; count: number }>();
       sorted.forEach((call) => {
         const label = new Date(call.date).toLocaleDateString(locale, {
           month: "short",
           day: "numeric",
         });
-        if (!trends.has(label)) trends.set(label, { total: 0, count: 0 });
+        if (!trends.has(label)) trends.set(label, { total: 0, scored: 0, count: 0 });
         const entry = trends.get(label)!;
-        entry.total += call.score;
+        if (hasScore(call)) {
+          entry.total += call.score;
+          entry.scored += 1;
+        }
         entry.count += 1;
       });
       setTrendData(
         Array.from(trends.entries()).map(([date, d]) => ({
           date,
-          avgScore: parseFloat((d.total / d.count).toFixed(1)),
+          avgScore: d.scored > 0 ? parseFloat((d.total / d.scored).toFixed(1)) : 0,
           calls: d.count,
         })),
       );
 
+      // Médias por seção só de calls com sections e scoring válido (hasRubric):
+      // call sem sections tem rubricScores todo 0.
       const sectionTotals: Record<string, { total: number; count: number }> = {};
-      sorted.forEach((call) => {
+      sorted.filter(hasRubric).forEach((call) => {
         for (const [key, value] of Object.entries(call.rubricScores)) {
           if (!sectionTotals[key]) sectionTotals[key] = { total: 0, count: 0 };
           sectionTotals[key].total += value;
@@ -126,7 +132,10 @@ export default function AnalyticsPage() {
         string,
         { total: number; count: number; perfect: number }
       >();
-      sorted.forEach((call) => {
+      // Só calls com score válido: o Master Coach é a maior média, e call sem
+      // score entraria como 0.
+      const scoredCalls = sorted.filter(hasScore);
+      scoredCalls.forEach((call) => {
         if (!trainerStats.has(call.trainerName))
           trainerStats.set(call.trainerName, { total: 0, count: 0, perfect: 0 });
         const s = trainerStats.get(call.trainerName)!;
@@ -164,9 +173,9 @@ export default function AnalyticsPage() {
         });
       }
 
-      if (sorted.length >= 4) {
-        const recent = sorted.slice(-3);
-        const older = sorted.slice(0, 3);
+      if (scoredCalls.length >= 4) {
+        const recent = scoredCalls.slice(-3);
+        const older = scoredCalls.slice(0, 3);
         const recentAvg =
           recent.reduce((sum, c) => sum + c.score, 0) / recent.length;
         const olderAvg =
@@ -185,11 +194,11 @@ export default function AnalyticsPage() {
 
       // ─── Insights
       const insightsList: { key: string; vars: Record<string, string | number> }[] = [];
-      if (sorted.length > 0) {
-        const avg = sorted.reduce((sum, c) => sum + c.score, 0) / sorted.length;
+      if (scoredCalls.length > 0) {
+        const avg = avgScoreOf(scoredCalls);
         insightsList.push({
           key: 'overallPerformance',
-          vars: { avg: avg.toFixed(0), count: sorted.length },
+          vars: { avg: avg.toFixed(0), count: scoredCalls.length },
         });
       }
       const sections = Object.entries(sectionTotals)

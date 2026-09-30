@@ -65,11 +65,18 @@ export default async function DashboardPage() {
   // time pra baixo. (avgClose não passa por aqui: vem de getOrgCloseRate, que
   // conta call a call em vez de tirar média por trainer.)
   const ratedTrainers = trainers.filter((tr) => tr.totalCalls > 0);
+  // Team Avg Call Score: só reps com pelo menos uma call COM score. O
+  // syncTrainerStats grava score 0 quando o rep só tem calls sem score (falha
+  // de pipeline) — com totalCalls > 0 ele entraria como 0 e puxaria o card
+  // pra baixo. `score > 0` identifica esses reps sem coluna nova: média 0 real
+  // não acontece, porque scoring_failed (seções/intent todos zero) já fica de
+  // fora do cálculo e uma call avaliada tem score > 0.
+  const scoredTrainers = ratedTrainers.filter((tr) => tr.score > 0);
   const avgScore =
-    ratedTrainers.length > 0
+    scoredTrainers.length > 0
       ? Math.round(
-          (ratedTrainers.reduce((s, tr) => s + tr.score, 0) /
-            ratedTrainers.length) *
+          (scoredTrainers.reduce((s, tr) => s + tr.score, 0) /
+            scoredTrainers.length) *
             10,
         ) / 10
       : 0;
