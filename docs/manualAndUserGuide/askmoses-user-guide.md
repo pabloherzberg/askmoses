@@ -120,7 +120,7 @@ Alongside the score, each call records how it ended. This is kept separate from 
 | **Closed** | The deal moved forward on this call — either won outright, or advanced with a scheduled follow-up or another decision-maker brought in. |
 | **Not Closed** | The call ended without the deal advancing. This also covers calls where no result could be determined. |
 
-> **CHANGED IN THIS VERSION**
+> **CHANGED IN v1.1**
 >
 > Outcomes used to have four values: Closed, Partial, Not Closed, and No Outcome. They were simplified to two. **Partial now counts as Closed** (the deal advanced), and **No Outcome now counts as Not Closed** (an ambiguous result is, in practice, not a close).
 >
@@ -134,15 +134,15 @@ Your command centre. In one screen it answers the three questions you ask most: 
 
 ### 4.1 Average Close Rate
 
-> **Close Rate = closed calls ÷ total calls**
+> **Close Rate = closed calls ÷ sales calls**
 >
-> Counted across every call the team has ever made.
+> Counted across every sales call the team has ever made. Calls identified as *Not a Sales Call* (voicemails, logistics, existing customers — see section 8) are left out.
 
-This is your headline number: of all the calls your team has made, what share resulted in a closed deal.
+This is your headline number: of all the sales calls your team has made, what share resulted in a closed deal.
 
 > **GOOD TO KNOW**
 >
-> This figure counts every call equally, across the whole team and your entire history. A rep who made 50 calls and a rep who made 5 both contribute exactly the calls they made — no single person's numbers distort the team picture. That makes it a stable, honest measure of overall sales performance that is hard to skew. The small trend indicator beside it shows how recent weeks compare, so you can see momentum at a glance.
+> This figure counts every sales call equally, across the whole team and your entire history. A rep who made 50 calls and a rep who made 5 both contribute exactly the calls they made — no single person's numbers distort the team picture. That makes it a stable, honest measure of overall sales performance that is hard to skew. The small trend indicator beside it shows how recent weeks compare, so you can see momentum at a glance.
 
 ### 4.2 Team Average Call Score
 
