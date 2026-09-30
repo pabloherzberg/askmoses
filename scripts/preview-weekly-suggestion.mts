@@ -3,6 +3,7 @@ import {
   parsePreviewArgs,
   runWeeklyPreview,
 } from '@/lib/script-intelligence/weekly-preview'
+import { WEEKLY_DEFAULT_MODEL } from '@/lib/script-intelligence/weekly-suggestion'
 
 // Preview da sugestão semanal de script com o mesmo código do cron
 // (lib/script-intelligence/weekly-preview.ts). Precisa, no ambiente:
@@ -12,6 +13,7 @@ import {
 //
 //   npx tsx scripts/preview-weekly-suggestion.mts                    (dry-run: só imprime)
 //   npx tsx scripts/preview-weekly-suggestion.mts --send-to <orgId>  (grava e envia; só org is_demo)
+//   … --model <id>   (qualquer modo; id do catálogo OpenAI. Padrão: o do cron)
 
 const args = parsePreviewArgs(process.argv.slice(2))
 if ('error' in args) {
@@ -20,8 +22,9 @@ if ('error' in args) {
 }
 
 console.log(args.mode === 'dry-run'
-  ? '[DRY RUN] nada será gravado.\n'
-  : `[SEND-TO ${args.orgId}] grava o script (org_id = essa org) e envia como pending só para ela.\n`)
+  ? '[DRY RUN] nada será gravado.'
+  : `[SEND-TO ${args.orgId}] grava o script (org_id = essa org) e envia como pending só para ela.`)
+console.log(`Modelo: ${args.model ?? `${WEEKLY_DEFAULT_MODEL} (o do cron)`}\n`)
 
 const outcome = await runWeeklyPreview(args)
 

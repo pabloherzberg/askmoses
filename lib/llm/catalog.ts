@@ -30,7 +30,10 @@ export interface ProviderCatalogEntry {
 export const PROVIDER_CATALOG: Record<LlmProvider, ProviderCatalogEntry> = {
   openai: {
     label: 'OpenAI',
-    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
+    // gpt-6.1-sol / gpt-6-astra: adicionados no FIM (o primeiro é o default
+    // sugerido e não muda). Nenhum módulo passa a usá-los por isso — só quem
+    // escolher explicitamente (UI do admin ou --model do preview semanal).
+    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'gpt-6.1-sol', 'gpt-6-astra'],
     defaultModel: 'gpt-4o',
     envKey: 'OPENAI_API_KEY',
     supportsTranscription: true,
@@ -40,6 +43,11 @@ export const PROVIDER_CATALOG: Record<LlmProvider, ProviderCatalogEntry> = {
       'gpt-4-turbo': 128_000,
       'gpt-4': 8_192,
       'gpt-3.5-turbo': 16_385,
+      // Janela total 1.050.000 com até 128.000 de saída (docs OpenAI,
+      // 30/09/2026) → entrada = 1.050.000 − 128.000. Acima de 272k de
+      // entrada o preço dobra (long context) — nenhum prompt nosso chega lá.
+      'gpt-6.1-sol': 922_000,
+      'gpt-6-astra': 922_000,
     },
   },
   gemini: {
@@ -63,6 +71,14 @@ export const PROVIDER_CATALOG: Record<LlmProvider, ProviderCatalogEntry> = {
     },
   },
 }
+
+/**
+ * Modelos OpenAI de raciocínio que o @ai-sdk/openai 3.0.30 NÃO reconhece
+ * pelo prefixo (ele só conhece o1/o3/o4-mini/gpt-5). Sem a marca, o SDK os
+ * trata como modelo comum e repassa `temperature`/`topP`, que modelo de
+ * raciocínio não aceita. lib/llm/reasoning.ts liga `forceReasoning` para eles.
+ */
+export const OPENAI_FORCE_REASONING_MODELS: ReadonlySet<string> = new Set(['gpt-6.1-sol', 'gpt-6-astra'])
 
 /** Modelos por provider — usado pela UI (client-safe). */
 export const PROVIDER_MODELS: Record<LlmProvider, string[]> = Object.fromEntries(

@@ -124,6 +124,18 @@ describe('parsePreviewArgs', () => {
   it('--send-to <uuid> → send', () => {
     expect(parsePreviewArgs(['--send-to', DEMO_ORG])).toEqual({ mode: 'send', orgId: DEMO_ORG })
   })
+  it('--model <id do catálogo> em qualquer modo', () => {
+    expect(parsePreviewArgs(['--model', 'gpt-6.1-sol'])).toEqual({ mode: 'dry-run', model: 'gpt-6.1-sol' })
+    expect(parsePreviewArgs(['--dry-run', '--model', 'gpt-6-astra'])).toEqual({ mode: 'dry-run', model: 'gpt-6-astra' })
+    expect(parsePreviewArgs(['--send-to', DEMO_ORG, '--model', 'gpt-6-astra'])).toEqual({
+      mode: 'send', orgId: DEMO_ORG, model: 'gpt-6-astra',
+    })
+  })
+  it('--model fora do catálogo ou sem valor → erro (nada de cair em outro modelo)', () => {
+    expect(parsePreviewArgs(['--model', 'gpt-6-sol-typo'])).toHaveProperty('error')
+    expect(parsePreviewArgs(['--model'])).toHaveProperty('error')
+    expect(parsePreviewArgs(['--model', '--dry-run'])).toHaveProperty('error')
+  })
   it('--send-to sem uuid, os dois modos juntos, ou argumento solto → erro', () => {
     expect(parsePreviewArgs(['--send-to'])).toHaveProperty('error')
     expect(parsePreviewArgs(['--send-to', 'demo'])).toHaveProperty('error')

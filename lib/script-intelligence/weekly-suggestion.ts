@@ -37,7 +37,8 @@ import {
 // referência estável para herdar rubric_version_snapshot/minor_version.
 const FALLBACK_RUBRIC_ID = '5ad2a6c7-7d50-4640-a01d-b7f3db3b3a81'
 
-const MODEL = 'gpt-4o-mini'
+/** Modelo do cron. O preview pode trocar com --model; o cron nunca passa outro. */
+export const WEEKLY_DEFAULT_MODEL = 'gpt-4o-mini'
 const PAGE_SIZE = 1000
 
 export interface WeeklyUsage {
@@ -164,8 +165,17 @@ export type WeeklyDraftResult =
  */
 export async function draftWeeklySuggestedScript(
   admin: Admin,
-  opts: { recordUsage: { orgId: string | null; ref: string } | null },
+  opts: {
+    recordUsage: { orgId: string | null; ref: string } | null
+    /** Só o preview passa. Tem que estar na whitelist — nada de fallback silencioso. */
+    model?: string
+  },
 ): Promise<WeeklyDraftResult> {
+  const model = opts.model ?? WEEKLY_DEFAULT_MODEL
+  if (resolveOpenAIModelId(model) !== model) {
+    return { ok: false, kind: 'error', error: `Modelo fora do catálogo OpenAI: ${model}` }
+  }
+
   let selection: WeeklySelection
   try {
     const [orgs, candidates] = await Promise.all([fetchWeeklyOrgs(admin), fetchWeeklyCandidateCalls(admin)])
@@ -182,7 +192,7 @@ export async function draftWeeklySuggestedScript(
   let usage: WeeklyUsage
   try {
     const aiResult = await generateText({
-      model: getOpenAIModel(MODEL),
+      model: getOpenAIModel(model),
       system: WEEKLY_SYSTEM_PROMPT,
       prompt: buildWeeklyUserPrompt(selection.included),
     })
@@ -191,17 +201,17 @@ export async function draftWeeklySuggestedScript(
     const inputTokens = aiResult.usage?.inputTokens ?? 0
     const outputTokens = aiResult.usage?.outputTokens ?? 0
     usage = {
-      model: MODEL,
+      model,
       inputTokens,
       outputTokens,
-      costUsd: await computeCostForModel('openai', resolveOpenAIModelId(MODEL), inputTokens, outputTokens),
+      costUsd: await computeCostForModel('openai', model, inputTokens, outputTokens),
     }
 
     if (opts.recordUsage) {
       void recordLlmUsage({
         orgId: opts.recordUsage.orgId,
         surface: 'script_generation',
-        model: MODEL,
+        model,
         inputTokens,
         outputTokens,
         ref: opts.recordUsage.ref,
