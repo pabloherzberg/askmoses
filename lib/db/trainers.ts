@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { applySalesCallOnly, excludeFailedScoring, hasOutcomeRow } from '@/lib/sales-calls'
+import { applySalesCallOnly, excludeFailedScoring, hasOutcomeRow, hasScoreRow } from '@/lib/sales-calls'
 import { normalizeSectionScore } from '@/lib/score-display'
 import {
   FRONT_DESK_AVATAR,
@@ -83,9 +83,14 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
   const decided = calls.filter(hasOutcomeRow)
   const closed = decided.filter((c) => c.call_outcome === 'closed').length
   const closeRate = decided.length > 0 ? Math.round((closed / decided.length) * 100) : 0
-  const avgScore = Math.round(
-    calls.reduce((sum, c) => sum + (c.overall_score ?? 0), 0) / total
-  )
+  // Score médio só sobre calls COM score (hasScoreRow; a query já excluiu
+  // scoring_failed/transcript_leaked). Call sem score entrava como 0.
+  // Rep sem nenhuma call com score fica com score 0 — o card Team Avg do
+  // dashboard o deixa de fora (score > 0).
+  const scored = calls.filter(hasScoreRow)
+  const avgScore = scored.length > 0
+    ? Math.round(scored.reduce((sum, c) => sum + (c.overall_score as number), 0) / scored.length)
+    : 0
 
   // Last active: most recent call date
   const lastActive = calls[0]?.created_at
@@ -119,11 +124,13 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
 
   let scoreDelta = 0
   let closeDelta = 0
-  if (recentCalls.length > 0 && olderCalls.length > 0) {
-    const recentAvg = recentCalls.reduce((s, c) => s + (c.overall_score ?? 0), 0) / recentCalls.length
-    const olderAvg = olderCalls.reduce((s, c) => s + (c.overall_score ?? 0), 0) / olderCalls.length
+  // Delta do score com a mesma base do score: só calls com score.
+  const recentScored = recentCalls.filter(hasScoreRow)
+  const olderScored = olderCalls.filter(hasScoreRow)
+  if (recentScored.length > 0 && olderScored.length > 0) {
+    const recentAvg = recentScored.reduce((s, c) => s + (c.overall_score as number), 0) / recentScored.length
+    const olderAvg = olderScored.reduce((s, c) => s + (c.overall_score as number), 0) / olderScored.length
     scoreDelta = Math.round(recentAvg - olderAvg)
-
   }
 
   // Delta do close rate com a mesma base do close rate: só calls com

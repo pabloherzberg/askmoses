@@ -9,7 +9,7 @@ import { SectionLabel } from "@/components/shared/SectionLabel";
 import { PerformanceTrend } from "@/components/shared/PerformanceTrend";
 import { TrainerKpiStrip, type WeeklyBucket } from "./TrainerKpiStrip";
 import { getSession, getTrainerDbId } from "@/lib/auth";
-import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
+import { avgScoreOf, closeRateOf, hasOutcome, hasScore } from "@/lib/sales-calls";
 import type { RubricColor, RubricScores } from "@/lib/types";
 
 const RUBRIC_SECTIONS: { key: keyof RubricScores; labelKey: string; color: RubricColor }[] = [
@@ -46,9 +46,8 @@ export default async function TrainerDashboardPage() {
   const closedCalls    = trainerCalls.filter((c) => c.result === "closed").length;
   // hasOutcome: sem ele, call sem resultado (result 'not_closed' só de exibição) contaria como não fechada.
   const notClosedCalls = trainerCalls.filter((c) => hasOutcome(c) && c.result === "not_closed").length;
-  const totalAvgScore = totalCalls > 0
-    ? Math.round(trainerCalls.reduce((sum, c) => sum + c.score, 0) / totalCalls)
-    : 0;
+  // Score médio só sobre calls com score válido (avgScoreOf).
+  const totalAvgScore = Math.round(avgScoreOf(trainerCalls));
   // Close rate só sobre calls com resultado; o card Calls continua com todas.
   const totalCloseRate = closeRateOf(trainerCalls);
 
@@ -71,12 +70,13 @@ export default async function TrainerDashboardPage() {
         return d >= ws && d < we;
       });
       if (inWeek.length === 0) {
-        out.push({ score: 0, closeRate: 0, calls: 0, decided: 0, wins: 0, empty: true });
+        out.push({ score: 0, closeRate: 0, calls: 0, decided: 0, scored: 0, wins: 0, empty: true });
         continue;
       }
       const wins = inWeek.filter((c) => c.result === "closed").length;
       out.push({
-        score: Math.round(inWeek.reduce((s, c) => s + c.score, 0) / inWeek.length),
+        score: Math.round(avgScoreOf(inWeek)),
+        scored: inWeek.filter(hasScore).length,
         closeRate: closeRateOf(inWeek),
         calls: inWeek.length,
         decided: inWeek.filter(hasOutcome).length,

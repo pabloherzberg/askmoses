@@ -83,6 +83,10 @@ export interface DbCall {
   // detectedOutcome. null = call analisada antes desta migration (legado,
   // não classificada — diferente de false).
   is_sales_call?: boolean | null
+  // Qualidade do scoring (migration 119): ok | scoring_failed |
+  // transcript_leaked. NULL = não avaliado pelo gate. Médias de score excluem
+  // os dois estados de falha (excludeFailedScoring / hasScore).
+  scoring_status?: string | null
 }
 
 export interface CreateCallInput {

@@ -1,6 +1,6 @@
 import type { Insight, Trainer, Call, RubricScores } from "@/lib/types";
 import { getCalls, avgRubricScores, getOrgCloseRate } from "@/lib/services/calls";
-import { closeRateOf, hasOutcome } from "@/lib/sales-calls";
+import { closeRateOf, hasOutcome, hasRubric } from "@/lib/sales-calls";
 import { generateText } from "ai";
 // correlation_engine — o motor de insights faz parte do módulo
 // correlation_engine (ver lib/constants/ai-modules.ts). Provider/chave do
@@ -67,7 +67,10 @@ function buildInsightsFromData(
     string,
     { sum: number; count: number; name: string }
   >();
-  for (const call of calls) {
+  // Só calls com sections (hasRubric): sem sections a seção vale 0 e o rep
+  // contaria como "abaixo de 3.5" por falha de pipeline.
+  const ratedCalls = calls.filter(hasRubric);
+  for (const call of ratedCalls) {
     if (!call.trainerId) continue;
     if (!trainerWeakestScores.has(call.trainerId)) {
       trainerWeakestScores.set(call.trainerId, {
@@ -94,8 +97,8 @@ function buildInsightsFromData(
   }
 
   // Compute close rate for calls with low vs high score on weakest section (0–5 scale)
-  const callsWithLow = calls.filter((c) => c.rubricScores[weakest.key] < 3.5);
-  const callsWithHigh = calls.filter((c) => c.rubricScores[weakest.key] >= 3.5);
+  const callsWithLow = ratedCalls.filter((c) => c.rubricScores[weakest.key] < 3.5);
+  const callsWithHigh = ratedCalls.filter((c) => c.rubricScores[weakest.key] >= 3.5);
   // closeRateOf: só calls com resultado. Call sem resultado tem rubrica 0 e
   // cairia em callsWithLow como "não fechou", inflando o contraste.
   const closeRateLow = closeRateOf(callsWithLow);

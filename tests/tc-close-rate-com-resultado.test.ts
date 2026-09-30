@@ -109,7 +109,7 @@ describe('closeRateOf', () => {
 // ─── Tendências ──────────────────────────────────────────────────────────────
 
 describe('buildWeeklyTrend — close rate da semana só com resultado', () => {
-  it('semana com falhas de pipeline não derruba o close rate, e o score não muda', () => {
+  it('semana com falhas de pipeline não derruba o close rate', () => {
     const now = new Date().toISOString()
     const trend = buildWeeklyTrend(
       [
@@ -121,8 +121,7 @@ describe('buildWeeklyTrend — close rate da semana só com resultado', () => {
     )
     expect(trend).toHaveLength(1)
     expect(trend[0].closeRate).toBe(50)
-    // Score médio fica fora deste PR: continua sobre as 3 calls.
-    expect(trend[0].score).toBe(Math.round((80 + 60 + 0) / 3))
+    // O score da semana é coberto em tc-score-medio-com-score.test.ts.
   })
 })
 
