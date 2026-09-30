@@ -4,9 +4,9 @@
 
 *Reference guide for answering rule questions and telling intended behaviour apart from real defects*
 
-Version 1.3 · September 2026
-Supersedes v1.2 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
-**v1.3 updates §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6` (30 September 2026). v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
+Version 1.4 · September 2026
+Supersedes v1.3 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
+**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -425,9 +425,95 @@ Four cards mixing real arithmetic with AI-written prose. The numbers inside them
 
 ## 5. Script Intelligence (Insights)
 
-*Reads recent transcripts and proposes an improved version of the script. The owner approves or rejects, and approving activates the new script in production.*
+*Every week, proposes the **AskMoses network script** — one script, the same for every organisation — and shows each owner an AI comparison against their current script. The owner approves or rejects; approving activates the new script in production.*
 
-Sample: up to **7** recent calls with transcripts, each truncated to 1,500 characters.
+Two separate pieces, often confused:
+
+| | What it is | Built from |
+|---|---|---|
+| **5.1 Weekly network script** | The suggested script itself. **One** record, sent identically to every non-demo org. | 3 winning calls from **each** eligible org, anonymized |
+| **5.2 Per-org analysis** | The comparison shown next to the suggestion (health score, section scores, phrases). | That org's own recent calls |
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
+> **The suggested script is not an analysis of the client's calls.** It is the network standard: every org receives the same `script_id` in the same week. A client whose calls were not among the winners still gets it, and it will not mention their business, prices or program names, because it is anonymized on purpose. Only the comparison in 5.2 is specific to the client.
+
+### 5.1 Weekly network script `AI OPINION`
+
+Cron `GET /api/cron/weekly-script-suggestion`, every Monday 08:00 UTC (`vercel.json`). Changed in PR #238 (`77915b5`).
+
+**1. Selection** (`lib/script-intelligence/weekly-suggestion.ts:73` — `fetchWeeklyCandidateCalls`; `lib/script-intelligence/weekly-selection.ts:53` — `selectWeeklyCalls`)
+
+- **Which calls count:** `call_outcome = 'closed'` **and** `ghl_won_status = 'won'` (the CRM Won — **not** Stage 2). The call must also be a sales call, have a valid score (`overall_score` present, `scoring_status` not `scoring_failed`/`transcript_leaked`) and a transcript longer than 100 characters, and be from the last **90 days**.
+- **Diversity:** exactly **3 calls per org**, the 3 highest scores (ties: most recent first, then id). A large org cannot dominate: 50 eligible calls still contribute 3.
+- **Eligibility:** an org with fewer than 3 eligible calls is **skipped**, with the reason recorded, and the round continues with the others. If no org is eligible, nothing is generated or sent.
+- **Demo and test orgs** (`organizations.is_demo = true`, migration `120`) never contribute calls. Today these are AskMoses Demo Org and VS Solutions.
+
+**2. Generation** (`lib/script-intelligence/weekly-prompt.ts` — `WEEKLY_SYSTEM_PROMPT`)
+
+- One `gpt-4o-mini` call per week receives all selected calls, each truncated to 8,000 characters, labelled "Business A/B/C…". Org names are never sent.
+- The prompt asks the model to extract the patterns shared by the winning calls (discovery questions, agitation, offer framing, objection responses, close) and to write one script in the 5 fixed sections, in order.
+- **Anonymization:** the prompt forbids names of businesses, people, dogs, brands, products or places, and any price, amount, date or phone number, and asks for placeholders instead. This is an instruction to the model; **no code checks the output for leaked names or prices.**
+- The section format and definitions are reused from the Script Builder prompt (`generate-script-prompt.ts`), whose text is unchanged; a test pins its hash.
+
+**3. Validation** (`weekly-prompt.ts:83` — `validateWeeklyScript`)
+
+- The response must contain exactly Discovery, Problem Agitation, Offer Presentation, Objection Handling and Close & Next Steps, in that order, each with non-empty `instructions`.
+- Otherwise the round is recorded as `error` and **nothing is saved or sent**.
+- **Weights** are whatever the model returns, as before. They are not validated (see §2.4).
+
+**4. Delivery**
+
+- The script is saved as one `scripts` row with `org_id = NULL`. It is sent as `pending` to every org with `is_demo = false` (`app/api/cron/weekly-script-suggestion/route.ts:50`) through `send_script_to_orgs`, the same path as a manual send.
+- Each org's previous open pending is closed (`ended_at`), and the active script is never touched. The owner accepts or rejects as before.
+- An org with no calls still receives the suggestion. Its 5.2 analysis ends in `error` with the reason recorded.
+
+**5. Record: `script_suggestion_runs`** (migration `121`; written by `recordRun`, `route.ts:83`)
+
+One row per weekly round:
+
+| Column | Content |
+|---|---|
+| `run_at` | When the round ran |
+| `status` | `sent` · `skipped` (no eligible org) · `error` (selection, AI, invalid JSON, invalid sections, or send failure) |
+| `included_orgs` | `[{ org_id, org_name, call_ids[3] }]` |
+| `skipped_orgs` | `[{ org_id, org_name, eligible_calls, reason }]` — e.g. "2 call(s) elegível(is) nos últimos 90 dias (mínimo 3)" or "Org de demonstração/teste (is_demo)" |
+| `call_ids` | All calls used to generate the script |
+| `script_id` | The generated script (NULL when nothing was generated) |
+| `sent_to_count` | Orgs that received the pending |
+| `model`, `input_tokens`, `output_tokens`, `cost_usd` | The generation call and its cost |
+| `error` | Reason when `status` is `error` or `skipped` |
+
+The table has RLS and no policy, so it is readable only with service_role (SQL Editor or scripts). No screen shows it yet.
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
+> **"Why did my calls not shape this week's script?"** Look at `skipped_orgs` for that `run_at`. The usual reason is fewer than 3 calls that were both closed **and** Won in the CRM in the last 90 days. A closed call whose deal is not yet Won in the CRM does not count.
+>
+> On 30 September 2026, 5 orgs qualified with 15 calls in total: Centurion K9, Sit Means Sit, Stay Focused, Confident Canines and Xena's Pack.
+
+> **FIXED SINCE v1.3**
+>
+> Until PR #238 the weekly script came from the 5 highest-scoring closed calls of the **whole base**, with no per-org limit and no demo exclusion. On 30 September 2026 those 5 were all from AskMoses Demo Org (fictional calls scoring 98–99), so clients were being offered a script built from demonstration calls. Nothing recorded which calls were used, so earlier rounds cannot be reconstructed.
+
+### 5.2 Per-org analysis `AI OPINION`
+
+After the send, each org's comparison runs in a chain (`/api/script-intelligence/process`). A recovery cron re-dispatches rows stuck for more than 15 minutes (`/api/cron/recover-stale-analyses`).
+
+Sample: up to **7** of the org's recent sales calls with transcripts, each truncated to 1,500 characters (`lib/script-intelligence/analyze.ts:125-139`). This sample is the org's own recent calls, not the winners used in 5.1.
+
+**`script_intelligence_cache.error_reason`** (migration `121`): when `analysis_status = 'error'`, the reason is stored in the row. Before, it went only to the Vercel logs.
+
+| Reason | Written by |
+|---|---|
+| `No calls with transcripts found` (org has no calls to compare against) | `app/api/script-intelligence/process/route.ts:46` |
+| `AI call failed: …` / `AI returned invalid JSON` | `process/route.ts:46` |
+| `Org sem script ativo (previous_script_id) para comparar` | `process/route.ts:104`, `app/api/cron/recover-stale-analyses/route.ts:95` |
+| `Pendente órfã: …` (the pending was closed or no longer exists) | `recover-stale-analyses/route.ts:76` |
+
+`error_reason` is cleared when the analysis finishes as `ready` and when the same script is sent again (`lib/services/send-script.ts:111`).
+
+In every round so far, all analysis errors were orgs with no calls at all.
 
 > **KNOWN DEFECT — ALREADY REPORTED**
 >
@@ -855,7 +941,8 @@ The rule **inverts precisely the worst calls**: a genuinely catastrophic section
 | Feature | Calls analysed | Refresh |
 |---|---|---|
 | Script Gap Detection | 3 (full transcripts) | Every 7 days |
-| Script Intelligence | Up to 7 (truncated to 1,500 chars) | On demand |
+| Weekly network script (§5.1) | 3 closed + Won calls per eligible org, last 90 days (truncated to 8,000 chars) | Every Monday |
+| Script Intelligence analysis (§5.2) | Up to 7 of the org's recent calls (truncated to 1,500 chars) | After each send |
 | Marketing Intelligence | 3–5, random from top 10 closed | Every 7 days |
 | Coaching recommendations | Last 20 per rep | On demand |
 | Dashboard rubric & trends | 200 most recent | Every page load |
@@ -886,4 +973,4 @@ The `/overview` screen has been removed. The owner's home is `/dashboard`. Old l
 
 ---
 
-*AskMoses.AI — System Manual v1.3 · 30 September 2026 · v1.3 passages verified against `dev` @ `66cf2c6`, v1.2 passages against `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
+*AskMoses.AI — System Manual v1.4 · 30 September 2026 · v1.4 passages (§5) verified against PR #238 (`77915b5`), v1.3 against `dev` @ `66cf2c6`, v1.2 against `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
