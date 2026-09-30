@@ -163,9 +163,18 @@ export function hasRubric(call: { hasSections?: boolean; scoringStatus?: string 
  * (checklist §0/§3) — zero nessas calls é falha de análise, não avaliação
  * real, e não deve entrar em médias/agregações. NULL passa (não avaliado
  * por este gate, ou call anterior à migration 109 — trata como 'ok').
+ *
+ * `.or('…is.null,…not.in.(…)')` = `scoring_status IS DISTINCT FROM` os dois
+ * valores. NÃO usar `.not('scoring_status','in',…)`: vira
+ * `NOT (scoring_status = ANY(…))`, que é NULL para scoring_status NULL — o
+ * Postgres descarta a linha. Em prod (30/09/2026) quase todas as calls têm
+ * scoring_status NULL: o filtro antigo deixava 0 de 1216 passarem e o
+ * syncTrainerStats zerou o cache de todos os trainers.
+ * Teste contra Postgres real em tests/tc-exclude-failed-scoring-sql.test.ts.
  */
-export function excludeFailedScoring<T extends { not(column: string, operator: string, value: unknown): T }>(
-  query: T,
-): T {
-  return query.not('scoring_status', 'in', '(scoring_failed,transcript_leaked)')
+export const EXCLUDE_FAILED_SCORING_FILTER =
+  'scoring_status.is.null,scoring_status.not.in.(scoring_failed,transcript_leaked)'
+
+export function excludeFailedScoring<T extends { or(filters: string): T }>(query: T): T {
+  return query.or(EXCLUDE_FAILED_SCORING_FILTER)
 }
