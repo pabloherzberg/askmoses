@@ -30,6 +30,13 @@ import {
 //     sobe o máximo, então o próximo minor_version do cron não muda.
 
 export const MANUAL_TEST_SOURCE = 'manual_test'
+
+/**
+ * Espelho do `maxDuration` de app/api/cron/weekly-script-suggestion/route.ts
+ * (lá precisa ser literal para o Next ler estaticamente; teste mantém os dois
+ * iguais). O preview imprime a folga contra este teto.
+ */
+export const WEEKLY_CRON_MAX_DURATION_S = 300
 const USAGE_REF = 'weekly-script-preview'
 
 /** `model` ausente = o modelo do cron (WEEKLY_DEFAULT_MODEL). */
@@ -92,6 +99,11 @@ export function formatPreviewReport(draft: WeeklyDraftResult): string {
       out.push(`  - ${o.orgName} (${o.orgId}): ${o.reason} [${o.eligibleCalls} elegíveis]`)
     }
     out.push(`call_ids: ${sel.included.flatMap((o) => o.calls.map((c) => c.id)).join(', ') || '—'}`)
+  }
+  if (draft.ok) {
+    const s = (ms: number) => `${(ms / 1000).toFixed(1)}s`
+    const { selection, ai, anonymization } = draft.timingsMs
+    out.push(`Tempo: seleção ${s(selection)} · IA ${s(ai)} · anonimização ${s(anonymization)}`)
   }
   if (draft.usage) {
     out.push(`IA: ${draft.usage.model} · ${draft.usage.inputTokens} in / ${draft.usage.outputTokens} out · US$ ${draft.usage.costUsd.toFixed(4)}`)
