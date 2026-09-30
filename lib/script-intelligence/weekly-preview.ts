@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dbCreateScript } from '@/lib/db/scripts'
 import { sendScriptToOrgs } from '@/lib/services/send-script'
+import { PROVIDER_CATALOG } from '@/lib/llm/catalog'
 import {
   draftWeeklySuggestedScript,
   resolveBaseRubricId,
@@ -29,25 +30,50 @@ import {
 //     sobe o máximo, então o próximo minor_version do cron não muda.
 
 export const MANUAL_TEST_SOURCE = 'manual_test'
+
+/**
+ * Espelho do `maxDuration` de app/api/cron/weekly-script-suggestion/route.ts
+ * (lá precisa ser literal para o Next ler estaticamente; teste mantém os dois
+ * iguais). O preview imprime a folga contra este teto.
+ */
+export const WEEKLY_CRON_MAX_DURATION_S = 300
 const USAGE_REF = 'weekly-script-preview'
 
-export type PreviewArgs = { mode: 'dry-run' } | { mode: 'send'; orgId: string }
+/** `model` ausente = o modelo do cron (WEEKLY_DEFAULT_MODEL). */
+export type PreviewArgs =
+  | { mode: 'dry-run'; model?: string }
+  | { mode: 'send'; orgId: string; model?: string }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export function parsePreviewArgs(argv: string[]): PreviewArgs | { error: string } {
-  const i = argv.indexOf('--send-to')
-  if (i === -1) {
-    const unknown = argv.filter((a) => a !== '--dry-run')
-    if (unknown.length > 0) return { error: `argumento desconhecido: ${unknown.join(' ')}` }
-    return { mode: 'dry-run' }
+/** Tira `--flag <valor>` de argv. undefined = flag ausente; null = flag sem valor. */
+function takeValue(argv: string[], flag: string): string | null | undefined {
+  const i = argv.indexOf(flag)
+  if (i === -1) return undefined
+  const value = argv[i + 1]
+  argv.splice(i, value === undefined || value.startsWith('--') ? 1 : 2)
+  return value === undefined || value.startsWith('--') ? null : value
+}
+
+export function parsePreviewArgs(input: string[]): PreviewArgs | { error: string } {
+  const argv = [...input]
+
+  const model = takeValue(argv, '--model')
+  if (model === null) return { error: `--model precisa de um id: ${PROVIDER_CATALOG.openai.models.join(' | ')}` }
+  if (model !== undefined && !PROVIDER_CATALOG.openai.models.includes(model)) {
+    return { error: `modelo fora do catálogo OpenAI: ${model}. Use: ${PROVIDER_CATALOG.openai.models.join(' | ')}` }
   }
-  if (argv.includes('--dry-run')) return { error: 'use --dry-run OU --send-to <orgId>, não os dois' }
-  const orgId = argv[i + 1]
-  if (!orgId || !UUID.test(orgId)) return { error: '--send-to precisa de um orgId (uuid)' }
-  const rest = argv.filter((_, j) => j !== i && j !== i + 1)
+
+  const orgId = takeValue(argv, '--send-to')
+  const dryRun = argv.includes('--dry-run')
+  const rest = argv.filter((a) => a !== '--dry-run')
   if (rest.length > 0) return { error: `argumento desconhecido: ${rest.join(' ')}` }
-  return { mode: 'send', orgId }
+
+  const withModel = model !== undefined ? { model } : {}
+  if (orgId === undefined) return { mode: 'dry-run', ...withModel }
+  if (dryRun) return { error: 'use --dry-run OU --send-to <orgId>, não os dois' }
+  if (!orgId || !UUID.test(orgId)) return { error: '--send-to precisa de um orgId (uuid)' }
+  return { mode: 'send', orgId, ...withModel }
 }
 
 export type PreviewOutcome =
@@ -73,6 +99,11 @@ export function formatPreviewReport(draft: WeeklyDraftResult): string {
       out.push(`  - ${o.orgName} (${o.orgId}): ${o.reason} [${o.eligibleCalls} elegíveis]`)
     }
     out.push(`call_ids: ${sel.included.flatMap((o) => o.calls.map((c) => c.id)).join(', ') || '—'}`)
+  }
+  if (draft.ok) {
+    const s = (ms: number) => `${(ms / 1000).toFixed(1)}s`
+    const { selection, ai, anonymization } = draft.timingsMs
+    out.push(`Tempo: seleção ${s(selection)} · IA ${s(ai)} · anonimização ${s(anonymization)}`)
   }
   if (draft.usage) {
     out.push(`IA: ${draft.usage.model} · ${draft.usage.inputTokens} in / ${draft.usage.outputTokens} out · US$ ${draft.usage.costUsd.toFixed(4)}`)
@@ -157,7 +188,7 @@ export async function runWeeklyPreview(args: PreviewArgs): Promise<PreviewOutcom
   const admin = createAdminClient()
 
   if (args.mode === 'dry-run') {
-    const draft = await draftWeeklySuggestedScript(admin, { recordUsage: null })
+    const draft = await draftWeeklySuggestedScript(admin, { recordUsage: null, model: args.model })
     return { status: 'dry-run', draft }
   }
 
@@ -167,6 +198,7 @@ export async function runWeeklyPreview(args: PreviewArgs): Promise<PreviewOutcom
 
   const draft = await draftWeeklySuggestedScript(admin, {
     recordUsage: { orgId: args.orgId, ref: USAGE_REF },
+    model: args.model,
   })
   if (!draft.ok) {
     const runId = await recordManualRun(admin, draft, { status: draft.kind, scriptId: null })

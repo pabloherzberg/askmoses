@@ -4,6 +4,12 @@ import { generateWeeklySuggestedScript, type WeeklySuggestionResult } from '@/li
 import type { WeeklySelection } from '@/lib/script-intelligence/weekly-selection'
 import { sendScriptToOrgs } from '@/lib/services/send-script'
 
+// Teto explícito: a rodada faz a chamada LLM inteira no request (gpt-6.1-sol,
+// modelo de raciocínio, ~15 transcrições de até 8.000 caracteres) e depois
+// grava e envia para as orgs. 300s é o default do Fluid Compute; o plano Pro
+// permite até 800 se a medição (preview com timings por fase) pedir mais.
+export const maxDuration = 300
+
 // GET /api/cron/weekly-script-suggestion
 //
 //   Roda 1x por semana (vercel.json: "0 8 * * 1", segunda 08:00 UTC).

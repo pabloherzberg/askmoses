@@ -37,7 +37,13 @@ import {
 // referência estável para herdar rubric_version_snapshot/minor_version.
 const FALLBACK_RUBRIC_ID = '5ad2a6c7-7d50-4640-a01d-b7f3db3b3a81'
 
-const MODEL = 'gpt-4o-mini'
+/**
+ * Modelo do cron. O preview pode trocar com --model; o cron nunca passa outro.
+ * gpt-6.1-sol desde 30/09/2026 (antes gpt-4o-mini, que devolvia texto
+ * genérico). Só a sugestão semanal: scoring e os demais módulos usam o
+ * modelo ativo do provider. Preço em llm_pricing (migration 124).
+ */
+export const WEEKLY_DEFAULT_MODEL = 'gpt-6.1-sol'
 const PAGE_SIZE = 1000
 
 export interface WeeklyUsage {
@@ -153,6 +159,8 @@ export type WeeklyDraftResult =
       selection: WeeklySelection
       usage: WeeklyUsage
       redactions: Redaction[]
+      /** Tempo de cada fase (ms). O cron roda estas fases + gravar/enviar, dentro do maxDuration da rota. */
+      timingsMs: { selection: number; ai: number; anonymization: number }
     }
   | Extract<WeeklySuggestionResult, { ok: false }>
 
@@ -164,12 +172,25 @@ export type WeeklyDraftResult =
  */
 export async function draftWeeklySuggestedScript(
   admin: Admin,
-  opts: { recordUsage: { orgId: string | null; ref: string } | null },
+  opts: {
+    recordUsage: { orgId: string | null; ref: string } | null
+    /** Só o preview passa. Tem que estar na whitelist — nada de fallback silencioso. */
+    model?: string
+  },
 ): Promise<WeeklyDraftResult> {
+  const model = opts.model ?? WEEKLY_DEFAULT_MODEL
+  if (resolveOpenAIModelId(model) !== model) {
+    return { ok: false, kind: 'error', error: `Modelo fora do catálogo OpenAI: ${model}` }
+  }
+
+  let t = Date.now()
+  const timingsMs = { selection: 0, ai: 0, anonymization: 0 }
+
   let selection: WeeklySelection
   try {
     const [orgs, candidates] = await Promise.all([fetchWeeklyOrgs(admin), fetchWeeklyCandidateCalls(admin)])
     selection = selectWeeklyCalls(orgs, candidates)
+    timingsMs.selection = Date.now() - t
   } catch (err) {
     return { ok: false, kind: 'error', error: `Falha na seleção de calls: ${err instanceof Error ? err.message : 'unknown'}` }
   }
@@ -180,28 +201,30 @@ export async function draftWeeklySuggestedScript(
 
   let text: string
   let usage: WeeklyUsage
+  t = Date.now()
   try {
     const aiResult = await generateText({
-      model: getOpenAIModel(MODEL),
+      model: getOpenAIModel(model),
       system: WEEKLY_SYSTEM_PROMPT,
       prompt: buildWeeklyUserPrompt(selection.included),
     })
     text = aiResult.text
+    timingsMs.ai = Date.now() - t
 
     const inputTokens = aiResult.usage?.inputTokens ?? 0
     const outputTokens = aiResult.usage?.outputTokens ?? 0
     usage = {
-      model: MODEL,
+      model,
       inputTokens,
       outputTokens,
-      costUsd: await computeCostForModel('openai', resolveOpenAIModelId(MODEL), inputTokens, outputTokens),
+      costUsd: await computeCostForModel('openai', model, inputTokens, outputTokens),
     }
 
     if (opts.recordUsage) {
       void recordLlmUsage({
         orgId: opts.recordUsage.orgId,
         surface: 'script_generation',
-        model: MODEL,
+        model,
         inputTokens,
         outputTokens,
         ref: opts.recordUsage.ref,
@@ -229,9 +252,11 @@ export async function draftWeeklySuggestedScript(
   // monetário → [price], org incluída → [business name], trainer/lead das
   // calls usadas → [name]. Não barra a rodada; o que foi trocado vai para
   // script_suggestion_runs.redactions (sem o termo original).
+  t = Date.now()
   const { script, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+  timingsMs.anonymization = Date.now() - t
 
-  return { ok: true, script, selection, usage, redactions }
+  return { ok: true, script, selection, usage, redactions, timingsMs }
 }
 
 /**

@@ -65,6 +65,7 @@ vi.mock('@/lib/services/send-script', () => ({ sendScriptToOrgs }))
 
 import {
   MANUAL_TEST_SOURCE,
+  WEEKLY_CRON_MAX_DURATION_S,
   formatPreviewReport,
   parsePreviewArgs,
   runWeeklyPreview,
@@ -123,6 +124,18 @@ describe('parsePreviewArgs', () => {
   })
   it('--send-to <uuid> → send', () => {
     expect(parsePreviewArgs(['--send-to', DEMO_ORG])).toEqual({ mode: 'send', orgId: DEMO_ORG })
+  })
+  it('--model <id do catálogo> em qualquer modo', () => {
+    expect(parsePreviewArgs(['--model', 'gpt-6.1-sol'])).toEqual({ mode: 'dry-run', model: 'gpt-6.1-sol' })
+    expect(parsePreviewArgs(['--dry-run', '--model', 'gpt-6-astra'])).toEqual({ mode: 'dry-run', model: 'gpt-6-astra' })
+    expect(parsePreviewArgs(['--send-to', DEMO_ORG, '--model', 'gpt-6-astra'])).toEqual({
+      mode: 'send', orgId: DEMO_ORG, model: 'gpt-6-astra',
+    })
+  })
+  it('--model fora do catálogo ou sem valor → erro (nada de cair em outro modelo)', () => {
+    expect(parsePreviewArgs(['--model', 'gpt-6-sol-typo'])).toHaveProperty('error')
+    expect(parsePreviewArgs(['--model'])).toHaveProperty('error')
+    expect(parsePreviewArgs(['--model', '--dry-run'])).toHaveProperty('error')
   })
   it('--send-to sem uuid, os dois modos juntos, ou argumento solto → erro', () => {
     expect(parsePreviewArgs(['--send-to'])).toHaveProperty('error')
@@ -246,6 +259,30 @@ describe('--send-to', () => {
 
     // Custo registrado na org de teste, com ref própria.
     expect(recordLlmUsage).toHaveBeenCalledWith(expect.objectContaining({ orgId: DEMO_ORG, ref: 'weekly-script-preview' }))
+  })
+})
+
+describe('maxDuration do cron e timings', () => {
+  it('a rota exporta maxDuration literal (Next lê estaticamente) e o preview usa o mesmo teto', () => {
+    const route = readFileSync('app/api/cron/weekly-script-suggestion/route.ts', 'utf8')
+    const m = /^export const maxDuration = (\d+)$/m.exec(route)
+    expect(m?.[1]).toBe(String(WEEKLY_CRON_MAX_DURATION_S))
+    // Pro permite até 800; Hobby, 300 — 300 cabe em qualquer plano.
+    expect(WEEKLY_CRON_MAX_DURATION_S).toBeLessThanOrEqual(300)
+  })
+
+  it('dry-run devolve o tempo de cada fase e o relatório imprime', async () => {
+    const { orgs, calls } = seedSelection()
+    db.results.organizations = { data: orgs, error: null }
+    db.results.calls = { data: calls, error: null }
+    ai.text = JSON.stringify(validScript())
+
+    const r = await runWeeklyPreview({ mode: 'dry-run' })
+    if (r.status !== 'dry-run' || !r.draft.ok) throw new Error('esperado dry-run ok')
+    for (const k of ['selection', 'ai', 'anonymization'] as const) {
+      expect(r.draft.timingsMs[k]).toBeGreaterThanOrEqual(0)
+    }
+    expect(formatPreviewReport(r.draft)).toMatch(/Tempo: seleção \d+\.\ds · IA \d+\.\ds · anonimização \d+\.\ds/)
   })
 })
 

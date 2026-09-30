@@ -18,6 +18,10 @@ export const PRICING_USD_PER_1M: Record<
   'gpt-4-turbo':   { input: 10,   output: 30  },
   'gpt-4':         { input: 30,   output: 60  },
   'gpt-3.5-turbo': { input: 0.5,  output: 1.5 },
+  // Standard, até 272k de entrada — developers.openai.com/api/docs/pricing
+  // (30/09/2026). Seed da migration 124.
+  'gpt-6.1-sol':   { input: 2,    output: 10  },
+  'gpt-6-astra':   { input: 10,   output: 50  },
 }
 
 export function computeCostUsd(

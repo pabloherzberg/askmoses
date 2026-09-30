@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai'
+import { withOpenAIReasoning } from '@/lib/llm/reasoning'
 
 let _provider: ReturnType<typeof createOpenAI> | null = null
 
@@ -17,6 +18,10 @@ export const VALID_MODELS = new Set([
   'gpt-4-turbo',
   'gpt-4',
   'gpt-3.5-turbo',
+  // Modelos de raciocínio (lib/llm/catalog.ts). Na whitelist para não caírem
+  // silenciosamente em DEFAULT_MODEL; nenhum caller os usa por padrão.
+  'gpt-6.1-sol',
+  'gpt-6-astra',
 ])
 
 // Demo phase default — Lucas (2026-05-04): roda em gpt-4o, sem seletor de LLM na UI.
@@ -49,5 +54,6 @@ export function resolveOpenAIModelId(modelName?: string | null): string {
 }
 
 export function getOpenAIModel(modelName?: string | null) {
-  return getOpenAIProvider()(resolveOpenAIModelId(modelName))
+  const modelId = resolveOpenAIModelId(modelName)
+  return withOpenAIReasoning(getOpenAIProvider()(modelId), modelId)
 }
