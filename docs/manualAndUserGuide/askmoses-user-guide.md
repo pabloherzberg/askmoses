@@ -2,8 +2,8 @@
 
 **Understanding your sales coaching platform — what every screen shows and how to read it**
 
-Version 1.1 · August 2026
-Supersedes `askmoses-user-guide.pdf` (v1.0). Revised against `dev` @ `aafcf10` (31 July 2026).
+Version 1.2 · September 2026
+Supersedes v1.1 (August 2026). Revised against `dev` @ `18807ca` (30 September 2026).
 
 ---
 
@@ -15,14 +15,15 @@ Supersedes `askmoses-user-guide.pdf` (v1.0). Revised against `dev` @ `aafcf10` (
 4. [The Owner Dashboard](#4-the-owner-dashboard)
 5. [Analytics](#5-analytics)
 6. [Coaching Insights](#6-coaching-insights)
-7. [Call History](#7-call-history)
-8. [Your Personal Dashboard (for reps)](#8-your-personal-dashboard)
-9. [Reading a Call in Detail](#9-reading-a-call-in-detail)
-10. [Buying Intent](#10-buying-intent)
-11. [Appointments](#11-appointments)
-12. [Marketing Intelligence](#12-marketing-intelligence)
-13. [Plans and Billing](#13-plans-and-billing)
-14. [Frequently Asked Questions](#14-frequently-asked-questions)
+7. [Setting up a client's sales script](#7-setting-up-a-clients-sales-script)
+8. [Call History](#8-call-history)
+9. [Your Personal Dashboard (for reps)](#9-your-personal-dashboard)
+10. [Reading a Call in Detail](#10-reading-a-call-in-detail)
+11. [Buying Intent](#11-buying-intent)
+12. [Appointments](#12-appointments)
+13. [Marketing Intelligence](#13-marketing-intelligence)
+14. [Plans and Billing](#14-plans-and-billing)
+15. [Frequently Asked Questions](#15-frequently-asked-questions)
 
 ---
 
@@ -63,6 +64,10 @@ Every call follows the same journey, whether you upload it by hand or it arrives
 >
 > Because the analysis uses your own playbook, the coaching reflects how your business sells — your discovery questions, your objection responses, your close. You define what "good" looks like in the Script Builder, and every call is measured against that.
 
+> **GOOD TO KNOW**
+>
+> If a call comes from a CRM user who is not yet linked to a rep in AskMoses, the call is **not** lost: it is analysed like any other and assigned to a system rep called **Front Desk - AskMoses**. As soon as that CRM user is linked to a rep, their Front Desk calls move to the real rep automatically.
+
 ---
 
 ## 3. Understanding Your Scores
@@ -71,9 +76,11 @@ Every call follows the same journey, whether you upload it by hand or it arrives
 
 Every call receives an overall score from 0 to 5, shown with one decimal — for example, **4.2 out of 5**. Each part of the call is rated the same way, so you can see not just how a call went but exactly which moment lifted or lowered it.
 
-> **Overall score = the average of the section scores**
+> **Overall score = the weighted average of the section scores**
 >
-> A call rated 4.5, 4.0, 3.5, 4.0, 4.0 across five sections scores **4.0** overall.
+> Each section counts in proportion to the weight set for it in your script. With weights of 20% / 5% / 25% / 25% / 25% and section ratings of 4.5, 2.0, 4.0, 4.0, 4.0, the call scores **4.0** overall. A plain average would give 3.7 — the weak section carries only 5% of the weight, so it pulls the score down much less.
+>
+> If a script has no weight on one or more of its sections, every section counts equally (a plain average).
 
 > **GOOD TO KNOW**
 >
@@ -81,7 +88,7 @@ Every call receives an overall score from 0 to 5, shown with one decimal — for
 
 ### 3.2 The five coaching dimensions
 
-By default, every call is scored across five stages of a sales conversation. You can customise these in the Script Builder to match your own methodology.
+Every call is scored across the same five stages of a sales conversation. Your script supplies the wording for each stage — your questions, your offer, your objection responses — and sets how much each stage weighs; the five stages themselves stay fixed (see section 7).
 
 | Dimension | What it measures |
 |---|---|
@@ -226,19 +233,72 @@ This looks for moments of friction in real conversations that your current scrip
 
 ---
 
-## 7. Call History `OWNER`
+## 7. Setting up a client's sales script `ADMIN`
+
+How the AskMoses team turns the script a client sends us into the playbook their calls are scored against.
+
+**Where:** in the Admin Panel sidebar, open **Rubric Config** and click **New Script**. The form is titled **Create New Sales Script**.
+
+> **IMPORTANT**
+>
+> - **Always exactly five sections, with these names, in this order:** Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps. Never rename them, and never use **Add Section** to create a sixth.
+> - **Never leave a section empty and never remove one.** If the client's script has nothing that fits one of the five, use a short generic text for it and tell the client that section is a placeholder for them to rewrite. An empty section drags down the score of every call for a reason that has nothing to do with the sale.
+> - **The weights must add up to exactly 100%.** The **Create & Generate Criteria** button stays disabled until they do.
+> - **An organisation has a single owner.**
+
+### 7.1 Step by step
+
+1. **Script Name.** Use the owning organisation's name followed by the name of its script — for example, *Happy With Dogs — Script for IC*.
+
+2. **Description.** Paste the client's **original** script here, complete and unchanged. It stays as the permanent record of exactly what the client sent us.
+
+3. **Map the script to the five sections.** In parallel, open Claude (or another AI assistant) and ask it to convert the original script into the five AskMoses sections. Use this prompt as it is, pasting the client's script at the end:
+
+   ```text
+   Below is a client's sales script. Map it into exactly these five sections, in this order: Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps.
+   Rules:
+   - Keep the client's wording exactly as written. Do not rewrite, shorten or reorder anything inside a block.
+   - Keep the client's original step numbers next to each block so it can be traced back.
+   - If the script has NO content for one of the five sections, say so explicitly at the top of your answer, and write a short generic version for that section, clearly labelled as a placeholder for the client to rewrite.
+   - List separately any parts of the script that don't belong to any section (e.g. opening/rapport, service-area checks) — they are left out of scoring.
+   - Flag any contradictions, such as the same price appearing with different values.
+   - Suggest weights for the five sections that add up to exactly 100%, with Problem Agitation never below 5%.
+   [paste the client's script here]
+   ```
+
+4. **Fill in the five sections** with the AI's answer. The form starts with one section row: click **Add Section** until there are exactly five. For each row:
+   - **Section name** — the exact name of the standard section.
+   - **Instructions** — the client's text mapped to that section.
+   - **Weight** — the suggested weight.
+
+5. **Save and put the script into use.** Click **Create & Generate Criteria**. Saving alone does **not** change how the client's calls are scored:
+   - From the Admin Panel, send the script to the client's organisation (**Send script**).
+   - The owner sees *"A new script version is awaiting your approval"* and must click **Accept & activate**. Tell the owner which script to approve **by its name** — organisation name, then script name, for example *Happy With Dogs — Script for IC*. Other versions may also be waiting, such as the weekly script suggestion. Until they approve, their calls keep being scored against the previously approved script.
+   - Once it is active, confirm that the organisation's next calls are scored against the new script.
+
+> **GOOD TO KNOW**
+>
+> Parts of the client's script that fit none of the five sections — the opening, rapport, checking the customer is in the service area — are deliberately left out. They still matter on the call, but they are not what the score measures.
+
+---
+
+## 8. Call History `OWNER`
 
 A complete, searchable record of every analysed call.
 
 Browse and search your team's calls, filter by rep or outcome, and open any call to see its full analysis. Calls with the same customer are grouped together, so you can follow a deal across multiple conversations.
 
+> **GOOD TO KNOW**
+>
+> The **Calls** screen opens filtered to **Closed** and **Not Closed**. Calls identified as *Not a Sales Call* are hidden until you tick them in the result filter, and calls still being analysed always appear. If a call seems to be missing, check the result filter first.
+
 ---
 
-## 8. Your Personal Dashboard `REP`
+## 9. Your Personal Dashboard `REP`
 
 Your private coaching space. Everything here is about your growth, and only you and your manager see it.
 
-### 8.1 Your KPI cards
+### 9.1 Your KPI cards
 
 Four numbers summarise your recent performance, and you can switch between a 2-, 4-, or 6-week window:
 
@@ -253,13 +313,13 @@ Four numbers summarise your recent performance, and you can switch between a 2-,
 >
 > Each card shows your window figure prominently, with your **lifetime** figure in smaller text underneath — so you can see both "how am I doing lately?" and "how do I look overall?" at once. The little arrow shows how you have moved compared with before. If you see no arrow at all, it means nothing changed.
 
-### 8.2 Your coaching
+### 9.2 Your coaching
 
 Below your numbers you will find personalised coaching based on your calls — what is working, what to practise, and specific suggestions. This is generated from your own conversations, so it reflects how you actually sell.
 
 ---
 
-## 9. Reading a Call in Detail
+## 10. Reading a Call in Detail
 
 The full analysis of a single conversation — the most valuable coaching surface in the product.
 
@@ -269,8 +329,9 @@ Opening any call shows you:
 - **A score and written note for each dimension** — not just the number, but *why* the AI rated it that way, grounded in what happened in the call.
 - **Strengths** — what the rep did well, worth repeating.
 - **Improvements** — specific, actionable things to do differently next time.
-- **Buying intent** — how ready the customer was to purchase (see section 10).
+- **Buying intent** — how ready the customer was to purchase (see section 11).
 - **The outcome** — how the call ended.
+- **Actual close** **`OWNER`** — whether the customer actually became paying: *paying*, *not paying*, or *pending*. When the deal is marked **Won** in your CRM, the call is set to *paying* automatically. Anything you set by hand is kept — the CRM never overwrites it.
 
 > **GOOD TO KNOW**
 >
@@ -278,7 +339,7 @@ Opening any call shows you:
 
 ---
 
-## 10. Buying Intent
+## 11. Buying Intent
 
 A measure of how ready each customer was to buy — separate from how well the rep performed.
 
@@ -299,7 +360,7 @@ Each signal carries a weight, and the four weights are configurable for your org
 
 ---
 
-## 11. Appointments
+## 12. Appointments
 
 For teams connected to the CRM, each call can show the lead's **scheduled appointment** alongside the conversation — when it is booked for and what state it is in (booked, confirmed, cancelled, showed, or no-show).
 
@@ -311,7 +372,7 @@ This sits next to the **Call Date** — the date the conversation actually happe
 
 ---
 
-## 12. Marketing Intelligence `OWNER`
+## 13. Marketing Intelligence `OWNER`
 
 Turns your best calls into marketing fuel.
 
@@ -325,9 +386,9 @@ The platform studies your strongest closed calls and extracts the language that 
 
 ---
 
-## 13. Plans and Billing
+## 14. Plans and Billing
 
-### 13.1 Choosing a plan
+### 14.1 Choosing a plan
 
 | Plan | Sales people | Calls / month | Highlights |
 |---|---|---|---|
@@ -337,7 +398,7 @@ The platform studies your strongest closed calls and extracts the language that 
 
 Owners do not count against the seat limit — only reps do. The monthly call allowance runs on the calendar month.
 
-### 13.2 How usage-based billing works
+### 14.2 How usage-based billing works
 
 > **You are billed per minute of call analysed.**
 >
@@ -350,7 +411,7 @@ Owners do not count against the seat limit — only reps do. The monthly call al
 
 ---
 
-## 14. Frequently Asked Questions
+## 15. Frequently Asked Questions
 
 **Why did a call that closed get a low score?**
 
@@ -358,7 +419,7 @@ The score measures how well the call was **run**, not whether it closed. Some cu
 
 **Why did an excellent call not close?**
 
-For the same reason in reverse: a rep can do everything right with a customer who was never going to buy today. That is exactly where buying intent (section 10) helps — a high-scoring call with low intent tells you the rep performed well and the lead simply was not ready.
+For the same reason in reverse: a rep can do everything right with a customer who was never going to buy today. That is exactly where buying intent (section 11) helps — a high-scoring call with low intent tells you the rep performed well and the lead simply was not ready.
 
 **My close rate went up and nobody did anything differently. Why?**
 
@@ -382,10 +443,10 @@ Most figures update as soon as a call is analysed. A few team summaries refresh 
 
 **Can I change what "good" means for my team?**
 
-Yes. The Script Builder lets you define your own coaching dimensions and playbook, and every call is scored against them. The platform coaches to your standard, not a generic one.
+Yes. Your script defines what good looks like inside each of the five stages — your questions, your offer, your objection responses — and how much each stage weighs in the overall score. Every call is scored against it, so the platform coaches to your standard, not a generic one. The five stages themselves stay the same for every client.
 
-> **Note:** if you assign **weights** to sections or mark a section **critical**, be aware that these settings are saved and displayed but do not currently change the overall score, which is a straight average of your sections. Your section names and definitions do fully drive the coaching.
+> **Note:** section **weights** change the overall score (see section 3.1). Marking a section **critical** is saved and displayed, but does not currently change the score.
 
 ---
 
-*AskMoses.AI — User Guide · For questions not covered here, contact your account team.*
+*AskMoses.AI — User Guide v1.2 · September 2026 · For questions not covered here, contact your account team.*
