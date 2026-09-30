@@ -197,10 +197,14 @@ How the call ended. **As of migration `105_call_outcome_2_values.sql` there are 
 
 Whether the client actually paid: `paying`, `not_paying`, or `pending` (`lib/types.ts:119`). It is set in two ways:
 
-- **Automatically from the CRM.** When a GoHighLevel opportunity becomes **Won** — through the webhook or the daily `sync-ghl-opportunities` cron — one call of that contact is marked `paying`: the most recent sales call, or the most recent call if there is none. `became_paying_at` is set to the Won date. This happens only if that call has no Stage 2 value yet and no call of the same contact is already `paying`. Each marking writes to `calls_data_corrections` with `applied_by = 'ghl_won_sync'` (`public.mark_stage2_paying_from_won`, migration `117_stage2_from_ghl_won.sql`).
+- **Automatically from the CRM.** When a GoHighLevel opportunity becomes **Won** — through the webhook or the daily `sync-ghl-opportunities` cron — one call of that contact is marked `paying`: the most recent sales call, or the most recent call if there is none. `became_paying_at` is set to `ghl_won_at`: the Won date when GHL sends it (`lastStatusChangeAt`), otherwise the moment of the marking (`COALESCE(c.ghl_won_at, now())`, `scripts/117_stage2_from_ghl_won.sql:60`). This happens only if that call has no Stage 2 value yet and no call of the same contact is already `paying`. Each marking writes to `calls_data_corrections` with `applied_by = 'ghl_won_sync'` (`public.mark_stage2_paying_from_won`, migration `117_stage2_from_ghl_won.sql`).
 - **Manually by the owner**, on the call detail screen (`app/api/calls/[id]/stage2/route.ts`).
 
 **The manual value always prevails.** The automatic path never overwrites a call that already has a Stage 2 value, `pending` included.
+
+> **OFTEN MISTAKEN FOR A BUG**
+>
+> **198 `paying` calls have no `became_paying_at`, on purpose.** The one-off backfill `118_stage2_won_backfill.sql` (25 September 2026) marked `paying` on one call for every contact already Won in GHL. It left `became_paying_at` **NULL** deliberately: until then `ghl_won_at` was rewritten on every sync, so it held the date of the last sync, not the date of the Won, and the real Won date was unknown. Only the automatic markings after that date record a date. In production on 30 September 2026 that is 9 calls since 26 September, all with a date. The backfill rows are in `calls_data_corrections` with `applied_by = '118_stage2_won_backfill'`.
 
 > **WHY THIS EXISTS**
 >
@@ -234,7 +238,7 @@ In production, over the last 30 days to 30 September 2026, 123 of 271 inbound ca
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> Calls that failed to process **still count in the Avg Close Rate denominator**. Since migration 105 they land as `not_closed` rather than in a neutral bucket, so a batch of failed transcriptions actively pulls the close rate down. If the close rate drops with no sales explanation, pipeline failures are the first thing to check.
+> Calls that failed to process **still count in the Avg Close Rate denominator**. They never reach the sales-call classifier, so `is_sales_call` stays `NULL`, which the close-rate filter keeps (`applySalesCallOnly` excludes only `false`). Their `call_outcome` is also `NULL`, so they can never count as closed. In production on 30 September 2026, all 95 `no_recording` calls and 31 of the 33 `transcription_failed` calls were in this state. A batch of failed transcriptions therefore pulls the close rate down. If the close rate drops with no sales explanation, pipeline failures are the first thing to check.
 
 ### 2.7 Organisation scoping and roles
 
@@ -256,9 +260,11 @@ Owners never see LLM cost or gross margin — those are filtered out of the bill
 
 ### 3.1 Avg Close Rate `CALCULATED`
 
-> `Avg Close Rate = closed calls ÷ total calls × 100`
+> `Avg Close Rate = closed sales calls ÷ sales calls × 100`
 >
-> Scope: the entire organisation, all time. Every call weighs exactly the same.
+> Scope: the entire organisation, all time. Every counted call weighs exactly the same.
+>
+> "Sales calls" = `is_sales_call IS DISTINCT FROM false` — calls classified as sales **and** calls never classified (`NULL`). Only calls explicitly classified as *Not a Sales Call* are left out. Numerator: the same set with `call_outcome = 'closed'`. (`lib/db/calls.ts:768-796` — `dbGetOrgCloseRate`, both counts wrapped in `applySalesCallOnly`, `lib/sales-calls.ts`.)
 
 > **WHY THIS EXISTS**
 >
@@ -268,7 +274,7 @@ There is no date filter — it is deliberately a lifetime figure, so it is stabl
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
-> The denominator is **every call**, including ones that never got analysed (now stored as `not_closed`, see §2.6). This keeps the rule simple enough to explain in one sentence, at the cost of letting pipeline failures depress the number.
+> The denominator is **every sales call**, and that includes calls that never got analysed. A call that failed before classification (`no_recording`, `transcription_failed`, still `pending`) has `is_sales_call = NULL` and `call_outcome = NULL`: it stays in the denominator and can never be in the numerator, so pipeline failures depress the number (§2.6). Calls classified as *Not a Sales Call* are the only ones excluded (§9). The comment above `dbGetOrgCloseRate` still says "TODAS as calls, sem exceção"; the code applies the sales-call filter.
 
 > **OFTEN MISTAKEN FOR A BUG**
 >
