@@ -14,7 +14,9 @@
 -- (o custo calculado fica, no máximo, acima do real). Long context (> 272k)
 -- custa 2x input e 1,5x output — nenhum prompt nosso chega lá.
 --
--- Só cadastra preço: nenhum módulo passa a usar estes modelos.
+-- Só cadastra preço (não muda o modelo de nenhum módulo). A sugestão semanal
+-- passa a usar gpt-6.1-sol pelo código (WEEKLY_DEFAULT_MODEL) — sem esta
+-- linha, o custo dela seria gravado como 0.
 -- Idempotente: insere só se não houver linha ativa do (provider, model).
 -- ============================================================
 

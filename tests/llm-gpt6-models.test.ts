@@ -41,6 +41,13 @@ describe('catálogo', () => {
 })
 
 describe('nenhum outro módulo muda de modelo', () => {
+  it('os outros módulos não usam a constante do semanal', () => {
+    // Só weekly-suggestion (e o preview, que a importa para exibir) referenciam WEEKLY_DEFAULT_MODEL.
+    const analyze = readFileSync('lib/script-intelligence/analyze.ts', 'utf8')
+    expect(analyze).not.toMatch(/WEEKLY_DEFAULT_MODEL|gpt-6/)
+    expect(readFileSync('lib/services/scoring.ts', 'utf8')).not.toMatch(/WEEKLY_DEFAULT_MODEL|gpt-6/)
+  })
+
   it('default do OpenAI continua gpt-4o e é o primeiro da lista', () => {
     expect(PROVIDER_CATALOG.openai.defaultModel).toBe('gpt-4o')
     expect(PROVIDER_CATALOG.openai.models[0]).toBe('gpt-4o')
@@ -53,8 +60,8 @@ describe('nenhum outro módulo muda de modelo', () => {
     expect(seed).not.toMatch(/llm_provider_settings|ai_module_configs|rubrics|UPDATE/i)
   })
 
-  it('o cron semanal segue em gpt-4o-mini e não escolhe modelo', () => {
-    expect(WEEKLY_DEFAULT_MODEL).toBe('gpt-4o-mini')
+  it('o cron semanal usa gpt-6.1-sol pela constante do módulo, sem escolher modelo na rota', () => {
+    expect(WEEKLY_DEFAULT_MODEL).toBe('gpt-6.1-sol')
     const cron = readFileSync('app/api/cron/weekly-script-suggestion/route.ts', 'utf8')
     expect(cron).toContain('await generateWeeklySuggestedScript()')
     const gen = readFileSync('lib/script-intelligence/weekly-suggestion.ts', 'utf8')

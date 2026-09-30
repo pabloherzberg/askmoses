@@ -37,8 +37,13 @@ import {
 // referência estável para herdar rubric_version_snapshot/minor_version.
 const FALLBACK_RUBRIC_ID = '5ad2a6c7-7d50-4640-a01d-b7f3db3b3a81'
 
-/** Modelo do cron. O preview pode trocar com --model; o cron nunca passa outro. */
-export const WEEKLY_DEFAULT_MODEL = 'gpt-4o-mini'
+/**
+ * Modelo do cron. O preview pode trocar com --model; o cron nunca passa outro.
+ * gpt-6.1-sol desde 30/09/2026 (antes gpt-4o-mini, que devolvia texto
+ * genérico). Só a sugestão semanal: scoring e os demais módulos usam o
+ * modelo ativo do provider. Preço em llm_pricing (migration 124).
+ */
+export const WEEKLY_DEFAULT_MODEL = 'gpt-6.1-sol'
 const PAGE_SIZE = 1000
 
 export interface WeeklyUsage {

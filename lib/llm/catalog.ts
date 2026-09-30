@@ -31,8 +31,9 @@ export const PROVIDER_CATALOG: Record<LlmProvider, ProviderCatalogEntry> = {
   openai: {
     label: 'OpenAI',
     // gpt-6.1-sol / gpt-6-astra: adicionados no FIM (o primeiro é o default
-    // sugerido e não muda). Nenhum módulo passa a usá-los por isso — só quem
-    // escolher explicitamente (UI do admin ou --model do preview semanal).
+    // sugerido e não muda). Estar aqui não muda o modelo de nenhum módulo —
+    // só quem os escolhe explicitamente: a sugestão semanal (gpt-6.1-sol, em
+    // WEEKLY_DEFAULT_MODEL), a UI do admin ou o --model do preview.
     models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'gpt-6.1-sol', 'gpt-6-astra'],
     defaultModel: 'gpt-4o',
     envKey: 'OPENAI_API_KEY',

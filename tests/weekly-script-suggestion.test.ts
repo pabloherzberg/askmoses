@@ -411,7 +411,7 @@ describe('generateWeeklySuggestedScript', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.selection.included.map((o) => o.orgId)).toEqual(['a'])
-    expect(r.usage).toEqual({ model: 'gpt-4o-mini', inputTokens: 1000, outputTokens: 200, costUsd: 0.0012 })
+    expect(r.usage).toEqual({ model: 'gpt-6.1-sol', inputTokens: 1000, outputTokens: 200, costUsd: 0.0012 })
     const arg = (dbCreateScript.mock.calls[0] as unknown as [{ sections: { weight: number }[] }])[0]
     expect(arg.sections.map((s) => s.weight)).toEqual([20, 20, 20, 20, 20])
   })
