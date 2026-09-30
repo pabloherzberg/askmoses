@@ -112,7 +112,7 @@ export async function fetchWeeklyCandidateCalls(admin: Admin, now: Date = new Da
   return rows.map((r) => ({ ...r, overall_score: Number(r.overall_score) }))
 }
 
-async function resolveBaseRubricId(admin: Admin): Promise<string> {
+export async function resolveBaseRubricId(admin: Admin): Promise<string> {
   // Rubric do script atualmente ativo (qualquer org que tenha org_scripts
   // ativo hoje) — best-effort; se não encontrar, cai no fallback fixo.
   const { data: activeOrgScript } = await admin
@@ -131,7 +131,7 @@ async function resolveBaseRubricId(admin: Admin): Promise<string> {
   return rubricId ?? FALLBACK_RUBRIC_ID
 }
 
-interface GeneratedScriptPayload {
+export interface GeneratedScriptPayload {
   name: string
   description: string
   sections: Array<{
@@ -145,13 +145,27 @@ interface GeneratedScriptPayload {
   explanation: string
 }
 
-/**
- * Seleciona, gera, valida e persiste o script sugerido semanal. Não envia às
- * orgs — isso é do caller (cron route), via lib/services/send-script.ts.
- */
-export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionResult> {
-  const admin = createAdminClient()
+export type WeeklyDraftResult =
+  | {
+      ok: true
+      /** Script já validado (5 seções) e anonimizado — ainda NÃO gravado. */
+      script: GeneratedScriptPayload
+      selection: WeeklySelection
+      usage: WeeklyUsage
+      redactions: Redaction[]
+    }
+  | Extract<WeeklySuggestionResult, { ok: false }>
 
+/**
+ * Seleção, geração pela IA, validação das 5 seções e anonimização — tudo o
+ * que o cron faz ANTES de gravar. Não grava nada no banco, exceto o registro
+ * de custo em llm_usage quando `recordUsage` é passado (o cron passa; o
+ * preview em dry-run não — scripts/preview-weekly-suggestion.mts).
+ */
+export async function draftWeeklySuggestedScript(
+  admin: Admin,
+  opts: { recordUsage: { orgId: string | null; ref: string } | null },
+): Promise<WeeklyDraftResult> {
   let selection: WeeklySelection
   try {
     const [orgs, candidates] = await Promise.all([fetchWeeklyOrgs(admin), fetchWeeklyCandidateCalls(admin)])
@@ -183,14 +197,16 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
       costUsd: await computeCostForModel('openai', resolveOpenAIModelId(MODEL), inputTokens, outputTokens),
     }
 
-    void recordLlmUsage({
-      orgId: null,
-      surface: 'script_generation',
-      model: MODEL,
-      inputTokens,
-      outputTokens,
-      ref: 'weekly-script-suggestion',
-    })
+    if (opts.recordUsage) {
+      void recordLlmUsage({
+        orgId: opts.recordUsage.orgId,
+        surface: 'script_generation',
+        model: MODEL,
+        inputTokens,
+        outputTokens,
+        ref: opts.recordUsage.ref,
+      })
+    }
   } catch (err) {
     return { ok: false, kind: 'error', error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}`, selection }
   }
@@ -213,7 +229,23 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
   // monetário → [price], org incluída → [business name], trainer/lead das
   // calls usadas → [name]. Não barra a rodada; o que foi trocado vai para
   // script_suggestion_runs.redactions (sem o termo original).
-  const { script: clean, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+  const { script, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+
+  return { ok: true, script, selection, usage, redactions }
+}
+
+/**
+ * Seleciona, gera, valida e persiste o script sugerido semanal. Não envia às
+ * orgs — isso é do caller (cron route), via lib/services/send-script.ts.
+ */
+export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionResult> {
+  const admin = createAdminClient()
+
+  const draft = await draftWeeklySuggestedScript(admin, {
+    recordUsage: { orgId: null, ref: 'weekly-script-suggestion' },
+  })
+  if (!draft.ok) return draft
+  const { script: clean, selection, usage, redactions } = draft
 
   const rubricId = await resolveBaseRubricId(admin)
 
