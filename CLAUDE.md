@@ -107,6 +107,18 @@ Use os helpers de `lib/auth.ts`: `ok()`, `unauthorized()` (401), `forbidden()` (
   que também confere a contagem esperada antes de gravar).
 - Rode primeiro em modo prévia (`--dry-run` / SELECT), depois aplique.
 
+## Bases das métricas (`lib/sales-calls.ts`)
+
+- **Contagem de calls, score e billing:** `applySalesCallOnly` (`is_sales_call IS DISTINCT FROM false`).
+- **Close rate:** `applySalesCallWithOutcome` / `hasOutcome` / `closeRateOf`, só calls de venda
+  **com resultado** (`call_outcome IS NOT NULL`). Call sem resultado (falha de pipeline, em
+  processamento) não é "não fechou". `toCall` põe `result: 'not_closed'` nela só para exibição e
+  marca `hasOutcome: false`. Não calcule close rate com `result === 'closed' / length`.
+- **`call_stats_weekly` (função `stamp_call_stats_weekly`, 107):** `total_calls` conta **todas** as
+  calls de venda da semana, **inclusive as sem resultado**. `closed_calls / total_calls` **não** é o
+  close rate do produto. Nenhuma tela lê a tabela hoje; quem for consumir precisa de uma coluna com
+  as calls com resultado (migration nova + recarimbar).
+
 ## Design tokens
 
 Use `var(--am-*)` (`styles/globals.css`), nunca hex direto. Tema escuro no `:root`, claro em `.light`.

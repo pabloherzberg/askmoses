@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { applySalesCallOnly, excludeFailedScoring } from '@/lib/sales-calls'
+import { applySalesCallOnly, excludeFailedScoring, hasOutcomeRow } from '@/lib/sales-calls'
 import { normalizeSectionScore } from '@/lib/score-display'
 import {
   FRONT_DESK_AVATAR,
@@ -77,8 +77,12 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
   }
 
   const total = calls.length
-  const closed = calls.filter((c) => c.call_outcome === 'closed').length
-  const closeRate = Math.round((closed / total) * 100)
+  // Close rate só sobre calls COM resultado (mesma regra de dbGetOrgCloseRate).
+  // total_calls e o score continuam sobre `calls` inteiro — o card Total Calls
+  // do dashboard é a soma de total_calls, e call sem resultado existiu.
+  const decided = calls.filter(hasOutcomeRow)
+  const closed = decided.filter((c) => c.call_outcome === 'closed').length
+  const closeRate = decided.length > 0 ? Math.round((closed / decided.length) * 100) : 0
   const avgScore = Math.round(
     calls.reduce((sum, c) => sum + (c.overall_score ?? 0), 0) / total
   )
@@ -120,8 +124,16 @@ export async function syncTrainerStats(trainerId: string): Promise<void> {
     const olderAvg = olderCalls.reduce((s, c) => s + (c.overall_score ?? 0), 0) / olderCalls.length
     scoreDelta = Math.round(recentAvg - olderAvg)
 
-    const recentClose = (recentCalls.filter((c) => c.call_outcome === 'closed').length / recentCalls.length) * 100
-    const olderClose = (olderCalls.filter((c) => c.call_outcome === 'closed').length / olderCalls.length) * 100
+  }
+
+  // Delta do close rate com a mesma base do close rate: só calls com
+  // resultado. Uma semana só com falhas de pipeline não tem close rate —
+  // delta fica 0 em vez de despencar.
+  const recentDecided = recentCalls.filter(hasOutcomeRow)
+  const olderDecided = olderCalls.filter(hasOutcomeRow)
+  if (recentDecided.length > 0 && olderDecided.length > 0) {
+    const recentClose = (recentDecided.filter((c) => c.call_outcome === 'closed').length / recentDecided.length) * 100
+    const olderClose = (olderDecided.filter((c) => c.call_outcome === 'closed').length / olderDecided.length) * 100
     closeDelta = Math.round(recentClose - olderClose)
   }
 

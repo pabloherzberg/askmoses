@@ -124,10 +124,13 @@ describe('agregações de métrica filtram calls de venda', () => {
 
   it('dbGetOrgCloseRate (card Avg Close Rate + insight ROI) filtra total e closed', () => {
     const s = src('lib/db/calls.ts')
-    const fn = s.slice(s.indexOf('export async function dbGetOrgCloseRate'))
-    // As duas contagens (total e closed) precisam do filtro — senão o
-    // denominador infla e o close rate cai.
-    expect((fn.match(/applySalesCallOnly\(/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    const start = s.indexOf('export async function dbGetOrgCloseRate')
+    const fn = s.slice(start, s.indexOf('\nexport ', start + 1))
+    // As duas contagens (total e closed) precisam do filtro de venda COM
+    // resultado — senão o denominador infla (não-venda ou call sem resultado)
+    // e o close rate cai. Ver tc-close-rate-com-resultado.test.ts.
+    expect((fn.match(/applySalesCallWithOutcome\(/g) ?? []).length).toBe(2)
+    expect(fn).not.toMatch(/applySalesCallOnly\(/)
   })
 
   it('insights (getInsights + generateInsights) filtra', () => {

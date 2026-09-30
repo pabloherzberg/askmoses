@@ -160,6 +160,8 @@ function toCall(db: DbCall): Call {
     durationSeconds: db.duration_seconds ?? null,
     score: Math.round((db.overall_score ?? 0) * 10) / 10,
     result,
+    // NULL vira 'not_closed' acima só pra exibição; close rate exclui (hasOutcome).
+    hasOutcome: db.call_outcome != null,
     // intent (0–5 decimal) definido na análise (Intent Index do breakdown) e lido aqui.
     intent: readStoredIntent(db.intent, result),
     prospect: db.client_name ?? "—",
