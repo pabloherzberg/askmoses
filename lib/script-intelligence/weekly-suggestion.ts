@@ -10,6 +10,11 @@ import {
   validateWeeklyScript,
 } from '@/lib/script-intelligence/weekly-prompt'
 import {
+  buildAnonymizationTerms,
+  describeLeak,
+  findAnonymizationLeak,
+} from '@/lib/script-intelligence/weekly-anonymization'
+import {
   WEEKLY_WINDOW_DAYS,
   selectWeeklyCalls,
   type WeeklyCandidateCall,
@@ -79,7 +84,7 @@ export async function fetchWeeklyCandidateCalls(admin: Admin, now: Date = new Da
       applySalesCallOnly(
         admin
           .from('calls')
-          .select('id, org_id, overall_score, transcript, created_at')
+          .select('id, org_id, overall_score, transcript, created_at, trainer_name, client_name')
           .eq('call_outcome', 'closed')
           .eq('ghl_won_status', 'won')
           .not('overall_score', 'is', null)
@@ -195,6 +200,13 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
   const invalid = validateWeeklyScript(parsed)
   if (invalid) {
     return { ok: false, kind: 'error', error: `Script inválido: ${invalid}`, selection, usage }
+  }
+
+  // Anonimização conferida pelo código, não só pedida no prompt: valor
+  // monetário ou nome de org/trainer/lead das calls usadas → não grava nem envia.
+  const leak = findAnonymizationLeak(parsed, buildAnonymizationTerms(selection.included))
+  if (leak) {
+    return { ok: false, kind: 'error', error: describeLeak(leak), selection, usage }
   }
 
   const rubricId = await resolveBaseRubricId(admin)

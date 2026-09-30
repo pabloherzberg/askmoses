@@ -6,7 +6,7 @@
 
 Version 1.4 · September 2026
 Supersedes v1.3 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
-**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
+**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026); §5.1 step 3 also covers the anonymization check that followed it. v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -453,13 +453,23 @@ Cron `GET /api/cron/weekly-script-suggestion`, every Monday 08:00 UTC (`vercel.j
 
 - One `gpt-4o-mini` call per week receives all selected calls, each truncated to 8,000 characters, labelled "Business A/B/C…". Org names are never sent.
 - The prompt asks the model to extract the patterns shared by the winning calls (discovery questions, agitation, offer framing, objection responses, close) and to write one script in the 5 fixed sections, in order.
-- **Anonymization:** the prompt forbids names of businesses, people, dogs, brands, products or places, and any price, amount, date or phone number, and asks for placeholders instead. This is an instruction to the model; **no code checks the output for leaked names or prices.**
+- **Anonymization:** the prompt forbids names of businesses, people, dogs, brands, products or places, and any price, amount, date or phone number, and asks for placeholders instead. **The code then checks the output** (step 3). The check covers money amounts and the names of the included orgs and of the trainers and leads of the calls used. Other names (dogs, brands, places) and dates or phone numbers are still covered only by the prompt instruction.
 - The section format and definitions are reused from the Script Builder prompt (`generate-script-prompt.ts`), whose text is unchanged; a test pins its hash.
 
-**3. Validation** (`weekly-prompt.ts:83` — `validateWeeklyScript`)
+**3. Validation** (`weekly-prompt.ts:83` — `validateWeeklyScript`; `lib/script-intelligence/weekly-anonymization.ts` — `findAnonymizationLeak`)
 
-- The response must contain exactly Discovery, Problem Agitation, Offer Presentation, Objection Handling and Close & Next Steps, in that order, each with non-empty `instructions`.
-- Otherwise the round is recorded as `error` and **nothing is saved or sent**.
+- **Structure:** the response must contain exactly Discovery, Problem Agitation, Offer Presentation, Objection Handling and Close & Next Steps, in that order, each with non-empty `instructions`.
+- **Anonymization check** on everything that is saved (`name`, `description`, each section's `name`/`instructions`/`tips`, `full_script`):
+  - **Money:** a currency symbol followed by a number (`$150`, `US$ 99`, `R$ 300`, `€50`, `£30`, `$2k`), or a number followed by a currency word (`150 dollars`, `99 bucks`, `500 USD`). Placeholders such as `[price]` or `$[price]` pass.
+  - **Names:** matched case-insensitively, as whole words, with spaces and tabs normalised.
+    - Org names: the full name of each included org, with and without a legal suffix (LLC, Inc…).
+    - Trainers and leads of the calls used: the full name, plus the first and last name when they have 3 or more letters.
+    - Middle words are skipped on purpose. CRM lead names often embed the dog and breed ("Cheryl SADIE Golden Retriever Davis"), and "Golden" or "Retriever" would block any dog-training script.
+    - System placeholders ("Front Desk - AskMoses", "Unknown trainer", "—") are ignored.
+- **If either check fails**, the round is recorded as `error` and **nothing is saved or sent**. For a leak, `script_suggestion_runs.error` carries the kind, the term, the field and the excerpt, e.g. `Anonimização: valor monetário "$1,200" em sections[Offer Presentation].instructions: "Present the 6-week program for $1,200."`.
+- **Limits of the name check.** It catches the names it knows, not every name.
+  - A last name that is also a common word (for example "White") blocks any script that uses that word. That week then has no suggestion, and the reason is recorded.
+  - A partial org name (for example "Centurion" instead of "Centurion K9") is not caught.
 - **Weights** are whatever the model returns, as before. They are not validated (see §2.4).
 
 **4. Delivery**
@@ -475,7 +485,7 @@ One row per weekly round:
 | Column | Content |
 |---|---|
 | `run_at` | When the round ran |
-| `status` | `sent` · `skipped` (no eligible org) · `error` (selection, AI, invalid JSON, invalid sections, or send failure) |
+| `status` | `sent` · `skipped` (no eligible org) · `error` (selection, AI, invalid JSON, invalid sections, anonymization leak, or send failure) |
 | `included_orgs` | `[{ org_id, org_name, call_ids[3] }]` |
 | `skipped_orgs` | `[{ org_id, org_name, eligible_calls, reason }]` — e.g. "2 call(s) elegível(is) nos últimos 90 dias (mínimo 3)" or "Org de demonstração/teste (is_demo)" |
 | `call_ids` | All calls used to generate the script |

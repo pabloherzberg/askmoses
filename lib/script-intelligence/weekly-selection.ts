@@ -30,12 +30,21 @@ export interface WeeklyCandidateCall {
   overall_score: number
   transcript: string | null
   created_at: string
+  /** Nomes que não podem aparecer no script gerado (weekly-anonymization.ts). */
+  trainer_name?: string | null
+  client_name?: string | null
 }
 
 export interface WeeklyIncludedOrg {
   orgId: string
   orgName: string
-  calls: { id: string; overallScore: number; transcript: string }[]
+  calls: {
+    id: string
+    overallScore: number
+    transcript: string
+    trainerName: string | null
+    clientName: string | null
+  }[]
 }
 
 export interface WeeklySkippedOrg {
@@ -113,6 +122,8 @@ export function selectWeeklyCalls(
         id: c.id,
         overallScore: c.overall_score,
         transcript: c.transcript as string,
+        trainerName: c.trainer_name ?? null,
+        clientName: c.client_name ?? null,
       })),
     })
   }

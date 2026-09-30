@@ -459,3 +459,71 @@ describe('error_reason — o motivo do erro vai para o banco', () => {
     expect(read('lib/services/send-script.ts')).toMatch(/error_reason: null/)
   })
 })
+
+// ─── Anonimização conferida antes de gravar ──────────────────────────────────
+
+describe('anonimização — vazamento barra a rodada', () => {
+  const namedCalls = (orgId: string) =>
+    calls(orgId, [90, 80, 70]).map((c) => ({ ...c, trainer_name: 'Austin Ackerman', client_name: 'Jenna Maier' }))
+
+  it('valor monetário → erro com trecho, script NÃO é gravado', async () => {
+    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
+    const s = validScript()
+    s.sections[2].instructions = 'Present the 6-week program for $1,200.'
+    ai.text = JSON.stringify(s)
+    const r = await generateWeeklySuggestedScript()
+    expect(r).toMatchObject({ ok: false, kind: 'error' })
+    expect((r as { error: string }).error).toBe(
+      'Anonimização: valor monetário "$1,200" em sections[Offer Presentation].instructions: "Present the 6-week program for $1,200."',
+    )
+    expect(dbCreateScript).not.toHaveBeenCalled()
+  })
+
+  it('nome do trainer de uma call usada → erro, script NÃO é gravado', async () => {
+    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
+    const s = validScript()
+    s.full_script = 'Hi, this is Austin calling about your dog.'
+    ai.text = JSON.stringify(s)
+    const r = await generateWeeklySuggestedScript()
+    expect((r as { error: string }).error).toMatch(/^Anonimização: nome de trainer "Austin" em full_script/)
+    expect(dbCreateScript).not.toHaveBeenCalled()
+  })
+
+  it('nome de uma org incluída → erro', async () => {
+    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
+    const s = validScript()
+    s.description = 'What works at Alpha Dogs'
+    ai.text = JSON.stringify(s)
+    const r = await generateWeeklySuggestedScript()
+    expect((r as { error: string }).error).toMatch(/^Anonimização: nome de org "Alpha Dogs" em description/)
+  })
+
+  it('cron: registra "error" com motivo e trecho em script_suggestion_runs e não envia', async () => {
+    seedDb([org('a', 'Alpha Dogs')], namedCalls('a'))
+    const s = validScript()
+    s.sections[4].instructions = 'Tell Jenna the deposit is 200 dollars.'
+    ai.text = JSON.stringify(s)
+    db.results.script_suggestion_runs = { data: { id: 'run-leak' }, error: null }
+
+    const res = await GET(cronRequest())
+    expect(res.status).toBe(500)
+    expect(sendScriptToOrgs).not.toHaveBeenCalled()
+    expect(dbCreateScript).not.toHaveBeenCalled()
+
+    const run = db.inserts.find((i) => i.table === 'script_suggestion_runs')!.row as Record<string, unknown>
+    expect(run.status).toBe('error')
+    expect(run.script_id).toBeNull()
+    expect(String(run.error)).toBe(
+      'Anonimização: valor monetário "200 dollars" em sections[Close & Next Steps].instructions: "Tell Jenna the deposit is 200 dollars."',
+    )
+    expect(run.call_ids).toEqual(['a-c0', 'a-c1', 'a-c2'])
+  })
+
+  it('a query traz trainer_name e client_name das calls', async () => {
+    db.results.calls = { data: [], error: null }
+    await fetchWeeklyCandidateCalls({ from: (t: string) => builder(t) } as never)
+    const select = db.recorded.find((r) => r.table === 'calls')!.ops.find(([n]) => n === 'select')!
+    expect(String(select[1][0])).toMatch(/trainer_name/)
+    expect(String(select[1][0])).toMatch(/client_name/)
+  })
+})
