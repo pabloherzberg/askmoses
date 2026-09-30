@@ -2,8 +2,8 @@
 
 **Understanding your sales coaching platform — what every screen shows and how to read it**
 
-Version 1.4 · September 2026
-Supersedes v1.3 (September 2026). Section 6.1 revised against the weekly Script Intelligence of PR #238 (`77915b5`, 30 September 2026).
+Version 1.5 · September 2026
+Supersedes v1.4 (September 2026). Section 4.4 revised: the Coaching Drivers panel is now labelled as team averages. In v1.4, section 6.1 was revised against the weekly Script Intelligence of PR #238 (`77915b5`, 30 September 2026).
 
 ---
 
@@ -161,11 +161,7 @@ Your team's total activity and headcount. These give context to every other numb
 
 ### 4.4 Coaching Drivers
 
-A breakdown of your team's average performance across each coaching dimension, colour-coded so strengths and weaknesses stand out at a glance. This is where you decide what to focus training on next: the dimensions in red are where the team scores lowest and coaching has the most room to help.
-
-> **HOW TO READ THIS**
->
-> This panel shows **your team's average score in each dimension** — nothing more. Where the screen uses the words "High / Medium / Low correlation", read them as "high / medium / low average score". The panel does not compare won deals against lost ones, so it cannot tell you which dimension actually drives closes. Use it to find where the team is weakest, not to conclude what wins deals.
+Your team's average score in each coaching dimension, coloured with the same bands used everywhere else in the product (§3.3), so strengths and weaknesses stand out at a glance. This is where you decide what to focus training on next: the dimensions in red are where the team scores lowest and coaching has the most room to help.
 
 ### 4.5 Team Health
 
@@ -484,4 +480,4 @@ Yes. Your script defines what good looks like inside each of the five stages —
 
 ---
 
-*AskMoses.AI — User Guide v1.4 · September 2026 · For questions not covered here, contact your account team.*
+*AskMoses.AI — User Guide v1.5 · September 2026 · For questions not covered here, contact your account team.*

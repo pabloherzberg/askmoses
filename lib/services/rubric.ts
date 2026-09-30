@@ -368,9 +368,9 @@ export async function getRubric(): Promise<{
   return { sections, trend, trainerSectionScores, calls };
 }
 
-// Deriva o "nível" exibido nas colunas Corr./Impact a partir do score médio
-// do critério na rubrica. Enquanto não há volume para correlação estatística
-// real (ver disclaimer no CorrelationEngine), as badges refletem apenas a
+// Deriva o "nível" (correlation/impact) a partir do score médio do critério
+// na rubrica. O painel Coaching Drivers (CorrelationEngine) não exibe mais
+// esses campos — mostra só a média, sem linguagem de correlação. Eles refletem apenas a
 // força do score — não uma correlação validada.
 export function buildCoachingDrivers(sections: RubricSection[]): CorrelationFactor[] {
   return sections.map((s) => {

@@ -17,7 +17,9 @@ import {
   WEEKLY_MAX_TRANSCRIPT_CHARS,
   WEEKLY_SECTION_NAMES,
   WEEKLY_SYSTEM_PROMPT,
+  WEEKLY_TRUNCATION_MARKER,
   buildWeeklyUserPrompt,
+  truncateTranscript,
   validateWeeklyScript,
 } from '@/lib/script-intelligence/weekly-prompt'
 import { SYSTEM_PROMPT } from '@/lib/script-intelligence/generate-script-prompt'
@@ -269,8 +271,58 @@ describe('prompt semanal', () => {
     expect(p).toContain('2 calls from 2 different businesses')
     expect(p).toContain('### Business A — call 1')
     expect(p).toContain('### Business B — call 1')
-    expect(p).toContain('[transcript truncated]')
-    expect(p).not.toContain('y'.repeat(WEEKLY_MAX_TRANSCRIPT_CHARS + 1))
+    expect(p).toContain(WEEKLY_TRUNCATION_MARKER)
+    expect(p).not.toContain('y'.repeat(WEEKLY_MAX_TRANSCRIPT_CHARS / 2 + 1))
+  })
+
+  it('corte guarda o começo E o fim da call (objeção e pedido de agendamento ficam no fim)', () => {
+    const head = 'Hi, thanks for calling. '
+    const tail = "Trainer: Let's get you on the calendar — does Tuesday at 4 work?"
+    const t = truncateTranscript(head + 'm'.repeat(20_000) + tail)
+    expect(t.startsWith(head)).toBe(true)
+    expect(t.endsWith(tail)).toBe(true)
+    expect(t).toContain(WEEKLY_TRUNCATION_MARKER)
+    expect(t.length).toBeLessThanOrEqual(WEEKLY_MAX_TRANSCRIPT_CHARS + WEEKLY_TRUNCATION_MARKER.length + 2)
+    // Curta passa inteira, sem marcador.
+    expect(truncateTranscript('short call')).toBe('short call')
+  })
+
+  it('exige exemplos concretos em formato de fala, tirados das transcrições', () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/2 to 4 example lines in speech format/)
+    expect(WEEKLY_SYSTEM_PROMPT).toContain("Ask: '")
+    expect(WEEKLY_SYSTEM_PROMPT).toContain("Say: '")
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Never invent a line that no winning trainer said/)
+    // O fallback genérico das definições compartilhadas é desligado aqui.
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/"best-practice fallback line" allowed .* does NOT apply here/)
+  })
+
+  it('prefere padrões de mais de uma empresa', () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Prefer patterns that show up in calls from more than one business/)
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/recurs across businesses first/)
+  })
+
+  it('Objection Handling em pares objeção → resposta, com os 4 tipos, sem inventar', () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toContain("Objection: '<what the lead said>' → Say: '<what the trainer answered>'")
+    for (const o of ['price/cost', 'I need to talk to my partner/spouse', "I'll think about it", 'time/schedule']) {
+      expect(WEEKLY_SYSTEM_PROMPT).toContain(o)
+    }
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/never appears in the transcripts, leave it out/)
+  })
+
+  it('Close traz a frase de pedido de agendamento dos vencedores', () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/exact booking ask the winning trainers used/)
+  })
+
+  it('proíbe texto genérico e mantém a anonimização dentro das citações', () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/FORBIDDEN: generic sales advice/)
+    expect(WEEKLY_SYSTEM_PROMPT).toContain('"Use open-ended questions"')
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/This applies INSIDE quoted lines too/)
+  })
+
+  it('user prompt reforça exemplos citados e nada genérico', () => {
+    const p = buildWeeklyUserPrompt([{ calls: [{ transcript: 'x'.repeat(150) }] }])
+    expect(p).toMatch(/2 to 4 Ask\/Say lines quoted from these transcripts/)
+    expect(p).toMatch(/no generic sales advice/)
   })
 })
 
@@ -359,7 +411,7 @@ describe('generateWeeklySuggestedScript', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.selection.included.map((o) => o.orgId)).toEqual(['a'])
-    expect(r.usage).toEqual({ model: 'gpt-4o-mini', inputTokens: 1000, outputTokens: 200, costUsd: 0.0012 })
+    expect(r.usage).toEqual({ model: 'gpt-6.1-sol', inputTokens: 1000, outputTokens: 200, costUsd: 0.0012 })
     const arg = (dbCreateScript.mock.calls[0] as unknown as [{ sections: { weight: number }[] }])[0]
     expect(arg.sections.map((s) => s.weight)).toEqual([20, 20, 20, 20, 20])
   })

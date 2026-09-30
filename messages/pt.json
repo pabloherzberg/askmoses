@@ -444,41 +444,19 @@
       "scriptBuilderAuto": {
         "title": "Gere scripts automaticamente a partir das suas calls",
         "description": "O Script Builder transforma suas melhores calls em um script + rubrica reutilizáveis em minutos — exclusivo dos planos Pro e Pro + RAG. O Starter inclui apenas o Script Manager manual."
-      },
-      "insightsRag": {
-        "title": "Treine com o seu próprio material de coaching",
-        "description": "O Pro + RAG indexa seus scripts, PDFs de metodologia e transcrições das melhores calls, então os insights citam exatamente o playbook que o seu time deveria estar seguindo."
       }
     },
     "correlationEngine": {
-      "title": "Correlation Engine — O que leva ao fechamento",
-      "titleNoVolume": "Coaching Drivers — Médias do time por dimensão",
-      "mockBadge": "apenas dados mock",
-      "legend": {
-        "highCorrelation": "Correlação alta",
-        "medCorrelation": "Correlação média",
-        "lowCorrelation": "Correlação baixa",
-        "rubric": "Rubrica",
-        "behavioral": "Comportamental"
-      },
+      "title": "Coaching Drivers — Médias do time por dimensão",
       "th": {
         "score": "Nota",
-        "percent": "Score",
-        "correlation": "Corr.",
-        "impact": "Impacto",
-        "source": "Fonte"
+        "percent": "Score"
       },
       "levels": {
         "High": "Alta",
         "Med": "Média",
         "Low": "Baixa"
-      },
-      "sources": {
-        "Rubric": "Rubrica",
-        "Behavioral": "Comportamental"
-      },
-      "disclaimer": "Quando houver volume suficiente de calls, o AskMoses identificará quais dimensões mais correlacionam com fechamentos.",
-      "mockFooter": "† todos os valores vêm de mock-data.ts — sem cálculo real no frontend"
+      }
     },
     "behavioralProfile": {
       "title": "Perfil de correlação comportamental",

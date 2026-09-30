@@ -37,7 +37,13 @@ import {
 // referência estável para herdar rubric_version_snapshot/minor_version.
 const FALLBACK_RUBRIC_ID = '5ad2a6c7-7d50-4640-a01d-b7f3db3b3a81'
 
-const MODEL = 'gpt-4o-mini'
+/**
+ * Modelo do cron. O preview pode trocar com --model; o cron nunca passa outro.
+ * gpt-6.1-sol desde 30/09/2026 (antes gpt-4o-mini, que devolvia texto
+ * genérico). Só a sugestão semanal: scoring e os demais módulos usam o
+ * modelo ativo do provider. Preço em llm_pricing (migration 124).
+ */
+export const WEEKLY_DEFAULT_MODEL = 'gpt-6.1-sol'
 const PAGE_SIZE = 1000
 
 export interface WeeklyUsage {
@@ -112,7 +118,7 @@ export async function fetchWeeklyCandidateCalls(admin: Admin, now: Date = new Da
   return rows.map((r) => ({ ...r, overall_score: Number(r.overall_score) }))
 }
 
-async function resolveBaseRubricId(admin: Admin): Promise<string> {
+export async function resolveBaseRubricId(admin: Admin): Promise<string> {
   // Rubric do script atualmente ativo (qualquer org que tenha org_scripts
   // ativo hoje) — best-effort; se não encontrar, cai no fallback fixo.
   const { data: activeOrgScript } = await admin
@@ -131,7 +137,7 @@ async function resolveBaseRubricId(admin: Admin): Promise<string> {
   return rubricId ?? FALLBACK_RUBRIC_ID
 }
 
-interface GeneratedScriptPayload {
+export interface GeneratedScriptPayload {
   name: string
   description: string
   sections: Array<{
@@ -145,17 +151,46 @@ interface GeneratedScriptPayload {
   explanation: string
 }
 
+export type WeeklyDraftResult =
+  | {
+      ok: true
+      /** Script já validado (5 seções) e anonimizado — ainda NÃO gravado. */
+      script: GeneratedScriptPayload
+      selection: WeeklySelection
+      usage: WeeklyUsage
+      redactions: Redaction[]
+      /** Tempo de cada fase (ms). O cron roda estas fases + gravar/enviar, dentro do maxDuration da rota. */
+      timingsMs: { selection: number; ai: number; anonymization: number }
+    }
+  | Extract<WeeklySuggestionResult, { ok: false }>
+
 /**
- * Seleciona, gera, valida e persiste o script sugerido semanal. Não envia às
- * orgs — isso é do caller (cron route), via lib/services/send-script.ts.
+ * Seleção, geração pela IA, validação das 5 seções e anonimização — tudo o
+ * que o cron faz ANTES de gravar. Não grava nada no banco, exceto o registro
+ * de custo em llm_usage quando `recordUsage` é passado (o cron passa; o
+ * preview em dry-run não — scripts/preview-weekly-suggestion.mts).
  */
-export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionResult> {
-  const admin = createAdminClient()
+export async function draftWeeklySuggestedScript(
+  admin: Admin,
+  opts: {
+    recordUsage: { orgId: string | null; ref: string } | null
+    /** Só o preview passa. Tem que estar na whitelist — nada de fallback silencioso. */
+    model?: string
+  },
+): Promise<WeeklyDraftResult> {
+  const model = opts.model ?? WEEKLY_DEFAULT_MODEL
+  if (resolveOpenAIModelId(model) !== model) {
+    return { ok: false, kind: 'error', error: `Modelo fora do catálogo OpenAI: ${model}` }
+  }
+
+  let t = Date.now()
+  const timingsMs = { selection: 0, ai: 0, anonymization: 0 }
 
   let selection: WeeklySelection
   try {
     const [orgs, candidates] = await Promise.all([fetchWeeklyOrgs(admin), fetchWeeklyCandidateCalls(admin)])
     selection = selectWeeklyCalls(orgs, candidates)
+    timingsMs.selection = Date.now() - t
   } catch (err) {
     return { ok: false, kind: 'error', error: `Falha na seleção de calls: ${err instanceof Error ? err.message : 'unknown'}` }
   }
@@ -166,31 +201,35 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
 
   let text: string
   let usage: WeeklyUsage
+  t = Date.now()
   try {
     const aiResult = await generateText({
-      model: getOpenAIModel(MODEL),
+      model: getOpenAIModel(model),
       system: WEEKLY_SYSTEM_PROMPT,
       prompt: buildWeeklyUserPrompt(selection.included),
     })
     text = aiResult.text
+    timingsMs.ai = Date.now() - t
 
     const inputTokens = aiResult.usage?.inputTokens ?? 0
     const outputTokens = aiResult.usage?.outputTokens ?? 0
     usage = {
-      model: MODEL,
+      model,
       inputTokens,
       outputTokens,
-      costUsd: await computeCostForModel('openai', resolveOpenAIModelId(MODEL), inputTokens, outputTokens),
+      costUsd: await computeCostForModel('openai', model, inputTokens, outputTokens),
     }
 
-    void recordLlmUsage({
-      orgId: null,
-      surface: 'script_generation',
-      model: MODEL,
-      inputTokens,
-      outputTokens,
-      ref: 'weekly-script-suggestion',
-    })
+    if (opts.recordUsage) {
+      void recordLlmUsage({
+        orgId: opts.recordUsage.orgId,
+        surface: 'script_generation',
+        model,
+        inputTokens,
+        outputTokens,
+        ref: opts.recordUsage.ref,
+      })
+    }
   } catch (err) {
     return { ok: false, kind: 'error', error: `AI call failed: ${err instanceof Error ? err.message : 'unknown'}`, selection }
   }
@@ -213,7 +252,25 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
   // monetário → [price], org incluída → [business name], trainer/lead das
   // calls usadas → [name]. Não barra a rodada; o que foi trocado vai para
   // script_suggestion_runs.redactions (sem o termo original).
-  const { script: clean, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+  t = Date.now()
+  const { script, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+  timingsMs.anonymization = Date.now() - t
+
+  return { ok: true, script, selection, usage, redactions, timingsMs }
+}
+
+/**
+ * Seleciona, gera, valida e persiste o script sugerido semanal. Não envia às
+ * orgs — isso é do caller (cron route), via lib/services/send-script.ts.
+ */
+export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionResult> {
+  const admin = createAdminClient()
+
+  const draft = await draftWeeklySuggestedScript(admin, {
+    recordUsage: { orgId: null, ref: 'weekly-script-suggestion' },
+  })
+  if (!draft.ok) return draft
+  const { script: clean, selection, usage, redactions } = draft
 
   const rubricId = await resolveBaseRubricId(admin)
 

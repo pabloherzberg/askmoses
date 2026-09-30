@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import type { LanguageModel } from 'ai'
 import type { LlmProvider } from '@/lib/types'
 import { PROVIDER_CATALOG } from '@/lib/llm/catalog'
+import { withOpenAIReasoning } from '@/lib/llm/reasoning'
 
 // ─── Registry de providers de LLM ────────────────────────────────────────────
 //
@@ -71,7 +72,10 @@ const openaiDef: ProviderDef = {
     return OPENAI_VALID.has(sanitized) ? sanitized : OPENAI_DEFAULT
   },
   makeModel: (apiKey, modelId) =>
-    createOpenAI({ apiKey: requireKey(apiKey, 'OPENAI_API_KEY', 'OpenAI') })(modelId),
+    withOpenAIReasoning(
+      createOpenAI({ apiKey: requireKey(apiKey, 'OPENAI_API_KEY', 'OpenAI') })(modelId),
+      modelId,
+    ),
 }
 
 // ─── Google Gemini ───────────────────────────────────────────────────────────

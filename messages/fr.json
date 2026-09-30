@@ -444,41 +444,19 @@
       "scriptBuilderAuto": {
         "title": "Générez des scripts automatiquement à partir d'appels réels",
         "description": "Le Script Builder transforme vos meilleurs appels en un script + une rubrique réutilisables en quelques minutes — réservé aux forfaits Pro et Pro + RAG. Le forfait Starter n'inclut que le Script Manager manuel."
-      },
-      "insightsRag": {
-        "title": "Coachez avec votre propre matériel pédagogique",
-        "description": "Pro + RAG indexe vos scripts, PDFs de méthodologie et transcriptions des meilleurs appels, pour que les insights citent exactement le playbook que votre équipe devrait suivre."
       }
     },
     "correlationEngine": {
-      "title": "Correlation Engine — Ce qui mène aux closes",
-      "titleNoVolume": "Coaching Drivers — Moyennes de l'équipe par dimension",
-      "mockBadge": "données mock uniquement",
-      "legend": {
-        "highCorrelation": "Corrélation élevée",
-        "medCorrelation": "Corrélation moyenne",
-        "lowCorrelation": "Corrélation faible",
-        "rubric": "Grille",
-        "behavioral": "Comportemental"
-      },
+      "title": "Coaching Drivers — Moyennes de l'équipe par dimension",
       "th": {
         "score": "Score",
-        "percent": "Score",
-        "correlation": "Corr.",
-        "impact": "Impact",
-        "source": "Source"
+        "percent": "Score"
       },
       "levels": {
         "High": "Élevée",
         "Med": "Moy.",
         "Low": "Faible"
-      },
-      "sources": {
-        "Rubric": "Grille",
-        "Behavioral": "Comportemental"
-      },
-      "disclaimer": "Lorsque le volume d'appels sera suffisant, AskMoses identifiera quelles dimensions sont les plus corrélées aux closes.",
-      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — pas de calcul réel côté frontend"
+      }
     },
     "behavioralProfile": {
       "title": "Profil de corrélation comportementale",

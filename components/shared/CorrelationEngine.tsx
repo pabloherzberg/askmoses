@@ -1,29 +1,19 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { Info } from 'lucide-react'
-import { toBarWidth, toDisplay5Suffixed } from '@/lib/score-display'
-import type { CorrelationFactor, CorrelationLevel } from '@/lib/types'
+import { scoreColorVar, toBarWidth, toDisplay5Suffixed } from '@/lib/score-display'
+import type { CorrelationFactor } from '@/lib/types'
 
-const barColor: Record<CorrelationLevel, string> = {
-  High: 'var(--am-green)',
-  Med: 'var(--am-amber)',
-  Low: 'var(--am-muted)',
-}
-
-// Volume mínimo para o título exibir linguagem estatística ("Correlation Engine —
-// What Drives Closes"). Abaixo disso o título fala em médias por dimensão e o
-// disclaimer abaixo explica que a correlação estatística virá com volume.
-const MIN_CALLS_FOR_STATS = 3
+// Painel "Coaching Drivers": média do time por dimensão da rubrica. NÃO é
+// correlação com fechamento — essa análise não existe. As barras usam as
+// mesmas faixas de score do resto do produto (scoreColorVar).
 
 interface Props {
   factors: CorrelationFactor[]
-  totalCalls?: number
 }
 
-export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
+export function CorrelationEngine({ factors }: Props) {
   const t = useTranslations('Shared.correlationEngine')
-  const hasVolume = totalCalls >= MIN_CALLS_FOR_STATS
 
   return (
     <div
@@ -33,27 +23,8 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <p className="text-[13px] font-medium" style={{ color: 'var(--am-text)' }}>
-          {hasVolume ? t('title') : t('titleNoVolume')}
+          {t('title')}
         </p>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        {([
-          { level: 'High' as CorrelationLevel, key: 'highCorrelation' },
-          { level: 'Med' as CorrelationLevel, key: 'medCorrelation' },
-          { level: 'Low' as CorrelationLevel, key: 'lowCorrelation' },
-        ]).map(({ level, key }) => (
-          <div key={level} className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0"
-              style={{ background: barColor[level] }}
-            />
-            <span className="text-[11px]" style={{ color: 'var(--am-muted)' }}>
-              {t(`legend.${key}`)}
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* Column headers */}
@@ -99,7 +70,7 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
                     className="h-full rounded-full"
                     style={{
                       width: `${toBarWidth(f.score)}%`,
-                      background: barColor[f.correlation],
+                      background: scoreColorVar(f.score),
                       transition: 'width 0.4s ease',
                     }}
                   />
@@ -114,17 +85,6 @@ export function CorrelationEngine({ factors, totalCalls = 0 }: Props) {
           </div>
         ))}
       </div>
-
-      {/* Disclaimer — só aparece enquanto não há volume mínimo de calls */}
-      {!hasVolume && (
-        <div
-          className="mt-4 pt-3 flex items-start gap-2 text-[11px] italic"
-          style={{ borderTop: '1px solid var(--am-border)', color: 'var(--am-muted)' }}
-        >
-          <Info size={14} className="flex-shrink-0 mt-0.5" />
-          <span>{t('disclaimer')}</span>
-        </div>
-      )}
     </div>
   )
 }

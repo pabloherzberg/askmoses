@@ -18,7 +18,17 @@ export const WEEKLY_SECTION_NAMES = [
 
 // Corte por transcrição. As transcrições reais têm em média ~14,7 mil
 // caracteres (p90 ~32 mil); 15 delas inteiras podem passar de 120 mil tokens.
+// O corte guarda o COMEÇO e o FIM da call (metade do orçamento cada): objeção
+// e pedido de agendamento ficam no fim, e cortar só o começo deixava o modelo
+// sem nada para citar em Objection Handling e Close.
 export const WEEKLY_MAX_TRANSCRIPT_CHARS = 8000
+export const WEEKLY_TRUNCATION_MARKER = '[… middle of the call omitted …]'
+
+export function truncateTranscript(transcript: string): string {
+  if (transcript.length <= WEEKLY_MAX_TRANSCRIPT_CHARS) return transcript
+  const half = WEEKLY_MAX_TRANSCRIPT_CHARS / 2
+  return `${transcript.slice(0, half)}\n${WEEKLY_TRUNCATION_MARKER}\n${transcript.slice(-half)}`
+}
 
 function sliceBetween(text: string, start: string, end: string): string {
   const i = text.indexOf(start)
@@ -38,13 +48,22 @@ ${SHARED_SHAPE_AND_SECTIONS}
 
 ## Rules
 - The sections array must contain EXACTLY these 5 sections in this exact order, with these exact names: Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps. Do not add, remove, or rename any section.
-- Base every section on patterns that actually appear in the winning calls. Prefer patterns that show up in calls from more than one business over something a single call did once.
-- ANONYMIZE. The script goes to many different businesses. Never include names of businesses, people (trainers, owners, customers), dogs, brands, products, programs, or locations. Never include prices, fees, amounts, discounts, package costs, phone numbers, or dates. Where the script needs one of these, use a neutral placeholder such as [business name], [trainer name], [dog's name], [program name], [price], [date].
-- Each section's "instructions" must describe what the trainer should DO/SAY in that part of the call, written as concrete guidance or example lines taken from the winning patterns — not a generic label repeated across sections.
-- "tips" is one short, section-specific coaching tip — it must be different in substance for each section, never a generic reused sentence.
+- Base every section on patterns that actually appear in the winning calls. Prefer patterns that show up in calls from more than one business over something a single call did once; when choosing which lines to quote, pick the ones whose idea recurs across businesses first.
+- ANONYMIZE. The script goes to many different businesses. Never include names of businesses, people (trainers, owners, customers), dogs, brands, products, programs, or locations. Never include prices, fees, amounts, discounts, package costs, phone numbers, or dates. Where the script needs one of these, use a neutral placeholder such as [business name], [trainer name], [dog's name], [program name], [price], [date]. This applies INSIDE quoted lines too.
+- The "best-practice fallback line" allowed in the section definitions above does NOT apply here. Every line must come from the transcripts.
+
+## Concrete examples — mandatory in every section
+- Each section's "instructions" = one or two sentences saying what the winning trainers did in that part of the call, then 2 to 4 example lines in speech format, each on its own line:
+  Ask: '<question the trainer asked>'
+  Say: '<statement the trainer made>'
+- Example lines are taken from the transcripts: quote the trainer's actual words, or condense them lightly without changing the meaning. Never invent a line that no winning trainer said.
+- Objection Handling: write objection → response pairs, one per line, in the form Objection: '<what the lead said>' → Say: '<what the trainer answered>'. Cover each of these when it appears in the transcripts: price/cost, "I need to talk to my partner/spouse", "I'll think about it", and time/schedule. If one of them never appears in the transcripts, leave it out — do not make up a response.
+- Close & Next Steps: include the exact booking ask the winning trainers used to schedule the appointment/evaluation, as a Say: '…' or Ask: '…' line, plus how they confirmed the date and next step.
+- FORBIDDEN: generic sales advice that would fit any sale in any industry, e.g. "Use open-ended questions", "Build rapport", "Listen actively", "Create urgency", "Handle objections with empathy", "Be confident". If a sentence would still make sense in a car dealership or a software demo, replace it with what the dog trainers in these calls actually said.
+- "tips" is one short, section-specific coaching tip drawn from what the winners did differently — different in substance for each section, and never generic advice (same FORBIDDEN rule).
 - weight values must sum to exactly 100 across all 5 sections, reflecting how much each section matters based on the material (e.g. weight Objection Handling and Close higher if the calls show those are where deals are won).
 - Mark critical: true for sections where failure is eliminatory (typically Discovery, Problem Agitation, Objection Handling) — set this based on the actual material, not by default.
-- "full_script" must contain all 5 sections in order, each clearly headed by its section name, forming one coherent script a trainer could read top-to-bottom on a live call. It follows the same anonymization rule.`
+- "full_script" must contain all 5 sections in order, each clearly headed by its section name, forming one coherent script a trainer could read top-to-bottom on a live call, including the Ask/Say example lines and the objection → response pairs. It follows the same anonymization rule.`
 
 export interface WeeklyPromptOrg {
   calls: { transcript: string }[]
@@ -60,16 +79,12 @@ export function buildWeeklyUserPrompt(orgs: WeeklyPromptOrg[]): string {
   orgs.forEach((org, orgIdx) => {
     const label = String.fromCharCode(65 + (orgIdx % 26))
     org.calls.forEach((call, callIdx) => {
-      const text =
-        call.transcript.length > WEEKLY_MAX_TRANSCRIPT_CHARS
-          ? `${call.transcript.slice(0, WEEKLY_MAX_TRANSCRIPT_CHARS)}\n[transcript truncated]`
-          : call.transcript
-      parts.push(`### Business ${label} — call ${callIdx + 1}\n${text}`)
+      parts.push(`### Business ${label} — call ${callIdx + 1}\n${truncateTranscript(call.transcript)}`)
     })
   })
 
   parts.push(
-    `\n## Task\nIdentify what these winning calls have in common in each of the 5 sections and write ONE anonymized script from those patterns, following every rule in the system prompt. Output only the JSON object.`,
+    `\n## Task\nIdentify what these winning calls have in common in each of the 5 sections and write ONE anonymized script from those patterns, following every rule in the system prompt. Every section needs 2 to 4 Ask/Say lines quoted from these transcripts (Objection Handling as objection → response pairs; Close with the booking ask the winners used), and no generic sales advice. Output only the JSON object.`,
   )
 
   return parts.join('\n\n')
