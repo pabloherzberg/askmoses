@@ -451,34 +451,16 @@
       }
     },
     "correlationEngine": {
-      "title": "Correlation Engine — Ce qui mène aux closes",
-      "titleNoVolume": "Coaching Drivers — Moyennes de l'équipe par dimension",
-      "mockBadge": "données mock uniquement",
-      "legend": {
-        "highCorrelation": "Corrélation élevée",
-        "medCorrelation": "Corrélation moyenne",
-        "lowCorrelation": "Corrélation faible",
-        "rubric": "Grille",
-        "behavioral": "Comportemental"
-      },
+      "title": "Coaching Drivers — Moyennes de l'équipe par dimension",
       "th": {
         "score": "Score",
-        "percent": "Score",
-        "correlation": "Corr.",
-        "impact": "Impact",
-        "source": "Source"
+        "percent": "Score"
       },
       "levels": {
         "High": "Élevée",
         "Med": "Moy.",
         "Low": "Faible"
-      },
-      "sources": {
-        "Rubric": "Grille",
-        "Behavioral": "Comportemental"
-      },
-      "disclaimer": "Lorsque le volume d'appels sera suffisant, AskMoses identifiera quelles dimensions sont les plus corrélées aux closes.",
-      "mockFooter": "† toutes les valeurs proviennent de mock-data.ts — pas de calcul réel côté frontend"
+      }
     },
     "behavioralProfile": {
       "title": "Profil de corrélation comportementale",

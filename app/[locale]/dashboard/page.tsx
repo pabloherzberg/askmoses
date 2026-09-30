@@ -172,9 +172,9 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* ── Correlation Engine ────────────────────────────────── */}
+      {/* ── Coaching Drivers (média do time por dimensão) ──────── */}
       <div className="mb-4">
-        <CorrelationEngine factors={coachingDrivers} totalCalls={totalCalls} />
+        <CorrelationEngine factors={coachingDrivers} />
       </div>
 
       {/* ── Team Health ───────────────────────────────────────── */}

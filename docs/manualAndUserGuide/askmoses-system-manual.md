@@ -4,9 +4,9 @@
 
 *Reference guide for answering rule questions and telling intended behaviour apart from real defects*
 
-Version 1.4 · September 2026
-Supersedes v1.3 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
-**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026); §5.1 steps 2–3 also cover the anonymization by replacement that followed it (migration `122`). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
+Version 1.5 · September 2026
+Supersedes v1.4 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
+**v1.5 rewrites §3.4 (Coaching Drivers, formerly "Correlation Engine") and moves §16 #2 to §15, verified against `dev` @ `19a00bc` plus this change. v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026); §5.1 steps 2–3 also cover the anonymization by replacement that followed it (migration `122`). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -313,27 +313,18 @@ There is no date filter — it is deliberately a lifetime figure, so it is stabl
 
 Total Calls is the sum of every rep's lifetime call count. Active Sales People counts reps whose invitation has been **accepted** — including those who have not yet made a call. These two use different populations, which is why the numbers can look mismatched (five active people, zero calls).
 
-### 3.4 Correlation Engine — MISLEADING LABEL
+### 3.4 Coaching Drivers `CALCULATED`
 
-Presented as "Correlation Engine — What Drives Closes", with High / Medium / Low correlation badges per rubric dimension.
+Titled "Coaching Drivers — Team Averages by Dimension" at every call volume (`components/shared/CorrelationEngine.tsx:26`). One bar per rubric dimension.
 
-> What it actually shows:
-> `score` = the team's average score in that dimension
-> `badge` = that same score, banded (≥85 High, ≥70 Med, else Low)
+> `score` = the team's average score in that dimension — `lib/services/rubric.ts:363`, `teamAvg: avgSectionByName(calls, d.name)`
+> `colour` = that same score in the product's standard bands: green ≥ 85, amber 70–84, red < 70 (`scoreColorVar`, `lib/score-display.ts:21`; used at `components/shared/CorrelationEngine.tsx:73`)
+
+It is a team average, and the screen says so. There is no correlation legend, no High / Med / Low correlation badges and no promise that a correlation will appear "after sufficient call volume" — all removed in v1.5 (§15).
+
+> **NOT BUILT: a real correlation**
 >
-> `lib/services/rubric.ts:327` — `buildCoachingDrivers()` maps each section to `toCorrelationLevel(s.teamAvg)`.
-
-> **KNOWN DEFECT — ALREADY REPORTED**
->
-> **No correlation is calculated anywhere** — not at any call volume. The badges are the team's average score wearing a statistical costume. The panel never compares closed calls against lost calls, which is what a correlation would require. "Objection Handling — High correlation" means only "the team scores above 85 in Objection Handling", not "Objection Handling drives closes". **Still present as of `dev` @ `aafcf10`.**
-
-This matters because it can **invert the advice**. If the team scores 60 in Objection Handling but nearly every won deal had a high score there, that is the single biggest lever in the business — and the panel would show it in red as "Low correlation", saying the opposite of the truth.
-
-Below three calls (`MIN_CALLS_FOR_STATS = 3`, `components/shared/CorrelationEngine.tsx:17`) the panel honestly renames itself to team-averages language. Above three calls the statistical title takes over. Three calls is far too low a bar for that promise.
-
-> **WHY THIS EXISTS**
->
-> A real correlation is feasible — the data needed already exists on every call (per-dimension scores plus the outcome). The measure would be the difference in average score between calls that closed and calls that did not, per dimension. It has not been built yet; the current panel was the interim step.
+> Nothing compares closed calls against lost calls per dimension. A red bar means "the team scores low here", not "this dimension loses deals". The data a real correlation would need already exists on every call (per-dimension scores plus the outcome): the measure would be the difference in average score between calls that closed and calls that did not. `buildCoachingDrivers()` (`lib/services/rubric.ts:375`) still fills `correlation` / `impact` fields from the average score, but the panel no longer displays them.
 
 ### 3.5 Team Health `CALCULATED`
 
@@ -886,6 +877,7 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 | **13** (v1.1) | Stage 2 set only by hand | **Partly changed.** A CRM Won now marks a call `paying` automatically (§2.5). The missing report is still open — §16 #13. |
 | **4** | Admin organisations grid calculated cost at $2.00/min against the real $0.0667/min — two admin screens disagreeing by ~30× | **Fixed.** `COST_PER_MINUTE_USD` deleted from `lib/billing.ts`; COST column removed from the SaaS Panel (`a4df35a`); the grid now shows billable **minutes** and money lives only in `/admin/billing`. See §14.2. |
 | **5** | Intent Analysis dashboard ignored configured weights, always using 25/25/25/25, because it fetched from an endpoint that did not exist in production | **Fixed.** `components/shared/IntentDashboard.tsx:84` now resolves weights in-process via `resolveIntentWeights(signals)` (`lib/utils/intentScore.ts:33`) with a documented default, and `app/api/stage-config/route.ts` is a real, auth-scoped route. |
+| **2** (v1.4) | Dashboard "Correlation Engine — What Drives Closes": team average scores shown with High / Med / Low correlation labels, and the statistical title took over from three calls | **Fixed as a label (v1.5).** The panel is now "Coaching Drivers — Team Averages by Dimension" at every volume; the correlation legend and the "after sufficient call volume" promise are gone; bars use the standard score bands. The calculation did not change — it is, and always was, the team average per dimension. A real correlation is still not built (§3.4). |
 | *(scale drift note)* | The `value <= 5 → multiply by 20` rule was described as present "in several places" | **Largely cleaned.** `lib/score-display.ts` was introduced as the single source of truth for scale conversion, and its header forbids inline `/ 20` or `* 20` elsewhere. Two sites still apply the legacy rule — see §16. |
 
 ---
@@ -897,7 +889,7 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 | # | Where | What is wrong | Evidence | Impact |
 |---|---|---|---|---|
 | 1 | Scoring engine | The "critical" flag is saved but never affects the overall score (weights now do — see §15) | `lib/services/scoring.ts:466,538` | **Medium** — a configuration option that silently does nothing |
-| 2 | Dashboard → Correlation Engine | Calculates no correlation; shows average score with correlation labels | `lib/services/rubric.ts:327` | **High** — can point coaching in the wrong direction |
+| 2 | *(moved to §15 in v1.5)* | — | — | — |
 | 3 | Dashboard → Revenue Leak insight | Compares 0–100 scores against a 3.5 threshold meant for the 0–5 scale; prints "92/5" | `lib/services/insights.ts:88,96,97,122` | **High** — card is statistically meaningless |
 | 4 | Script Intelligence | Health score, section scores and "+18%" uplifts are AI opinion presented as measurement; effectiveness label never validated | `lib/script-intelligence/analyze.ts:25,47,55,231` | **High** — drives a real script-activation decision |
 | 5 | Admin panel | Customer Health is always "healthy"; no rule ever changes it | Written as `'healthy'` at `app/api/onboarding/organization/route.ts:176` and `app/api/organizations/route.ts:230`; no `UPDATE` path exists | **Medium** — decorative field |
@@ -912,7 +904,7 @@ The monthly call limit counts from the first of the calendar month, in UTC. Ther
 | 14 | Buying Intent | Each signal is defined one way in the AI prompt and described another way in the on-screen help | `lib/services/scoring.ts:402` vs `messages/en.json` → `signals.financial.question` | **Low** — the AI may not score exactly what the UI claims |
 | 15 | Transcripts | Speaker labels (**Trainer** / **Prospect**) are sometimes swapped. Reported more often on inbound calls. | `lib/services/whisper.ts:392-414` — `assignSpeakerLabels()`; name hint from `lib/services/chunk-pipeline.ts:451` | **Medium** — scoring reads the labelled transcript, so the AI can credit or blame the rep for what the customer said |
 
-*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up. v1.2 keeps the numbering: #1 and #13 were reworded, not removed. v1.3 adds #15.*
+*Renumbered from v1.0: former #4 (billing rate) and #5 (intent weights) are fixed and moved to §15; the remaining items shifted up. v1.2 keeps the numbering: #1 and #13 were reworded, not removed. v1.3 adds #15. v1.5 moves #2 to §15 and keeps the other numbers, so references to #3–#15 stay valid.*
 
 ### A note on speaker labels (#15)
 
@@ -990,4 +982,4 @@ The `/overview` screen has been removed. The owner's home is `/dashboard`. Old l
 
 ---
 
-*AskMoses.AI — System Manual v1.4 · 30 September 2026 · v1.4 passages (§5) verified against PR #238 (`77915b5`), v1.3 against `dev` @ `66cf2c6`, v1.2 against `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
+*AskMoses.AI — System Manual v1.5 · 30 September 2026 · v1.5 passages (§3.4, §15, §16 #2) verified against `dev` @ `19a00bc` plus the Coaching Drivers relabel; v1.4 passages (§5) verified against PR #238 (`77915b5`), v1.3 against `dev` @ `66cf2c6`, v1.2 against `18807ca`; the rest as of `aafcf10`, 31 July 2026.*
