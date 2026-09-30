@@ -10,6 +10,11 @@ import {
   validateWeeklyScript,
 } from '@/lib/script-intelligence/weekly-prompt'
 import {
+  buildAnonymizationTerms,
+  redactScript,
+  type Redaction,
+} from '@/lib/script-intelligence/weekly-anonymization'
+import {
   WEEKLY_WINDOW_DAYS,
   selectWeeklyCalls,
   type WeeklyCandidateCall,
@@ -43,7 +48,14 @@ export interface WeeklyUsage {
 }
 
 export type WeeklySuggestionResult =
-  | { ok: true; scriptId: string; selection: WeeklySelection; usage: WeeklyUsage }
+  | {
+      ok: true
+      scriptId: string
+      selection: WeeklySelection
+      usage: WeeklyUsage
+      /** O que o código substituiu antes de gravar (tipo, campo, quantidade). */
+      redactions: Redaction[]
+    }
   | {
       ok: false
       /** skipped: nenhuma org elegível (não é erro). error: falhou. */
@@ -79,7 +91,7 @@ export async function fetchWeeklyCandidateCalls(admin: Admin, now: Date = new Da
       applySalesCallOnly(
         admin
           .from('calls')
-          .select('id, org_id, overall_score, transcript, created_at')
+          .select('id, org_id, overall_score, transcript, created_at, trainer_name, client_name')
           .eq('call_outcome', 'closed')
           .eq('ghl_won_status', 'won')
           .not('overall_score', 'is', null)
@@ -197,6 +209,12 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
     return { ok: false, kind: 'error', error: `Script inválido: ${invalid}`, selection, usage }
   }
 
+  // Anonimização aplicada pelo código, não só pedida no prompt: valor
+  // monetário → [price], org incluída → [business name], trainer/lead das
+  // calls usadas → [name]. Não barra a rodada; o que foi trocado vai para
+  // script_suggestion_runs.redactions (sem o termo original).
+  const { script: clean, redactions } = redactScript(parsed, buildAnonymizationTerms(selection.included))
+
   const rubricId = await resolveBaseRubricId(admin)
 
   // Herda rubric_version_snapshot/minor_version do script mais recente dessa
@@ -218,11 +236,11 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
   try {
     newScript = await dbCreateScript({
       rubricId,
-      name: parsed.name,
-      description: parsed.description,
+      name: clean.name,
+      description: clean.description,
       // Pesos exatamente como antes: o que a IA devolveu.
-      sections: parsed.sections,
-      full_script: parsed.full_script,
+      sections: clean.sections,
+      full_script: clean.full_script,
       criteria: [],
       isActive: false,
     })
@@ -248,5 +266,5 @@ export async function generateWeeklySuggestedScript(): Promise<WeeklySuggestionR
     console.error('[weekly-suggestion] failed to set version columns (non-fatal):', versionErr)
   }
 
-  return { ok: true, scriptId: newScript.id, selection, usage }
+  return { ok: true, scriptId: newScript.id, selection, usage, redactions }
 }

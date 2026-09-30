@@ -6,7 +6,7 @@
 
 Version 1.4 · September 2026
 Supersedes v1.3 (September 2026). v1.1 was verified against `dev` @ `aafcf10`.
-**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
+**v1.4 rewrites §5 (Script Intelligence) and its row in §17, verified against PR #238 (`77915b5`, 30 September 2026); §5.1 steps 2–3 also cover the anonymization by replacement that followed it (migration `122`). v1.3 updated §2.6, §9 and §16, re-verified against `dev` @ `66cf2c6`. v1.2 updated §2.1, §2.4, §2.5, §2.6, §9, §11.2, §11.3, §15, §16 and §17, verified against `18807ca`.** Everything else is still as verified at `aafcf10`. Every claim below carries a `file:line` reference so it can be re-checked.
 
 ---
 
@@ -453,13 +453,29 @@ Cron `GET /api/cron/weekly-script-suggestion`, every Monday 08:00 UTC (`vercel.j
 
 - One `gpt-4o-mini` call per week receives all selected calls, each truncated to 8,000 characters, labelled "Business A/B/C…". Org names are never sent.
 - The prompt asks the model to extract the patterns shared by the winning calls (discovery questions, agitation, offer framing, objection responses, close) and to write one script in the 5 fixed sections, in order.
-- **Anonymization:** the prompt forbids names of businesses, people, dogs, brands, products or places, and any price, amount, date or phone number, and asks for placeholders instead. This is an instruction to the model; **no code checks the output for leaked names or prices.**
+- **Anonymization:** the prompt forbids names of businesses, people, dogs, brands, products or places, and any price, amount, date or phone number, and asks for placeholders instead. **The code then replaces what slipped through** (step 3), before saving. It handles money amounts and the names of the included orgs and of the trainers and leads of the calls used. Other names (dogs, brands, places) and dates or phone numbers are still covered only by the prompt instruction.
 - The section format and definitions are reused from the Script Builder prompt (`generate-script-prompt.ts`), whose text is unchanged; a test pins its hash.
 
-**3. Validation** (`weekly-prompt.ts:83` — `validateWeeklyScript`)
+**3. Validation and anonymization** (`weekly-prompt.ts:83` — `validateWeeklyScript`; `lib/script-intelligence/weekly-anonymization.ts` — `redactScript`)
 
-- The response must contain exactly Discovery, Problem Agitation, Offer Presentation, Objection Handling and Close & Next Steps, in that order, each with non-empty `instructions`.
-- Otherwise the round is recorded as `error` and **nothing is saved or sent**.
+- **Structure:** the response must contain exactly Discovery, Problem Agitation, Offer Presentation, Objection Handling and Close & Next Steps, in that order, each with non-empty `instructions`. Otherwise the round is recorded as `error` and **nothing is saved or sent**.
+- **Anonymization by replacement.** On everything that is saved (`name`, `description`, each section's `instructions`/`tips`, `full_script`; the 5 section names are left alone), the code replaces:
+
+  | Found | Replaced with |
+  |---|---|
+  | Money: a currency symbol followed by a number (`$150`, `US$ 99`, `R$ 300`, `€50`, `£30`, `$2k`), or a number followed by a currency word (`150 dollars`, `99 bucks`, `500 USD`) | `[price]` |
+  | Name of an included org: full name, with and without a legal suffix (LLC, Inc…) | `[business name]` |
+  | Name of a trainer or lead of the calls used: full name, plus the first and last name when they have 3+ letters | `[name]` |
+
+  - **Matching rules:** names are matched case-insensitively, as whole words, with spaces and tabs normalised. Longer terms are replaced first, so "Austin Ackerman" becomes one `[name]`, not two. Placeholders already present (`[price]`, `$[price]`) are left as they are.
+  - **Middle words of a name are skipped.** CRM lead names often embed the dog and breed ("Cheryl SADIE Golden Retriever Davis"), and "Golden" or "Retriever" would be stripped from any dog-training script.
+  - **Common words.** A first or last name that is also a common English word (`COMMON_WORD_NAMES`: *Stiff, White, Lamp, Golden, Brown, Young, Miller…*) is **not replaced on its own**; only the full name is. "stiff body language" stays, "Jane Stiff" becomes `[name]`.
+  - **Ignored:** system placeholders ("Front Desk - AskMoses", "Unknown trainer", "—") and org names shorter than 3 characters.
+- **The round is not blocked by anonymization.** The cleaned script is saved and sent. What was replaced is recorded in `script_suggestion_runs.redactions` as type, field and count, **never the original term**, so the data that was removed is not kept anywhere.
+- **Limits of the replacement.** It removes the names it knows, not every name.
+  - A partial org name ("Centurion" instead of "Centurion K9") is not replaced.
+  - A common-word surname used alone ("Stiff") is not replaced.
+  - Dogs, brands, places, dates and phone numbers rely on the prompt only.
 - **Weights** are whatever the model returns, as before. They are not validated (see §2.4).
 
 **4. Delivery**
@@ -479,6 +495,7 @@ One row per weekly round:
 | `included_orgs` | `[{ org_id, org_name, call_ids[3] }]` |
 | `skipped_orgs` | `[{ org_id, org_name, eligible_calls, reason }]` — e.g. "2 call(s) elegível(is) nos últimos 90 dias (mínimo 3)" or "Org de demonstração/teste (is_demo)" |
 | `call_ids` | All calls used to generate the script |
+| `redactions` | `[{ kind: money\|org\|trainer\|lead, field, count }]` — what the anonymization replaced before saving (migration `122`). Never the original term. |
 | `script_id` | The generated script (NULL when nothing was generated) |
 | `sent_to_count` | Orgs that received the pending |
 | `model`, `input_tokens`, `output_tokens`, `cost_usd` | The generation call and its cost |

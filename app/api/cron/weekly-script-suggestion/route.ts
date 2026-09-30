@@ -14,6 +14,10 @@ import { sendScriptToOrgs } from '@/lib/services/send-script'
 //   (POST /api/admin/scripts/send). O owner aprova ou não; o script ativo de
 //   nenhuma org muda sozinho.
 //
+//   Antes de gravar, o código substitui valores monetários e nomes de
+//   org/trainer/lead das calls usadas por placeholders (weekly-anonymization.ts);
+//   o que foi trocado vai para script_suggestion_runs.redactions (migration 122).
+//
 //   Toda rodada grava uma linha em script_suggestion_runs (migration 121):
 //   orgs incluídas e puladas com motivo, calls usadas, script, custo e erro.
 //   Org com menos de 3 calls vencedoras é pulada — a rodada segue com as
@@ -106,6 +110,9 @@ async function recordRun(
       skipped_orgs: skipped,
       call_ids: included.flatMap((o) => o.call_ids),
       script_id: generation.ok ? generation.scriptId : null,
+      // Substituições de anonimização (migration 122): tipo, campo e
+      // quantidade — sem o termo original.
+      redactions: generation.ok ? generation.redactions : [],
       sent_to_count: opts.sentTo ?? null,
       model: generation.usage?.model ?? null,
       input_tokens: generation.usage?.inputTokens ?? null,

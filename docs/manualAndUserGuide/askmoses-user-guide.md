@@ -228,7 +228,7 @@ Every week, AskMoses proposes the **AskMoses network script**: one shared script
 - **Source:** the **3 best calls** of each business on the platform that closed on the call **and** became a Won deal in the CRM in the last **90 days**. "Best" means the highest-scoring calls.
 - **Who contributes:** a business needs at least 3 such calls to take part that week. Demonstration and test accounts never take part.
 - **One script for everyone:** the AI reads those winning calls, extracts the patterns they have in common (the discovery questions, how objections were answered, how the close was made) and writes **one** script in the 5 standard sections: Discovery, Problem Agitation, Offer Presentation, Objection Handling, Close & Next Steps.
-- **Anonymized:** the script never contains the names of businesses, people, dogs, brands or places, nor prices. Where it needs one, it uses a placeholder such as *[price]* or *[program name]*.
+- **Anonymized:** before the script is saved, AskMoses automatically replaces any price with *[price]*, the names of the contributing businesses with *[business name]*, and the names of the reps and customers in the calls used with *[name]*. The AI is also instructed to leave out the names of dogs, brands and places; that part relies on the AI and is not checked automatically.
 - **Every week:** a new suggestion replaces the one from the previous week if you did not act on it.
 
 > **IMPORTANT**
