@@ -9,7 +9,7 @@
       "schedule": "0 8 * * 1"
     },
     {
-      "path": "/api/cron/sync-ghl-opportunities",
+      "path": "/api/cron/sync-ghl-won",
       "schedule": "0 6 * * *"
     },
     {
