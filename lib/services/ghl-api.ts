@@ -381,59 +381,71 @@ export async function downloadRecording(
   }
 }
 
-export interface GhlOpportunityResult {
+export interface GhlOpportunity {
   id: string
   contactId: string | null
   status: string | null
-  pipelineStageId?: string | null
-  pipelineStageName?: string | null
-  monetaryValue?: number | null
-  lastStatusChangeAt?: string | null
+  pipelineId: string | null
+  pipelineStageId: string | null
+  lastStatusChangeAt: string | null
+  updatedAt: string | null
 }
 
 const OPPORTUNITIES_PAGE_LIMIT = 100
-const MAX_OPPORTUNITY_PAGES = 20 // defensivo — cap de 2000 opportunities por status/run
+// Um contato raramente tem mais de uma página; o teto só evita laço infinito
+// se o GHL devolver sempre o mesmo cursor.
+const MAX_CONTACT_OPPORTUNITY_PAGES = 10
+const MAX_RATE_LIMIT_RETRIES = 5
+
+// GET no GHL com retry em 429 e 5xx, respeitando Retry-After. O limite do GHL
+// é por location (~100 req/10s); quem chama controla a concorrência.
+async function ghlGetWithRetry(url: string, headers: HeadersInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, { headers })
+    if ((res.status !== 429 && res.status < 500) || attempt >= MAX_RATE_LIMIT_RETRIES) return res
+    const retryAfter = Number(res.headers.get("retry-after"))
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** attempt
+    await new Promise((r) => setTimeout(r, waitMs))
+  }
+}
 
 /**
- * Busca opportunities de uma location filtradas por status ('won' | 'lost' | ...).
- * Usado pelo cron de sync diário (poll) como alternativa ao webhook
- * OpportunityStageChanged — não requer nenhum workflow configurado no GHL,
- * só o PIT com escopo `opportunities.readonly`.
+ * Opportunities de UM contato (`GET /opportunities/search?contact_id=`), de
+ * qualquer pipeline e status. É a busca por lead do sync de Won: substitui a
+ * varredura da location inteira por status, que estourava os 300s do cron e
+ * parava no teto de 2000 opportunities.
  *
- * Pagina via `startAfter`/`startAfterId` (padrão da API v2 de search) até
- * esgotar os resultados ou atingir o cap defensivo de páginas.
+ * 401/403 → GhlAuthError. Se o GHL ignorar o filtro e devolver opportunity de
+ * outro contato, lança erro: gravar isso marcaria o lead errado.
  */
-export async function fetchOpportunitiesByStatus(
+export async function fetchContactOpportunities(
   locationId: string,
   accessToken: string,
-  status: string,
-): Promise<GhlOpportunityResult[]> {
+  contactId: string,
+): Promise<GhlOpportunity[]> {
   const base = getApiBase()
   const headers = buildAuthHeaders(accessToken)
 
-  const results: GhlOpportunityResult[] = []
+  const results: GhlOpportunity[] = []
   let startAfter: string | undefined
   let startAfterId: string | undefined
 
-  for (let page = 0; page < MAX_OPPORTUNITY_PAGES; page++) {
+  for (let page = 0; page < MAX_CONTACT_OPPORTUNITY_PAGES; page++) {
     const params = new URLSearchParams({
       location_id: locationId,
-      status,
+      contact_id: contactId,
       limit: String(OPPORTUNITIES_PAGE_LIMIT),
     })
-    if (startAfter) params.set('startAfter', startAfter)
-    if (startAfterId) params.set('startAfterId', startAfterId)
+    if (startAfter) params.set("startAfter", startAfter)
+    if (startAfterId) params.set("startAfterId", startAfterId)
 
-    const res = await fetch(`${base}/opportunities/search?${params.toString()}`, { headers })
+    const res = await ghlGetWithRetry(`${base}/opportunities/search?${params.toString()}`, headers)
     if (!res.ok) {
       const body = await res.text()
       if (res.status === 401 || res.status === 403) {
-        throw new GhlAuthError(
-          res.status,
-          `GHL opportunities/search auth failed (${res.status}): ${body}`,
-        )
+        throw new GhlAuthError(res.status, `GHL opportunities/search auth failed (${res.status}): ${body.slice(0, 200)}`)
       }
-      throw new Error(`GHL opportunities/search failed ${res.status}: ${body}`)
+      throw new Error(`GHL opportunities/search failed ${res.status}: ${body.slice(0, 200)}`)
     }
 
     const data = (await res.json()) as {
@@ -441,32 +453,33 @@ export async function fetchOpportunitiesByStatus(
         id?: string
         contactId?: string
         status?: string
+        pipelineId?: string
         pipelineStageId?: string
-        pipelineStageName?: string
-        monetaryValue?: number
         lastStatusChangeAt?: string
+        updatedAt?: string
       }>
       meta?: { startAfter?: string | number; startAfterId?: string }
     }
 
     const batch = data.opportunities ?? []
     for (const opp of batch) {
+      if (opp.contactId && opp.contactId !== contactId) {
+        throw new Error(`GHL opportunities/search ignorou contact_id: pedido ${contactId}, veio ${opp.contactId}`)
+      }
       if (!opp.id) continue
       results.push({
         id: opp.id,
         contactId: opp.contactId ?? null,
         status: opp.status ?? null,
+        pipelineId: opp.pipelineId ?? null,
         pipelineStageId: opp.pipelineStageId ?? null,
-        pipelineStageName: opp.pipelineStageName ?? null,
-        monetaryValue: opp.monetaryValue ?? null,
         lastStatusChangeAt: opp.lastStatusChangeAt ?? null,
+        updatedAt: opp.updatedAt ?? null,
       })
     }
 
     // Fim da paginação: página incompleta ou meta sem cursor pra próxima.
-    if (batch.length < OPPORTUNITIES_PAGE_LIMIT || !data.meta?.startAfterId) {
-      break
-    }
+    if (batch.length < OPPORTUNITIES_PAGE_LIMIT || !data.meta?.startAfterId) break
     startAfter = data.meta.startAfter !== undefined ? String(data.meta.startAfter) : undefined
     startAfterId = data.meta.startAfterId
   }
@@ -539,8 +552,8 @@ export async function fetchAppointments(
  * guardamos por org, então não dá pra varrer a agenda inteira só com o que
  * temos no `organizations`. `/contacts/{id}/appointments` precisa apenas do
  * PIT com escopo `calendars/events.readonly`, e o conjunto de contatos que nos
- * interessa é justamente o das calls já ingeridas — é o análogo direto do que
- * `fetchOpportunitiesByStatus` faz no fluxo do Won.
+ * interessa é justamente o das calls já ingeridas — o mesmo universo que
+ * `fetchContactOpportunities` consulta no fluxo do Won.
  *
  * Retorna [] quando o contato não tem agendamento. 401/403 → GhlAuthError.
  */

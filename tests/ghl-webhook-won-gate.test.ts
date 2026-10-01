@@ -2,7 +2,7 @@
  * TC-GHL-WON-GATE — Gate de contato já fechado (Won) no webhook GHL
  *
  * Regra de negócio: uma vez que um lead vira Won (ghl_won_status='won' em
- * qualquer call do contato — dbUpdateGhlOpportunity carimba todas as calls
+ * qualquer call do contato — apply_ghl_lead_status carimba todas as calls
  * do contact_id ao mesmo tempo), nenhuma call NOVA desse mesmo contato deve
  * ser registrada no AskMoses. O contato já fechou; ligações posteriores
  * (reagendamento, reprocessamento do GHL) não devem virar linha em `calls`.
@@ -43,6 +43,19 @@ describe('Contrato › app/api/webhooks/ghl/route.ts — gate de contato já fec
   it('dbHasWonCall existe em lib/db/calls.ts e filtra por org, contact_id e ghl_won_status=won', () => {
     expect(dbCallsSource).toMatch(/export async function dbHasWonCall/)
     expect(dbCallsSource).toContain(".eq('ghl_won_status', 'won')")
+  })
+
+  it('cada call recusada é gravada em ghl_rejected_calls ANTES de responder (125)', () => {
+    const recordIdx = webhookRouteSource.indexOf('dbRecordRejectedCall({')
+    const skipIdx = webhookRouteSource.indexOf('skipped_contact_already_won')
+    expect(recordIdx).toBeGreaterThan(-1)
+    expect(recordIdx).toBeLessThan(skipIdx)
+    expect(webhookRouteSource).toContain('reason: "contact_already_won"')
+  })
+
+  it('evento de opportunity reconsulta o lead inteiro no GHL (Won por lead)', () => {
+    expect(webhookRouteSource).toContain('syncLeadWon(orgConfig, contactId, "webhook")')
+    expect(webhookRouteSource).not.toContain('dbUpdateGhlOpportunity')
   })
 })
 

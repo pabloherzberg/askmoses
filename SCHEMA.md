@@ -287,16 +287,40 @@ Returns the numerator and denominator behind **Won Rate**, one row per sales per
 |---|---|
 | `trainer_id` | Sales person, or `NULL` for the org total |
 | `closed_leads` | Distinct `contact_id` with at least one call where `call_outcome = 'closed'` |
-| `won_leads` | Those same leads that also have a call with `ghl_won_status = 'won'` |
+| `won_leads` | Those same leads that are Won **after** their first closed call (`ghl_won_at` > `call_moment` of the first `closed` call, migration 125) |
 
-Won Rate = `won_leads / closed_leads`. Two rules matter when reading this:
+Won Rate = `won_leads / closed_leads`. Three rules matter when reading this:
 
-- **Counted per lead, never per call.** `dbUpdateGhlOpportunity` stamps `ghl_won_status` on *every* call belonging to a contact, so counting calls would turn one sale into six and push the rate past 100%. `COUNT(DISTINCT contact_id)` is immune to that.
+- **Counted per lead, never per call.** `apply_ghl_lead_status` stamps `ghl_won_status` on *every* call belonging to a contact, so counting calls would turn one sale into six and push the rate past 100%. `COUNT(DISTINCT contact_id)` is immune to that.
+- **A Won before the closed call does not count.** That lead was already a client; the call did not produce the sale. `call_stats_weekly.won_leads` uses the same rule.
 - **The org row is not the sum of the sales-person rows.** A lead worked by two people counts once for each of them and once for the org.
 
 Calls with `contact_id IS NULL` (manual upload, GHL calls predating backfill 102) are excluded from both sides — which is why this denominator is smaller than the one behind Close Rate, which counts calls.
 
 Global and not restricted to any period, matching `dbGetOrgCloseRate`.
+
+---
+
+## Table: `ghl_leads` (migration 125)
+
+GHL status of each **lead** (`org_id`, `contact_id`). The Won belongs to the lead, not to the call; calls inherit it.
+
+| Column | Meaning |
+|---|---|
+| `status` | `won`, `lost`, `open`, `abandoned` or `none` (no opportunity) |
+| `won_at` | `lastStatusChangeAt` of the most recent Won opportunity, any pipeline |
+| `won_opportunity_id`, `won_pipeline_id`, `won_stage_id` | That opportunity |
+| `ghl_status`, `ghl_divergence` | What GHL said on the last check. Diagnostic only |
+| `checked_at`, `source` | Last check, and whether it came from `webhook`, `sync` or `backfill` |
+
+- **Won is final.** A lead with any Won opportunity is `won`; a later Lost, a reopened or deleted opportunity, or a merged contact never demotes it. The difference is kept in `ghl_divergence`.
+- **Written only by `apply_ghl_lead_status`**, which also copies `ghl_won_status` / `ghl_won_at` / `ghl_opportunity_id` to every call of the lead and runs the Stage 2 rule, in one transaction. With `p_applied_by` (backfill) it writes `calls_data_corrections` before the UPDATE.
+- **Who calls it:** the opportunity webhook (re-reads all opportunities of the contact), the daily cron `/api/cron/sync-ghl-won` (one invocation per org, revisits non-Won leads via `ghl_leads_to_revisit`), and `scripts/backfill-ghl-won-por-lead.mts`.
+- **Call moment** for every date rule is `call_moment(call_date, created_at)`: `call_date` at 00:00 UTC when present, otherwise `created_at`.
+
+## Table: `ghl_rejected_calls` (migration 125)
+
+Calls the GHL webhook refused without creating a `calls` row — today only `contact_already_won` (step 5d). One row per (`org_id`, `external_call_id`, `reason`), so GHL retries count once. Counting only.
 
 ---
 
@@ -389,3 +413,4 @@ ORDER BY f.call_date DESC;
 | **`036_ml_fields.sql`** | **Adds `closed`, `call_date`, `duration_seconds`; creates `calls_ml_flat` view and `trg_sync_closed` trigger** |
 | `105_call_outcome_2_values.sql` | Simplifies `call_outcome_enum` from 4 to 2 values (`partial`→`closed`, `no_outcome`→`not_closed`); remaps `organizations.stage1_success_outcomes` |
 | `107_won_rate_and_weekly_stats.sql` | Won Rate and the weekly stats log: `org_won_rate(uuid)`, `call_stats_weekly` (append-only), `job_watermarks`, `stamp_call_stats_weekly()`, `calls_updated_at_idx` + `trg_calls_updated_at`, and the one-time backfill |
+| `125_ghl_won_por_lead.sql` | Won per lead: `ghl_leads`, `ghl_rejected_calls`, `call_moment()`, `apply_ghl_lead_status()`, `reconcile_stage2_from_won()`, `ghl_leads_to_revisit()`; Won Rate counts only a Won after the first closed call (`org_won_rate`, `stamp_call_stats_weekly`); Stage 2 on the latest sales call before the Won (`mark_stage2_paying_from_won` gains `p_applied_by`) |
