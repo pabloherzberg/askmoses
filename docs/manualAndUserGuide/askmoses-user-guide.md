@@ -193,6 +193,20 @@ A grid comparing each rep across every coaching dimension. The top score in each
 
 A set of automatically generated observations that read your recent calls and surface patterns worth acting on — a strong performer worth learning from, a rep who may need support, an area to focus coaching next. A quick prompt for where to look.
 
+### 4.9 Won Rate
+
+> **Won Rate = leads who became paying clients after scheduling on a call ÷ leads who scheduled an evaluation**
+>
+> Counted across the whole team and your entire history. A lead becomes a paying client when their deal is marked **Won** in your CRM.
+
+Where the close rate tells you how often a call books the evaluation, the Won Rate tells you how many of those bookings turned into paying clients.
+
+> **GOOD TO KNOW**
+>
+> - **Counted per lead, not per call.** A lead who spoke to your team several times counts once.
+> - **Only a Won that happens after the call counts.** A lead who was already a client before the call where they scheduled — for example, a past customer booking a new evaluation — is not counted as a new win. The call didn't produce that sale.
+> - **A Won is never taken back.** Once a lead is Won in your CRM, they stay Won here, even if the deal is later reopened or moved in the CRM.
+
 ---
 
 ## 5. Analytics `OWNER`

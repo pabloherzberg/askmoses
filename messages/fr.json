@@ -688,7 +688,7 @@
       "avgCloseRate": "Taux de closing moyen",
       "avgCloseRateTooltip": "Appels conclus ÷ total des appels, sur toute l'équipe. Tous les appels réalisés sont pris en compte — c'est un chiffre global et historique, il ne porte sur aucune période précise, et chaque appel compte autant, quel que soit son auteur.",
       "wonRate": "Won Rate",
-      "wonRateTooltip": "Leads gagnés ÷ leads ayant planifié une évaluation, sur toute l'équipe. Compté par lead, pas par appel — un lead avec plusieurs appels ne compte qu'une fois. C'est un chiffre global et historique, il ne porte sur aucune période précise.",
+      "wonRateTooltip": "Leads devenus clients payants après avoir planifié lors d'un appel ÷ leads ayant planifié une évaluation, sur toute l'équipe. Compté par lead, pas par appel — un lead avec plusieurs appels ne compte qu'une fois. Les leads qui étaient déjà clients avant l'appel ne comptent pas comme une nouvelle vente. Chiffre historique, sans limite de période.",
       "ptsSinceWeek1": "pts depuis la semaine 1",
       "avgScore": "Score moyen",
       "teamAvgCallScore": "Score moyen par appel",
