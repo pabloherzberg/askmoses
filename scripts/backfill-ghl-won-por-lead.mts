@@ -185,6 +185,33 @@ if (orgs.length === 0) {
   process.exit(1)
 }
 
+// A 125 já está no banco? A prévia não depende dela: sem ghl_leads, o estado
+// atual vem só das calls (ghl_won_status / ghl_won_at), que é o que existe
+// hoje em prod. O --apply depende (chama apply_ghl_lead_status) e para aqui,
+// antes de qualquer consulta ao GHL, se ela faltar.
+// ghl_leads_to_revisit é só leitura (STABLE): prova a tabela e as funções.
+// PGRST205 = tabela fora do schema cache; PGRST202 = função inexistente.
+async function migration125Present(): Promise<boolean> {
+  const { error } = await supabase.rpc('ghl_leads_to_revisit', {
+    p_org_id: '00000000-0000-0000-0000-000000000000',
+    p_limit: 0,
+  })
+  if (!error) return true
+  if (error.code === 'PGRST202' || error.code === 'PGRST205' || /could not find/i.test(error.message)) return false
+  throw new Error(`checando a migration 125: ${error.message}`)
+}
+const HAS_125 = await migration125Present()
+if (APPLY && !HAS_125) {
+  console.error(
+    '\nA migration 125 (scripts/125_ghl_won_por_lead.sql) não está aplicada neste banco: ' +
+      'faltam ghl_leads / apply_ghl_lead_status. O --apply precisa dela. Aplique a 125 e rode a prévia de novo. Nada foi gravado.',
+  )
+  process.exit(2)
+}
+if (!HAS_125) {
+  console.error('(125 ainda não aplicada neste banco — prévia usando só o estado das calls; ghl_leads tratada como vazia)')
+}
+
 const autoPaying = new Set(
   (await selectAll<{ call_id: string }>((f, t) =>
     supabase.from('calls_data_corrections').select('call_id')
@@ -206,9 +233,11 @@ for (const org of orgs) {
       .eq('org_id', orgId).not('contact_id', 'is', null).order('id').range(f, t),
   )
   const prevLeads = new Map(
-    (await selectAll<{ contact_id: string; status: string; won_at: string | null }>((f, t) =>
-      supabase.from('ghl_leads').select('contact_id, status, won_at').eq('org_id', orgId).range(f, t),
-    )).map((l) => [l.contact_id, l]),
+    HAS_125
+      ? (await selectAll<{ contact_id: string; status: string; won_at: string | null }>((f, t) =>
+          supabase.from('ghl_leads').select('contact_id, status, won_at').eq('org_id', orgId).range(f, t),
+        )).map((l) => [l.contact_id, l])
+      : [],
   )
 
   const byContact = new Map<string, CallRow[]>()
