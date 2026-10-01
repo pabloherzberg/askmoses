@@ -688,7 +688,7 @@
       "avgCloseRate": "Taxa média de fechamento",
       "avgCloseRateTooltip": "Calls fechadas ÷ total de calls, no time inteiro. Todas as calls já feitas entram na conta — é um número global e histórico, não é de um período específico, e cada call pesa igual, não importa quem a fez.",
       "wonRate": "Won Rate",
-      "wonRateTooltip": "Leads que fecharam venda ÷ leads que agendaram avaliação, no time inteiro. Contado por lead, não por call — um lead com várias ligações conta uma vez só. É um número global e histórico, não é de um período específico.",
+      "wonRateTooltip": "Leads que viraram clientes pagantes depois de agendar numa call ÷ leads que agendaram avaliação, no time inteiro. Contado por lead, não por call — um lead com várias ligações conta uma vez só. Quem já era cliente antes da call não conta como venda nova. Número histórico, não é de um período específico.",
       "ptsSinceWeek1": "pts desde a semana 1",
       "avgScore": "Nota média",
       "teamAvgCallScore": "Nota média por call",

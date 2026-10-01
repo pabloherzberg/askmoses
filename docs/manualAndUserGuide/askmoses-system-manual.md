@@ -376,6 +376,21 @@ Four cards mixing real arithmetic with AI-written prose. The numbers inside them
 >
 > Only a tiny fraction of section scores fall below 3.5 on a 0–100 scale, and those are catastrophic (2/100), not mediocre. The result is that the card almost always reads "0 of N sales people score below 3.5", and prints sentences like "Marcus scores 92/5". **Still present as of `dev` @ `aafcf10`** — the file was touched by the outcome migration, but the thresholds were not corrected.
 
+### 3.9 Won Rate `CALCULATED`
+
+> `Won Rate = won_leads ÷ closed_leads × 100`, from `public.org_won_rate(p_org_id)` (`dbGetOrgWonRate`, `lib/db/calls.ts`)
+
+- **`closed_leads`** — distinct `contact_id` with at least one sales call (`is_sales_call IS DISTINCT FROM false`) where `call_outcome = 'closed'`.
+- **`won_leads`** — those same leads whose Won (`ghl_won_at`) is **after their first closed call**, by `call_moment(call_date, created_at)`: `call_date` at 00:00 UTC when present, otherwise `created_at`.
+
+Since migration `125_ghl_won_por_lead.sql` (1 October 2026) the Won belongs to the **lead**, not to the call. `public.ghl_leads` holds one row per (`org_id`, `contact_id`); `apply_ghl_lead_status` copies `ghl_won_status` / `ghl_won_at` to every call of the lead. A lead is Won if it has **any** Won opportunity in GoHighLevel, in any pipeline, and `ghl_won_at` is the `lastStatusChangeAt` of the most recent one. The sources are the opportunity webhook, which re-reads all opportunities of the contact, and the daily cron `/api/cron/sync-ghl-won`, which runs one invocation per org.
+
+> **A Won before the closed call does not count.** That lead was already a client, for example a past customer booking a new evaluation, and the call did not produce the sale. Before migration 125 such leads counted as wins. The same rule applies to `call_stats_weekly.won_leads` (`stamp_call_stats_weekly`).
+
+> **A Won is final.** A later Lost, a reopened or deleted opportunity, or a merged contact never demotes a Won lead. What GHL says today is kept in `ghl_leads.ghl_status` / `ghl_divergence` for diagnosis only.
+
+> Counted per lead, never per call: every call of a Won lead carries `ghl_won_status = 'won'`, so counting calls would turn one sale into several and push the rate past 100%. A lead worked by two reps counts once for each rep and once for the org, so the org figure is not the sum of the per-rep figures. Calls with no `contact_id` are left out of both sides. The figure is all-time and not limited to any period.
+
 ---
 
 ## 4. Analytics
