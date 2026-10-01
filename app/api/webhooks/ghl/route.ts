@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto"
 import { after, type NextRequest, NextResponse } from "next/server"
-import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbUpdateGhlOpportunity, dbHasWonCall } from "@/lib/db/calls"
+import { dbUpsertGhlCall, dbUpdateGhlCallPipeline, dbHasWonCall } from "@/lib/db/calls"
+import { dbApplyGhlLeadStatus, dbRecordRejectedCall, type GhlLeadStatus } from "@/lib/db/ghl-leads"
+import { syncLeadWon } from "@/lib/services/ghl-won-sync"
 import {
   dbGetOrCreateFrontDeskTrainer,
   dbResolveTrainerForGhlCall,
@@ -117,12 +119,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Evento de OPORTUNIDADE (OpportunityStageChanged / OpportunityStatusChanged).
-  //    Atualiza ghl_won_status em todas as calls do contato na org.
+  //    Reconsulta o lead no GHL e grava o status dele (as calls herdam).
   if (isOpportunityType(normalizedType)) {
     return handleOpportunity(
       rawBody.customData as GhlOpportunityPayload,
-      orgConfig.orgId,
-      orgConfig.orgName,
+      orgConfig,
     )
   }
 
@@ -223,13 +224,16 @@ export async function POST(req: NextRequest) {
   }
 
   // 5d. Lead já fechou (Won) — não registra mais calls dele. Depois do Won,
-  //     dbUpdateGhlOpportunity carimba ghl_won_status='won' em TODAS as calls
+  //     apply_ghl_lead_status carimba ghl_won_status='won' em TODAS as calls
   //     do contato; uma call nova do mesmo contactId só existiria por reagenda-
   //     mento indevido ou reprocessamento do GHL. Sem alerta (não é falha).
   //
   //     Junto com o corte de call curta (5b), é um dos DOIS únicos descartes
   //     silenciosos que sobraram no webhook. O terceiro — call de rep não
   //     vinculado — deixou de existir: agora vai pro Front Desk (5e).
+  //
+  //     Cada recusa fica em ghl_rejected_calls (125) para termos contagem.
+  //     Falhar ao gravar a recusa não muda a decisão: loga e segue.
   try {
     const alreadyWon = await dbHasWonCall(orgConfig.orgId, contactId)
     if (alreadyWon) {
@@ -237,6 +241,14 @@ export async function POST(req: NextRequest) {
         orgId: orgConfig.orgId,
         contactId,
         externalCallId,
+      })
+      await dbRecordRejectedCall({
+        orgId: orgConfig.orgId,
+        contactId,
+        externalCallId,
+        reason: "contact_already_won",
+      }).catch((err) => {
+        console.error("[ghl-webhook] falha ao gravar call recusada", { err, externalCallId })
       })
       return NextResponse.json({
         data: { status: "skipped_contact_already_won" },
@@ -521,42 +533,61 @@ async function handleAppointment(
   }
 }
 
+const LEAD_STATUSES: ReadonlySet<string> = new Set(["won", "lost", "open", "abandoned"])
+
+// Evento de opportunity: em vez de gravar só a opportunity do evento, reconsulta
+// TODAS as opportunities do contato e grava o status do lead (migration 125).
+// Assim um Lost de outra opportunity não apaga o Won, e o Won é definitivo.
+// Se a consulta ao GHL falhar, grava o status do próprio evento — a RPC também
+// nunca rebaixa um lead won, então o fallback não estraga nada; o cron diário
+// confere de novo os leads não-Won.
 async function handleOpportunity(
   opp: GhlOpportunityPayload,
-  orgId: string,
-  orgName: string | null,
+  orgConfig: { orgId: string; orgName: string | null; locationId: string; accessToken: string },
 ) {
+  const { orgId, orgName } = orgConfig
   const contactId = normalizeEmpty(opp.contactId)
   const opportunityId = normalizeEmpty(opp.opportunityId)
-  const status = normalizeEmpty(opp.status)
+  const status = normalizeEmpty(opp.status)?.toLowerCase() ?? null
 
   if (!contactId || !opportunityId || !status) {
     return jsonError("opportunity missing contactId, opportunityId or status", 400)
   }
 
   try {
-    const matched = await dbUpdateGhlOpportunity(
-      orgId,
-      contactId,
-      opportunityId,
-      status,
-      normalizeEmpty(opp.lastStatusChangeAt),
-    )
-
-    // Zero calls casadas é legítimo (contato sem call ingerida), mas é também a
-    // assinatura exata do bug do contact_id NULL — que passou despercebido porque
-    // o webhook respondia 200 sem gravar nada. Fica no log e na resposta.
-    if (matched === 0) {
-      console.warn("[ghl-webhook] oportunidade sem call correspondente — nada atualizado", {
+    let result
+    let source: "ghl" | "event" = "ghl"
+    try {
+      result = await syncLeadWon(orgConfig, contactId, "webhook")
+    } catch (err) {
+      console.warn("[ghl-webhook] reconsulta do lead falhou — usando o status do evento", {
         orgId,
         contactId,
         opportunityId,
-        status,
+        err,
+      })
+      source = "event"
+      const eventStatus = (LEAD_STATUSES.has(status) ? status : "none") as GhlLeadStatus
+      result = await dbApplyGhlLeadStatus({
+        orgId,
+        contactId,
+        ghlStatus: eventStatus,
+        wonAt: eventStatus === "won" ? normalizeEmpty(opp.lastStatusChangeAt) : null,
+        opportunityId,
+        pipelineId: null,
+        stageId: normalizeEmpty(opp.pipelineStageId),
+        source: "webhook",
       })
     }
 
     return NextResponse.json({
-      data: { opportunityId, status, contactId, callsUpdated: matched },
+      data: {
+        opportunityId,
+        contactId,
+        status: result.status,
+        source,
+        callsUpdated: result.callsUpdated,
+      },
       error: null,
     })
   } catch (err) {
@@ -570,7 +601,7 @@ async function handleOpportunity(
       error: err instanceof Error ? `[opportunity] ${err.message}` : String(err),
       stage: "webhook",
       reason: "db_error",
-      meta: { operation: "dbUpdateGhlOpportunity", contactId, opportunityId },
+      meta: { operation: "apply_ghl_lead_status", contactId, opportunityId },
     })
     return jsonError("Failed to update opportunity", 500)
   }

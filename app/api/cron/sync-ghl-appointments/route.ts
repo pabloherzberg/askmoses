@@ -7,17 +7,16 @@ import { notifyPipelineFailure } from '@/lib/services/pipeline-alerts'
 
 // GET /api/cron/sync-ghl-appointments
 //
-//   Alternativa por POLLING ao webhook de agendamento — exatamente o mesmo
-//   desenho do /api/cron/sync-ghl-opportunities (fluxo do "Won"):
+//   Alternativa por POLLING ao webhook de agendamento — o mesmo desenho do
+//   /api/cron/sync-ghl-won (fluxo do "Won"):
 //
 //     Won:          webhook OpportunityStatusChanged  +  cron diário poll
 //     Appointment:  webhook appointmentScheduled      +  ESTE cron
 //
-//   Diferença de varredura: opportunities dá pra buscar por status na location
-//   inteira (`/opportunities/search`). A agenda não — `/calendars/events` exige
-//   calendarId/userId/groupId, que não guardamos por org. Então varremos por
-//   CONTATO: os contact_ids das calls recentes da org, que é justamente o
-//   universo que a coluna "Appointment" do Intent Analysis exibe.
+//   Os dois varrem por CONTATO: `/calendars/events` exige calendarId/userId/
+//   groupId, que não guardamos por org, então usamos os contact_ids das calls
+//   recentes da org, que é justamente o universo que a coluna "Appointment" do
+//   Intent Analysis exibe.
 //
 //   Persistência: mesmo upsert idempotente do webhook (dbUpsertGhlAppointment,
 //   chave org_id + ghl_appointment_id) — rodar duas vezes não duplica, e um
