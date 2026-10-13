@@ -239,6 +239,24 @@
       "submit": "Envoyer l'invitation",
       "submitting": "Envoi..."
     },
+    "coachingCopies": {
+      "title": "Copies de l'email de coaching",
+      "description": "Ces adresses reçoivent une copie de chaque email de coaching envoyé aux commerciaux de cette organisation. Elles n'ont besoin ni d'un accès AskMoses ni d'un utilisateur GHL.",
+      "inputLabel": "Adresse email",
+      "placeholder": "responsable@entreprise.com",
+      "add": "Ajouter",
+      "remove": "Retirer {email}",
+      "empty": "Aucune adresse pour l'instant.",
+      "count": "{count} sur {max} adresses",
+      "errors": {
+        "invalid": "Saisissez une adresse email valide.",
+        "duplicate": "{email} est déjà dans la liste.",
+        "limit": "Vous pouvez ajouter jusqu'à {max} adresses.",
+        "unavailable": "Les copies de l'email de coaching ne sont pas encore disponibles. Contactez le support.",
+        "loadError": "Impossible de charger la liste. Rechargez la page.",
+        "saveError": "Impossible d'enregistrer la liste. Veuillez réessayer."
+      }
+    },
     "pendingTitle": "Invitations en Attente",
     "pendingBadge": "En attente",
     "sentAt": "Envoyé le {date}",

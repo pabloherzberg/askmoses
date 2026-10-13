@@ -1,7 +1,11 @@
 import { Resend } from "resend"
 import { dbGetCallById, dbUpdateGhlCallPipeline } from "@/lib/db/calls"
+import { dbGetOrgCoachingCopyEmails } from "@/lib/db/organizations"
 import { dbGetTrainerById, dbGetTrainerDeliverability } from "@/lib/db/trainers"
 import { buildCoachingEmail } from "@/lib/email/coaching-template"
+import { intentFeedback } from "@/lib/utils/intentFeedback"
+import { computeIntentIndex } from "@/lib/utils/intentScore"
+import enMessages from "@/messages/en.json"
 
 interface DbSectionRow {
   name?: string
@@ -17,7 +21,9 @@ interface DbSectionRow {
  * Best-effort:
  *   - Idempotente via calls.email_sent (não envia 2x).
  *   - No-op silencioso se RESEND_API_KEY não está setado (demo sem email).
- *   - DEV_EMAIL_OVERRIDE redireciona o destinatário (útil em preview).
+ *   - DEV_EMAIL_OVERRIDE redireciona o destinatário (útil em preview) e
+ *     desliga as cópias da org.
+ *   - Cópias da org (organizations.coaching_copy_emails) vão em BCC.
  *   - Falha do Resend é logada mas não re-thrown — pipeline continua e
  *     email_sent fica false, permitindo retentativa manual depois.
  *
@@ -110,6 +116,34 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     feedback: s.feedback ?? "",
   }))
 
+  // Buying Intent: o cálculo fica aqui, não no template. Mesma fórmula do app
+  // (computeIntentIndex, com os pesos gravados na análise). Cada sinal vai como
+  // uma seção (nota 0-100) e o template renderiza com o mesmo visual do score
+  // geral. Sem breakdown gravado, cai no calls.intent e o email mostra só a nota.
+  const intentData = call as typeof call & {
+    intentBreakdown?: Record<string, number> | null
+    intentWeights?: Record<string, number> | null
+  }
+  const signalIds = ["financial", "urgency", "authority", "engagement"] as const
+  // Breakdown vazio ({}) ou sem nenhum dos 4 sinais numérico conta como ausente:
+  // senão o email mostraria 4 sinais zerados e nenhuma nota.
+  const rawBreakdown = intentData.intentBreakdown ?? null
+  const breakdown =
+    rawBreakdown && signalIds.some((id) => typeof rawBreakdown[id] === "number") ? rawBreakdown : null
+  const storedIntent = call.intent == null ? NaN : Number(call.intent)
+  const intentIndex = breakdown
+    ? computeIntentIndex(breakdown, intentData.intentWeights ?? undefined)
+    : storedIntent
+  const intentScore = Number.isFinite(intentIndex) && intentIndex >= 1 ? intentIndex : undefined
+  const signalNames = enMessages.Intent.signals
+  const intentSignals = breakdown
+    ? signalIds.map((id) => ({
+        name: signalNames[id].name,
+        score: (typeof breakdown[id] === "number" ? breakdown[id] : 0) * 10,
+        critical: false,
+      }))
+    : undefined
+
   const { subject, html } = buildCoachingEmail({
     trainerName: trainerName ?? "Trainer",
     trainerEmail,
@@ -123,14 +157,28 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     // English for the coach UI"). Forçar o template em 'pt' deixava o chrome em
     // português com o conteúdo em inglês. 'en' alinha os dois.
     locale: "en",
+    intentScore,
+    intentMessage: intentScore !== undefined ? intentFeedback(intentScore, "en") : undefined,
+    intentSignals,
+    // Mesmo texto que o app mostra em CallDetail.
+    transcript: call.transcript ?? undefined,
   })
 
   const resend = new Resend(apiKey)
-  const to = process.env.DEV_EMAIL_OVERRIDE ?? trainerEmail
+  const devOverride = process.env.DEV_EMAIL_OVERRIDE
+  const to = devOverride ?? trainerEmail
+
+  // Cópias da org (migration 126) em BCC, no mesmo envio: um envio só, e quem
+  // copia não aparece para o vendedor. Com DEV_EMAIL_OVERRIDE não há cópias
+  // (preview não pode mandar coaching para o gerente real de um cliente).
+  // Falha ao ler a lista (inclusive coluna ainda inexistente) não bloqueia o
+  // email do vendedor: segue sem cópias.
+  const bcc = devOverride ? [] : await loadCoachingCopies(call.org_id, trainerEmail, callId)
 
   const { data, error } = await resend.emails.send({
     from: "AskMoses.AI <noreply@askmoses.ai>",
     to,
+    ...(bcc.length > 0 ? { bcc } : {}),
     subject,
     html,
   })
@@ -159,6 +207,31 @@ export async function sendGhlCoachingEmail(callId: string): Promise<void> {
     callId,
     emailId: data?.id,
     to,
-    overrideActive: Boolean(process.env.DEV_EMAIL_OVERRIDE),
+    bccCount: bcc.length,
+    overrideActive: Boolean(devOverride),
   })
+}
+
+async function loadCoachingCopies(
+  orgId: string | null,
+  repEmail: string,
+  callId: string,
+): Promise<string[]> {
+  if (!orgId) return []
+  let emails: string[]
+  try {
+    emails = await dbGetOrgCoachingCopyEmails(orgId)
+  } catch (err) {
+    console.warn("[ghl-coaching-email] coaching copies unavailable — sending without copies", {
+      callId,
+      orgId,
+      err: err instanceof Error ? err.message : String(err),
+    })
+    return []
+  }
+  // O vendedor já está no `to`: tirar o email dele da lista evita a 2ª cópia.
+  const rep = repEmail.trim().toLowerCase()
+  const unique = new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.length > 0))
+  unique.delete(rep)
+  return [...unique]
 }

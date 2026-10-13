@@ -26,6 +26,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, Send, MailPlus, Trash2, UserPlus, X, Link2 } from 'lucide-react'
 import type { Role } from '@/lib/types'
 import { GhlUserCombobox, type GhlUserOption } from '@/components/shared/ghl-user-combobox'
+import { CoachingCopyEmailsCard } from './CoachingCopyEmailsCard'
 
 type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
 type SortDir = 'asc' | 'desc'
@@ -802,6 +803,11 @@ export function InvitePageClient({ role: callerRole, isImpersonating = false }: 
           </div>
         )}
       </div>
+
+      {/* ─── Cópias do email de coaching ───────────────────────────── */}
+      {/* Lista da org ativa: owner ou admin impersonando. Admin fora de
+          impersonação vê várias orgs e não tem uma org ativa para configurar. */}
+      {(callerRole === 'owner' || isImpersonating) && <CoachingCopyEmailsCard />}
 
       {/* ─── Lista de membros ativos ───────────────────────────────── */}
       <div className="space-y-3">

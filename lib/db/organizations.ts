@@ -224,6 +224,57 @@ export async function dbSetOrgManualUploadEnabled(
   if (error) throw new Error(`dbSetOrgManualUploadEnabled: ${error.message}`)
 }
 
+/**
+ * Coluna organizations.coaching_copy_emails ainda não existe (migration 126 não
+ * aplicada no banco). 42703 = undefined_column no SELECT; PGRST204 = coluna fora
+ * do schema cache do PostgREST no UPDATE.
+ */
+export class CoachingCopyEmailsColumnMissingError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CoachingCopyEmailsColumnMissingError'
+  }
+}
+
+function isMissingColumn(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    /coaching_copy_emails/.test(error.message ?? '')
+  )
+}
+
+/** Lista de cópias do coaching (migration 126). Org inexistente → []. */
+export async function dbGetOrgCoachingCopyEmails(orgId: string): Promise<string[]> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('coaching_copy_emails')
+    .eq('id', orgId)
+    .maybeSingle()
+  if (error) {
+    const message = `dbGetOrgCoachingCopyEmails: ${error.message}`
+    if (isMissingColumn(error)) throw new CoachingCopyEmailsColumnMissingError(message)
+    throw new Error(message)
+  }
+  const emails = (data as { coaching_copy_emails?: unknown } | null)?.coaching_copy_emails
+  return Array.isArray(emails) ? emails.filter((e): e is string => typeof e === 'string') : []
+}
+
+/** Substitui a lista inteira. A validação fica com o chamador (API). */
+export async function dbSetOrgCoachingCopyEmails(orgId: string, emails: string[]): Promise<void> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('organizations')
+    .update({ coaching_copy_emails: emails })
+    .eq('id', orgId)
+  if (error) {
+    const message = `dbSetOrgCoachingCopyEmails: ${error.message}`
+    if (isMissingColumn(error)) throw new CoachingCopyEmailsColumnMissingError(message)
+    throw new Error(message)
+  }
+}
+
 export interface UpdateOrgGhlConfigInput {
   locationId?: string | null
   accessToken?: string | null
