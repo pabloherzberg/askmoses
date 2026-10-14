@@ -239,6 +239,24 @@
       "submit": "Enviar invitación",
       "submitting": "Enviando..."
     },
+    "coachingCopies": {
+      "title": "Copias del email de coaching",
+      "description": "Estas direcciones reciben una copia de cada email de coaching enviado a los vendedores de esta organización. No necesitan un acceso a AskMoses ni un usuario de GHL.",
+      "inputLabel": "Dirección de email",
+      "placeholder": "gerente@empresa.com",
+      "add": "Agregar",
+      "remove": "Quitar {email}",
+      "empty": "Aún no hay direcciones.",
+      "count": "{count} de {max} direcciones",
+      "errors": {
+        "invalid": "Ingresa una dirección de email válida.",
+        "duplicate": "{email} ya está en la lista.",
+        "limit": "Puedes agregar hasta {max} direcciones.",
+        "unavailable": "Las copias del email de coaching aún no están disponibles. Contacta a soporte.",
+        "loadError": "No se pudo cargar la lista. Recarga la página.",
+        "saveError": "No se pudo guardar la lista. Inténtalo de nuevo."
+      }
+    },
     "pendingTitle": "Invitaciones Pendientes",
     "pendingBadge": "Pendiente",
     "sentAt": "Enviado el {date}",
@@ -688,7 +706,7 @@
       "avgCloseRate": "Tasa media de cierre",
       "avgCloseRateTooltip": "Llamadas cerradas ÷ total de llamadas, en todo el equipo. Se incluyen todas las llamadas realizadas — es una cifra global e histórica, no corresponde a ningún período concreto, y cada llamada pesa igual, sin importar quién la hizo.",
       "wonRate": "Won Rate",
-      "wonRateTooltip": "Leads que compraron ÷ leads que agendaron una evaluación, en todo el equipo. Se cuenta por lead, no por llamada — un lead con varias llamadas cuenta una sola vez. Es una cifra global e histórica, no corresponde a ningún período concreto.",
+      "wonRateTooltip": "Leads que se convirtieron en clientes de pago después de agendar en una llamada ÷ leads que agendaron una evaluación, en todo el equipo. Se cuenta por lead, no por llamada — un lead con varias llamadas cuenta una sola vez. Los leads que ya eran clientes antes de la llamada no cuentan como una venta nueva. Cifra histórica, no limitada a ningún período.",
       "ptsSinceWeek1": "pts desde la semana 1",
       "avgScore": "Puntuación media",
       "teamAvgCallScore": "Score medio por llamada",

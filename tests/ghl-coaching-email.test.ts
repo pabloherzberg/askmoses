@@ -14,6 +14,10 @@
  *  6. Skip silencioso se RESEND_API_KEY não está setado
  *  7. Falha do Resend é logada mas não relançada (best-effort)
  *  8. DEV_EMAIL_OVERRIDE redireciona destinatário
+ *  9. Cópias da org em BCC (migration 126): com e sem lista, rep na lista,
+ *     override ativo, coluna inexistente
+ * 10. Conteúdo: Buying Intent com os 4 sinais, sem breakdown, transcrição
+ *     com caracteres HTML escapados
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -26,12 +30,14 @@ const {
   mockResendSend,
   mockDbGetTrainerById,
   mockDbGetTrainerDeliverability,
+  mockDbGetOrgCoachingCopyEmails,
 } = vi.hoisted(() => ({
   mockDbGetCallById: vi.fn(),
   mockDbUpdateGhlCallPipeline: vi.fn(),
   mockResendSend: vi.fn(),
   mockDbGetTrainerById: vi.fn(),
   mockDbGetTrainerDeliverability: vi.fn(),
+  mockDbGetOrgCoachingCopyEmails: vi.fn(),
 }))
 
 vi.mock('@/lib/db/calls', () => ({
@@ -42,6 +48,10 @@ vi.mock('@/lib/db/calls', () => ({
 vi.mock('@/lib/db/trainers', () => ({
   dbGetTrainerById: mockDbGetTrainerById,
   dbGetTrainerDeliverability: mockDbGetTrainerDeliverability,
+}))
+
+vi.mock('@/lib/db/organizations', () => ({
+  dbGetOrgCoachingCopyEmails: mockDbGetOrgCoachingCopyEmails,
 }))
 
 // Mock da classe Resend: usa função construtora regular para compatibilidade com `new`.
@@ -60,6 +70,7 @@ import { sendGhlCoachingEmail } from '@/lib/services/ghl-coaching-email'
 function makeCall(overrides: Record<string, unknown> = {}) {
   return {
     id: 'call-abc',
+    org_id: 'org-1',
     email_sent: false,
     trainer_email: 'trainer@example.com',
     trainer_name: 'Marcus R.',
@@ -88,6 +99,7 @@ describe('sendGhlCoachingEmail', () => {
 
     mockDbUpdateGhlCallPipeline.mockResolvedValue(undefined)
     mockResendSend.mockResolvedValue({ data: { id: 'resend-email-id-001' }, error: null })
+    mockDbGetOrgCoachingCopyEmails.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -230,5 +242,191 @@ describe('sendGhlCoachingEmail', () => {
     // overall_score 82 (0-100) → template converte para 4.1/5
     expect(sendArgs[0].subject).toContain('4.1')
     expect(sendArgs[0].subject).toContain('Rex Adoption')
+  })
+
+  // ── Cópias da org em BCC (migration 126) ──────────────────────────────────
+
+  describe('cópias da org (BCC)', () => {
+    it('sem lista: envia só para o rep, sem campo bcc', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall())
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(mockDbGetOrgCoachingCopyEmails).toHaveBeenCalledWith('org-1')
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0].to).toBe('trainer@example.com')
+      expect(sendArgs[0]).not.toHaveProperty('bcc')
+    })
+
+    it('com lista: manda as cópias em BCC no mesmo envio', async () => {
+      mockDbGetOrgCoachingCopyEmails.mockResolvedValue(['owner@k9.com', 'manager@k9.com'])
+      mockDbGetCallById.mockResolvedValue(makeCall())
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(mockResendSend).toHaveBeenCalledOnce()
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0].to).toBe('trainer@example.com')
+      expect(sendArgs[0].bcc).toEqual(['owner@k9.com', 'manager@k9.com'])
+      expect(mockDbUpdateGhlCallPipeline).toHaveBeenCalledWith('call-abc', {
+        emailSent: true,
+        emailId: 'resend-email-id-001',
+      })
+    })
+
+    it('tira o email do próprio rep da lista (sem diferenciar maiúsculas)', async () => {
+      mockDbGetOrgCoachingCopyEmails.mockResolvedValue(['trainer@example.com', 'owner@k9.com'])
+      mockDbGetCallById.mockResolvedValue(makeCall({ trainer_email: 'Trainer@Example.com' }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0].bcc).toEqual(['owner@k9.com'])
+    })
+
+    it('lista só com o rep: nenhum bcc', async () => {
+      mockDbGetOrgCoachingCopyEmails.mockResolvedValue(['trainer@example.com'])
+      mockDbGetCallById.mockResolvedValue(makeCall())
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0]).not.toHaveProperty('bcc')
+    })
+
+    it('DEV_EMAIL_OVERRIDE ativo: não envia cópias nem lê a lista', async () => {
+      process.env.DEV_EMAIL_OVERRIDE = 'dev@askmoses.ai'
+      mockDbGetOrgCoachingCopyEmails.mockResolvedValue(['owner@k9.com'])
+      mockDbGetCallById.mockResolvedValue(makeCall())
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0].to).toBe('dev@askmoses.ai')
+      expect(sendArgs[0]).not.toHaveProperty('bcc')
+      expect(mockDbGetOrgCoachingCopyEmails).not.toHaveBeenCalled()
+    })
+
+    it('coluna inexistente (migration 126 não aplicada): envia sem cópias', async () => {
+      mockDbGetOrgCoachingCopyEmails.mockRejectedValue(
+        new Error('dbGetOrgCoachingCopyEmails: column organizations.coaching_copy_emails does not exist'),
+      )
+      mockDbGetCallById.mockResolvedValue(makeCall())
+
+      await expect(sendGhlCoachingEmail('call-abc')).resolves.toBeUndefined()
+
+      expect(mockResendSend).toHaveBeenCalledOnce()
+      const [sendArgs] = mockResendSend.mock.calls
+      expect(sendArgs[0].to).toBe('trainer@example.com')
+      expect(sendArgs[0]).not.toHaveProperty('bcc')
+      expect(mockDbUpdateGhlCallPipeline).toHaveBeenCalledWith('call-abc', {
+        emailSent: true,
+        emailId: 'resend-email-id-001',
+      })
+    })
+
+    it('call sem org_id: não consulta a lista', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall({ org_id: null }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(mockDbGetOrgCoachingCopyEmails).not.toHaveBeenCalled()
+      expect(mockResendSend).toHaveBeenCalledOnce()
+    })
+
+    it('Front Desk continua bloqueado mesmo com lista de cópias', async () => {
+      mockDbGetOrgCoachingCopyEmails.mockResolvedValue(['owner@k9.com'])
+      mockDbGetCallById.mockResolvedValue(makeCall({ trainer_id: 'front-desk-id' }))
+      mockDbGetTrainerDeliverability.mockResolvedValue({ isSystem: true, inviteAccepted: true })
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(mockResendSend).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── Conteúdo: Buying Intent e transcrição ─────────────────────────────────
+
+  describe('conteúdo do email', () => {
+    const htmlOf = () => mockResendSend.mock.calls[0][0].html as string
+    // O título renderizado (o template tem um comentário <!-- Buying Intent --> fixo).
+    const INTENT_TITLE = />\s*Buying Intent\s*</
+
+    it('intent completo: nota calculada e os 4 sinais', async () => {
+      // Pesos default (25/25/25/25): média 7 → índice 3.5 → template arredonda para 4/5.
+      mockDbGetCallById.mockResolvedValue(
+        makeCall({
+          intent: 1,
+          intentBreakdown: { financial: 8, urgency: 6, authority: 10, engagement: 4 },
+          intentWeights: null,
+        }),
+      )
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const html = htmlOf()
+      expect(html).toMatch(INTENT_TITLE)
+      expect(html).toContain('4/5')
+      for (const name of ['Financial', 'Urgency', 'Authority', 'Engagement']) {
+        expect(html).toContain(name)
+      }
+      // Sinal 0-10 → seção 0-100 → exibição 0-5 (financial 8 → 4.0/5, authority 10 → 5.0/5).
+      expect(html).toContain('4.0/5')
+      expect(html).toContain('5.0/5')
+    })
+
+    it('sem breakdown: usa calls.intent e não mostra os sinais', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall({ intent: 3, intentBreakdown: null }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const html = htmlOf()
+      expect(html).toMatch(INTENT_TITLE)
+      expect(html).toContain('3/5')
+      expect(html).not.toContain('Financial')
+    })
+
+    it('breakdown vazio ({}) conta como ausente: sem sinais zerados', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall({ intent: 2, intentBreakdown: {} }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const html = htmlOf()
+      expect(html).toContain('2/5')
+      expect(html).not.toContain('Financial')
+    })
+
+    it('sem breakdown e sem intent: não mostra o bloco de Buying Intent', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall({ intent: null, intentBreakdown: null }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(htmlOf()).not.toMatch(INTENT_TITLE)
+    })
+
+    it('transcrição com caracteres HTML sai escapada, uma fala por linha', async () => {
+      mockDbGetCallById.mockResolvedValue(
+        makeCall({
+          transcript: 'Rep: <script>alert("x")</script> & more\n\n  Client: price <$500> ok  ',
+        }),
+      )
+
+      await sendGhlCoachingEmail('call-abc')
+
+      const html = htmlOf()
+      expect(html).toContain('Call transcript')
+      expect(html).not.toContain('<script>')
+      expect(html).toContain(
+        'Rep: &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; more<br>Client: price &lt;$500&gt; ok',
+      )
+    })
+
+    it('sem transcrição: não mostra o bloco', async () => {
+      mockDbGetCallById.mockResolvedValue(makeCall({ transcript: null }))
+
+      await sendGhlCoachingEmail('call-abc')
+
+      expect(htmlOf()).not.toContain('Call transcript')
+    })
   })
 })
