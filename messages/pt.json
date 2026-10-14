@@ -239,6 +239,24 @@
       "submit": "Enviar convite",
       "submitting": "Enviando..."
     },
+    "coachingCopies": {
+      "title": "Cópias do email de coaching",
+      "description": "Estes endereços recebem uma cópia de todo email de coaching enviado aos vendedores desta organização. Eles não precisam de login no AskMoses nem de usuário no GHL.",
+      "inputLabel": "Endereço de email",
+      "placeholder": "gerente@empresa.com",
+      "add": "Adicionar",
+      "remove": "Remover {email}",
+      "empty": "Nenhum endereço ainda.",
+      "count": "{count} de {max} endereços",
+      "errors": {
+        "invalid": "Digite um endereço de email válido.",
+        "duplicate": "{email} já está na lista.",
+        "limit": "Você pode adicionar até {max} endereços.",
+        "unavailable": "As cópias do email de coaching ainda não estão disponíveis. Fale com o suporte.",
+        "loadError": "Não foi possível carregar a lista. Recarregue a página.",
+        "saveError": "Não foi possível salvar a lista. Tente novamente."
+      }
+    },
     "pendingTitle": "Convites Pendentes",
     "pendingBadge": "Pendente",
     "sentAt": "Enviado em {date}",

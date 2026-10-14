@@ -16,7 +16,9 @@ export default async function InvitePage(
   }
 
   // Admin impersonando um owner: a página escopa à org impersonada (esconde
-  // filtro/coluna de org e o formulário de convite, que é mutação bloqueada).
+  // filtro/coluna de org e o formulário de convite, por escolha da tela).
+  // Admin impersonando é owner efetivo e pode editar (requireOwnerWrite é
+  // no-op desde a decisão de 2026-05-13).
   const impersonating = await isImpersonating()
 
   return <InvitePageClient role={role} isImpersonating={impersonating} />

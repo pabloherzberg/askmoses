@@ -17,6 +17,14 @@ export interface CoachingEmailData {
   locale?: string;
   intentScore?: number;
   intentMessage?: string;
+  /**
+   * Os 4 sinais do Buying Intent já calculados pelo serviço (nome + nota 0-100),
+   * renderizados com o mesmo visual das seções do score geral (sectionRow).
+   * O template não calcula nada: só exibe.
+   */
+  intentSignals?: CoachingEmailSection[];
+  /** Transcrição da call (mesmo texto de calls.transcript que o app mostra). */
+  transcript?: string;
 }
 
 const i18n: Record<
@@ -29,6 +37,7 @@ const i18n: Record<
     improve: string;
     footer: string;
     intentTitle: string;
+    transcriptTitle: string;
   }
 > = {
   en: {
@@ -39,6 +48,7 @@ const i18n: Record<
     improve: "What to improve",
     footer: "Sent automatically by AskMoses.AI",
     intentTitle: "Buying Intent",
+    transcriptTitle: "Call transcript",
   },
   pt: {
     subject: "Feedback de Coaching",
@@ -48,6 +58,7 @@ const i18n: Record<
     improve: "O que melhorar",
     footer: "Enviado automaticamente pelo AskMoses.AI",
     intentTitle: "Intenção de Compra",
+    transcriptTitle: "Transcrição da call",
   },
   es: {
     subject: "Feedback de Coaching",
@@ -57,6 +68,7 @@ const i18n: Record<
     improve: "Lo que mejorar",
     footer: "Enviado automáticamente por AskMoses.AI",
     intentTitle: "Intención de Compra",
+    transcriptTitle: "Transcripción de la llamada",
   },
   fr: {
     subject: "Retour de Coaching",
@@ -66,6 +78,7 @@ const i18n: Record<
     improve: "Ce qu'il faut améliorer",
     footer: "Envoyé automatiquement par AskMoses.AI",
     intentTitle: "Intention d'Achat",
+    transcriptTitle: "Transcription de l'appel",
   },
 };
 
@@ -167,6 +180,46 @@ function bulletList(items: string[], limit = 3): string {
     .join("");
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Transcrição no fim do email, no mesmo formato do app (CallDetail): uma fala
+// por linha, fonte mono. Linhas separadas por <br> (e não um <p> por linha)
+// para manter o HTML enxuto: o Gmail corta emails acima de ~102 KB.
+function transcriptBlock(transcript: string | undefined, title: string): string {
+  const lines = (transcript ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length === 0) return "";
+  return `
+          <!-- Divider -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:0 28px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr><td height="1" bgcolor="#E2E6EF" style="font-size:1px;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Transcript -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:20px 28px 24px 28px;border-radius:0 0 12px 12px;">
+              <p style="margin:0 0 12px 0;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:700;color:#1A1E28;">📝 ${title}</p>
+              <table border="0" cellpadding="14" cellspacing="0" width="100%" style="background-color:#F5F7FB;border-radius:8px;">
+                <tr>
+                  <td style="font-family:'DM Mono',monospace,'Courier New';font-size:12px;color:#3A4255;line-height:1.8;word-break:break-word;">${lines.map(escapeHtml).join("<br>")}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
+}
+
 export function buildCoachingEmail(data: CoachingEmailData): {
   subject: string;
   html: string;
@@ -174,6 +227,8 @@ export function buildCoachingEmail(data: CoachingEmailData): {
   const lang = t(data.locale ?? "en");
   const clientLabel = data.clientName ? ` ${data.clientName}` : "";
   const subject = `${lang.subject} — ${lang.subtitle}${clientLabel} | ${toDisplay5(data.overallScore)}/5`;
+
+  const transcriptHtml = transcriptBlock(data.transcript, lang.transcriptTitle);
 
   const intentScore = Number.isFinite(data.intentScore)
     ? Math.max(1, Math.min(5, Math.round(data.intentScore as number)))
@@ -269,6 +324,14 @@ export function buildCoachingEmail(data: CoachingEmailData): {
 
           <!-- Buying Intent -->
           ${intentBlock}
+          ${data.intentSignals?.length ? `
+          <tr>
+            <td style="background-color:#FFFFFF;padding:0 28px 12px 28px;">
+              <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                ${data.intentSignals.map(sectionRow).join("")}
+              </table>
+            </td>
+          </tr>` : ""}
 
           <!-- Divider -->
           <tr>
@@ -300,7 +363,7 @@ export function buildCoachingEmail(data: CoachingEmailData): {
 
           <!-- Improvements -->
           <tr>
-            <td style="background-color:#FFFFFF;padding:20px 28px 24px 28px;border-radius:0 0 12px 12px;">
+            <td style="background-color:#FFFFFF;padding:20px 28px 24px 28px;${transcriptHtml ? "" : "border-radius:0 0 12px 12px;"}">
               <p style="margin:0 0 12px 0;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:700;color:#D48A1A;">📈 ${lang.improve}</p>
               <table border="0" cellpadding="0" cellspacing="0" width="100%">
                 ${bulletList(data.improvements)}
@@ -308,6 +371,8 @@ export function buildCoachingEmail(data: CoachingEmailData): {
               </table>
             </td>
           </tr>
+
+          ${transcriptHtml}
 
           <!-- Footer -->
           <tr>

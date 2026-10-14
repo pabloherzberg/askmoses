@@ -239,6 +239,24 @@
       "submit": "Send invitation",
       "submitting": "Sending..."
     },
+    "coachingCopies": {
+      "title": "Coaching email copies",
+      "description": "These addresses receive a copy of every coaching email sent to this organization's sales people. They don't need an AskMoses login or a GHL user.",
+      "inputLabel": "Email address",
+      "placeholder": "manager@company.com",
+      "add": "Add",
+      "remove": "Remove {email}",
+      "empty": "No addresses yet.",
+      "count": "{count} of {max} addresses",
+      "errors": {
+        "invalid": "Enter a valid email address.",
+        "duplicate": "{email} is already on the list.",
+        "limit": "You can add up to {max} addresses.",
+        "unavailable": "Coaching email copies aren't available yet. Please contact support.",
+        "loadError": "Could not load the list. Please reload the page.",
+        "saveError": "Could not save the list. Please try again."
+      }
+    },
     "pendingTitle": "Pending Invitations",
     "pendingBadge": "Pending",
     "sentAt": "Sent on {date}",

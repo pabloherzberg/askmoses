@@ -26,6 +26,7 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Search, Send, MailPlus, Trash2, UserPlus, X, Link2 } from 'lucide-react'
 import type { Role } from '@/lib/types'
 import { GhlUserCombobox, type GhlUserOption } from '@/components/shared/ghl-user-combobox'
+import { CoachingCopyEmailsCard } from './CoachingCopyEmailsCard'
 
 type SortKey = 'name' | 'email' | 'role' | 'org' | 'invited_at'
 type SortDir = 'asc' | 'desc'
@@ -126,7 +127,8 @@ interface Props {
   role: Role
   // Admin impersonando um owner. Nesse caso a página é escopada à org
   // impersonada: sem controles de "todas as orgs" (filtro/coluna) nem
-  // formulário de convite (mutação bloqueada durante impersonação).
+  // formulário de convite. Admin impersonando é owner efetivo e pode editar
+  // (requireOwnerWrite não bloqueia desde a decisão de 2026-05-13).
   isImpersonating?: boolean
 }
 
@@ -136,7 +138,8 @@ export function InvitePageClient({ role: callerRole, isImpersonating = false }: 
   const isAdmin = callerRole === 'admin'
   // Controles admin de multi-org (filtro por org, coluna "Org", formulário de
   // convite) só aparecem para o admin FORA de impersonação. Impersonando, a
-  // visão é a do owner daquela org: uma única org, somente leitura.
+  // visão é a do owner daquela org: uma única org, com as mesmas permissões
+  // de escrita do owner (ex.: lista de cópias do coaching).
   const showAdminOrgControls = isAdmin && !isImpersonating
 
   const [pending, setPending] = useState<InviteUser[]>([])
@@ -500,8 +503,9 @@ export function InvitePageClient({ role: callerRole, isImpersonating = false }: 
       )}
 
       {/* ─── Formulário de convite ─────────────────────────────────── */}
-      {/* Escondido durante impersonação: convidar é mutação e o backend
-          bloqueia (requireOwnerWrite ADMIN_IMPERSONATING_READ_ONLY). */}
+      {/* Escondido durante impersonação por escolha da tela, não por bloqueio:
+          o backend não barra mais escrita de admin impersonando
+          (requireOwnerWrite é no-op desde 2026-05-13). */}
       {!isImpersonating && (
       <Card>
         <CardHeader>
@@ -802,6 +806,11 @@ export function InvitePageClient({ role: callerRole, isImpersonating = false }: 
           </div>
         )}
       </div>
+
+      {/* ─── Cópias do email de coaching ───────────────────────────── */}
+      {/* Lista da org ativa: owner ou admin impersonando. Admin fora de
+          impersonação vê várias orgs e não tem uma org ativa para configurar. */}
+      {(callerRole === 'owner' || isImpersonating) && <CoachingCopyEmailsCard />}
 
       {/* ─── Lista de membros ativos ───────────────────────────────── */}
       <div className="space-y-3">
